@@ -23,7 +23,14 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { useSecurityStore } from '../store';
-import { AutomationRule, AutomationTriggerEvent, ActionType, ConditionOperator, UserRole } from '../types';
+import {
+  AUTOMATION_ACTION_TYPES, AUTOMATION_CONDITION_OPERATORS, AUTOMATION_TRIGGER_EVENTS,
+  ActionType, AutomationRule, AutomationTriggerEvent, ConditionOperator, UserRole
+} from '../types';
+
+function isOption<T extends string>(value: string, options: readonly T[]): value is T {
+  return options.some(option => option === value);
+}
 
 export const AutomationCenter: React.FC = () => {
   const {
@@ -410,7 +417,9 @@ export const AutomationCenter: React.FC = () => {
             </span>
             <select
               value={builderTrigger}
-              onChange={(e) => setBuilderTrigger(e.target.value as any)}
+              onChange={(e) => {
+                if (isOption(e.target.value, AUTOMATION_TRIGGER_EVENTS)) setBuilderTrigger(e.target.value);
+              }}
               className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-200 font-mono"
             >
               <option value="QUALIFICATION_EXPIRING">QUALIFICATION_EXPIRING (Ablaufende Mitarbeiterqualifikation)</option>
@@ -434,7 +443,9 @@ export const AutomationCenter: React.FC = () => {
               />
               <select
                 value={builderConditionOp}
-                onChange={(e) => setBuilderConditionOp(e.target.value as any)}
+                onChange={(e) => {
+                  if (isOption(e.target.value, AUTOMATION_CONDITION_OPERATORS)) setBuilderConditionOp(e.target.value);
+                }}
                 className="bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono"
               >
                 <option value="LESS_THAN_DAYS">LESS_THAN_DAYS (&lt; Tage)</option>
@@ -459,7 +470,9 @@ export const AutomationCenter: React.FC = () => {
                 <label className="block text-slate-400 mb-1">Aktionstyp</label>
                 <select
                   value={builderActionType}
-                  onChange={(e) => setBuilderActionType(e.target.value as any)}
+                  onChange={(e) => {
+                    if (isOption(e.target.value, AUTOMATION_ACTION_TYPES)) setBuilderActionType(e.target.value);
+                  }}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono"
                 >
                   <option value="CREATE_TASK">CREATE_TASK (Aufgabe anlegen)</option>
@@ -473,7 +486,9 @@ export const AutomationCenter: React.FC = () => {
                 <label className="block text-slate-400 mb-1">Ziel-Rolle</label>
                 <select
                   value={builderActionRole}
-                  onChange={(e) => setBuilderActionRole(e.target.value as any)}
+                  onChange={(e) => {
+                    if (isOption(e.target.value, Object.values(UserRole))) setBuilderActionRole(e.target.value);
+                  }}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200"
                 >
                   {Object.values(UserRole).map((r) => (

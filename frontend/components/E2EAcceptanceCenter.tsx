@@ -224,6 +224,8 @@ export const E2EAcceptanceCenter: React.FC = () => {
         address: 'Westhafen Tower, 60327 Frankfurt',
         contractStart: '2025-01-01',
         contractEnd: '2028-12-31',
+        contractAutoRenew: true,
+        noticePeriodMonths: 3,
         slaLevel: 'Gold (24/7 Vor-Ort)',
         billingStatus: 'Regulär',
         assignedSiteCount: 1

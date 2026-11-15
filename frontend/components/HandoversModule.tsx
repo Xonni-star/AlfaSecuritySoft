@@ -577,7 +577,7 @@ export const HandoversModule: React.FC = () => {
           </label>
           <label className="text-xs text-slate-300">Dienst (optional)
             <select value={form.shiftId} onChange={event => setForm({ ...form, shiftId: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-sm">
-              <option value="">Kein Dienst zugeordnet</option>{shifts.map(shift => <option key={shift.id} value={shift.id}>{shift.shiftDate} · {shift.startTime}–{shift.endTime}</option>)}
+              <option value="">Kein Dienst zugeordnet</option>{shifts.map(shift => <option key={shift.id} value={shift.id}>{shift.date} · {shift.startTime}–{shift.endTime}</option>)}
             </select>
           </label>
         </div>

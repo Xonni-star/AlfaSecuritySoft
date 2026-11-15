@@ -1094,9 +1094,9 @@ export const RosterModule: React.FC = () => {
       ]);
       if (!isCurrentIdentity(requestIdentity) || detailsRequestIdRef.current !== detailsRequestId) return;
       setAssignments(assignmentRows);
-      const currentActualEmployee = assignmentRows.some(item =>
+      const currentActualEmployee = (assignmentRows.some(item =>
         item.status === 'assigned' && item.employee_id === shift.employeeId
-      ) ? shift.employeeId : assignmentRows.find(item => item.status === 'assigned')?.employee_id ?? '';
+      ) ? shift.employeeId : assignmentRows.find(item => item.status === 'assigned')?.employee_id) ?? '';
       setActualForm(current => ({ ...current, employeeId: currentActualEmployee }));
       setFindings(findingRows);
       setSwaps(swapRows.filter(item => item.shift_id === shift.id));

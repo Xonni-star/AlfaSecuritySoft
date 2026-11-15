@@ -119,7 +119,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobileMenu }) => {
 
   return (
     <aside className="w-64 border-r border-slate-800 bg-[#0a0f1d] flex flex-col shrink-0 min-h-[calc(100vh-4rem)] p-3">
-      <nav className="flex-1 space-y-6 overflow-y-auto pr-1">
+      <nav aria-label="Hauptnavigation" className="flex-1 space-y-6 overflow-y-auto pr-1">
         {menuSections.map((sec, idx) => (
           <div key={idx}>
             <div className="px-3 mb-2 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
@@ -134,12 +134,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobileMenu }) => {
                   return (
                     <button
                       key={item.id}
+                      type="button"
+                      aria-current={isActive ? 'page' : undefined}
                       onClick={() => handleSelectTab(item.id)}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all group ${
                         isActive
                           ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30 shadow-sm'
                           : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
-                      }`}
+                      } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950`}
                     >
                       <div className="flex items-center gap-2.5 truncate">
                         <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'}`} />
@@ -163,21 +165,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobileMenu }) => {
       </nav>
 
       {/* Illustrated Guide Shortcut Card */}
-      <div
+      <button
+        type="button"
         onClick={() => handleSelectTab('user_guide')}
-        className="p-3 mt-4 rounded-xl bg-gradient-to-br from-blue-950/40 via-slate-900 to-slate-950 border border-blue-900/50 cursor-pointer hover:border-blue-500/50 transition text-[11px] group"
+        className="w-full p-3 mt-4 rounded-xl bg-gradient-to-br from-blue-950/40 via-slate-900 to-slate-950 border border-blue-900/50 text-left hover:border-blue-500/50 transition text-[11px] group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
       >
-        <div className="flex items-center justify-between mb-1.5">
+        <span className="flex items-center justify-between mb-1.5">
           <span className="text-blue-300 font-semibold flex items-center gap-1.5">
             <BookOpen className="w-3.5 h-3.5 text-blue-400" />
             <span>Bebildertes Handbuch</span>
           </span>
           <span className="text-emerald-400 font-mono font-bold text-[10px]">7 Kapitel</span>
-        </div>
-        <p className="text-[10px] text-slate-400 leading-tight">
+        </span>
+        <span className="text-[10px] text-slate-400 leading-tight block">
           Schritt-für-Schritt Anleitungen mit Screenshots, Callouts und PDF-Druck.
-        </p>
-      </div>
+        </span>
+      </button>
     </aside>
   );
 };

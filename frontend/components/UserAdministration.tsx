@@ -14,6 +14,12 @@ type RoleGrant = { code: string; site_id: string | null; data_scope: 'TENANT' | 
 type ManagedRole = { id: string; name: string; description: string | null; is_system_role: boolean; permissions: RoleGrant[] };
 type UserFilter = { q: string; status: string; roleId: string; siteId: string };
 type RoleGrantEditor = { dataScope: 'TENANT' | 'SITE' | 'OWN'; siteIds: string[] };
+type RoleGrantPayload = {
+  code: string;
+  siteId: string | null;
+  dataScope: RoleGrantEditor['dataScope'];
+  canDelegate: boolean;
+};
 type UserAuditEntry = {
   id: string;
   action_type: string;
@@ -185,7 +191,7 @@ export const UserAdministration: React.FC<{ authUser: AuthUser }> = ({ authUser 
     setSaving(true);
     setError('');
     setNotice('');
-    const grants = Object.entries(roleForm.grants).flatMap(([code, grant]) =>
+    const grants: RoleGrantPayload[] = Object.entries(roleForm.grants).flatMap(([code, grant]): RoleGrantPayload[] =>
       grant.dataScope === 'TENANT'
         ? [{ code, siteId: null, dataScope: 'TENANT' as const, canDelegate: false }]
         : grant.dataScope === 'OWN'

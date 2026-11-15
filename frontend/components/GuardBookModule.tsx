@@ -49,6 +49,7 @@ export const GuardBookModule: React.FC = () => {
   const [description, setDescription] = useState('');
   const [policeInvolved, setPoliceInvolved] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [, setAiAnalysis] = useState<string | null>(null);
 
 
   const filteredLogs = guardBook.filter((entry) => {

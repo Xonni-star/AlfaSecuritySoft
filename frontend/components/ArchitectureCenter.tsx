@@ -169,7 +169,7 @@ def hash_password(password: str) -> str:
     """Argon2id / PBKDF2-HMAC-SHA512 with 310,000 rounds and unique salt."""
     salt = uuid.uuid4().hex
     key = hashlib.pbkdf2_hmac('sha512', password.encode(), salt.encode(), 310000)
-    return f"argon2id$v=19$m=65536,t=3,p=4${salt}${key.hex()}"
+    return f"argon2id$v=19$m=65536,t=3,p=4\${salt}\${key.hex()}"
 
 def create_access_token(user_id, tenant_id, role, permissions):
     payload = {

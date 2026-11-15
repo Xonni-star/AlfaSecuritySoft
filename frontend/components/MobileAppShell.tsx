@@ -79,94 +79,102 @@ export const MobileAppShell: React.FC = () => {
           <div className="space-y-4 pb-20 text-xs">
             {/* Quick Status Cards */}
             <div className="grid grid-cols-2 gap-3">
-              <div
+              <button
+                type="button"
                 onClick={() => setActiveMobileView('duty')}
-                className="p-4 rounded-2xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-blue-500 transition"
+                className="w-full p-4 rounded-2xl bg-slate-900 border border-slate-800 text-left hover:border-blue-500 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
-                <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 w-fit mb-2">
+                <span className="p-2 rounded-xl bg-blue-500/10 text-blue-400 w-fit mb-2 inline-flex">
                   <CalendarDays className="w-5 h-5" />
-                </div>
-                <div className="font-bold text-white text-sm">Mein Dienst</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Schichten & Tausch</div>
-              </div>
+                </span>
+                <span className="font-bold text-white text-sm block">Mein Dienst</span>
+                <span className="text-[11px] text-slate-400 mt-0.5 block">Schichten & Tausch</span>
+              </button>
 
-              <div
+              <button
+                type="button"
                 onClick={() => setActiveMobileView('patrol')}
-                className="p-4 rounded-2xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-blue-500 transition"
+                className="w-full p-4 rounded-2xl bg-slate-900 border border-slate-800 text-left hover:border-blue-500 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 w-fit mb-2">
+                <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 w-fit mb-2 inline-flex">
                   <Radio className="w-5 h-5" />
-                </div>
-                <div className="font-bold text-white text-sm">Kontrollgang</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">QR & NFC Scanner</div>
-              </div>
+                </span>
+                <span className="font-bold text-white text-sm block">Kontrollgang</span>
+                <span className="text-[11px] text-slate-400 mt-0.5 block">QR & NFC Scanner</span>
+              </button>
 
-              <div
+              <button
+                type="button"
                 onClick={() => setActiveMobileView('guardbook')}
-                className="p-4 rounded-2xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-blue-500 transition relative"
+                className="w-full p-4 rounded-2xl bg-slate-900 border border-slate-800 text-left hover:border-blue-500 transition relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
-                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 w-fit mb-2">
+                <span className="p-2 rounded-xl bg-amber-500/10 text-amber-400 w-fit mb-2 inline-flex">
                   <BookOpen className="w-5 h-5" />
-                </div>
-                <div className="font-bold text-white text-sm">Wachbuch</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Ereignisse erfassen</div>
+                </span>
+                <span className="font-bold text-white text-sm block">Wachbuch</span>
+                <span className="text-[11px] text-slate-400 mt-0.5 block">Ereignisse erfassen</span>
                 {unreadIncidents > 0 && (
                   <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
                 )}
-              </div>
+              </button>
 
-              <div
+              <button
+                type="button"
                 onClick={() => setActiveMobileView('alarms')}
-                className="p-4 rounded-2xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-rose-500 transition"
+                className="w-full p-4 rounded-2xl bg-slate-900 border border-slate-800 text-left hover:border-rose-500 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
-                <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 w-fit mb-2">
+                <span className="p-2 rounded-xl bg-rose-500/10 text-rose-400 w-fit mb-2 inline-flex">
                   <ShieldAlert className="w-5 h-5" />
-                </div>
-                <div className="font-bold text-white text-sm">Notfallmanagement</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Alarme melden & reagieren</div>
-              </div>
+                </span>
+                <span className="font-bold text-white text-sm block">Notfallmanagement</span>
+                <span className="text-[11px] text-slate-400 mt-0.5 block">Alarme melden & reagieren</span>
+              </button>
 
-              <div
+              <button
+                type="button"
                 onClick={() => setActiveMobileView('handover')}
-                className="p-4 rounded-2xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-blue-500 transition"
+                className="w-full p-4 rounded-2xl bg-slate-900 border border-slate-800 text-left hover:border-blue-500 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
-                <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 w-fit mb-2">
+                <span className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 w-fit mb-2 inline-flex">
                   <FileCheck2 className="w-5 h-5" />
-                </div>
-                <div className="font-bold text-white text-sm">Schichtwechsel</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Übergabeprotokoll</div>
-              </div>
+                </span>
+                <span className="font-bold text-white text-sm block">Schichtwechsel</span>
+                <span className="text-[11px] text-slate-400 mt-0.5 block">Übergabeprotokoll</span>
+              </button>
             </div>
 
             {/* Quick Action Links */}
             <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
               <span className="font-bold text-slate-300 block mb-1">Weitere mobile Funktionen:</span>
 
-              <div
+              <button
+                type="button"
                 onClick={() => setActiveMobileView('tasks')}
-                className="p-3 rounded-xl bg-slate-800/40 border border-slate-800 flex items-center justify-between cursor-pointer hover:bg-slate-800/70"
+                className="w-full p-3 rounded-xl bg-slate-800/40 border border-slate-800 flex items-center justify-between text-left hover:bg-slate-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
                 <span>Meine Aufgaben</span>
                 <span className="px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold">
                   {openTasks}
                 </span>
-              </div>
+              </button>
 
-              <div
+              <button
+                type="button"
                 onClick={() => setActiveMobileView('sop')}
-                className="p-3 rounded-xl bg-slate-800/40 border border-slate-800 flex items-center justify-between cursor-pointer hover:bg-slate-800/70"
+                className="w-full p-3 rounded-xl bg-slate-800/40 border border-slate-800 flex items-center justify-between text-left hover:bg-slate-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
                 <span>Dienstanweisungen & QM</span>
                 <ChevronRight className="w-4 h-4 text-slate-400" />
-              </div>
+              </button>
 
-              <div
+              <button
+                type="button"
                 onClick={() => setActiveTab('dashboard')}
-                className="p-3 rounded-xl bg-slate-800/40 border border-slate-800 flex items-center justify-between cursor-pointer hover:bg-slate-800/70 text-blue-400 font-semibold"
+                className="w-full p-3 rounded-xl bg-slate-800/40 border border-slate-800 flex items-center justify-between text-left hover:bg-slate-800/70 text-blue-400 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
                 <span>Zurück zur Desktop-Leitstelle</span>
                 <ChevronRight className="w-4 h-4" />
-              </div>
+              </button>
             </div>
           </div>
         )}
@@ -181,22 +189,26 @@ export const MobileAppShell: React.FC = () => {
       </div>
 
       {/* Sticky Mobile Bottom Navigation Bar (WCAG AA Compliant Touch-Targets) */}
-      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-[#0f172a]/95 backdrop-blur-md border-t border-slate-800 flex items-center justify-around px-2 z-40 max-w-md mx-auto">
+      <nav aria-label="Mobile Navigation" className="fixed bottom-0 left-0 right-0 h-16 bg-[#0f172a]/95 backdrop-blur-md border-t border-slate-800 flex items-center justify-around px-2 z-40 max-w-md mx-auto">
         <button
+          type="button"
+          aria-current={activeMobileView === 'home' ? 'page' : undefined}
           onClick={() => setActiveMobileView('home')}
           className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-[10px] font-semibold transition ${
             activeMobileView === 'home' ? 'text-blue-400' : 'text-slate-400 hover:text-slate-200'
-          }`}
+          } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-inset`}
         >
           <LayoutDashboard className="w-4 h-4 mb-0.5" />
           <span>Home</span>
         </button>
 
         <button
+          type="button"
+          aria-current={activeMobileView === 'duty' ? 'page' : undefined}
           onClick={() => setActiveMobileView('duty')}
           className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-[10px] font-semibold transition ${
             activeMobileView === 'duty' ? 'text-blue-400' : 'text-slate-400 hover:text-slate-200'
-          }`}
+          } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-inset`}
         >
           <CalendarDays className="w-4 h-4 mb-0.5" />
           <span>Dienst</span>
@@ -204,28 +216,34 @@ export const MobileAppShell: React.FC = () => {
 
         {/* Central Scan Button */}
         <button
+          type="button"
+          aria-current={activeMobileView === 'patrol' ? 'page' : undefined}
           onClick={() => setActiveMobileView('patrol')}
-          className="flex flex-col items-center justify-center -top-3 relative px-3 py-2 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 ring-2 ring-[#0a0f1d]"
+          className="flex flex-col items-center justify-center -top-3 relative px-3 py-2 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 ring-2 ring-[#0a0f1d] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
         >
           <Radio className="w-5 h-5" />
           <span className="text-[9px] font-bold mt-0.5">Scan</span>
         </button>
 
         <button
+          type="button"
+          aria-current={activeMobileView === 'guardbook' ? 'page' : undefined}
           onClick={() => setActiveMobileView('guardbook')}
           className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-[10px] font-semibold transition ${
             activeMobileView === 'guardbook' ? 'text-blue-400' : 'text-slate-400 hover:text-slate-200'
-          }`}
+          } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-inset`}
         >
           <BookOpen className="w-4 h-4 mb-0.5" />
           <span>Wachbuch</span>
         </button>
 
         <button
+          type="button"
+          aria-current={activeMobileView === 'handover' ? 'page' : undefined}
           onClick={() => setActiveMobileView('handover')}
           className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-[10px] font-semibold transition ${
             activeMobileView === 'handover' ? 'text-blue-400' : 'text-slate-400 hover:text-slate-200'
-          }`}
+          } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-inset`}
         >
           <FileCheck2 className="w-4 h-4 mb-0.5" />
           <span>Übergabe</span>

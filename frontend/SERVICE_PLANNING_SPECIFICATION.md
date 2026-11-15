@@ -1,6 +1,6 @@
 # Technische Spezifikation: Dienstplanung
 
-**Status (14.11.2026):** Phase 2 und die Planungs-PRs #16–#19 sind in `main` integriert. Konfigurierbare Tages-, Wochen- und Monatsarbeitszeitregeln aus PRs #33 und #36 sind implementiert und fokussiert getestet. Das System ist nicht produktionsabgenommen und trifft keine Rechtskonformitätsaussage.
+**Status (15.11.2026):** Phase 2 und die Planungs-PRs #16–#19 sind in `main` integriert. Konfigurierbare Tages-, Wochen- und Monatsarbeitszeitregeln aus PRs #33 und #36 sind implementiert und fokussiert getestet. `main` steht auf `556d7b7812f9f8005ae5fc6ea6f2f73ef5efadae`; die aktuelle CI war erfolgreich. Das System ist nicht produktionsabgenommen und trifft keine Rechtskonformitätsaussage.
 **Ausgangslage:** Das Phase-2-Backend erweitert `shifts` um aufgelöste Zeitpunkte, Planungsstatus, Mindestbesetzung, Revisionen und Prüf-/Auditdaten. Die API-Verträge, Berechtigungen und bekannten Grenzen stehen in [SERVICE_PLANNING_API.md](./backend/SERVICE_PLANNING_API.md); verifizierte PR-/CI-Stände, Frontend-Umfang, Audits und offene Grenzen in [PHASE_2_FINAL_COMPLETION_REPORT.md](../PHASE_2_FINAL_COMPLETION_REPORT.md).
 
 ## Aktueller Implementierungsstand

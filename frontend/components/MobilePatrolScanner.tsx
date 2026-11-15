@@ -596,10 +596,19 @@ export const MobilePatrolScanner: React.FC = () => {
       routeVersion: route?.currentVersion,
       startedAt
     };
+    const localRound: PatrolRound = {
+      id: roundId,
+      site_id: siteId,
+      route_id: route?.id ?? null,
+      route_version: route?.currentVersion ?? null,
+      status: 'in_progress',
+      started_at: startedAt,
+      localStatus: 'in_progress'
+    };
     let localCacheWarning: string | null = null;
     let queuedOffline = !isOnline;
     try {
-      let round: PatrolRound;
+      let round = localRound;
       if (isOnline) {
         try {
           round = await apiClient.post<PatrolRound>('/patrol/rounds', {
@@ -621,15 +630,7 @@ export const MobilePatrolScanner: React.FC = () => {
           payload: { recordType: 'round_start', ...roundPayload },
           baseVersion: 1
         });
-        round = {
-          id: roundId,
-          site_id: siteId,
-          route_id: route?.id ?? null,
-          route_version: route?.currentVersion ?? null,
-          status: 'in_progress',
-          started_at: startedAt,
-          localStatus: 'in_progress'
-        };
+        round = localRound;
       }
       try {
         await offlineVault.savePatrolRound({

@@ -240,6 +240,14 @@ export async function updateHandoverTask(
     throw statusError(409, 'Die Aufgabe wurde zwischenzeitlich geändert. Bitte aktualisieren und erneut versuchen.');
   }
 
+  if (input.assignedEmployeeId !== undefined) {
+    const assigned = await db.query(
+      'SELECT 1 FROM employees WHERE tenant_id=$1 AND id=$2',
+      [tenantId, input.assignedEmployeeId]
+    );
+    if (!assigned.rows.length) throw statusError(404, 'Zuständige Person wurde im aktuellen Mandanten nicht gefunden.');
+  }
+
   const nextStatus = input.status ?? task.status;
   const completedAt = ['done', 'cancelled'].includes(nextStatus)
     ? (task.completed_at || new Date())
