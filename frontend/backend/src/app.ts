@@ -55,7 +55,7 @@ const corsOptions: CorsOptions = {
     if (env.ALLOWED_CORS_ORIGINS.includes(origin)) {
       return callback(null, true);
     }
-    callback(new Error(`CORS blockiert: Herkunft "${origin}" ist nicht in der Whitelist autorisiert.`));
+    callback(Object.assign(new Error('Origin nicht zugelassen.'), { statusCode: 403 }));
   },
   credentials: true,
   // Muss alle tatsächlich registrierten API-Methoden enthalten.
