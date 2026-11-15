@@ -273,8 +273,12 @@ function mapClientRow(row: any, tenantId: string): Client {
     address: asString(row.address),
     contractStart: asString(row.contract_start ?? row.contractStart),
     contractEnd: asString(row.contract_end ?? row.contractEnd),
-    contractAutoRenew: true,
-    noticePeriodMonths: 3,
+    contractAutoRenew: typeof row.contract_auto_renew === 'boolean'
+      ? row.contract_auto_renew
+      : typeof row.contractAutoRenew === 'boolean'
+        ? row.contractAutoRenew
+        : true,
+    noticePeriodMonths: asNumber(row.notice_period_months ?? row.noticePeriodMonths, 3),
     slaLevel: (row.sla_level ?? row.slaLevel ?? 'Gold (24/7 Vor-Ort)') as unknown as Client['slaLevel'],
     billingStatus: (row.billing_status ?? row.billingStatus ?? 'Regulär') as unknown as Client['billingStatus'],
     assignedSiteCount: asNumber(row.assigned_site_count, 0),
@@ -319,7 +323,17 @@ function mapEmployeeRow(row: any, tenantId: string): Employee {
     role: (row.role ?? 'Wachdienstmitarbeiter') as unknown as Employee['role'],
     status: (row.status ?? 'Aktiv') as unknown as Employee['status'],
     weeklyHours: asNumber(row.weekly_hours, 40),
-    qualifications: (row.qualifications || []).map((q: any) => ({ id: asString(q.id), type: asString(q.qualification_type ?? q.type) as Qualification['type'], issueDate: asString(q.issue_date ?? q.issueDate), expiryDate: asString(q.expiry_date ?? q.expiryDate), certificateNumber: asString(q.certificate_number ?? q.certificateNumber), verified: Boolean(q.verified), status: qualificationStatus(q.status), documentReference: q.document_reference ?? q.documentReference ?? undefined, revisionVersion: asNumber(q.revision_version ?? q.revisionVersion, 1) })),
+    qualifications: (row.qualifications || []).map((q: any) => ({
+      id: asString(q.id),
+      type: asString(q.qualification_type ?? q.type) as Qualification['type'],
+      issueDate: asString(q.issue_date ?? q.issueDate),
+      expiryDate: typeof (q.expiry_date ?? q.expiryDate) === 'string' ? q.expiry_date ?? q.expiryDate : null,
+      certificateNumber: asString(q.certificate_number ?? q.certificateNumber),
+      verified: Boolean(q.verified),
+      status: qualificationStatus(q.status),
+      documentReference: q.document_reference ?? q.documentReference ?? undefined,
+      revisionVersion: asNumber(q.revision_version ?? q.revisionVersion, 1)
+    })),
     absences: (row.absences || []).map((a: any) => ({ id: asString(a.id), type: a.absence_type === 'VACATION' ? 'Urlaub' : a.absence_type === 'SICKNESS' ? 'Krankheit' : asString(a.type, 'Sonstige') as any, startDate: asString(a.date_from ?? a.startDate), endDate: asString(a.date_to ?? a.endDate), approved: a.status === 'APPROVED' || Boolean(a.approved), status: a.status ?? (a.approved ? 'APPROVED' : 'PENDING'), revisionVersion: asNumber(a.revision_version ?? a.revisionVersion, 1), notes: a.notes ?? '' })),
     assignedSiteIds: (row.assigned_site_ids ?? row.assignedSiteIds ?? []).map((id: unknown) => asString(id)),
     hourlyRate: asNumber(row.hourly_rate, 0),
@@ -659,6 +673,8 @@ interface SecurityOpsStore {
   setDocuments: (documents: ManagedDocument[]) => void;
   patrolScans: PatrolScanEvent[];
   shiftHandovers: ShiftHandoverProtocol[];
+  shiftSwaps: ShiftSwapRequest[];
+  reportDefinitions: ReportDefinition[];
 
   // Tenant-Partitioned Selectors
   getTenantClients: () => Client[];
@@ -674,6 +690,9 @@ interface SecurityOpsStore {
   getTenantDocuments: () => ManagedDocument[];
   getTenantPatrolScans: () => PatrolScanEvent[];
   getTenantShiftHandovers: () => ShiftHandoverProtocol[];
+  getTenantShiftSwaps: () => ShiftSwapRequest[];
+  getTenantReportDefinitions: () => ReportDefinition[];
+  calculateTenantKPIs: () => ControllingKPIs;
   getTenantAutomations: () => AutomationRule[];
   getTenantAuditLogs: () => SecurityAuditEntry[];
   getTenantExecutionLogs: () => AutomationExecutionLog[];
@@ -697,6 +716,9 @@ interface SecurityOpsStore {
   reviewAbsence: (employeeId: string, absenceId: string, decision: 'APPROVED' | 'REJECTED') => Promise<void>;
   addShift: (shift: Omit<Shift, 'id' | 'tenantId'>) => Promise<void>;
   assignShiftEmployee: (shiftId: string, employeeId: string, employeeName: string) => Promise<void>;
+  addShiftSwapRequest: (request: Omit<ShiftSwapRequest, 'id' | 'tenantId' | 'status' | 'requestedAt'>) => void;
+  addReportDefinition: (definition: Omit<ReportDefinition, 'id' | 'createdAt'>) => void;
+  deleteReportDefinition: (id: string) => void;
   addGuardBookEntry: (entry: Omit<GuardBookEntry, 'id' | 'timestamp' | 'tenantId'>) => Promise<void>;
   updateGuardBookStage: (id: string, stage: GuardBookEntry['stage'], note?: string) => void;
   resolveGuardBookEntry: (id: string, note: string) => void;
@@ -740,6 +762,8 @@ function emptyTenantData(): Partial<SecurityOpsStore> {
     pendingSOPAcknowledgements: [],
     patrolScans: [],
     shiftHandovers: [],
+    shiftSwaps: [],
+    reportDefinitions: [],
     auditLogs: [],
     activeSessions: [],
     notificationDeliveries: [],
@@ -1033,6 +1057,8 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       hasMoreAlarmIncidents: false,
       isLoadingMoreAlarmIncidents: false,
       pendingAlarmMutations: [],
+      shiftSwaps: [],
+      reportDefinitions: [],
       pendingSOPAcknowledgements: []
     });
 
@@ -2043,6 +2069,8 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   setDocuments: (documents) => set({ documents }),
   patrolScans: [],
   shiftHandovers: [],
+  shiftSwaps: [],
+  reportDefinitions: [],
 
   getTenantClients: () => {
     const { clients, currentTenantId } = get();
@@ -2097,6 +2125,85 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
     const { shiftHandovers, currentTenantId } = get();
     return shiftHandovers.filter((handover) => handover.tenantId === currentTenantId);
   },
+  getTenantShiftSwaps: () => {
+    const { shiftSwaps, currentTenantId } = get();
+    return shiftSwaps.filter((swap) => swap.tenantId === currentTenantId);
+  },
+  getTenantReportDefinitions: () => {
+    const { reportDefinitions, currentTenantId } = get();
+    return reportDefinitions.filter((definition) => definition.tenantId === currentTenantId);
+  },
+  calculateTenantKPIs: () => {
+    const state = get();
+    const clients = state.getTenantClients();
+    const sites = state.getTenantSites();
+    const employees = state.getTenantEmployees();
+    const shifts = state.getTenantShifts();
+    const guardBook = state.getTenantGuardBook();
+    const alarmIncidents = state.getTenantAlarmIncidents();
+    const keys = state.getTenantKeys();
+    const tasks = state.getTenantTasks();
+    const today = Date.now();
+    const daysUntil = (date: string) => {
+      const timestamp = Date.parse(date);
+      return Number.isFinite(timestamp) ? (timestamp - today) / 86_400_000 : Number.POSITIVE_INFINITY;
+    };
+    const shiftHours = (start: string, end: string) => {
+      const toMinutes = (value: string) => {
+        const [hours, minutes] = value.split(':').map(Number);
+        return Number.isFinite(hours) && Number.isFinite(minutes) ? hours * 60 + minutes : null;
+      };
+      const startMinutes = toMinutes(start);
+      const endMinutes = toMinutes(end);
+      if (startMinutes === null || endMinutes === null) return 0;
+      return ((endMinutes - startMinutes + 1_440) % 1_440) / 60;
+    };
+    const totalPlannedHours = shifts.reduce((total, shift) =>
+      total + shiftHours(shift.startTime, shift.endTime), 0);
+    const totalActualHours = shifts.reduce((total, shift) => {
+      if (shift.actualStart && shift.actualEnd) {
+        const start = Date.parse(shift.actualStart);
+        const end = Date.parse(shift.actualEnd);
+        if (Number.isFinite(start) && Number.isFinite(end) && end >= start) {
+          return total + (end - start) / 3_600_000;
+        }
+      }
+      return total + (shift.status === 'Besetzt' || shift.status === 'Abgeschlossen'
+        ? shiftHours(shift.startTime, shift.endTime)
+        : 0);
+    }, 0);
+    const overdueTasksCount = tasks.filter(task =>
+      task.status !== 'Erledigt' && daysUntil(task.dueDate) < 0
+    ).length;
+    const expiringQualificationsCount = employees.reduce((total, employee) =>
+      total + employee.qualifications.filter(qualification =>
+        qualification.expiryDate !== null &&
+        daysUntil(qualification.expiryDate) >= 0 &&
+        daysUntil(qualification.expiryDate) <= 30
+      ).length, 0);
+    const expiringContractsCount = clients.filter(client =>
+      daysUntil(client.contractEnd) >= 0 && daysUntil(client.contractEnd) <= 90
+    ).length;
+    return {
+      activeClientsCount: clients.length,
+      activeSitesCount: sites.filter(site => !site.archivedAt).length,
+      activeEmployeesCount: employees.filter(employee => employee.status === 'Aktiv').length,
+      totalPlannedHours,
+      totalActualHours,
+      planFulfillmentRate: totalPlannedHours > 0 ? Math.round(totalActualHours / totalPlannedHours * 100) : 0,
+      openCriticalIncidentsCount: guardBook.filter(entry =>
+        entry.priority === 'Kritisch' && !entry.resolved
+      ).length + alarmIncidents.filter(incident =>
+        incident.severity === 'Kritisch' && incident.status !== 'abgeschlossen' && incident.status !== 'archiviert'
+      ).length,
+      overdueTasksCount,
+      expiringContractsCount,
+      expiringQualificationsCount,
+      activeAlarmsCount: sites.reduce((total, site) => total + site.activeAlarms, 0),
+      overdueKeysCount: keys.filter(key => key.isOverdue).length,
+      din77200ComplianceScore: state.getCurrentTenant().din77200Certified ? 100 : 0
+    };
+  },
   getTenantAutomations: () => {
     const { automations, currentTenantId } = get();
     return automations.filter((a) => !a.tenantId || a.tenantId === currentTenantId);
@@ -2112,6 +2219,41 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   getTenantNotificationDeliveries: () => {
     const { notificationDeliveries, currentTenantId } = get();
     return (notificationDeliveries || []).filter((nd) => nd.tenantId === currentTenantId);
+  },
+
+  addShiftSwapRequest: (request) => {
+    set((state) => ({
+      shiftSwaps: [{
+        ...request,
+        id: typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `swap-${Date.now()}`,
+        tenantId: state.currentTenantId,
+        status: 'ANGEFRAGT',
+        requestedAt: new Date().toISOString()
+      }, ...state.shiftSwaps]
+    }));
+  },
+
+  addReportDefinition: (definition) => {
+    set((state) => ({
+      reportDefinitions: [{
+        ...definition,
+        id: typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `report-${Date.now()}`,
+        tenantId: state.currentTenantId,
+        createdAt: new Date().toISOString()
+      }, ...state.reportDefinitions]
+    }));
+  },
+
+  deleteReportDefinition: (id) => {
+    set((state) => ({
+      reportDefinitions: state.reportDefinitions.filter(definition =>
+        definition.id !== id || definition.tenantId !== state.currentTenantId
+      )
+    }));
   },
 
   addClient: async (c) => {
@@ -2134,6 +2276,8 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         address: c.address,
         contractStart: c.contractStart,
         contractEnd: c.contractEnd,
+        contractAutoRenew: c.contractAutoRenew,
+        noticePeriodMonths: c.noticePeriodMonths,
         slaLevel: c.slaLevel
       });
 
@@ -2148,6 +2292,8 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
           address: c.address,
           contract_start: c.contractStart,
           contract_end: c.contractEnd,
+          contract_auto_renew: c.contractAutoRenew,
+          notice_period_months: c.noticePeriodMonths,
           sla_level: c.slaLevel,
           billing_status: c.billingStatus
         },

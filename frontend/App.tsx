@@ -1,35 +1,36 @@
-import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
+import React, { lazy, Suspense, useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { useSecurityStore } from './store';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
-import { Dashboard } from './components/Dashboard';
-import { GuardBookModule } from './components/GuardBookModule';
-import { RosterModule } from './components/RosterModule';
-import { SitesModule } from './components/SitesModule';
-import { ClientsModule } from './components/ClientsModule';
-import { EmployeesModule } from './components/EmployeesModule';
-import { SOPModule } from './components/SOPModule';
-import { AlarmsModule } from './components/AlarmsModule';
-import { HandoversModule } from './components/HandoversModule';
-import { PatrolModule } from './components/PatrolModule';
-import { KeysModule } from './components/KeysModule';
-import { TasksModule } from './components/TasksModule';
-import { DocumentsModule } from './components/DocumentsModule';
-import { AutomationCenter } from './components/AutomationCenter';
-import { ReportsModule } from './components/ReportsModule';
-import { ArchitectureCenter } from './components/ArchitectureCenter';
-import { SecurityAuditCenter } from './components/SecurityAuditCenter';
-import { E2EAcceptanceCenter } from './components/E2EAcceptanceCenter';
-import { BackendLiveConsole } from './components/BackendLiveConsole';
-import { MobileAppShell } from './components/MobileAppShell';
-import { IllustratedUserGuide } from './components/IllustratedUserGuide';
 import { SyncManagerModal } from './components/SyncManagerModal';
 import { ModuleManager } from './components/ModuleManager';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
 import { NotificationCenterModal } from './components/NotificationCenterModal';
-import { UserAdministration } from './components/UserAdministration';
 import { LoginScreen } from './components/LoginScreen';
 import { X, AlertTriangle, RotateCcw } from 'lucide-react';
+
+const Dashboard = lazy(() => import('./components/Dashboard').then(({ Dashboard }) => ({ default: Dashboard })));
+const GuardBookModule = lazy(() => import('./components/GuardBookModule').then(({ GuardBookModule }) => ({ default: GuardBookModule })));
+const RosterModule = lazy(() => import('./components/RosterModule').then(({ RosterModule }) => ({ default: RosterModule })));
+const SitesModule = lazy(() => import('./components/SitesModule').then(({ SitesModule }) => ({ default: SitesModule })));
+const ClientsModule = lazy(() => import('./components/ClientsModule').then(({ ClientsModule }) => ({ default: ClientsModule })));
+const EmployeesModule = lazy(() => import('./components/EmployeesModule').then(({ EmployeesModule }) => ({ default: EmployeesModule })));
+const SOPModule = lazy(() => import('./components/SOPModule').then(({ SOPModule }) => ({ default: SOPModule })));
+const AlarmsModule = lazy(() => import('./components/AlarmsModule').then(({ AlarmsModule }) => ({ default: AlarmsModule })));
+const HandoversModule = lazy(() => import('./components/HandoversModule').then(({ HandoversModule }) => ({ default: HandoversModule })));
+const PatrolModule = lazy(() => import('./components/PatrolModule').then(({ PatrolModule }) => ({ default: PatrolModule })));
+const KeysModule = lazy(() => import('./components/KeysModule').then(({ KeysModule }) => ({ default: KeysModule })));
+const TasksModule = lazy(() => import('./components/TasksModule').then(({ TasksModule }) => ({ default: TasksModule })));
+const DocumentsModule = lazy(() => import('./components/DocumentsModule').then(({ DocumentsModule }) => ({ default: DocumentsModule })));
+const AutomationCenter = lazy(() => import('./components/AutomationCenter').then(({ AutomationCenter }) => ({ default: AutomationCenter })));
+const ReportsModule = lazy(() => import('./components/ReportsModule').then(({ ReportsModule }) => ({ default: ReportsModule })));
+const ArchitectureCenter = lazy(() => import('./components/ArchitectureCenter').then(({ ArchitectureCenter }) => ({ default: ArchitectureCenter })));
+const SecurityAuditCenter = lazy(() => import('./components/SecurityAuditCenter').then(({ SecurityAuditCenter }) => ({ default: SecurityAuditCenter })));
+const E2EAcceptanceCenter = lazy(() => import('./components/E2EAcceptanceCenter').then(({ E2EAcceptanceCenter }) => ({ default: E2EAcceptanceCenter })));
+const BackendLiveConsole = lazy(() => import('./components/BackendLiveConsole').then(({ BackendLiveConsole }) => ({ default: BackendLiveConsole })));
+const IllustratedUserGuide = lazy(() => import('./components/IllustratedUserGuide').then(({ IllustratedUserGuide }) => ({ default: IllustratedUserGuide })));
+const UserAdministration = lazy(() => import('./components/UserAdministration').then(({ UserAdministration }) => ({ default: UserAdministration })));
+const MobileAppShell = lazy(() => import('./components/MobileAppShell').then(({ MobileAppShell }) => ({ default: MobileAppShell })));
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -239,7 +240,15 @@ export default function App(): React.ReactNode {
               </div>
             )}
             <ErrorBoundary>
-              {renderActiveModule()}
+              <Suspense
+                fallback={
+                  <div className="p-4 text-sm text-slate-400" role="status">
+                    Modul wird geladen…
+                  </div>
+                }
+              >
+                {renderActiveModule()}
+              </Suspense>
             </ErrorBoundary>
           </main>
         </div>

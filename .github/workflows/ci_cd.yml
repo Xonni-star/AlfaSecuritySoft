@@ -21,11 +21,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Quellstand des erfolgreichen CI-Laufs auschecken
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+
       - name: Frontend-Build herunterladen
         uses: actions/download-artifact@v4
         with:
           name: frontend-dist
-          path: release/frontend
+          path: ci-artifacts/frontend
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -33,15 +39,33 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: backend-dist
-          path: release/backend
+          path: ci-artifacts/backend
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Release-Paket mit Builds und Installationskontext zusammenstellen
+        env:
+          RELEASE_COMMIT: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+          mkdir -p release
+          git archive --format=tar HEAD frontend | tar -xf - -C release
+          mkdir -p release/frontend/dist release/frontend/backend/dist
+          cp -R ci-artifacts/frontend/. release/frontend/dist/
+          cp -R ci-artifacts/backend/. release/frontend/backend/dist/
+          test -f release/frontend/backend/dist/migrations/runner.js
+          test -n "$(find release/frontend/backend/dist/migrations -maxdepth 1 -name '*.sql' -print -quit)"
+
       - name: Build-Manifest erzeugen
+        env:
+          RELEASE_COMMIT: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_RUN_ID: ${{ github.event.workflow_run.id }}
+          RELEASE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
         run: |
           {
-            echo "commit=${{ github.event.workflow_run.head_sha }}"
-            echo "ci_run_id=${{ github.event.workflow_run.id }}"
+            echo "commit=$RELEASE_COMMIT"
+            echo "ci_run_id=$RELEASE_RUN_ID"
+            echo "ci_run_attempt=$RELEASE_RUN_ATTEMPT"
             echo "created_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           } > release/BUILD-MANIFEST.txt
 
@@ -52,3 +76,36 @@ jobs:
           path: release
           if-no-files-found: error
           retention-days: 30
+
+  validate-release-artifact:
+    name: Release-Artefakt extrahieren und prüfen
+    needs: package-artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Prüfschema des CI-Quellstands auschecken
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+
+      - name: Node.js für Installationsprüfung einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Release-Artefakt herunterladen und extrahieren
+        uses: actions/download-artifact@v4
+        with:
+          name: securityops-release-${{ github.event.workflow_run.head_sha }}
+          path: extracted-release
+
+      - name: Kritische Dateien und CI-Provenienz prüfen
+        env:
+          EXPECTED_COMMIT: ${{ github.event.workflow_run.head_sha }}
+          EXPECTED_RUN_ID: ${{ github.event.workflow_run.id }}
+          EXPECTED_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: node scripts/ci/verify-release-artifact.mjs extracted-release
+
+      - name: Backend-Produktionsabhängigkeiten sauber aus dem Paket installieren
+        run: npm ci --omit=dev --prefix extracted-release/frontend/backend

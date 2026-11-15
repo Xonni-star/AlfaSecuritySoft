@@ -28,3 +28,5 @@ Die PostgreSQL-API führt die Handover-Migrationen über den Backend-Migrationsr
 ## Benutzer- und Rechteverwaltung
 
 Die aktuelle Benutzer-/Rollenverwaltung im Entwicklungs-Branch wird durch Backend-Migration `033_tenant_user_role_administration.sql` ergänzt. Sie nutzt tenantgebundene Datensätze, PostgreSQL RLS/FORCE RLS und API-Prüfungen; aktuelle Einsatz-/Abnahmegrenzen stehen in [USER_ADMINISTRATION_API.md](./USER_ADMINISTRATION_API.md). Reset-Tokens werden nicht automatisch per E-Mail zugestellt.
+
+Für Dokumente prüfen Migration `037_document_relationship_scope_enforcement.sql` und `038_document_responsible_user_scope.sql` zusätzlich den Site-Scope verknüpfter Dokumente und Änderungen am verantwortlichen Benutzer. PR #42 ist in `main` integriert. Diese Datenbankprüfungen ersetzen weder die serverseitige API-Autorisierung noch eine Produktionsabnahme.

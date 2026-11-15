@@ -120,6 +120,9 @@ jobs:
       - name: Abhängigkeiten installieren
         run: npm ci
 
+      - name: Strikte Frontend-Typprüfung
+        run: npm run typecheck
+
       - name: Vitest-Tests ausführen
         run: npm test
 
@@ -191,6 +194,11 @@ jobs:
 
       - name: TypeScript-Build
         run: npm run build
+
+      - name: SQL-Migrationen für den kompilierten Runner bereitstellen
+        run: |
+          mkdir -p dist/migrations
+          cp src/migrations/*.sql dist/migrations/
 
       - name: Datenbankmigrationen (secops_admin)
         run: npm run migrate

@@ -21,8 +21,10 @@ const SOP_REVIEWER_EMAIL = `sop-reviewer-${Date.now()}@example.test`;
 const SOP_APPROVER_EMAIL = `sop-approver-${Date.now()}@example.test`;
 const SOP_EMPLOYEE_EMAIL = `sop-employee-${Date.now()}@example.test`;
 const clientNumber = `API-TEST-${Date.now()}`;
+const workflowClientNumber = `API-WORKFLOW-${Date.now()}`;
 const siteCode = `API-SITE-${Date.now()}`;
 const personnelNumber = `API-MA-${Date.now()}`;
+let createdWorkflowCustomerId: string | undefined;
 let createdSiteId: string | undefined;
 let createdEmployeeId: string | undefined;
 let createdSyncedEmployeeId: string | undefined;
@@ -355,6 +357,7 @@ afterAll(async () => {
   await migrationPool.query('DELETE FROM employees WHERE id = $1 OR personnel_number = $2', [createdEmployeeId ?? null, personnelNumber]);
   await migrationPool.query('DELETE FROM employees WHERE id = $1', [createdSyncedEmployeeId ?? null]);
   await migrationPool.query('DELETE FROM sites WHERE id = $1 OR site_code = $2', [createdSiteId ?? null, siteCode]);
+  await migrationPool.query('DELETE FROM clients WHERE id = $1 OR client_number = $2', [createdWorkflowCustomerId ?? null, workflowClientNumber]);
   await migrationPool.query('DELETE FROM clients WHERE client_number = ANY($1::text[])', [[`${clientNumber}-ARCH`, `${clientNumber}-OFF`]]);
   await migrationPool.query('DELETE FROM clients WHERE client_number = $1', [clientNumber]);
   await migrationPool.query('DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE email = $1)', [
@@ -497,11 +500,22 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
   test('4. Objekt und Mitarbeiter werden gespeichert, nach erneutem Login geladen und aktualisiert', async () => {
     const token = await login(SEED_USER_EMAIL);
 
-    const customersResponse = await request(app)
-      .get('/api/v1/customers')
-      .set(authHeaders(token));
-    expect(customersResponse.status).toBe(200);
-    const clientId = customersResponse.body.data[0].id as string;
+    const customerResponse = await request(app)
+      .post('/api/v1/customers')
+      .set(authHeaders(token))
+      .send({
+        clientNumber: workflowClientNumber,
+        companyName: 'API Workflow Customer',
+        contactPerson: 'Workflow Contact',
+        email: 'workflow.customer@example.test',
+        phone: '+49 69 999',
+        address: 'Workflowweg 1, 60311 Frankfurt',
+        contractStart: '2026-01-01',
+        contractEnd: '2028-12-31'
+      });
+    expect(customerResponse.status).toBe(201);
+    createdWorkflowCustomerId = customerResponse.body.data.id;
+    const clientId = createdWorkflowCustomerId!;
 
     const siteResponse = await request(app)
       .post('/api/v1/sites')
@@ -554,7 +568,28 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
       .get('/api/v1/sites')
       .set(authHeaders(secondToken));
     expect(sitesResponse.body.data).toEqual(
-      expect.arrayContaining([expect.objectContaining({ site_code: siteCode, name: 'API Testobjekt' })])
+      expect.arrayContaining([
+        expect.objectContaining({
+          site_code: siteCode,
+          name: 'API Testobjekt',
+          client_id: clientId,
+          client_name: 'API Workflow Customer'
+        })
+      ])
+    );
+
+    const customersResponse = await request(app)
+      .get('/api/v1/customers')
+      .set(authHeaders(secondToken));
+    expect(customersResponse.status).toBe(200);
+    expect(customersResponse.body.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: clientId,
+          client_number: workflowClientNumber,
+          company_name: 'API Workflow Customer'
+        })
+      ])
     );
 
     const employeesResponse = await request(app)
@@ -562,7 +597,12 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
       .set(authHeaders(secondToken));
     expect(employeesResponse.body.data).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ personnel_number: personnelNumber, status: 'Urlaub' })
+        expect.objectContaining({
+          id: createdEmployeeId,
+          personnel_number: personnelNumber,
+          status: 'Urlaub',
+          assigned_site_ids: [createdSiteId]
+        })
       ])
     );
   });

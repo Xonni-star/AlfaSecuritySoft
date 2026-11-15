@@ -73,6 +73,8 @@ Die Kontozuordnung akzeptiert `{ "userId": "UUID oder null", "revisionVersion": 
 
 Eine spätere Entwurfsänderung benötigt `expectedVersion`. Aufgabenänderungen benötigen ebenfalls `expectedVersion`; Statuswerte sind `open`, `in_progress`, `done` und `cancelled`. Erledigte/abgebrochene Aufgaben erhalten ein serverseitiges `completed_at`. Nicht abgeschlossene Aufgaben bleiben beim Ursprungsprotokoll und werden für Folgeübergaben desselben Objekts als weitergeführt zurückgegeben.
 
+Bei einer späteren Aufgabenänderung wird ein neu gesetzter `assignedEmployeeId` serverseitig gegen Mitarbeiter desselben Mandanten geprüft. Nicht vorhandene oder fremdmandantige Mitarbeiterzuordnungen werden abgewiesen; ein nicht übermittelter Wert lässt die bisherige Zuweisung unverändert.
+
 ## Offline-Synchronisierung
 
 Die Oberfläche speichert eine neue Übergabe zuerst in `SecurityOps2_OfflineVault.outbox` und sendet sie danach an:

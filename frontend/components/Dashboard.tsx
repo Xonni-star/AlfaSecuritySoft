@@ -55,6 +55,7 @@ export const Dashboard: React.FC = () => {
   const expiringQualifications = employees.flatMap((emp) =>
     emp.qualifications
       .filter((q) => {
+        if (q.expiryDate === null) return !q.verified;
         const exp = new Date(q.expiryDate).getTime();
         const now = new Date().getTime();
         const daysLeft = (exp - now) / (1000 * 3600 * 24);

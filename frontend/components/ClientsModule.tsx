@@ -32,6 +32,8 @@ export const ClientsModule: React.FC = () => {
       address,
       contractStart: new Date().toISOString().split('T')[0],
       contractEnd: '2028-12-31',
+      contractAutoRenew: true,
+      noticePeriodMonths: 3,
       slaLevel,
       billingStatus: 'Regulär',
       assignedSiteCount: 1

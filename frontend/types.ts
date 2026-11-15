@@ -35,7 +35,7 @@ export interface Qualification {
   id: string;
   type: QualificationType;
   issueDate: string;
-  expiryDate: string;
+  expiryDate: string | null;
   certificateNumber: string;
   verified: boolean;
   status?: 'GÜLTIG' | 'ABGELAUFEN' | 'AUSSTEHEND';
@@ -159,7 +159,7 @@ export interface Shift {
   endTime: string;
   type: 'Tagdienst' | 'Nachtdienst' | 'Revierdienst' | 'Sonderposten';
   status: 'Besetzt' | 'Offen' | 'Konflikt' | 'Abgeschlossen';
-  requiredQualification: QualificationType;
+  requiredQualification: string;
   actualStart?: string;
   actualEnd?: string;
   conflictReason?: string;
@@ -319,6 +319,32 @@ export interface AlarmType {
   isSystem: boolean;
   isActive: boolean;
 }
+
+export const AUTOMATION_TRIGGER_EVENTS = [
+  'QUALIFICATION_EXPIRING',
+  'CONTRACT_EXPIRING',
+  'KEY_OVERDUE',
+  'INCIDENT_CREATED',
+  'SHIFT_CONFLICT_DETECTED',
+  'SOP_UNACKNOWLEDGED'
+] as const;
+export type AutomationTriggerEvent = typeof AUTOMATION_TRIGGER_EVENTS[number];
+
+export const AUTOMATION_ACTION_TYPES = [
+  'CREATE_TASK',
+  'SEND_NOTIFICATION',
+  'ESCALATE_INCIDENT',
+  'SET_KEY_OVERDUE'
+] as const;
+export type ActionType = typeof AUTOMATION_ACTION_TYPES[number];
+
+export const AUTOMATION_CONDITION_OPERATORS = [
+  'LESS_THAN_DAYS',
+  'EQUALS',
+  'GREATER_THAN',
+  'IN_ARRAY'
+] as const;
+export type ConditionOperator = typeof AUTOMATION_CONDITION_OPERATORS[number];
 
 export interface AlarmSite {
   id: string;

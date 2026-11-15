@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../services/apiClient';
 import {
-  AlarmIncident, AlarmIncidentStatus, EmergencyPlan
+  AlarmIncident, AlarmIncidentStatus, AlarmType, EmergencyPlan
 } from '../types';
 import { useSecurityStore } from '../store';
 

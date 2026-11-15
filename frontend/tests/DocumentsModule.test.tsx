@@ -159,7 +159,7 @@ describe('DocumentsModule archive view', () => {
     });
 
     await act(async () => root.render(<DocumentsModule />));
-    const historyButton = container.querySelector('button[title="Versionshistorie"]');
+    const historyButton = container.querySelector<HTMLButtonElement>('button[title="Versionshistorie"]');
     await act(async () => historyButton?.click());
     const rescanButton = Array.from(container.querySelectorAll('button'))
       .find((button) => button.textContent?.includes('Erneut prüfen'));

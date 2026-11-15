@@ -14,11 +14,17 @@ vi.mock('../services/apiClient', () => {
 
   class ApiError extends Error {
     status: number;
+    errors?: string[];
     isNetworkError: boolean;
-    constructor(status: number, message: string, isNetworkError = false) {
+    code?: string;
+    data?: unknown;
+    constructor(status: number, message: string, errors?: string[], isNetworkError = false, code?: string, data?: unknown) {
       super(message);
       this.status = status;
+      this.errors = errors;
       this.isNetworkError = isNetworkError;
+      this.code = code;
+      this.data = data;
     }
   }
 
@@ -28,6 +34,7 @@ vi.mock('../services/apiClient', () => {
 import { useSecurityStore } from '../store';
 import { apiClient, ApiError } from '../services/apiClient';
 import { offlineVault, type StoredSOPAcknowledgement } from '../services/indexedDbService';
+import { UserRole, type SOPDocument } from '../types';
 
 const mockedApi = apiClient as unknown as {
   get: ReturnType<typeof vi.fn>;
@@ -99,32 +106,31 @@ const logbookRow = {
   resolved: false
 };
 
-function mockReadEndpoints(): void {
-  mockedApi.get.mockImplementation((endpoint: string) => {
-    switch (endpoint) {
-      case '/customers':
-        return Promise.resolve([customerRow]);
-      case '/sites':
-        return Promise.resolve([siteRow]);
-      case '/employees':
-        return Promise.resolve([employeeRow]);
-      case '/logbook':
-        return Promise.resolve([logbookRow]);
-      case '/shifts':
-        return Promise.resolve([]);
-      case '/keys':
-        return Promise.resolve([]);
-      case '/tasks':
-        return Promise.resolve([]);
-      case '/sops':
-        return Promise.resolve([]);
-      default:
-        return Promise.reject(new Error(`Unerwarteter Endpunkt: ${endpoint}`));
-    }
-  });
+function readEndpoint(endpoint: string): Promise<unknown> {
+  switch (endpoint) {
+    case '/customers':
+      return Promise.resolve([customerRow]);
+    case '/sites':
+      return Promise.resolve([siteRow]);
+    case '/employees':
+      return Promise.resolve([employeeRow]);
+    case '/logbook':
+      return Promise.resolve([logbookRow]);
+    case '/shifts':
+    case '/keys':
+    case '/tasks':
+    case '/sops':
+      return Promise.resolve([]);
+    default:
+      return Promise.reject(new Error(`Unerwarteter Endpunkt: ${endpoint}`));
+  }
 }
 
-function makeSOP(overrides: Record<string, unknown> = {}) {
+function mockReadEndpoints(): void {
+  mockedApi.get.mockImplementation(readEndpoint);
+}
+
+function makeSOP(overrides: Partial<SOPDocument> = {}): SOPDocument {
   return {
     id: 'sop-ack-test',
     assignmentId: 'assignment-ack-test',
@@ -178,6 +184,8 @@ beforeEach(() => {
     currentTenantId: 'tenant-frankfurt',
     currentUserId: 'user-regression',
     sops: [],
+    shiftSwaps: [],
+    reportDefinitions: [],
     pendingSOPAcknowledgements: [],
     isAuthenticated: false,
     isAuthenticating: false,
@@ -229,14 +237,13 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
 
   test('replays the authenticated outbox after restoring a session while already online', async () => {
     mockReadEndpoints();
-    const readEndpoint = mockedApi.get.getMockImplementation();
     mockedApi.get.mockImplementation((endpoint: string) => endpoint === '/auth/me'
       ? Promise.resolve({
         id: 'restored-user',
         tenantId: 'tenant-frankfurt',
         permissions: ['shifts:manage']
       })
-      : readEndpoint!(endpoint));
+      : readEndpoint(endpoint));
     const queued = {
       id: 'restored-shift-mutation',
       tenantId: 'tenant-frankfurt',
@@ -356,6 +363,123 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
         mutations: [expect.objectContaining({ clientUuid: mutation.id, payload: mutation.payload })]
       }));
       expect(await offlineVault.getOutbox(mutation.tenantId, undefined, mutation.userId)).toHaveLength(0);
+    } finally {
+      offlineVault.close();
+      Object.defineProperty(globalThis, 'indexedDB', {
+        configurable: true,
+        value: originalIndexedDB
+      });
+    }
+  });
+
+  test('retries a server-committed mutation after restart without applying its effect twice', async () => {
+    const originalIndexedDB = globalThis.indexedDB;
+    offlineVault.close();
+    Object.defineProperty(globalThis, 'indexedDB', {
+      configurable: true,
+      value: new IDBFactory()
+    });
+
+    const mutation = {
+      id: 'commit-before-ack-mutation',
+      tenantId: 'tenant-frankfurt',
+      userId: 'user-regression',
+      entityType: 'task' as const,
+      action: 'CREATE' as const,
+      payload: { title: 'Committed before browser restart' },
+      occurredAt: '2026-11-13T10:00:00.000Z',
+      baseVersion: 1
+    };
+    const idempotencyKey = `${mutation.tenantId}:${mutation.userId}:${mutation.id}`;
+    const committedEffects: Array<{ mutationId: string; payload: unknown }> = [];
+    const storedReceipts = new Map<string, { clientUuid: string; status: string; serverId: string; serverVersion: number }>();
+    mockedApi.post.mockImplementation(async (_endpoint: string, body: any) => {
+      const submitted = body.mutations[0];
+      let receipt = storedReceipts.get(idempotencyKey);
+      if (!receipt) {
+        committedEffects.push({ mutationId: submitted.clientUuid, payload: submitted.payload });
+        receipt = {
+          clientUuid: submitted.clientUuid,
+          status: 'SYNCED',
+          serverId: 'server-task-committed-once',
+          serverVersion: 1
+        };
+        storedReceipts.set(idempotencyKey, receipt);
+        throw new ApiError(0, 'Connection lost after server commit', undefined, true);
+      }
+      return [receipt];
+    });
+
+    try {
+      await offlineVault.enqueueMutation(mutation);
+      useSecurityStore.setState({
+        isOnline: true,
+        isAuthenticated: true,
+        currentTenantId: mutation.tenantId,
+        currentUserId: mutation.userId,
+        authUser: {
+          id: mutation.userId, email: '', fullName: '', role: '',
+          tenantId: mutation.tenantId, tenantName: '', permissions: ['tasks:manage']
+        }
+      });
+
+      const firstResult = await useSecurityStore.getState().triggerManualSync();
+
+      expect(firstResult).toMatchObject({ success: 0, failed: 1, conflicts: 0 });
+      expect(storedReceipts.get(idempotencyKey)).toMatchObject({
+        clientUuid: mutation.id,
+        status: 'SYNCED'
+      });
+      expect(await offlineVault.getOutbox(mutation.tenantId, undefined, mutation.userId)).toMatchObject([
+        expect.objectContaining({
+          id: mutation.id,
+          tenantId: mutation.tenantId,
+          userId: mutation.userId,
+          payload: mutation.payload,
+          status: 'FAILED',
+          retryable: true
+        })
+      ]);
+
+      offlineVault.close();
+      useSecurityStore.setState({
+        authUser: null,
+        isAuthenticated: false,
+        currentUserId: '',
+        syncQueue: []
+      });
+      useSecurityStore.setState({
+        isOnline: true,
+        isAuthenticated: true,
+        currentTenantId: mutation.tenantId,
+        currentUserId: mutation.userId,
+        authUser: {
+          id: mutation.userId, email: '', fullName: '', role: '',
+          tenantId: mutation.tenantId, tenantName: '', permissions: ['tasks:manage']
+        }
+      });
+
+      const retryResult = await useSecurityStore.getState().triggerManualSync({ retryFailed: true });
+
+      expect(retryResult).toMatchObject({ success: 1, failed: 0, conflicts: 0 });
+      expect(mockedApi.post).toHaveBeenCalledTimes(2);
+      const submittedMutations = mockedApi.post.mock.calls.map(([, body]) => (body as any).mutations[0]);
+      expect(submittedMutations[1]).toEqual(submittedMutations[0]);
+      expect(submittedMutations[1]).toMatchObject({
+        clientUuid: mutation.id,
+        entityType: mutation.entityType,
+        action: mutation.action,
+        clientTimestamp: mutation.occurredAt,
+        baseVersion: mutation.baseVersion,
+        payload: mutation.payload
+      });
+      expect(committedEffects).toEqual([{ mutationId: mutation.id, payload: mutation.payload }]);
+      expect(storedReceipts.get(idempotencyKey)).toMatchObject({
+        clientUuid: mutation.id,
+        status: 'SYNCED',
+        serverId: 'server-task-committed-once'
+      });
+      expect(await offlineVault.getOutbox(mutation.tenantId, undefined, mutation.userId)).toEqual([]);
     } finally {
       offlineVault.close();
       Object.defineProperty(globalThis, 'indexedDB', {
@@ -1023,7 +1147,6 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
       actions: [{ type: 'NOTIFY_MANAGER' }],
       active: true,
       category: 'Wachbuch',
-      actionsTriggeredCount: 0
     });
     const rule = useSecurityStore.getState().getTenantAutomations()[0];
     expect(rule.tenantId).toBe('tenant-frankfurt');
@@ -1031,6 +1154,62 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
 
     useSecurityStore.getState().toggleAutomationRule(rule.id);
     expect(useSecurityStore.getState().getTenantAutomations()[0].active).toBe(false);
+  });
+
+  test('mobile shift swaps and report definitions are tenant scoped', () => {
+    useSecurityStore.setState({
+      currentTenantId: 'tenant-frankfurt',
+      clients: [],
+      sites: [],
+      employees: [],
+      shifts: [],
+      guardBook: [],
+      keys: [],
+      tasks: [],
+      shiftSwaps: [],
+      reportDefinitions: []
+    });
+
+    useSecurityStore.getState().addShiftSwapRequest({
+      shiftId: 'shift-frankfurt',
+      requestingEmployeeId: 'employee-a',
+      requestingEmployeeName: 'Erika Muster',
+      targetEmployeeId: 'employee-b',
+      targetEmployeeName: 'Max Beispiel',
+      reason: 'Terminkonflikt'
+    });
+    useSecurityStore.getState().addReportDefinition({
+      tenantId: 'tenant-frankfurt',
+      name: 'Dienstplanübersicht',
+      description: 'Geplante Schichten',
+      category: 'GESCHAEFTSFUEHRUNG',
+      requiredRole: [UserRole.ADMIN],
+      dataSource: 'shifts',
+      selectedColumns: ['date'],
+      filterConfig: {}
+    });
+
+    const frankfurtSwap = useSecurityStore.getState().getTenantShiftSwaps()[0];
+    const frankfurtReport = useSecurityStore.getState().getTenantReportDefinitions()[0];
+    expect(frankfurtSwap).toMatchObject({
+      tenantId: 'tenant-frankfurt',
+      status: 'ANGEFRAGT',
+      requestingEmployeeId: 'employee-a'
+    });
+    expect(frankfurtReport).toMatchObject({
+      tenantId: 'tenant-frankfurt',
+      name: 'Dienstplanübersicht'
+    });
+
+    useSecurityStore.setState({ currentTenantId: 'tenant-bavaria' });
+    expect(useSecurityStore.getState().getTenantShiftSwaps()).toHaveLength(0);
+    expect(useSecurityStore.getState().getTenantReportDefinitions()).toHaveLength(0);
+    useSecurityStore.getState().deleteReportDefinition(frankfurtReport.id);
+    useSecurityStore.setState({ currentTenantId: 'tenant-frankfurt' });
+    expect(useSecurityStore.getState().getTenantReportDefinitions()).toHaveLength(1);
+    useSecurityStore.getState().deleteReportDefinition(frankfurtReport.id);
+    expect(useSecurityStore.getState().getTenantReportDefinitions()).toHaveLength(0);
+    expect(useSecurityStore.getState().calculateTenantKPIs().planFulfillmentRate).toBe(0);
   });
 
   test('2. addClient persistiert über POST /customers und übernimmt die Server-ID', async () => {
