@@ -9,6 +9,7 @@ export interface AuthenticatedUser {
   email: string;
   fullName: string;
   tenantId: string;
+  tenantName: string;
   role: string;
   permissions: string[];
   sitePermissions?: Array<{ code: string; siteId: string }>;
@@ -56,7 +57,7 @@ export async function authenticateJwt(req: Request, res: Response, next: NextFun
               OR (trp.data_scope = 'OWN' AND trp.site_id IS NULL))
             AND (tur.site_id IS NULL OR trp.site_id IS NULL OR tur.site_id = trp.site_id)
        )
-       SELECT s.user_id, s.tenant_id, u.email, tm.first_name, tm.last_name, u.is_active, u.is_locked,
+       SELECT s.user_id, s.tenant_id, t.name AS tenant_name, u.email, tm.first_name, tm.last_name, u.is_active, u.is_locked,
               u.is_superadmin, tm.is_active AS membership_active, tm.is_locked AS membership_locked,
               COALESCE(string_agg(DISTINCT ag.role_name, ', '), '') AS role_names,
               ag.permission_code, ag.site_id, ag.data_scope
@@ -66,7 +67,7 @@ export async function authenticateJwt(req: Request, res: Response, next: NextFun
          JOIN tenant_memberships tm ON tm.user_id = s.user_id AND tm.tenant_id = s.tenant_id
          LEFT JOIN auth_grants ag ON ag.user_id = s.user_id AND ag.tenant_id = s.tenant_id
         WHERE s.token_hash = $1 AND s.revoked = false AND s.expires_at > CURRENT_TIMESTAMP
-        GROUP BY s.user_id, s.tenant_id, u.email, tm.first_name, tm.last_name, u.is_active, u.is_locked, u.is_superadmin,
+        GROUP BY s.user_id, s.tenant_id, t.name, u.email, tm.first_name, tm.last_name, u.is_active, u.is_locked, u.is_superadmin,
                   tm.is_active, tm.is_locked, ag.permission_code, ag.site_id, ag.data_scope`,
       [tokenHash]
     ));
@@ -99,6 +100,7 @@ export async function authenticateJwt(req: Request, res: Response, next: NextFun
       email:row.email,
       fullName:`${row.first_name} ${row.last_name}`,
       tenantId:row.tenant_id,
+      tenantName:row.tenant_name,
       role:row.role_names,
       permissions,
       sitePermissions,
@@ -179,4 +181,16 @@ export function requireAnyPermission(...permissionCodes: string[]) {
       message: `Zugriff verweigert: Erforderlich ist eine der Berechtigungen ${permissionCodes.map(code => `'${code}'`).join(', ')}`
     });
   };
+}
+
+export function requireSuperAdmin(req: Request, res: Response, next: NextFunction): void {
+  if (req.user?.isSuperAdmin) {
+    next();
+    return;
+  }
+
+  res.status(403).json({
+    success: false,
+    message: 'Zugriff verweigert: Erforderlich ist ein Systemadministratorkonto.'
+  });
 }

@@ -28,7 +28,7 @@ function request(overrides: Partial<Request> = {}): Request {
     query: {},
     body: {},
     user: {
-      userId, tenantId, email: 'guard@example.test', fullName: 'Guard User', role: 'Objektleitung',
+      userId, tenantId, tenantName: 'Tenant A', email: 'guard@example.test', fullName: 'Guard User', role: 'Objektleitung',
       permissions,
       permissionGrants: userOverride?.permissionGrants ??
         permissions.map(code => ({ code, dataScope: 'TENANT' as const })),
@@ -78,7 +78,7 @@ describe('site-scoped alarm workflow', () => {
 
     await syncAlarmMutations(request({
       user: {
-        userId, tenantId, email: 'guard@example.test', fullName: 'Guard User', role: 'Objektleitung',
+        userId, tenantId, tenantName: 'Tenant A', email: 'guard@example.test', fullName: 'Guard User', role: 'Objektleitung',
         permissions: [...permissions], sessionHash: 'hash'
       },
       body: { mutations: [{ clientMutationId: `denied-${type}`, type, payload }] }
@@ -98,7 +98,7 @@ describe('site-scoped alarm workflow', () => {
 
     await withPermissionContext('alarm:report', () => reportAlarmIncidentV2(request({
       user: {
-        userId, tenantId, email: 'guard@example.test', fullName: 'Guard User', role: 'Einsatzleitung',
+        userId, tenantId, tenantName: 'Tenant A', email: 'guard@example.test', fullName: 'Guard User', role: 'Einsatzleitung',
         permissions: [],
         permissionGrants: [{ code: 'alarm:report', dataScope: 'SITE', siteId: outOfScopeSiteId }],
         sessionHash: 'hash'
@@ -117,7 +117,7 @@ describe('site-scoped alarm workflow', () => {
 
     await withPermissionContext('alarm:respond', () => transitionAlarmIncidentV2(request({
       user: {
-        userId, tenantId, email: 'lead@example.test', fullName: 'Lead User', role: 'Einsatzleitung',
+        userId, tenantId, tenantName: 'Tenant A', email: 'lead@example.test', fullName: 'Lead User', role: 'Einsatzleitung',
         permissions: ['alarm:read', 'alarm:respond'], sessionHash: 'hash'
       },
       body: { status: 'archiviert', note: 'Archiviert', revisionVersion: 1 }
@@ -134,7 +134,7 @@ describe('site-scoped alarm workflow', () => {
 
     await withPermissionContext('alarm:read', () => listRecentAlarmEvents(request({
       user: {
-        userId, tenantId, email: 'lead@example.test', fullName: 'Lead User', role: 'Einsatzleitung',
+        userId, tenantId, tenantName: 'Tenant A', email: 'lead@example.test', fullName: 'Lead User', role: 'Einsatzleitung',
         permissions: [],
         permissionGrants: [{ code: 'alarm:read', dataScope: 'SITE', siteId }],
         sessionHash: 'hash'

@@ -1,6 +1,8 @@
 # Phase 6 implementation report
 
-**Status:** Local Phase 6 implementation and verification completed. PR #46 is open and its hosted CI passed on the recorded PR head. No merge or deployment; production approval is **false / not approved**.
+**Historical snapshot:** This report records Phase 6 implementation and verification as of its original review, before PR #46 merged. The PR-open status and baseline below are historical and are superseded by the verified current status in [MAINLINE_INTEGRATION_STATUS.md](./MAINLINE_INTEGRATION_STATUS.md) and [PHASE_7_READINESS_REPORT.md](./PHASE_7_READINESS_REPORT.md).
+
+**Current status (verified 2026-11-15):** PR #46 merged into `main` at `98554b7e20786d86f5447dccac42857ac5db355f`. This merge does not represent a production deployment or approval.
 
 **Mainline baseline:** `main` HEAD `24c14ba599017d1f35e94533393c209300caf28d`; PR #45 merged at that commit on 2026-11-15 at 11:50:37 UTC. The Phase 6 changes described here are not part of that baseline.
 

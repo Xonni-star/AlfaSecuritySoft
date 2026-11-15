@@ -30,6 +30,7 @@ const E2EAcceptanceCenter = lazy(() => import('./components/E2EAcceptanceCenter'
 const BackendLiveConsole = lazy(() => import('./components/BackendLiveConsole').then(({ BackendLiveConsole }) => ({ default: BackendLiveConsole })));
 const IllustratedUserGuide = lazy(() => import('./components/IllustratedUserGuide').then(({ IllustratedUserGuide }) => ({ default: IllustratedUserGuide })));
 const UserAdministration = lazy(() => import('./components/UserAdministration').then(({ UserAdministration }) => ({ default: UserAdministration })));
+const TenantAdministration = lazy(() => import('./components/TenantAdministration').then(({ TenantAdministration }) => ({ default: TenantAdministration })));
 const MobileAppShell = lazy(() => import('./components/MobileAppShell').then(({ MobileAppShell }) => ({ default: MobileAppShell })));
 
 interface ErrorBoundaryProps {
@@ -185,6 +186,8 @@ export default function App(): React.ReactNode {
         return <ArchitectureCenter />;
       case 'user_admin':
         return authUser ? <UserAdministration authUser={authUser} /> : <Dashboard />;
+      case 'tenant_admin':
+        return authUser ? <TenantAdministration authUser={authUser} /> : <Dashboard />;
       default:
         return <Dashboard />;
     }

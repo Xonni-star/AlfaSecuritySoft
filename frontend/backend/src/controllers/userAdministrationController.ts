@@ -137,7 +137,7 @@ export async function listUsers(req: Request, res: Response, next: NextFunction)
       if (filters.siteId) {
         values.push(filters.siteId);
         siteFilterParameter = `$${values.length}::uuid`;
-        where.push(`EXISTS (SELECT 1 FROM tenant_user_roles fs WHERE fs.tenant_id=tm.tenant_id AND fs.user_id=tm.user_id AND (fs.site_id=$${values.length} OR fs.site_id IS NULL))`);
+        where.push(`EXISTS (SELECT 1 FROM tenant_user_roles fs WHERE fs.tenant_id=tm.tenant_id AND fs.user_id=tm.user_id AND fs.site_id=$${values.length})`);
       }
       return db.query(
         `SELECT u.id,u.email,tm.first_name,tm.last_name,tm.phone,

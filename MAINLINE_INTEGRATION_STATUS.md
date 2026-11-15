@@ -1,10 +1,26 @@
 # Mainline integration and validation status
 
-**Status checked:** 2026-11-15
+**Current status checked:** 2026-11-15
 
-**Main:** `24c14ba599017d1f35e94533393c209300caf28d`
+**Verified `main`:** `98554b7e20786d86f5447dccac42857ac5db355f`
 
-**Project status:** In development; not approved for production.
+**Current PR status:** PRs #45 and #46 are merged. Phase 7 PR [#47](https://github.com/Xonni-star/SecurityOps-2.0/pull/47) is open against `main`; hosted CI passed 7/7 jobs on `73b553319bd38bc23a4e5f5933660443aacd4a87` (run [43725923582](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43725923582)). It has not been merged or deployed.
+
+**Production status:** In development; not approved for production.
+
+## Latest verified mainline state
+
+GitHub `main` and the Phase 7 worktree base point to `98554b7e20786d86f5447dccac42857ac5db355f`. PR #45 merged at `24c14ba599017d1f35e94533393c209300caf28d`; PR #46 merged at the current main commit. At the baseline check, no PRs were open; Phase 7 PR #47 was created after implementation. Main CI run [43714424241](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43714424241) completed successfully with **7/7 jobs**; release-artifact run [43714617237](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43714617237) completed successfully with **2/2 jobs**. Both runs target the exact current main SHA. Phase 7 PR CI [43725923582](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43725923582) completed successfully with **7/7 jobs** on PR head `73b553319bd38bc23a4e5f5933660443aacd4a87`. These results establish CI/artifact checks only, not production deployment or acceptance.
+
+The remote branch check found no additional unmerged file changes except `origin/openclaw/health-error-disclosure`, whose single ahead commit changes two CORS test assertions to align with redacted error responses. It has no associated open PR in the verified PR list and is not included here because it only adjusts a test expectation; review/merge decision remains outstanding. `origin/xonni-star-phase-2-planning-ui` is one merge commit ahead by ancestry, with no unique diff from `main`. Other checked remote branches have no commits ahead of `main`.
+
+The detailed pre-Phase-6 baseline and PR #46 pre-merge status below are retained as a **historical snapshot**. For the Phase 7 implementation and current evidence limits, see [PHASE_7_READINESS_REPORT.md](./PHASE_7_READINESS_REPORT.md).
+
+---
+
+## Historical snapshot (pre-Phase-6 merge)
+
+**Historical main:** `24c14ba599017d1f35e94533393c209300caf28d`
 
 This report distinguishes implementation in merged code, automated CI, isolated tests, and production/provider acceptance. Passing tests or release-artifact builds do not establish deployment, operational acceptance, legal compliance, or production-provider behavior.
 

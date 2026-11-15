@@ -105,7 +105,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobileMenu }) => {
     {
       title: 'SYSTEMVERWALTUNG',
       items: [
-        { id: 'user_admin', label: 'Benutzer & Berechtigungen', icon: ShieldCheck, visible: canAccessUserAdmin }
+        { id: 'user_admin', label: 'Benutzer & Berechtigungen', icon: ShieldCheck, visible: canAccessUserAdmin },
+        { id: 'tenant_admin', label: 'Mandantenverwaltung', icon: Building2, visible: Boolean(authUser?.isSuperAdmin) }
       ]
     }
   ];
