@@ -37,7 +37,9 @@ Focused frontend tests cover startup replay while already online, exact tenant/u
 
 CI mapping for this verification snapshot: PR #16 head `a167379546d239ae7241974a3fbb4f9adb7e1868`, run `43498580680` (all four jobs passed); PR #19 head `811de4980835c16df03adc625dc76d55951d657a`, run `43499283441` (all four jobs passed). PR #19 is stacked on PR #16; both remain open and unmerged.
 
-## Current browser validation snapshot (PR #52, 2026-11-15; status checked 20:30 CET)
+## Historical browser validation snapshot (PR #52, 2026-11-15; status checked 20:30 CET)
+
+> PR #52 has since merged. The test results and fixture/device limitations below describe that snapshot and remain useful evidence, but the open-PR state is historical. See [current project status](../PROJECT_CURRENT_STATUS.md) and the [Phase 9 report](../PHASE_9_COMPLETION_REPORT.md).
 
 Open PR [#52](https://github.com/Xonni-star/SecurityOps-2.0/pull/52) adds a Playwright/Chromium loopback scenario covering offline guardbook capture, reload persistence of the outbox entry and photo, reconnect, and retry after a deliberately lost receipt. The retry uses the same mutation ID and produces one effect in the local fixture. The PR reports three focused Vitest files / 48 tests, typecheck, production build, and `npm run test:browser -- --workers=1` passing on head `9dddf9e5a4c4ca2cbd0cfee7e924a30d3d7eefd1`; hosted CI run [43750985353](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43750985353) passed 7/7 jobs. The PR remains open and unmerged.
 

@@ -1,6 +1,8 @@
 # Mainline integration and validation status
 
-**Current status checked:** 2026-11-15 20:30 CET
+> **Historical snapshot:** The mainline, PR list, and test evidence in this document were checked at **2026-11-15 20:30 CET**. PRs #50–#59 have since merged. Preserve this document as dated evidence; for live mainline and readiness status, see [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md) and [PHASE_9_COMPLETION_REPORT.md](./PHASE_9_COMPLETION_REPORT.md).
+
+**Snapshot status checked:** 2026-11-15 20:30 CET
 
 **Verified `main`:** `d06c2d835270b43bd36bb3585fc45d7da7d58a50` ([commit](https://github.com/Xonni-star/SecurityOps-2.0/commit/d06c2d835270b43bd36bb3585fc45d7da7d58a50))
 

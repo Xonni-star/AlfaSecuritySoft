@@ -1,5 +1,7 @@
 # SecurityOps 2.0 – Produktionsdeployment
 
+> **Nicht für Produktion freigegeben.** Diese Anleitung beschreibt Compose-Konfiguration und Betriebsbefehle; sie ist keine bestätigte Produktionsinstallation. Der Statusabschnitt mit Datum 15.11.2026, 20:30 CET weiter unten ist ein historischer Snapshot. Aktueller Mainline- und Abnahmestatus: [PROJECT_CURRENT_STATUS.md](../../PROJECT_CURRENT_STATUS.md) und [PHASE_9_COMPLETION_REPORT.md](../../PHASE_9_COMPLETION_REPORT.md).
+
 **Architektur:** Caddy (TLS, statisches Frontend) → TypeScript/Express-Backend → PostgreSQL 16 + privater externer S3-kompatibler Objektspeicher + ClamAV
 **Migrationspfad:** `migrate` (secops_admin) → `db-init` (Passwort für `secops_app_user`) → `backend` (ausschließlich App-Rolle)
 
@@ -111,7 +113,7 @@ Der Runner prüft Versionen, SHA-256-Prüfsummen, Schemaobjekte und Mandanteniso
 ## 5. Healthcheck
 
 ```bash
-curl -k https://$DOMAIN/api/v1/health
+curl --fail --show-error "https://$DOMAIN/api/v1/health"
 ```
 
 Erwartet: `status: "OPERATIONAL"` und eine verbundene PostgreSQL-Datenbank.
@@ -147,14 +149,25 @@ Produktion freigegeben.
 
 ## 7. Update
 
+Nur einen geprüften, unveränderlichen Release-Tag oder Commit ausrollen; nicht unbesehen den jeweils aktuellen Branch-Stand übernehmen. Das folgende Beispiel setzt voraus, dass `<reviewed-release-ref>` vorab im Release-Prozess freigegeben wurde:
+
 ```bash
-git pull
+git fetch --tags origin
+git checkout --detach <reviewed-release-ref>
 cd frontend/deploy
 docker compose -f docker-compose.production.yml build
 docker compose -f docker-compose.production.yml up -d
 ```
 
-Neue Migrationen laufen beim Start über `migrate`. Vorher ein Backup erstellen.
+Neue Migrationen laufen beim Start über `migrate`. Vor dem Update ein geprüftes Datenbank- und DMS-Objektbackup erstellen; die S3-Objekte liegen außerhalb von Compose.
+
+### Rollback-Grenzen
+
+Es gibt keinen automatischen Anwendung-/Schema-Rollback. Ein vorheriger Container-Build oder Git-Checkout ist nur dann ein sicherer Anwendungsschritt zurück, wenn er mit dem bereits migrierten Datenbankschema kompatibel ist. Das Compose-Update führt Migrationen aus; es gibt keine Garantie, dass eine Migration rückwärtskompatibel ist. Keine Migrationen manuell löschen oder rückwärts ändern.
+
+Wenn die vorherige Anwendungsversion mit dem aktuellen Schema nicht kompatibel ist, reicht ein Image-Rollback nicht. Für einen Restore müssen Datenbank und DMS-Objekte auf zueinander passende Sicherungsstände gebracht werden: `restore.sh` stellt nur PostgreSQL wieder her; Objektversionierung/-restore erfolgt getrennt beim konfigurierten Anbieter. Die Verschlüsselungsdaten und Provider-Zugangsdaten müssen verfügbar sein. Vor einem Restore den Runbook-Ablauf in einer isolierten Umgebung gegen genau diese Revision und Konfiguration prüfen und ein Wartungsfenster samt Wiederanlauf/Healthcheck einplanen.
+
+Ist der passende Provider-Snapshot, die Schema-Kompatibilität oder die Wiederherstellung nicht verifiziert, keinen Rollback als verfügbar voraussetzen. Betrieb pausieren und einen vorwärts gerichteten Fix bzw. einen abgestimmten Wiederherstellungsplan verfolgen. Erfolgreiche lokale/CI-Tests belegen keinen produktiven Rollback.
 
 ---
 
@@ -165,19 +178,21 @@ Backups laufen automatisch alle 24 Stunden (`backup`-Dienst). Das verschlüsselt
 Manuell:
 
 ```bash
-docker compose -f docker-compose.production.yml exec -T backup \
-  sh -c 'pg_dump -h db -U secops_admin -d securityops_v2 -F c -f /var/backups/manual.dump'
-
-Der obige Einzelbefehl erzeugt nur einen Datenbankdump. DMS-Objekte müssen unabhängig über den konfigurierten S3-Anbieter wiederhergestellt werden.
+umask 077
+docker compose -f docker-compose.production.yml exec -T db \
+  pg_dump -U secops_admin -d securityops_v2 -F c \
+  > /sicherer/pfad/securityops_manual.dump
 ```
 
-Wiederherstellung:
+Der manuelle Befehl erzeugt nur einen unverschlüsselten PostgreSQL-Dump auf dem Host; speichere ihn ausschließlich an einem zugriffsgeschützten Ort und verschlüssele ihn vor Übertragung oder Langzeitspeicherung. DMS-Objekte müssen unabhängig über den konfigurierten S3-Anbieter gesichert und wiederhergestellt werden. Nach einem erfolgreichen manuellen Backup die Datei gemäß lokaler Aufbewahrungsrichtlinie entfernen.
+
+Die folgende Anleitung stellt Datenbank und Dienste über `restore.sh` wieder her:
 
 ```bash
 ./restore.sh /pfad/zu/secops_backup_YYYYMMDD_HHMMSS.tar.gz.enc
 ```
 
-Nach der Wiederherstellung Backend und Proxy neu starten.
+`restore.sh` stoppt standardmäßig das Backend für den Restore und startet danach Backend und Proxy erneut. Nach erfolgreichem Abschluss den Compose-Status und den Healthcheck oben prüfen; bei angepassten `RESTORE_QUIESCE_SERVICES`- oder `RESTORE_RESUME_SERVICES`-Werten entsprechend kontrollieren, welche Dienste tatsächlich angehalten bzw. gestartet wurden.
 
 ### Isolierter Restore-Regressionstest
 
@@ -187,7 +202,7 @@ Mit Docker, OpenSSL und Python 3 lässt sich der verschlüsselte PostgreSQL-Back
 npm run test:backup-restore --prefix frontend/backend
 ```
 
-Der Test verwendet ein zufällig benanntes, isoliertes Compose-Projekt, zufällige Testzugangsdaten, zwei synthetische Mandanten, Benutzer, DMS-Dokumente, Versionen und Auditereignisse. Er baut den Backend-Migrationsrunner aus dem Repository und prüft Migrationen `001`–`007`, `009`, `011`–`036`, deren Historie sowie `ENABLE`/`FORCE ROW LEVEL SECURITY` für neun DMS-Tabellen. Danach erstellt er mit `backup_cron.sh` ein verschlüsseltes Backup, mutiert DMS-Metadaten, entfernt beide synthetischen Objekte, stellt DB und Objektsnapshot wieder her und verifiziert Versions-/Auditdaten, SHA-256, benutzerdefinierte Objektmetadaten und Tenant-RLS einschließlich eines abgewiesenen Fremdtenant-Schreibversuchs. Der Lauf hat begrenzte Wartezeiten und räumt ausschließlich Ressourcen seines eindeutigen Testprojekts auf.
+Der Test verwendet ein zufällig benanntes, isoliertes Compose-Projekt, zufällige Testzugangsdaten, zwei synthetische Mandanten, Benutzer, DMS-Dokumente, Versionen und Auditereignisse. Er baut den Backend-Migrationsrunner aus dem Repository und prüft den vollständigen angewendeten Migrationssatz `001`–`007`, `009`, `011`–`040`, dessen Historie sowie `ENABLE`/`FORCE ROW LEVEL SECURITY` für neun DMS-Tabellen. Danach erstellt er mit `backup_cron.sh` ein verschlüsseltes Backup, mutiert DMS-Metadaten, entfernt beide synthetischen Objekte, stellt DB und Objektsnapshot wieder her und verifiziert Versions-/Auditdaten, SHA-256, benutzerdefinierte Objektmetadaten und Tenant-RLS einschließlich eines abgewiesenen Fremdtenant-Schreibversuchs. Der Lauf hat begrenzte Wartezeiten und räumt ausschließlich Ressourcen seines eindeutigen Testprojekts auf.
 
 Die Testzugangsdaten liegen in einer lokalen temporären Datei. Der MC-Container erhält ausschließlich das Fixture-Verzeichnis schreibgeschützt. Produktions-Compose, Produktionsdaten, Produktionszugangsdaten und externe Anbieterendpunkte werden nicht verwendet. `--database-only` überspringt den S3-Objektschritt; der Standardlauf testet MinIO lokal, optional kann `RESTORE_TEST_S3_BACKEND=seaweedfs` einen lokalen SeaweedFS-Dienst verwenden.
 
@@ -203,7 +218,9 @@ Die Testzugangsdaten liegen in einer lokalen temporären Datei. Der MC-Container
 
 Die Test-Images können über `RESTORE_TEST_BACKUP_IMAGE`, `RESTORE_TEST_MINIO_IMAGE`, `RESTORE_TEST_MC_IMAGE` und `RESTORE_TEST_S3_IMAGE` überschrieben werden. CI verwendet ein digest-gepinntes MinIO-Testimage; auch dieser CI-Lauf bleibt ein lokaler Infrastrukturtest, kein realer Provider-Test oder Produktionsabnahme.
 
-### Aktueller Readiness- und Auditstatus (geprüft 15.11.2026, 20:30 CET)
+### Historischer Readiness- und Auditstatus (geprüft 15.11.2026, 20:30 CET)
+
+> Der nachfolgende Statusblock bleibt als datierter Snapshot erhalten. Seit dem Prüfzeitpunkt wurden PRs #50–#59 gemergt; seine damaligen PR-open-/main-SHA-Aussagen sind nicht aktuell. Siehe [PROJECT_CURRENT_STATUS.md](../../PROJECT_CURRENT_STATUS.md) und [PHASE_9_COMPLETION_REPORT.md](../../PHASE_9_COMPLETION_REPORT.md).
 
 `main` steht auf `d06c2d835270b43bd36bb3585fc45d7da7d58a50`; PRs #47–#49 sind gemergt. PRs [#50](https://github.com/Xonni-star/SecurityOps-2.0/pull/50)–[#58](https://github.com/Xonni-star/SecurityOps-2.0/pull/58) sind gegen `main` offen: Restore, mobile Usability, Offline Chromium, Performance-Baseline, CORS-Fehlerbehandlung, Tenant-Login/E2E, Linux-Testinstaller, Dokumentberechtigungen und Development-Dependency-Advisory. Hosted CI bestand 7/7 Jobs für alle PRs #50–#58. PR #56s frühere 429s waren Account-Lockout durch veraltete fest codierte Testzugangsdaten, nicht globales Rate-Limiting. Backend- und DMS-Integrationslogins nutzen nun `SECOPS_DEMO_USER_PASSWORD`; DMS CI setzt ein Testpasswort, Jest behält lokal exportierte Werte. Fokus-PostgreSQL-API-Integration 23/23, DMS PostgreSQL/MinIO/ClamAV-Flow, Backend-Build und Hosted CI bestanden; ein lokaler Full-Jest-Lauf hatte einen unabhängigen Patrol-Timeout nach 5s. Es wurden weder Produktionslimits abgeschwächt noch Tests entfernt. PR #56s Lauf [43752256912](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43752256912), PR #57s RLS-Lauf [43752115003](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43752115003) und PR #58s Dependency-Lauf [43752479801](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43752479801) bestanden jeweils 7/7. PR #57 und #58 bleiben offen/unmerged; PR #58s lokaler Full-Jest-Lauf berichtete 10 failing suites / 171 tests mit lokalen PostgreSQL-/CORS-Problemen, getrennt von den grünen Hosted Checks. Main-CI [43726729355](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43726729355) bestand 7/7 Jobs, die Release-Artefakt-Prüfung [43726964671](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43726964671) 2/2. Der Release-Workflow erzeugt und prüft ein Paket, deployed aber nicht; daraus folgt keine Produktionsfreigabe. Details: [Mainline- und Validierungsstatus](../../MAINLINE_INTEGRATION_STATUS.md) und [Phase-8-Prüfbericht](../../PHASE_8_COMPLETION_REPORT.md).
 

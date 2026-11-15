@@ -1,6 +1,8 @@
 # Phase 7 readiness report
 
-**Current status refreshed:** 2026-11-15 20:30 CET. PRs #47–#49 are merged; PRs [#50](https://github.com/Xonni-star/SecurityOps-2.0/pull/50)–[#58](https://github.com/Xonni-star/SecurityOps-2.0/pull/58) are open against `main`. Hosted CI passed 7/7 for every PR #50–#58. PR #56's earlier Backend/DMS failures, #57's earlier Restore failure, and #58's pending checks are superseded by passing runs; #58's local full-Jest results remain separate from hosted checks. See [MAINLINE_INTEGRATION_STATUS.md](./MAINLINE_INTEGRATION_STATUS.md) for the exact main SHA and CI evidence, and [PHASE_8_COMPLETION_REPORT.md](./PHASE_8_COMPLETION_REPORT.md) for the broader PARTIAL/BLOCKED assessment.
+> **Historical status snapshot:** The GitHub/PR paragraph below was checked at **2026-11-15 20:30 CET**. PRs #50–#59 have since merged; retain the paragraph as dated evidence, not live status. See [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md) and [PHASE_9_COMPLETION_REPORT.md](./PHASE_9_COMPLETION_REPORT.md) for the current state.
+
+**Snapshot status refreshed:** 2026-11-15 20:30 CET. PRs #47–#49 are merged; PRs [#50](https://github.com/Xonni-star/SecurityOps-2.0/pull/50)–[#58](https://github.com/Xonni-star/SecurityOps-2.0/pull/58) are open against `main`. Hosted CI passed 7/7 for every PR #50–#58. PR #56's earlier Backend/DMS failures, #57's earlier Restore failure, and #58's pending checks are superseded by passing runs; #58's local full-Jest results remain separate from hosted checks. See [MAINLINE_INTEGRATION_STATUS.md](./MAINLINE_INTEGRATION_STATUS.md) for the exact main SHA and CI evidence, and [PHASE_8_COMPLETION_REPORT.md](./PHASE_8_COMPLETION_REPORT.md) for the broader PARTIAL/BLOCKED assessment.
 **Phase 7 assessment date:** 2026-11-15
 **Original base branch and commit:** `main` at `98554b7e20786d86f5447dccac42857ac5db355f`
 **Implementation commit:** `01b0741376d5234cdb5395936477ed77c7b34c58`.
