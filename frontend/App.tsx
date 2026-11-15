@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useRef, Component, ErrorInfo, ReactNode } from 'react';
 import { useSecurityStore } from './store';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -104,6 +104,8 @@ export default function App(): React.ReactNode {
   const [isModuleManagerOpen, setIsModuleManagerOpen] = useState(false);
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuDialogRef = useRef<HTMLDivElement>(null);
+  const mobileMenuTriggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     void restoreSession();
@@ -135,6 +137,51 @@ export default function App(): React.ReactNode {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      mobileMenuTriggerRef.current?.focus();
+      return;
+    }
+
+    mobileMenuDialogRef.current?.querySelector<HTMLButtonElement>('[aria-label="Menü schließen"]')?.focus();
+  }, [isMobileMenuOpen]);
+
+  const toggleMobileMenu = () => {
+    if (!isMobileMenuOpen && document.activeElement instanceof HTMLElement) {
+      mobileMenuTriggerRef.current = document.activeElement;
+    }
+    setIsMobileMenuOpen(open => !open);
+  };
+
+  const handleMobileMenuKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setIsMobileMenuOpen(false);
+      return;
+    }
+    if (event.key !== 'Tab') return;
+
+    const dialog = mobileMenuDialogRef.current;
+    if (!dialog) return;
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length === 0) {
+      event.preventDefault();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
 
   if (!isAuthenticated) {
     return <LoginScreen />;
@@ -202,7 +249,7 @@ export default function App(): React.ReactNode {
           onOpenSyncManager={() => setIsSyncManagerOpen(true)}
           onOpenModuleManager={() => setIsModuleManagerOpen(true)}
           onOpenGlobalSearch={() => setIsGlobalSearchOpen(true)}
-          onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          onToggleMobileMenu={toggleMobileMenu}
         />
 
         {/* Main Workspace */}
@@ -214,8 +261,20 @@ export default function App(): React.ReactNode {
 
           {/* Mobile Slide-Over Sidebar */}
           {isMobileMenuOpen && (
-            <div className="fixed inset-0 z-40 bg-black/80 md:hidden flex">
-              <div className="w-64 bg-[#0a0f1d] h-full shadow-2xl flex flex-col">
+            <div
+              className="fixed inset-0 z-40 bg-black/80 md:hidden flex"
+              onClick={event => {
+                if (event.target === event.currentTarget) setIsMobileMenuOpen(false);
+              }}
+            >
+              <div
+                ref={mobileMenuDialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Mobiles Navigationsmenü"
+                onKeyDown={handleMobileMenuKeyDown}
+                className="w-64 bg-[#0a0f1d] h-full shadow-2xl flex flex-col"
+              >
                 <div className="p-3 flex justify-end">
                   <button
                     onClick={() => setIsMobileMenuOpen(false)}
