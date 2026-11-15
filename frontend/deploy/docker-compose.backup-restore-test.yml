@@ -61,6 +61,11 @@ services:
       - ${RESTORE_TEST_TMPDIR:?Set RESTORE_TEST_TMPDIR}/backups:/var/backups
     entrypoint: ["/bin/bash", "/usr/local/bin/backup_cron.sh"]
 
+  restore-test-marker:
+    image: ${RESTORE_TEST_BACKUP_IMAGE:-postgres:16-bookworm}
+    command: ["sh", "-c", "while true; do sleep 3600; done"]
+    restart: unless-stopped
+
   restore-test-mc:
     image: ${RESTORE_TEST_MC_IMAGE:-quay.io/minio/mc:RELEASE.2025-02-08T19-14-21Z}
     environment:

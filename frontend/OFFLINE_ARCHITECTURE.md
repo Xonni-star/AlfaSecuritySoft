@@ -1,6 +1,9 @@
 # SecurityOps 2.0 - Phase 6: Offline-First Architektur
 
 > **Projektstatus: In Entwicklung; nicht für Produktion freigegeben.** Offlinefunktionen sind workflow-spezifisch; nicht alle Module oder End-to-End-Geräteabläufe sind implementiert oder abgenommen.
+> **Verifizierter Main-Stand:** `ba9ab4ddc5d9ef03a3d147a023f002a0abb0e547` (15.11.2026). Main-CI [43695784002](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695784002) bestand alle sieben Jobs; dies ersetzt keine Browser-/Geräteabnahme. Umfang und Grenzen unten beziehen sich auf den Quellcode, nicht auf eine allgemeine Offlinefähigkeit.
+
+Der Phase-4-Änderungsstand behandelt HTTP `408` und `429` als wiederholbare Fehler der generischen Outbox und persistiert einen gültigen `Retry-After`-Wert (Sekunden oder HTTP-Datum) zusammen mit der Mutation. Die Wiedergabe wartet mindestens bis zu diesem Zeitpunkt; lokale Backoff-Grenzen, Idempotenz und die serverseitige Autorisierung bleiben bestehen. Die Alarm-Mutationsqueue nutzt weiterhin einen eigenen Retry-Pfad. Vitest prüft Header-Parsing, persistierte Verzögerung und Replay nach Rate-Limit; reale Browser-/Geräte- und Hintergrundausführung sind damit nicht nachgewiesen.
 
 ## 1. PWA & Service Worker
 SecurityOps 2.0 ist als vollwertige Progressive Web App (PWA) nach modernen Webstandards konzipiert:

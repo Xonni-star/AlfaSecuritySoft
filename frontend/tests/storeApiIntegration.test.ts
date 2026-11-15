@@ -18,13 +18,15 @@ vi.mock('../services/apiClient', () => {
     isNetworkError: boolean;
     code?: string;
     data?: unknown;
-    constructor(status: number, message: string, errors?: string[], isNetworkError = false, code?: string, data?: unknown) {
+    retryAfterMs?: number;
+    constructor(status: number, message: string, errors?: string[], isNetworkError = false, code?: string, data?: unknown, retryAfterMs?: number) {
       super(message);
       this.status = status;
       this.errors = errors;
       this.isNetworkError = isNetworkError;
       this.code = code;
       this.data = data;
+      this.retryAfterMs = retryAfterMs;
     }
   }
 
@@ -575,6 +577,57 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
       retryable: true
     });
     await vi.advanceTimersByTimeAsync(1000);
+    expect(mockedApi.post).toHaveBeenCalledTimes(2);
+    expect(markSynced).toHaveBeenCalledWith(mutation.id);
+  });
+
+  test('honors Retry-After before replaying a rate-limited mutation', async () => {
+    vi.useFakeTimers();
+    const now = Date.now();
+    const mutation = {
+      id: 'rate-limited-sync-mutation',
+      tenantId: 'tenant-frankfurt',
+      userId: 'user-regression',
+      entityType: 'task',
+      action: 'CREATE',
+      payload: { title: 'Retry after rate limit' },
+      occurredAt: '2026-11-13T10:00:00.000Z',
+      baseVersion: 1,
+      retryCount: 0,
+      status: 'PENDING'
+    };
+    const updateStatus = vi.spyOn(offlineVault, 'updateMutationStatus').mockResolvedValue(undefined);
+    vi.spyOn(offlineVault, 'getPendingOutbox').mockResolvedValue([mutation] as any);
+    vi.spyOn(offlineVault, 'getOutbox')
+      .mockResolvedValueOnce([
+        { ...mutation, status: 'FAILED', retryCount: 1, retryable: true, nextAttemptAt: new Date(now + 60_000).toISOString() }
+      ] as any)
+      .mockResolvedValueOnce([]);
+    const markSynced = vi.spyOn(offlineVault, 'markSynced').mockResolvedValue(undefined);
+    mockedApi.post
+      .mockRejectedValueOnce(new ApiError(429, 'Too many requests', undefined, false, 'RATE_LIMIT_EXCEEDED', undefined, 60_000))
+      .mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED' }]);
+    useSecurityStore.setState({
+      isOnline: true,
+      isAuthenticated: true,
+      currentTenantId: mutation.tenantId,
+      currentUserId: mutation.userId,
+      authUser: {
+        id: mutation.userId, email: '', fullName: '', role: '',
+        tenantId: mutation.tenantId, tenantName: '', permissions: []
+      }
+    });
+
+    await useSecurityStore.getState().triggerManualSync();
+
+    expect(updateStatus).toHaveBeenCalledWith(mutation.id, 'FAILED', {
+      errorMessage: 'HTTP 429: Too many requests',
+      retryable: true,
+      retryAfterMs: 60_000
+    });
+    await vi.advanceTimersByTimeAsync(59_999);
+    expect(mockedApi.post).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
     expect(mockedApi.post).toHaveBeenCalledTimes(2);
     expect(markSynced).toHaveBeenCalledWith(mutation.id);
   });
