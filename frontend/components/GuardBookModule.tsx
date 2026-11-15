@@ -38,6 +38,8 @@ export const GuardBookModule: React.FC = () => {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState('');
   const [selectedEntryForRevision, setSelectedEntryForRevision] = useState<GuardBookEntry | null>(null);
 
   // Form states for new entry
@@ -80,44 +82,53 @@ export const GuardBookModule: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const siteObj = sites.find((s) => s.id === selectedSiteId);
     const guardObj = employees.find((e) => e.id === selectedGuardId);
 
     const newId = `gb-${Date.now()}`;
 
-    addGuardBookEntry({
-      siteId: selectedSiteId,
-      siteName: siteObj?.name || 'Unbekanntes Objekt',
-      guardId: selectedGuardId,
-      guardName: guardObj ? `${guardObj.firstName} ${guardObj.lastName}` : 'Wachkraft',
-      category,
-      priority,
-      stage: 'Erfasst',
-      title: title || 'Dienstprotokoll',
-      description,
-      policeInvolved,
-      resolved: category === 'Routinemeldung' || category === 'Kontrollgang'
-    });
+    setIsSubmitting(true);
+    setSubmissionError('');
+    try {
+      await addGuardBookEntry({
+        siteId: selectedSiteId,
+        siteName: siteObj?.name || 'Unbekanntes Objekt',
+        guardId: selectedGuardId,
+        guardName: guardObj ? `${guardObj.firstName} ${guardObj.lastName}` : 'Wachkraft',
+        category,
+        priority,
+        stage: 'Erfasst',
+        title: title || 'Dienstprotokoll',
+        description,
+        policeInvolved,
+        resolved: category === 'Routinemeldung' || category === 'Kontrollgang'
+      });
 
-    if (photoPreview) {
-      await offlineVault.saveAttachment({
-        id: `att-${Date.now()}`,
-        tenantId: siteObj?.tenantId || 'tenant-frankfurt',
-        entityId: newId,
-        fileName: 'vorfall_fotodokumentation.jpg',
-        mimeType: 'image/jpeg',
-        sizeBytes: Math.round(photoPreview.length * 0.75),
-        blobData: photoPreview,
-        capturedAt: new Date().toISOString(),
-        synced: isOnline
-      }).catch(console.error);
+      if (photoPreview) {
+        await offlineVault.saveAttachment({
+          id: `att-${Date.now()}`,
+          tenantId: siteObj?.tenantId || 'tenant-frankfurt',
+          entityId: newId,
+          fileName: 'vorfall_fotodokumentation.jpg',
+          mimeType: 'image/jpeg',
+          sizeBytes: Math.round(photoPreview.length * 0.75),
+          blobData: photoPreview,
+          capturedAt: new Date().toISOString(),
+          synced: isOnline
+        }).catch(console.error);
+      }
+
+      setIsModalOpen(false);
+      setTitle('');
+      setDescription('');
+      setPhotoPreview(null);
+      setAiAnalysis(null);
+    } catch (error) {
+      setSubmissionError(error instanceof Error ? error.message : 'Eintrag konnte nicht lokal gespeichert werden.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsModalOpen(false);
-    setTitle('');
-    setDescription('');
-    setPhotoPreview(null);
-    setAiAnalysis(null);
   };
 
   return (
@@ -139,8 +150,11 @@ export const GuardBookModule: React.FC = () => {
           </p>
         </div>
 
-                  <button
-          onClick={() => setIsModalOpen(true)}
+        <button
+          onClick={() => {
+            setSubmissionError('');
+            setIsModalOpen(true);
+          }}
           className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-lg shadow-blue-600/20 transition flex items-center gap-2 shrink-0 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
@@ -342,6 +356,11 @@ export const GuardBookModule: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 mt-4 text-xs">
+              {submissionError && (
+                <p role="alert" className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-rose-300">
+                  Eintrag nicht gespeichert: {submissionError}
+                </p>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-400 mb-1 font-medium">Sicherheitsobjekt *</label>
@@ -477,9 +496,10 @@ export const GuardBookModule: React.FC = () => {
                 </button>
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow"
                 >
-                  {isOnline ? 'Protokolleintrag speichern' : 'Offline vormerken'}
+                  {isSubmitting ? 'Speichere…' : isOnline ? 'Protokolleintrag speichern' : 'Offline vormerken'}
                 </button>
               </div>
             </form>
