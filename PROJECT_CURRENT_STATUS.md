@@ -1,6 +1,6 @@
 # SecurityOps 2.0 — Current project status
 
-**Last verified:** 2026-11-15 21:59 CET
+**Last verified:** 2026-11-15 22:03 CET
 
 **Verified `main`:** [`621874535ee480e56716ae8a7bd992272bc7a51a`](https://github.com/Xonni-star/SecurityOps-2.0/commit/621874535ee480e56716ae8a7bd992272bc7a51a)
 
@@ -24,7 +24,7 @@ This is the current evidence index. Phase reports and dated status sections rema
 | Mainline integration | **DONE** | Current `main` is `621874535ee480e56716ae8a7bd992272bc7a51a`. PRs #50–#61, #63–#65 are merged; #62 remains open. |
 | Mainline CI | **DONE** | Post-merge [CI run 43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on the exact current-main SHA `621874535ee480e56716ae8a7bd992272bc7a51a`: root checks, frontend, PostgreSQL 16 backend/Jest, isolated restore, ClamAV adapter, DMS API flow, and production Compose/image validation. |
 | Release package validation | **PARTIAL** | The latest recorded artifact run [43757089831](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43757089831) passed 2/2 on the preceding mainline `bed939a`; no artifact result for `6218745` was observed. Packaging/provenance/install validation is not a deployment or production release. |
-| Documentation PR validation | **OPEN** | PR #62 remains open against `main`. Its previous head `b0e339b` passed 7/7, but that result predates the requested rebase and report additions. Rebased documentation checks must be verified before reporting them as passing. |
+| Documentation PR validation | **DONE** | Open PR #62 is based on `main` at head `6c8a52c51ff3b47a20be9a0579e863861744c891`; hosted [CI run 43761213396](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43761213396) passed **7/7 jobs**. The PR remains open and unmerged. |
 | Test-only Linux install | **DONE** | PR #56 merged. The tar/deb installer and lifecycle guidance explicitly target isolated testing; they are not production installers. |
 | Backup/restore | **PARTIAL** | CI and local drills exercise synthetic DB and local object-store recovery. A real S3-provider restore, production-like restore, scanner/provider acceptance, and measured RPO/RTO are not evidenced. |
 | Offline and SOP workflows | **PARTIAL** | PR #64 is merged as `621874535ee480e56716ae8a7bd992272bc7a51a`; its PR head `b814b65` passed 7/7 hosted checks and code review reported no blockers. Post-merge main CI run 43760703980 also passed 7/7 on `6218745`. Migration 041 adds tenant-scoped idempotency receipts with `created_by` ownership. Stored attachments with a `userId` can be uploaded idempotently after reconnect. Existing local attachments without `userId` are not auto-uploaded or assigned an owner; users must re-add them. Legacy attachments whose entry is already acknowledged with a non-UUID local ID cannot be linked. The Chromium fixture is not the authenticated application backend or a physical device. |

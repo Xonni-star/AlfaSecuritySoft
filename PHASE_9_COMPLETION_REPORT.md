@@ -4,7 +4,7 @@
 
 **Verified `main`:** [`621874535ee480e56716ae8a7bd992272bc7a51a`](https://github.com/Xonni-star/SecurityOps-2.0/commit/621874535ee480e56716ae8a7bd992272bc7a51a)
 
-**Last GitHub check:** 2026-11-15 21:59 CET; PR #62 open; PRs #50–#61, #63–#65 merged.
+**Last GitHub check:** 2026-11-15 22:03 CET; PR #62 open; PRs #50–#61, #63–#65 merged.
 
 **Current status index:** [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md)
 
@@ -28,7 +28,7 @@ For the current main SHA:
 - PR checks for #50–#58, #60, #61, and #63 each showed 7/7 success. PR #59 had an empty PR-level check rollup; the successful post-merge run on `879ae95` is historical evidence for that tree. PR-level and post-merge results are not conflated.
 - PR #63 adds synthetic API coverage through employee qualification, planning publication, both handover confirmations, and a MinIO/ClamAV document upload, download, and audit flow. This is CI evidence, not provider or production acceptance.
 - PR #65 adds tenant/site/role authorization-boundary integration tests. Its 7/7 PR checks and the bounded workstream’s “no confirmed high-confidence issue” result do not amount to a comprehensive security review or production acceptance.
-- The documentation PR #62 has been rebased onto the current mainline and updated for the merged offline-sync result. Its previous head `b0e339b` passed 7/7, but that run predates this rebase and is not validation of the new report contents. The current rebased PR checks must pass before this documentation change is considered validated.
+- The documentation PR #62 has been rebased onto the current mainline and updated for the merged offline-sync result. Its new head `6c8a52c51ff3b47a20be9a0579e863861744c891` passed **7/7** hosted checks in [run 43761213396](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43761213396). PR #62 remains open and unmerged.
 
 ## Operations and documentation audit
 
@@ -49,6 +49,6 @@ For the current main SHA:
 3. **OPEN — RPO/RTO:** define service-owner-approved targets and measure them in a repeatable, representative recovery exercise. The historical test durations are not RTO.
 4. **OPEN — Production and customer acceptance:** verify the selected production environment, secrets, TLS/network, monitoring, restore ownership, release process, and product acceptance. Passing CI and package validation do not satisfy these gates.
 5. **OPEN — Offline acceptance:** test the merged flow with an authenticated application backend and representative devices; verify the documented `userId`-less and non-UUID legacy cases; retain run-specific evidence.
-6. **BLOCKED — Coordinator closure:** refresh the live main SHA/PR state after documentation PR checks and obtain remaining operational acceptance before Phase 9 sign-off.
+6. **BLOCKED — Coordinator closure:** obtain the remaining operational acceptance and refresh the live main SHA/PR state before Phase 9 sign-off.
 
 **Conclusion:** Phase 9 remains **PARTIAL / BLOCKED**. No production deployment, production approval, or phase completion is claimed.

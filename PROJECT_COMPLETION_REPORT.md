@@ -2,9 +2,9 @@
 
 **Assessment:** **PARTIAL / BLOCKED.** This report records implemented work and evidence; it does not declare the overall project or Phase 9 complete, production-ready, or approved.
 
-**Phase 9 documentation baseline at kickoff:** `879ae951d6cea52fd84d01dc699cf2ed08843300`  
-**Current `main`:** [`621874535ee480e56716ae8a7bd992272bc7a51a`](https://github.com/Xonni-star/SecurityOps-2.0/commit/621874535ee480e56716ae8a7bd992272bc7a51a)  
-**Last GitHub check:** 2026-11-15 21:59 CET  
+**Phase 9 documentation baseline at kickoff:** `879ae951d6cea52fd84d01dc699cf2ed08843300`
+**Current `main`:** [`621874535ee480e56716ae8a7bd992272bc7a51a`](https://github.com/Xonni-star/SecurityOps-2.0/commit/621874535ee480e56716ae8a7bd992272bc7a51a)
+**Last GitHub check:** 2026-11-15 22:03 CET
 **Open PR:** [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62) — rebased documentation/report update; no merge or deployment.
 
 The kickoff commit is the Phase 9 documentation workstream’s verified mainline baseline, not the repository’s first commit. Current status and evidence links are in [PROJECT_STATUS.md](./PROJECT_STATUS.md) and [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md).
@@ -50,7 +50,7 @@ This documentation workstream changed Markdown and runbook documentation only; i
 
 ## In development
 
-- PR #62: documentation rebase and updated project/phase reports. It remains open. Its old head `b0e339b` passed 7/7 CI, but that does not validate the rebased head; fresh PR CI is required.
+- PR #62: documentation rebase and updated project/phase reports. Its new head `6c8a52c51ff3b47a20be9a0579e863861744c891` passed 7/7 in hosted run [43761213396](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43761213396). The PR remains open and unmerged.
 - Mainline post-merge CI for PR #64: run [43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on exact SHA `621874535ee480e56716ae8a7bd992272bc7a51a`.
 
 ## Open
@@ -59,7 +59,7 @@ This documentation workstream changed Markdown and runbook documentation only; i
 - Existing local attachments without `userId` are intentionally never auto-uploaded or assigned an owner. The UI warns, and the user must re-add them. Previously acknowledged entries with non-UUID local IDs cannot be linked. These cases are not automatically repaired.
 - Provider-backed object storage and scanner acceptance, production-like backup/restore, data-retention validation, and measured/approved RPO/RTO.
 - Production environment, secrets, TLS/network, monitoring, operational ownership, customer acceptance, and release approval.
-- A final Phase 9 sign-off after current-main and documentation CI checks finish and remaining operational gates receive evidence.
+- A final Phase 9 sign-off after remaining operational gates receive evidence.
 
 ## Technically tested
 
@@ -69,10 +69,10 @@ This documentation workstream changed Markdown and runbook documentation only; i
 | PR #64 local backend | Build passed; migration-parser suite 22 passed; `auth_site_scope` and `syncAuthorization` suites 17 passed | PR description says PostgreSQL-backed migration/API suites were not run locally because the configured database could not be verified as isolated synthetic infrastructure. |
 | PR #64 hosted checks | **7/7 passed** on head `b814b65` | Pre-merge hosted CI, not post-merge main validation. |
 | Current main CI | **7/7 passed** in run 43760703980 on exact SHA `621874535ee480e56716ae8a7bd992272bc7a51a` | Hosted post-merge CI; not production approval. |
-| PR #62 prior head | **7/7 passed** on `b0e339b` | Superseded by rebase and new report content; fresh CI required. |
+| PR #62 rebased head | **7/7 passed** in run 43761213396 on `6c8a52c` | Hosted validation of the current documentation PR head; PR remains open and unmerged. |
 | Earlier main/artifact CI | Main CI 7/7 and artifact validation 2/2 were observed on earlier stated SHAs, including `bed939a` | Not evidence for `6218745`. Exact historical run mapping is retained in `PROJECT_CURRENT_STATUS.md` and `PHASE_9_COMPLETION_REPORT.md`. |
 
-This documentation update has not yet been validated on its final rebased PR head. Markdown link checks and whitespace checks must be run before the new head is pushed; hosted CI must then pass.
+The last hosted CI result recorded for PR #62 is 7/7 on `6c8a52c` (run 43761213396). That result does not apply to subsequent report-only commits; check the current PR head for its own CI result.
 
 ## Production-approved
 
@@ -96,7 +96,7 @@ All rows reflect GitHub state checked on 2026-11-15. Merge SHAs are abbreviated 
 | [#59](https://github.com/Xonni-star/SecurityOps-2.0/pull/59) | `xonni-star-update-readiness-docs-status` | Refresh readiness and GitHub status docs | Merged `879ae95` |
 | [#60](https://github.com/Xonni-star/SecurityOps-2.0/pull/60) | `xonni-star-phase-9-planning-personnel` | Harden planning validation and approvals | Merged `563efd6` |
 | [#61](https://github.com/Xonni-star/SecurityOps-2.0/pull/61) | `xonni-star-phase-9-usability-performance` | Improve global search keyboard accessibility | Merged `084314e` |
-| [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62) | `xonni-star-phase-9-ops-docs` | Current status and operations audit; project reports | **Open**, rebased documentation checks pending |
+| [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62) | `xonni-star-phase-9-ops-docs` | Current status and operations audit; project reports | **Open**, latest recorded head `6c8a52c` passed 7/7; later report-only changes require checking current head |
 | [#63](https://github.com/Xonni-star/SecurityOps-2.0/pull/63) | `xonni-star-phase9-core-workflow-e2e` | Cover Phase 9 core online workflows | Merged `bed939a` |
 | [#64](https://github.com/Xonni-star/SecurityOps-2.0/pull/64) | `xonni-star-phase9-offline-attachment-sync` | Sync GuardBook attachments offline | Merged `6218745` |
 | [#65](https://github.com/Xonni-star/SecurityOps-2.0/pull/65) | `xonni-star-phase-9-tenant-authorization` | Strengthen tenant authorization boundary coverage | Merged `cd01c48` |
@@ -116,7 +116,7 @@ Hosted CI showed 7/7 success for PRs #50–#58, #60, #61, and #63–#65. PR #59 
 
 The code and synthetic/hosted tests provide meaningful implementation evidence, including tenant-scoped attachment idempotency, but acceptance evidence is narrower than production operations. The current report remains **PARTIAL / BLOCKED**. Passing PR checks do not substitute for post-merge main CI, production/provider/device acceptance, recovery exercises, or operational approval.
 
-1. Verify main CI run 43760703980 finishes with 7/7 success on the exact current main SHA; if it fails, report the failure and do not claim a green mainline.
-2. Push the rebased documentation PR update and wait for its hosted CI to pass on the new head; keep PR #62 open and unmerged.
-3. Keep the legacy attachment constraints visible and validate them with authenticated-backend/device acceptance before changing their status.
+1. Keep PR #62 open and unmerged; its rebased head passed hosted CI 7/7.
+2. Keep the offline legacy attachment limitations and remaining provider/device/recovery acceptance gates visible in future status updates.
+3. Validate the legacy attachment constraints with authenticated-backend/device acceptance before changing their status.
 4. Perform a controlled provider-backed restore, define and measure RPO/RTO, and collect customer/operations acceptance before any production-readiness decision.
