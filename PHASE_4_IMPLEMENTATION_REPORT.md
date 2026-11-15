@@ -4,9 +4,9 @@
 
 **Reviewed base:** `main` at `ba9ab4ddc5d9ef03a3d147a023f002a0abb0e547` (PR #43).
 
-**PR:** [#44](https://github.com/Xonni-star/SecurityOps-2.0/pull/44), open against `main` from `phase-4-system-integration-hardening`; the previously pushed head before this increment was `aa40b25524bf5ccdd03a2501198a663eec10b08c`.
+**PR:** [#44](https://github.com/Xonni-star/SecurityOps-2.0/pull/44), open against `main` from `phase-4-system-integration-hardening` at `b306d1a986fba4fec1da492f0013f16d223f930f` for this test increment.
 
-**PR CI before this increment:** **PASSED** — all seven jobs for the previous head in [run 43698524228](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43698524228). New-head checks are pending push.
+**PR CI:** **PASSED** — all seven jobs on this increment in [run 43700884110](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43700884110).
 
 ## Starting state
 
@@ -51,14 +51,14 @@ The latest main CI run [43695784002](https://github.com/Xonni-star/SecurityOps-2
 | Root structure, workflow YAML, restore shell syntax, diff whitespace | **PASSED** |
 | Local release bundle | **PASSED** — verifier accepted the assembled bundle and all 36 migration assets |
 | Main CI at base commit | **PASSED** — seven jobs in run [43695784002](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695784002) |
-| PR CI before this increment | **PASSED** — all seven jobs on the previous PR head in [run 43698524228](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43698524228); checks for the updated head are recorded after push |
+| PR CI for this increment | **PASSED** — all seven jobs for head `b306d1a986fba4fec1da492f0013f16d223f930f` in [run 43700884110](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43700884110) |
 | Hosted release verification of this change | **NOT TESTED** — its `workflow_run` trigger only packages CI runs on `main`; merging is explicitly out of scope |
 | Browser/device E2E and real mobile hardware | **NOT TESTED** — no Playwright/Cypress/WebDriver configuration was found; camera/NFC and multi-device offline behavior were not exercised |
 | Representative-scale performance / `EXPLAIN ANALYZE` | **NOT TESTED** — no representative dataset or workload was available; no query or index change was made |
 
 The default local restore image registry returned `401 UNAUTHORIZED`; the full isolated restore was then run successfully using the same pinned GHCR image configured in CI. The restore job does not start ClamAV. The frontend build also emits an existing Vite `__dirname`/native-config-loader warning; it did not fail the build.
 
-The backend Jest suite emitted an `express-rate-limit` diagnostic for a test request carrying `X-Forwarded-For` while `trust proxy` is disabled; the suite passed. No proxy or rate-limit configuration was changed in this increment.
+The backend Jest suite emitted an `express-rate-limit` diagnostic for a test request carrying `X-Forwarded-For` while `trust proxy` is disabled and reported one existing `TCPWRAP` open handle from the patrol integration setup; it still passed and exited successfully. No proxy, rate-limit, or patrol runtime configuration was changed in this increment.
 
 ## Production checklist
 
