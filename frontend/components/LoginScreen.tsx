@@ -1,19 +1,34 @@
 import React, { useState } from 'react';
 import { Shield, Mail, Lock, AlertTriangle, Loader2 } from 'lucide-react';
+import { ApiError } from '../services/apiClient';
 import { useSecurityStore } from '../store';
+import { TenantSelectionOption } from '../types';
 
 export const LoginScreen: React.FC = () => {
   const { login, isAuthenticating, authError } = useSecurityStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [availableTenants, setAvailableTenants] = useState<TenantSelectionOption[]>([]);
+  const [selectedTenantId, setSelectedTenantId] = useState('');
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      await login(email.trim(), password);
-    } catch {
-      // authError wird im Store gesetzt und unten angezeigt.
+      await login(email.trim(), password, selectedTenantId || undefined);
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'AMBIGUOUS_TENANT_SELECTION') {
+        setAvailableTenants(error.availableTenants ?? []);
+        setSelectedTenantId('');
+      } else {
+        setAvailableTenants([]);
+        setSelectedTenantId('');
+      }
     }
+  };
+
+  const resetTenantSelection = () => {
+    setAvailableTenants([]);
+    setSelectedTenantId('');
   };
 
   return (
@@ -48,7 +63,10 @@ export const LoginScreen: React.FC = () => {
               required
               autoComplete="username"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                resetTenantSelection();
+              }}
               className="w-full bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-600"
               placeholder="name@unternehmen.de"
             />
@@ -64,16 +82,39 @@ export const LoginScreen: React.FC = () => {
               required
               autoComplete="current-password"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                resetTenantSelection();
+              }}
               className="w-full bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-600"
               placeholder="••••••••"
             />
           </div>
         </label>
 
+        {availableTenants.length > 0 && (
+          <label className="block space-y-1">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Mandant</span>
+            <select
+              required
+              autoComplete="organization"
+              value={selectedTenantId}
+              onChange={(event) => setSelectedTenantId(event.target.value)}
+              className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
+            >
+              <option value="">Bitte Mandant auswählen</option>
+              {availableTenants.map((tenant) => (
+                <option key={tenant.id} value={tenant.id}>
+                  {tenant.name}{tenant.role ? ` (${tenant.role})` : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
         <button
           type="submit"
-          disabled={isAuthenticating}
+          disabled={isAuthenticating || (availableTenants.length > 0 && !selectedTenantId)}
           className="w-full px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-sm transition flex items-center justify-center gap-2"
         >
           {isAuthenticating ? (
@@ -82,7 +123,7 @@ export const LoginScreen: React.FC = () => {
               <span>Anmeldung läuft…</span>
             </>
           ) : (
-            <span>Anmelden</span>
+            <span>{availableTenants.length > 0 ? 'Mit Mandanten anmelden' : 'Anmelden'}</span>
           )}
         </button>
 

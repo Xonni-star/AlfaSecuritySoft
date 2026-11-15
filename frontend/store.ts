@@ -580,7 +580,7 @@ interface SecurityOpsStore {
   authError: string | null;
   isLoadingData: boolean;
   dataLoadError: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, requestedTenantId?: string) => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
   loadTenantData: (options?: { preserveCurrentData?: boolean }) => Promise<void>;
@@ -936,12 +936,12 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   isLoadingData: false,
   dataLoadError: null,
 
-  login: async (email, password) => {
+  login: async (email, password, requestedTenantId) => {
     set({ isAuthenticating: true, authError: null });
     try {
       const data = await apiClient.post<any>(
         '/auth/login',
-        { email, password },
+        { email, password, ...(requestedTenantId ? { requestedTenantId } : {}) },
         { skipAuth: true }
       );
       apiClient.setCsrfToken(data.csrfToken);
