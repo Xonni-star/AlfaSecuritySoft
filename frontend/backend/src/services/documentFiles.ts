@@ -248,6 +248,12 @@ export async function persistDocumentBlob(bytes: Buffer, contentType: string): P
   return key;
 }
 
+export async function persistDocumentBlobAtKey(key: string, bytes: Buffer, contentType: string): Promise<void> {
+  assertStorageKey(key);
+  if (!key.startsWith('quarantine/')) throw new Error('DMS uploads must remain quarantined until scan acceptance.');
+  await objectStore.put(key, bytes, contentType);
+}
+
 export async function readDocumentBlob(storageKey: string): Promise<Buffer> {
   assertStorageKey(storageKey);
   return objectStore.get(storageKey);

@@ -61,7 +61,7 @@ const corsOptions: CorsOptions = {
   // Muss alle tatsächlich registrierten API-Methoden enthalten.
   // PUT wird nirgends verwendet und deshalb bewusst nicht freigegeben.
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token', 'X-File-Name']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token', 'X-File-Name', 'X-Idempotency-Key']
 };
 
 app.use(cors(corsOptions));
@@ -352,6 +352,9 @@ app.post('/api/v1/alarm-notifications/:id/retry', authenticateJwt, requirePermis
 app.get('/api/v1/logbook', authenticateJwt, requirePermission('logbook:read'), guardbookController.listGuardbook);
 app.post('/api/v1/logbook', authenticateJwt, requirePermission('logbook:create'), guardbookController.createGuardbookEntry);
 app.post('/api/v1/logbook/revisions', authenticateJwt, requirePermission('logbook:create'), guardbookController.addGuardbookRevision);
+app.post('/api/v1/logbook/:id/attachments', authenticateJwt, requirePermission('logbook:create'),
+  express.raw({ type: 'application/octet-stream', limit: documentController.documentUploadBodyParserLimit() }),
+  documentController.uploadGuardbookAttachment);
 
 // Offline-Synchronisations-Endpunkte
 app.post('/api/v1/sync/push', authenticateJwt, syncController.pushSyncMutations);

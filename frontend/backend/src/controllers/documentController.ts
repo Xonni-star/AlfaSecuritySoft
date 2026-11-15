@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import { PoolClient } from 'pg';
 import { z } from 'zod';
 import { withTenantTransaction } from '../config/database';
-import { detectDocumentContent, maxDocumentUploadBytes, persistDocumentBlob, readDocumentBlob, removeDocumentBlob, sanitizeOriginalFilename } from '../services/documentFiles';
+import { detectDocumentContent, maxDocumentUploadBytes, persistDocumentBlob, persistDocumentBlobAtKey, readDocumentBlob, removeDocumentBlob, sanitizeOriginalFilename } from '../services/documentFiles';
 import { env } from '../config/env';
 import { documentScanner, DocumentScannerUnavailableError } from '../services/documentScanner';
 
@@ -76,6 +76,14 @@ const relationTargets = {
 
 function httpError(statusCode: number, message: string): Error & { statusCode: number } {
   return Object.assign(new Error(message), { statusCode });
+}
+
+function deterministicUuid(namespace: string, tenantId: string, idempotencyKey: string): string {
+  const bytes = createHash('sha256').update(`${namespace}:${tenantId}:${idempotencyKey}`).digest().subarray(0, 16);
+  bytes[6] = (bytes[6] & 0x0f) | 0x50;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = bytes.toString('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
 async function assertTenantCategory(db: PoolClient, tenantId: string, categoryId: string): Promise<void> {
@@ -241,25 +249,7 @@ async function finalizeDocumentScan(
   bytes: Buffer,
   userId: string
 ): Promise<string> {
-  let scanStatus: 'clean' | 'infected' | 'unavailable' | 'error' | 'not_scanned';
-  let scanErrorCode: string | null = null;
-  if (!env.DMS_SCAN_REQUIRED && env.DMS_SCANNER_PROVIDER === 'none') {
-    scanStatus = 'not_scanned';
-  } else {
-    try {
-      scanStatus = await documentScanner.scan(bytes);
-    } catch (error) {
-      if (error instanceof DocumentScannerUnavailableError) {
-        scanStatus = 'unavailable';
-        scanErrorCode = 'provider_unavailable';
-      } else {
-        scanStatus = 'error';
-        scanErrorCode = 'scanner_error';
-      }
-      console.error('[DMS SCAN] File remains quarantined.', { status: scanStatus });
-    }
-  }
-
+  const { scanStatus, scanErrorCode } = await scanDocumentBytes(bytes);
   const release = scanStatus === 'clean' || (scanStatus === 'not_scanned' && !env.DMS_SCAN_REQUIRED);
   const action = ({
     clean: 'scan_clean',
@@ -287,6 +277,32 @@ async function finalizeDocumentScan(
     });
   });
   return scanStatus;
+}
+
+async function scanDocumentBytes(bytes: Buffer): Promise<{
+  scanStatus: 'clean' | 'infected' | 'unavailable' | 'error' | 'not_scanned';
+  scanErrorCode: string | null;
+}> {
+  let scanStatus: 'clean' | 'infected' | 'unavailable' | 'error' | 'not_scanned';
+  let scanErrorCode: string | null = null;
+  if (!env.DMS_SCAN_REQUIRED && env.DMS_SCANNER_PROVIDER === 'none') {
+    scanStatus = 'not_scanned';
+  } else {
+    try {
+      scanStatus = await documentScanner.scan(bytes);
+    } catch (error) {
+      if (error instanceof DocumentScannerUnavailableError) {
+        scanStatus = 'unavailable';
+        scanErrorCode = 'provider_unavailable';
+      } else {
+        scanStatus = 'error';
+        scanErrorCode = 'scanner_error';
+      }
+      console.error('[DMS SCAN] File remains quarantined.', { status: scanStatus });
+    }
+  }
+
+  return { scanStatus, scanErrorCode };
 }
 
 export async function rescanDocumentVersion(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -516,6 +532,129 @@ export async function uploadDocument(req: Request, res: Response, next: NextFunc
         console.error('[DMS] Failed to remove orphaned upload blob.');
       }
     }
+    next(error);
+  }
+}
+
+export async function uploadGuardbookAttachment(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const tenantId = req.user!.tenantId;
+    const user = req.user!;
+    const incidentId = uuid(req.params.id);
+    const idempotencyKey = uuid(req.get('x-idempotency-key') || '');
+    const bytes = requireFile(req);
+    const filename = parseFilename(req);
+    const file = detectDocumentContent(bytes, filename);
+    const requestHash = createHash('sha256').update(JSON.stringify({
+      incidentId,
+      filename,
+      contentType: file.contentType,
+      sizeBytes: bytes.length,
+      contentHash: createHash('sha256').update(bytes).digest('hex')
+    })).digest('hex');
+    const documentId = deterministicUuid('guardbook-attachment-document', tenantId, idempotencyKey);
+    const storageKey = `quarantine/${deterministicUuid('guardbook-attachment-storage', tenantId, idempotencyKey)}`;
+
+    const result = await withTenantTransaction(tenantId, async (db) => {
+      await db.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
+        `${tenantId}:guardbook-attachment:${idempotencyKey}`
+      ]);
+
+      const incident = await db.query(
+        'SELECT id,site_id,title FROM guardbook_entries WHERE id=$1 AND tenant_id=$2',
+        [incidentId, tenantId]
+      );
+      if (!incident.rows.length) throw httpError(404, 'Wachbucheintrag nicht gefunden.');
+      const siteId = incident.rows[0].site_id as string;
+      if (!user.permissions.includes('logbook:create') &&
+          !user.sitePermissions?.some((grant) => grant.code === 'logbook:create' && grant.siteId === siteId)) {
+        throw httpError(403, 'Keine Berechtigung für dieses Wachbuchobjekt.');
+      }
+
+      const existing = await db.query(
+        `SELECT request_hash,incident_id,document_id,created_by
+           FROM guardbook_attachment_idempotency
+          WHERE tenant_id=$1 AND idempotency_key=$2`,
+        [tenantId, idempotencyKey]
+      );
+      if (existing.rows.length) {
+        const receipt = existing.rows[0];
+        if (receipt.created_by !== user.userId) {
+          throw httpError(409, 'Idempotenzschlüssel wurde von einem anderen Benutzer verwendet.');
+        }
+        if (receipt.request_hash !== requestHash || receipt.incident_id !== incidentId) {
+          throw httpError(409, 'Idempotenzschlüssel wurde mit abweichendem Dateiinhalt oder Wachbucheintrag wiederverwendet.');
+        }
+        const document = await db.query(
+          `${documentSelect} WHERE d.id=$1 AND d.tenant_id=$2`,
+          [receipt.document_id, tenantId]
+        );
+        if (!document.rows.length) throw httpError(409, 'Die gespeicherte Uploadquittung verweist auf kein verfügbares Dokument.');
+        return document.rows[0];
+      }
+
+      await ensureDefaultCategories(db, tenantId, user.userId);
+      const category = await db.query(
+        `SELECT id FROM document_categories
+          WHERE tenant_id=$1 AND name='Einsatzberichte' AND NOT is_archived
+          ORDER BY id LIMIT 1`,
+        [tenantId]
+      );
+      if (!category.rows.length) throw httpError(409, 'Die DMS-Kategorie Einsatzberichte ist nicht verfügbar.');
+
+      await persistDocumentBlobAtKey(storageKey, bytes, file.contentType);
+      const { scanStatus, scanErrorCode } = await scanDocumentBytes(bytes);
+      const release = scanStatus === 'clean' || (scanStatus === 'not_scanned' && !env.DMS_SCAN_REQUIRED);
+      const scanAction = ({
+        clean: 'scan_clean',
+        infected: 'scan_infected',
+        unavailable: 'scan_unavailable',
+        error: 'scan_error',
+        not_scanned: 'scan_not_configured'
+      } as const)[scanStatus];
+      const title = `Wachbuchanhang: ${filename}`;
+      await db.query(
+        `INSERT INTO documents (id,tenant_id,site_id,title,category_id,description,created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [documentId, tenantId, siteId, title, category.rows[0].id,
+          `Dateianhang zum Wachbucheintrag ${incidentId}.`, user.userId]
+      );
+      await db.query(
+        `INSERT INTO document_versions
+           (tenant_id,document_id,version_number,original_filename,storage_key,content_type,size_bytes,
+            sha256_hash,scan_status,created_by,released_at,scanned_at,scan_error_code)
+         VALUES ($1,$2,1,$3,$4,$5,$6,$7,$8,$9,
+            CASE WHEN $10 THEN CURRENT_TIMESTAMP ELSE NULL END,
+            CASE WHEN $11 THEN CURRENT_TIMESTAMP ELSE NULL END,$12)`,
+        [tenantId, documentId, filename, storageKey, file.contentType, bytes.length,
+          createHash('sha256').update(bytes).digest('hex'), scanStatus, user.userId, release,
+          scanStatus === 'clean' || scanStatus === 'infected', scanErrorCode]
+      );
+      await setRelationship(db, tenantId, documentId, 'incident', incidentId);
+      await audit(db, tenantId, documentId, user.userId, 'created', { title, guardbookEntryId: incidentId });
+      await audit(db, tenantId, documentId, user.userId, 'uploaded', { version: 1, sizeBytes: bytes.length });
+      await audit(db, tenantId, documentId, user.userId, scanAction, {
+        version: 1,
+        released: release,
+        ...(scanErrorCode ? { errorCode: scanErrorCode } : {})
+      });
+      await db.query(
+        `INSERT INTO guardbook_attachment_idempotency
+           (tenant_id,idempotency_key,incident_id,document_id,request_hash,created_by)
+         VALUES ($1,$2,$3,$4,$5,$6)`,
+        [tenantId, idempotencyKey, incidentId, documentId, requestHash, user.userId]
+      );
+      const document = await db.query(
+        `${documentSelect} WHERE d.id=$1 AND d.tenant_id=$2`,
+        [documentId, tenantId]
+      );
+      if (!document.rows.length) throw new Error('DMS upload metadata was not durable after insertion.');
+      return document.rows[0];
+    });
+
+    res.status(result.scan_status === 'clean' || result.scan_status === 'not_scanned' && !env.DMS_SCAN_REQUIRED ? 201 : 202)
+      .json({ success: true, data: result });
+  } catch (error) {
     next(error);
   }
 }

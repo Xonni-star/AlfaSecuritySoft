@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { IDBFactory } from 'fake-indexeddb';
 import { apiClient } from '../services/apiClient';
-import { IndexedDbService, offlineVault } from '../services/indexedDbService';
+import { IndexedDbService, offlineVault, type StoredAttachment } from '../services/indexedDbService';
 import { useSecurityStore } from '../store';
 
 const tenantId = 'tenant-offline-test';
 const userId = 'user-offline-test';
 
-async function readAttachment(vault: IndexedDbService, id: string): Promise<unknown> {
+async function readAttachment(vault: IndexedDbService, id: string): Promise<StoredAttachment | undefined> {
   const db = await vault.init();
   return new Promise((resolve, reject) => {
     const request = db.transaction('attachments', 'readonly').objectStore('attachments').get(id);
@@ -77,9 +77,11 @@ describe('offline guardbook reconnect exercise', () => {
       resolved: false
     });
     const [queuedBeforeRestart] = await offlineVault.getOutbox(tenantId, 'guardbook', userId);
+    const attachmentId = crypto.randomUUID();
     await offlineVault.saveAttachment({
-      id: `att-${entryId}`,
+      id: attachmentId,
       tenantId,
+      userId,
       entityId: entryId,
       fileName: 'vorfall.jpg',
       mimeType: 'image/jpeg',
@@ -101,7 +103,7 @@ describe('offline guardbook reconnect exercise', () => {
         payload: expect.objectContaining({ id: entryId, title: 'Offline-Vorfall', offlineCreated: true })
       })
     ]);
-    expect(await readAttachment(reopenedVault, `att-${entryId}`)).toMatchObject({
+    expect(await readAttachment(reopenedVault, attachmentId)).toMatchObject({
       tenantId,
       entityId: entryId,
       blobData: 'data:image/jpeg;base64,cGhvdG8=',
@@ -111,6 +113,12 @@ describe('offline guardbook reconnect exercise', () => {
 
     const serverReceipts = new Map<string, { clientUuid: string; status: string; serverId: string; serverVersion: number }>();
     let simulatedServerEffects = 0;
+    const upload = vi.spyOn(apiClient, 'uploadFile').mockResolvedValue({
+      id: crypto.randomUUID(),
+      tenant_id: tenantId,
+      linked_entity_type: 'incident',
+      linked_entity_id: entryId
+    });
     const post = vi.spyOn(apiClient, 'post').mockImplementation(async (_endpoint, body) => {
       const mutation = body.mutations[0];
       let receipt = serverReceipts.get(mutation.clientUuid);
@@ -119,7 +127,7 @@ describe('offline guardbook reconnect exercise', () => {
         receipt = {
           clientUuid: mutation.clientUuid,
           status: 'SYNCED',
-          serverId: 'simulated-server-entry',
+          serverId: entryId,
           serverVersion: 1
         };
         serverReceipts.set(mutation.clientUuid, receipt);
@@ -148,8 +156,188 @@ describe('offline guardbook reconnect exercise', () => {
     expect(post.mock.calls.map(([, body]) => body.mutations[0].clientUuid))
       .toEqual([queuedBeforeRestart.id, queuedBeforeRestart.id]);
     expect(simulatedServerEffects).toBe(1);
+    expect(upload).toHaveBeenCalledOnce();
+    expect(upload.mock.calls[0][3]).toEqual({ idempotencyKey: attachmentId });
     expect(await offlineVault.getOutbox(tenantId, 'guardbook', userId)).toEqual([]);
     expect(post.mock.calls[0][1].mutations[0].payload).not.toHaveProperty('photo');
+  });
+
+  test('recovers a lost attachment receipt after IndexedDB is reopened using the same idempotency key', async () => {
+    const entryId = 'gb-legacy-local-id';
+    const serverEntryId = crypto.randomUUID();
+    const attachmentId = `att-${entryId}`;
+    const mutationId = 'legacy-guardbook-mutation';
+    await offlineVault.enqueueMutation({
+      id: mutationId,
+      tenantId,
+      userId,
+      entityType: 'guardbook',
+      action: 'CREATE',
+      payload: { id: entryId, title: 'Legacy offline entry', siteId: 'site-offline-test', guardId: 'guard-offline-test' },
+      occurredAt: new Date().toISOString(),
+      baseVersion: 1
+    });
+    await offlineVault.saveAttachment({
+      id: attachmentId,
+      tenantId,
+      userId,
+      entityId: entryId,
+      fileName: 'vorfall.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: 30,
+      blobData: 'data:image/jpeg;base64,cGhvdG8=',
+      capturedAt: new Date().toISOString(),
+      synced: false
+    });
+
+    const acceptedDocuments = new Map<string, {
+      id: string;
+      tenant_id: string;
+      linked_entity_type: string;
+      linked_entity_id: string;
+    }>();
+    let serverDocumentCreates = 0;
+    const post = vi.spyOn(apiClient, 'post').mockResolvedValue([{
+      clientUuid: mutationId,
+      status: 'SYNCED',
+      serverId: serverEntryId,
+      serverVersion: 1
+    }]);
+    const upload = vi.spyOn(apiClient, 'uploadFile').mockImplementation(async (_endpoint, _file, _progress, options) => {
+      const key = options?.idempotencyKey;
+      if (!key) throw new Error('Idempotency key missing');
+      let document = acceptedDocuments.get(key);
+      if (!document) {
+        serverDocumentCreates += 1;
+        document = {
+          id: crypto.randomUUID(),
+          tenant_id: tenantId,
+          linked_entity_type: 'incident',
+          linked_entity_id: serverEntryId
+        };
+        acceptedDocuments.set(key, document);
+        throw new Error('Response lost after durable server acceptance');
+      }
+      return document;
+    });
+
+    const firstAttempt = await useSecurityStore.getState().triggerManualSync();
+    expect(firstAttempt).toMatchObject({ success: 1, failed: 1, conflicts: 0 });
+    const pendingAttachment = await readAttachment(offlineVault, attachmentId);
+    const persistedIdempotencyKey = pendingAttachment?.idempotencyKey;
+    expect(pendingAttachment).toMatchObject({
+      entityId: serverEntryId,
+      synced: false,
+      lastUploadError: 'Response lost after durable server acceptance',
+      uploadRetryCount: 1,
+      idempotencyKey: expect.stringMatching(/^[0-9a-f-]{36}$/i)
+    });
+    expect(post).toHaveBeenCalledTimes(1);
+
+    offlineVault.close();
+    await offlineVault.init();
+    const recoveredAttempt = await useSecurityStore.getState().triggerManualSync();
+    expect(recoveredAttempt).toMatchObject({ success: 0, failed: 0, conflicts: 0 });
+    expect(upload).toHaveBeenCalledTimes(2);
+    expect(upload.mock.calls.map(([, , , options]) => options?.idempotencyKey)).toEqual([
+      persistedIdempotencyKey,
+      persistedIdempotencyKey
+    ]);
+    expect(upload.mock.calls.map(([endpoint]) => endpoint)).toEqual([
+      `/logbook/${serverEntryId}/attachments`,
+      `/logbook/${serverEntryId}/attachments`
+    ]);
+    expect(serverDocumentCreates).toBe(1);
+    expect(await readAttachment(offlineVault, attachmentId)).toMatchObject({
+      synced: true,
+      serverDocumentId: acceptedDocuments.get(persistedIdempotencyKey ?? '')?.id,
+      lastUploadError: undefined
+    });
+    expect(await offlineVault.getPendingAttachments(tenantId, userId)).toEqual([]);
+  });
+
+  test('does not replay another same-tenant user’s or an ownerless legacy attachment after account switch', async () => {
+    const ownerEntryId = crypto.randomUUID();
+    const otherOwnerAttachmentId = crypto.randomUUID();
+    const legacyAttachmentId = crypto.randomUUID();
+    await offlineVault.saveAttachment({
+      id: otherOwnerAttachmentId,
+      tenantId,
+      userId,
+      entityId: ownerEntryId,
+      fileName: 'user-a.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: 5,
+      blobData: 'data:image/jpeg;base64,cGhvdG8=',
+      capturedAt: new Date().toISOString(),
+      synced: false
+    });
+    await offlineVault.saveAttachment({
+      id: legacyAttachmentId,
+      tenantId,
+      entityId: ownerEntryId,
+      fileName: 'legacy.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: 5,
+      blobData: 'data:image/jpeg;base64,cGhvdG8=',
+      capturedAt: new Date().toISOString(),
+      synced: false
+    });
+    useSecurityStore.setState((state) => ({
+      currentUserId: 'user-b',
+      authUser: state.authUser ? { ...state.authUser, id: 'user-b', email: 'user-b@offline.test' } : null
+    }));
+
+    const upload = vi.spyOn(apiClient, 'uploadFile');
+    const result = await useSecurityStore.getState().triggerManualSync();
+
+    expect(result).toMatchObject({ success: 0, failed: 0, conflicts: 0 });
+    expect(upload).not.toHaveBeenCalled();
+    expect(await offlineVault.getPendingAttachments(tenantId, userId)).toHaveLength(1);
+    expect(await offlineVault.getPendingAttachments(tenantId, 'user-b')).toEqual([]);
+    expect(await readAttachment(offlineVault, otherOwnerAttachmentId)).toMatchObject({
+      userId,
+      synced: false
+    });
+    const ownerlessLegacyAttachment = await readAttachment(offlineVault, legacyAttachmentId);
+    expect(ownerlessLegacyAttachment).toMatchObject({ synced: false });
+    expect(ownerlessLegacyAttachment).not.toHaveProperty('userId');
+    expect(await offlineVault.getOwnerlessPendingAttachmentCount(tenantId)).toBe(1);
+    expect(await offlineVault.getOwnerlessPendingAttachmentCount('another-tenant')).toBe(0);
+    expect(useSecurityStore.getState().notifications).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        title: 'Ältere Wachbuchanhänge nicht synchronisiert',
+        type: 'warning',
+        message: expect.stringContaining('nicht automatisch hochgeladen')
+      })
+    ]));
+  });
+
+  test('relinks only the matching user’s pending attachment when local entity IDs overlap', async () => {
+    const localEntityId = crypto.randomUUID();
+    const serverEntityId = crypto.randomUUID();
+    const ownerAttachmentId = crypto.randomUUID();
+    const otherOwnerAttachmentId = crypto.randomUUID();
+    const ownerlessAttachmentId = crypto.randomUUID();
+    const attachment = {
+      tenantId,
+      entityId: localEntityId,
+      fileName: 'evidence.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: 5,
+      blobData: 'data:image/jpeg;base64,cGhvdG8=',
+      capturedAt: new Date().toISOString(),
+      synced: false
+    };
+    await offlineVault.saveAttachment({ ...attachment, id: ownerAttachmentId, userId });
+    await offlineVault.saveAttachment({ ...attachment, id: otherOwnerAttachmentId, userId: 'user-b' });
+    await offlineVault.saveAttachment({ ...attachment, id: ownerlessAttachmentId });
+
+    await offlineVault.relinkPendingAttachments(tenantId, userId, localEntityId, serverEntityId);
+
+    expect(await readAttachment(offlineVault, ownerAttachmentId)).toMatchObject({ entityId: serverEntityId });
+    expect(await readAttachment(offlineVault, otherOwnerAttachmentId)).toMatchObject({ entityId: localEntityId });
+    expect(await readAttachment(offlineVault, ownerlessAttachmentId)).toMatchObject({ entityId: localEntityId });
   });
 
   test('keeps a guardbook conflict visible instead of retrying it automatically', async () => {

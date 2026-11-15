@@ -16,12 +16,12 @@ const noopLogger = () => {};
 const MIGRATION_VERSIONS = [
   '001', '002', '003', '004', '005', '006', '007', '009', '011', '012', '013', '014',
   '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025', '026',
-  '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040'
+  '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040', '041'
 ];
 const MIGRATION_VERSIONS_WITH_010 = [
   '001', '002', '003', '004', '005', '006', '007', '009', '010', '011', '012', '013',
   '014', '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025',
-  '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040'
+  '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040', '041'
 ];
 
 function migrationUrl(): string {
@@ -130,6 +130,7 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
     expect(history.every((row) => /^[0-9a-f]{64}$/.test(row.checksum))).toBe(true);
     expect(await tableExists(db, 'sync_conflict_resolution_receipts')).toBe(true);
     expect(await tableExists(db, 'documents')).toBe(true);
+    expect(await tableExists(db, 'guardbook_attachment_idempotency')).toBe(true);
     expect(await tableExists(db, 'document_storage_deletion_outbox')).toBe(true);
     expect(await tableExists(db, 'employee_site_assignments')).toBe(true);
     expect(await tableExists(db, 'emergency_plans')).toBe(true);
@@ -182,6 +183,13 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
     );
     expect(patrolSecurity).toHaveLength(16);
     expect(patrolSecurity.every((row) => row.row_security && row.force_row_security)).toBe(true);
+    const attachmentReceiptSecurity = await queryInDatabase<{ row_security: boolean; force_row_security: boolean }>(
+      db,
+      `SELECT c.relrowsecurity AS row_security,c.relforcerowsecurity AS force_row_security
+         FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname='public' AND c.relname='guardbook_attachment_idempotency'`
+    );
+    expect(attachmentReceiptSecurity).toEqual([{ row_security: true, force_row_security: true }]);
     const planningExtensionSecurity = await queryInDatabase<{ relname: string; row_security: boolean; force_row_security: boolean }>(
       db,
       `SELECT c.relname,c.relrowsecurity AS row_security,c.relforcerowsecurity AS force_row_security
