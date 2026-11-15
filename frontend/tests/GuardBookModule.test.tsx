@@ -101,6 +101,40 @@ describe('GuardBookModule offline capture', () => {
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('IndexedDB quota exceeded');
   });
 
+  test('ignores a second submit while the first entry write is pending', async () => {
+    let resolveEntry!: (id: string) => void;
+    mocks.addGuardBookEntry.mockReturnValueOnce(new Promise(resolve => {
+      resolveEntry = resolve;
+    }));
+
+    await act(async () => root.render(<GuardBookModule />));
+    const openButton = Array.from(container.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Ereignis erfassen'));
+    await act(async () => openButton?.click());
+
+    const title = container.querySelector<HTMLInputElement>('input[placeholder^="z. B."]');
+    const description = container.querySelector<HTMLTextAreaElement>('textarea');
+    if (!title || !description) throw new Error('Wachbucheintragsformular fehlt');
+    await act(async () => {
+      setValue(title, 'Doppelte Erfassung');
+      setValue(description, 'Ein Formular darf nur einen Eintrag erzeugen.');
+    });
+
+    const submit = container.querySelector<HTMLButtonElement>('button[type="submit"]');
+    if (!submit) throw new Error('Absenden-Schaltfläche fehlt');
+    await act(async () => submit.click());
+
+    expect(submit.disabled).toBe(true);
+    await act(async () => submit.click());
+    expect(mocks.addGuardBookEntry).toHaveBeenCalledOnce();
+
+    await act(async () => {
+      resolveEntry('gb-single-entry');
+      await Promise.resolve();
+    });
+    expect(container.querySelector('form')).toBeNull();
+  });
+
   test('retries a failed photo write against the persisted entry without creating it again', async () => {
     const persistedEntryId = 'gb-persisted-entry-id';
     mocks.addGuardBookEntry.mockResolvedValueOnce(persistedEntryId);
@@ -164,5 +198,48 @@ describe('GuardBookModule offline capture', () => {
       blobData: mocks.saveAttachment.mock.calls[0][0].blobData
     });
     expect(container.querySelector('form')).toBeNull();
+  });
+
+  test('does not label a locally stored photo as synced while online', async () => {
+    mocks.state.isOnline = true;
+    mocks.addGuardBookEntry.mockResolvedValueOnce('gb-local-photo');
+    mocks.saveAttachment.mockResolvedValueOnce(undefined);
+    vi.stubGlobal('FileReader', class {
+      onload?: (event: { target: { result: string } | null }) => void;
+      readAsDataURL(): void {
+        this.onload?.({ target: { result: 'data:image/jpeg;base64,cGhvdG8=' } });
+      }
+    });
+
+    await act(async () => root.render(<GuardBookModule />));
+    const openButton = Array.from(container.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Ereignis erfassen'));
+    await act(async () => openButton?.click());
+
+    const title = container.querySelector<HTMLInputElement>('input[placeholder^="z. B."]');
+    const description = container.querySelector<HTMLTextAreaElement>('textarea');
+    const photoInput = container.querySelector<HTMLInputElement>('input[type="file"]');
+    if (!title || !description || !photoInput) throw new Error('Wachbucheintragsformular fehlt');
+    await act(async () => {
+      setValue(title, 'Foto ohne Upload');
+      setValue(description, 'Die Datei bleibt lokal gespeichert.');
+      Object.defineProperty(photoInput, 'files', {
+        configurable: true,
+        value: [new File(['photo'], 'incident.jpg', { type: 'image/jpeg' })]
+      });
+      photoInput.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    const form = container.querySelector('form');
+    if (!form) throw new Error('Wachbucheintragsformular fehlt');
+    await act(async () => {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+    });
+
+    expect(mocks.saveAttachment).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'att-gb-local-photo',
+      synced: false
+    }));
   });
 });

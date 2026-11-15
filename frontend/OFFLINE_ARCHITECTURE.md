@@ -11,6 +11,8 @@ SecurityOps 2.0 ist als vollwertige Progressive Web App (PWA) nach modernen Webs
 - **Offline Erkennung**: Reagiert nahtlos auf `navigator.onLine`, `window.addEventListener('online')` und `window.addEventListener('offline')`.
 - **Installierbar**: Über `public/manifest.json` auf Desktop (Chrome/Edge), Tablets (iPad/Android) und mobilen Dienstgeräten installierbar.
 
+Der Service Worker wird in Production-Builds beim Laden der Anwendung registriert. Sein Precache enthält tatsächlich ausgelieferte Root-Dateien sowie die im gebauten HTML referenzierten lokalen JS-/CSS-Dateien; weitere geladene App-Ressourcen werden zur Offline-Navigation gecacht. API-Aufrufe werden nicht gecacht und benötigen für Sync eine Verbindung.
+
 ---
 
 ## 2. Lokale Datenspeicherung (IndexedDB Vault)

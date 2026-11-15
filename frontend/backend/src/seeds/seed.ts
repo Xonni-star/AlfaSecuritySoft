@@ -34,6 +34,11 @@ async function seedAlarmTypes(db: PoolClient, tenantId: string): Promise<void> {
 }
 
 export async function seedDatabase(): Promise<void> {
+  const testPassword = process.env.SECOPS_DEMO_USER_PASSWORD;
+  if (!testPassword || testPassword.length < 16) {
+    throw new Error('SECOPS_DEMO_USER_PASSWORD must be supplied and contain at least 16 characters.');
+  }
+
   console.log('[SEED] Starte Datenbankbefüllung mit Testmandanten und isolierten Daten...');
   const client = await pool.connect();
 
@@ -308,7 +313,6 @@ export async function seedDatabase(): Promise<void> {
     `);
 
     // 4. Testbenutzer mit echtem Argon2id Hash anlegen
-    const testPassword = 'SecOpsVault2025SecurePassword!';
     const passwordHash = await argon2.hash(testPassword, { type: argon2.argon2id });
 
     const userRes = await client.query(`

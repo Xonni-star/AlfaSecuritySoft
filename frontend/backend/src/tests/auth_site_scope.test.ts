@@ -92,6 +92,36 @@ describe('site-scoped authorization', () => {
     expect(result.next).toHaveBeenCalledTimes(1);
   });
 
+  test.each([
+    ['tenant-wide', { permissions: ['documents:read'] }, true],
+    ['site-scoped', { sitePermissions: [{ code: 'documents:read', siteId: siteA }] }, true],
+    ['own-scoped', { sitePermissions: [], ownPermissions: ['documents:read'] }, true],
+    ['missing', { sitePermissions: [] }, false],
+    ['role-name-only', { sitePermissions: [], role: 'System administrator' }, false]
+  ])('document list route applies the %s grant', (_scope, options, allowed) => {
+    const result = runPermissionCheck('GET', '/api/v1/documents', 'documents:read', options);
+    if (allowed) {
+      expect(result.next).toHaveBeenCalledTimes(1);
+    } else {
+      expect(result.next).not.toHaveBeenCalled();
+      expect(result.res.status).toHaveBeenCalledWith(403);
+    }
+  });
+
+  test('document download requires its own permission grant', () => {
+    const siteGrant = runPermissionCheck('GET', '/api/v1/documents/document-id/download', 'documents:download', {
+      sitePermissions: [{ code: 'documents:download', siteId: siteA }]
+    });
+    expect(siteGrant.next).toHaveBeenCalledTimes(1);
+
+    const readOnly = runPermissionCheck('GET', '/api/v1/documents/document-id/download', 'documents:download', {
+      permissions: ['documents:read'],
+      sitePermissions: []
+    });
+    expect(readOnly.next).not.toHaveBeenCalled();
+    expect(readOnly.res.status).toHaveBeenCalledWith(403);
+  });
+
   test('a role name cannot substitute for an explicit permission grant', () => {
     const result = runPermissionCheck('POST', '/api/v1/admin/users', 'users:manage', {
       permissions: [],

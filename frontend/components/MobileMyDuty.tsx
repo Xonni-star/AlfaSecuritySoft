@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   CalendarDays,
   Clock,
@@ -37,6 +37,17 @@ export const MobileMyDuty: React.FC = () => {
   const [selectedShiftForSwap, setSelectedShiftForSwap] = useState<Shift | null>(null);
   const [targetEmployeeId, setTargetEmployeeId] = useState(employees[0]?.id || '');
   const [swapReason, setSwapReason] = useState('');
+  const swapTriggerRef = useRef<HTMLButtonElement>(null);
+  const swapDialogRef = useRef<HTMLDivElement>(null);
+  const swapSelectRef = useRef<HTMLSelectElement>(null);
+
+  useEffect(() => {
+    if (isSwapModalOpen) {
+      swapSelectRef.current?.focus();
+    } else if (selectedShiftForSwap) {
+      swapTriggerRef.current?.focus();
+    }
+  }, [isSwapModalOpen, selectedShiftForSwap]);
 
   // Find shifts belonging to current logged in guard
   const myShifts = shifts.filter((s) => s.employeeId === currentUserId || s.employeeName?.includes('Sabine Becker'));
@@ -69,8 +80,32 @@ export const MobileMyDuty: React.FC = () => {
     setSwapReason('');
   };
 
+  const handleSwapDialogKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setIsSwapModalOpen(false);
+      return;
+    }
+    if (event.key !== 'Tab') return;
+
+    const focusable = swapDialogRef.current?.querySelectorAll<HTMLElement>(
+      'select:not([disabled]), input:not([disabled]), button:not([disabled])'
+    );
+    if (!focusable?.length) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && (document.activeElement === first || !swapDialogRef.current?.contains(document.activeElement))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !swapDialogRef.current?.contains(document.activeElement))) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
   return (
-    <div className="space-y-4 pb-20">
+    <div className="space-y-4">
       {/* Current Active Shift Highlight */}
       <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-900/60 via-slate-900 to-slate-950 border border-blue-500/30 shadow-xl text-xs space-y-3">
         <div className="flex items-center justify-between">
@@ -126,8 +161,11 @@ export const MobileMyDuty: React.FC = () => {
             <span>Diensttausch & Vertretungsanträge</span>
           </div>
           <button
+            ref={swapTriggerRef}
             onClick={() => handleOpenSwapModal(todayShift)}
-            className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[11px] flex items-center gap-1"
+            aria-haspopup="dialog"
+            aria-expanded={isSwapModalOpen}
+            className="min-h-11 px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[11px] flex items-center gap-1"
           >
             <Plus className="w-3 h-3" />
             <span>Tausch anfragen</span>
@@ -195,8 +233,15 @@ export const MobileMyDuty: React.FC = () => {
       {/* Shift Swap Modal */}
       {isSwapModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0f172a] border border-slate-700 rounded-2xl max-w-sm w-full p-5 shadow-2xl text-xs space-y-4">
-            <h3 className="text-sm font-bold text-white">Diensttausch anfragen</h3>
+          <div
+            ref={swapDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shift-swap-dialog-title"
+            onKeyDown={handleSwapDialogKeyDown}
+            className="bg-[#0f172a] border border-slate-700 rounded-2xl max-w-sm w-full p-5 shadow-2xl text-xs space-y-4"
+          >
+            <h3 id="shift-swap-dialog-title" className="text-sm font-bold text-white">Diensttausch anfragen</h3>
             <p className="text-slate-400 text-[11px]">
               Tauschpartner für Schicht am {selectedShiftForSwap?.date} ({selectedShiftForSwap?.siteName}) auswählen:
             </p>
@@ -205,9 +250,10 @@ export const MobileMyDuty: React.FC = () => {
               <div>
                 <label className="block text-slate-400 mb-1">Kollege auswählen</label>
                 <select
+                  ref={swapSelectRef}
                   value={targetEmployeeId}
                   onChange={(e) => setTargetEmployeeId(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200"
+                  className="min-h-11 w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200"
                 >
                   {employees.filter(e => e.id !== currentUserId).map((emp) => (
                     <option key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName} ({emp.role})</option>
@@ -223,7 +269,7 @@ export const MobileMyDuty: React.FC = () => {
                   onChange={(e) => setSwapReason(e.target.value)}
                   placeholder="z. B. Tausch wegen Terminkollision"
                   required
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200"
+                  className="min-h-11 w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200"
                 />
               </div>
 
@@ -231,13 +277,13 @@ export const MobileMyDuty: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsSwapModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300"
+                  className="min-h-11 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300"
                 >
                   Abbrechen
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-blue-600 text-white font-semibold flex items-center gap-1"
+                  className="min-h-11 px-4 py-1.5 rounded-lg bg-blue-600 text-white font-semibold flex items-center gap-1"
                 >
                   <Send className="w-3 h-3" />
                   <span>Anfrage senden</span>

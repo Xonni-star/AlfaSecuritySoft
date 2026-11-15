@@ -1,0 +1,201 @@
+name: ${COMPOSE_PROJECT_NAME:?Run install.sh to create a unique test project name}
+
+x-backend-environment: &backend_environment
+  NODE_ENV: development
+  DATABASE_URL: postgresql://secops_app_user:${POSTGRES_APP_PASSWORD:?Run install.sh first}@db:5432/${POSTGRES_DB:?Run install.sh first}
+  JWT_SECRET: ${JWT_SECRET:?Run install.sh first}
+  JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+  CORS_ORIGIN: ${APP_ORIGIN:?Run install.sh first}
+  RATE_LIMIT_REDIS_URL: redis://redis:6379
+  DMS_S3_ENDPOINT: http://minio:9000
+  DMS_S3_REGION: us-east-1
+  DMS_S3_BUCKET: ${DMS_S3_BUCKET:?Run install.sh first}
+  DMS_S3_ACCESS_KEY: ${DMS_S3_ACCESS_KEY:?Run install.sh first}
+  DMS_S3_SECRET_KEY: ${DMS_S3_SECRET_KEY:?Run install.sh first}
+  DMS_S3_FORCE_PATH_STYLE: "true"
+  DMS_SCAN_REQUIRED: "true"
+  DMS_SCANNER_PROVIDER: clamav
+  DMS_CLAMAV_HOST: clamav
+  DMS_CLAMAV_PORT: 3310
+  DMS_CLAMAV_TIMEOUT_MS: 120000
+  DMS_MAX_FILE_SIZE_BYTES: ${DMS_MAX_FILE_SIZE_BYTES:-10485760}
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Run install.sh first}
+      POSTGRES_USER: secops_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run install.sh first}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [app]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U secops_admin -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "volatile-ttl", "--save", "", "--appendonly", "no"]
+    networks: [app]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  minio:
+    image: cgr.dev/chainguard/minio:latest@sha256:18c8fa28697b25e0f34c6faae171079e88a03efb8e76a21d3b5d07b4e3cbef3e
+    command: ["server", "/data", "--console-address", ":9001"]
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${DMS_S3_ACCESS_KEY:?Run install.sh first}
+      MINIO_ROOT_PASSWORD: ${DMS_S3_SECRET_KEY:?Run install.sh first}
+    volumes:
+      - minio_data:/data
+    networks: [app]
+
+  minio-bootstrap:
+    image: securityops-linux-test-backend:2.0.0
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile.backend
+    depends_on:
+      minio:
+        condition: service_started
+    command:
+      - node
+      - -e
+      - |
+        const { S3Client, CreateBucketCommand } = require('@aws-sdk/client-s3');
+        const client = new S3Client({
+          endpoint: process.env.DMS_S3_ENDPOINT,
+          region: process.env.DMS_S3_REGION,
+          forcePathStyle: true,
+          credentials: {
+            accessKeyId: process.env.DMS_S3_ACCESS_KEY,
+            secretAccessKey: process.env.DMS_S3_SECRET_KEY
+          }
+        });
+        const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+        (async () => {
+          for (let attempt = 0; attempt < 60; attempt += 1) {
+            try {
+              await client.send(new CreateBucketCommand({ Bucket: process.env.DMS_S3_BUCKET }));
+              console.log('Test-DMS-Bucket angelegt.');
+              return;
+            } catch (error) {
+              if (error.name === 'BucketAlreadyOwnedByYou' || error.name === 'BucketAlreadyExists') {
+                console.log('Test-DMS-Bucket ist bereits vorhanden.');
+                return;
+              }
+              if (attempt === 59) throw error;
+              await sleep(2000);
+            }
+          }
+        })().catch(() => {
+          console.error('MinIO-Bucketinitialisierung fehlgeschlagen.');
+          process.exit(1);
+        }).finally(() => client.destroy());
+    restart: "no"
+    environment:
+      DMS_S3_ENDPOINT: http://minio:9000
+      DMS_S3_REGION: us-east-1
+      DMS_S3_BUCKET: ${DMS_S3_BUCKET:?Run install.sh first}
+      DMS_S3_ACCESS_KEY: ${DMS_S3_ACCESS_KEY:?Run install.sh first}
+      DMS_S3_SECRET_KEY: ${DMS_S3_SECRET_KEY:?Run install.sh first}
+    networks: [app]
+
+  clamav:
+    image: clamav/clamav:1.4.3
+    restart: unless-stopped
+    volumes:
+      - clamav_data:/var/lib/clamav
+    networks: [app]
+
+  migrate:
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile.backend
+    image: securityops-linux-test-backend:2.0.0
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      <<: *backend_environment
+      DATABASE_MIGRATION_URL: postgresql://secops_admin:${POSTGRES_PASSWORD:?Run install.sh first}@db:5432/${POSTGRES_DB:?Run install.sh first}
+    command: ["node", "dist/migrations/runner.js"]
+    networks: [app]
+
+  db-init:
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile.backend
+    image: securityops-linux-test-backend:2.0.0
+    restart: "no"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_MIGRATION_URL: postgresql://secops_admin:${POSTGRES_PASSWORD:?Run install.sh first}@db:5432/${POSTGRES_DB:?Run install.sh first}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?Run install.sh first}
+    command: ["node", "dist/scripts/setAppPassword.js"]
+    networks: [app]
+
+  backend:
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile.backend
+    image: securityops-linux-test-backend:2.0.0
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-bootstrap:
+        condition: service_completed_successfully
+      clamav:
+        condition: service_started
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      <<: *backend_environment
+      PORT: 8000
+    networks: [app]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/linux-test/Dockerfile.frontend
+    image: securityops-linux-test-web:2.0.0
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-8080}:8080"
+    networks: [app, edge]
+
+volumes:
+  pgdata:
+  minio_data:
+  clamav_data:
+
+networks:
+  app:
+    internal: true
+  edge:

@@ -1,5 +1,5 @@
 // SecurityOps 2.0 - Central Enterprise API Client
-import { ResponseEnvelope } from '../types';
+import { ResponseEnvelope, TenantSelectionOption } from '../types';
 
 const API_BASE = '/api/v1';
 
@@ -9,6 +9,7 @@ export class ApiError extends Error {
   isNetworkError: boolean;
   code?: string;
   data?: unknown;
+  availableTenants?: TenantSelectionOption[];
   retryAfterMs?: number;
 
   constructor(
@@ -18,7 +19,8 @@ export class ApiError extends Error {
     isNetworkError = false,
     code?: string,
     data?: unknown,
-    retryAfterMs?: number
+    retryAfterMs?: number,
+    availableTenants?: TenantSelectionOption[]
   ) {
     super(message);
     this.status = status;
@@ -27,6 +29,7 @@ export class ApiError extends Error {
     this.code = code;
     this.data = data;
     this.retryAfterMs = retryAfterMs;
+    this.availableTenants = availableTenants;
   }
 }
 
@@ -111,7 +114,8 @@ class ApiClient {
           false,
           envelope.code,
           envelope.data,
-          parseRetryAfter(response.headers.get('retry-after'))
+          parseRetryAfter(response.headers.get('retry-after')),
+          envelope.availableTenants
         );
       }
 

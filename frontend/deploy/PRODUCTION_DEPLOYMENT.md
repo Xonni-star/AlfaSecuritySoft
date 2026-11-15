@@ -130,11 +130,18 @@ docker compose -f docker-compose.production.yml exec -T backend \
 Nur für Test-/Demo-Umgebungen, **nicht** für Produktion:
 
 ```bash
+read -r -s -p 'Testpasswort für Demo-Seed (mindestens 16 Zeichen): ' SECOPS_DEMO_USER_PASSWORD
+printf '\n'
+export SECOPS_DEMO_USER_PASSWORD
 docker compose -f docker-compose.production.yml run --rm \
   --entrypoint node backend dist/seeds/seed.js
+unset SECOPS_DEMO_USER_PASSWORD
 ```
 
-Der Seed legt Testmandanten und einen Testbenutzer an. Produktionsdaten dürfen nicht geseedet werden.
+Der Seed verlangt ein eigenes Passwort mit mindestens 16 Zeichen. Er legt illustrative
+Testmandanten und einen Testbenutzer an. Nur isoliert testen; Produktionsdaten dürfen
+nicht geseedet werden. Auch das genutzte Compose-Setup ist nicht automatisch für
+Produktion freigegeben.
 
 ---
 

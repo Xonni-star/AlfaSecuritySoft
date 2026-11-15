@@ -10,6 +10,8 @@ backend/.env.*
 deploy/.env
 deploy/.env.*
 !deploy/.env.example
+deploy/linux-test/.env
+deploy/linux-test/.env.*
 
 # Node.js & Dependencies
 node_modules/
@@ -22,6 +24,8 @@ pnpm-debug.log*
 dist/
 build/
 coverage/
+test-results/
+playwright-report/
 
 # Python / Pytest / Cache
 __pycache__/

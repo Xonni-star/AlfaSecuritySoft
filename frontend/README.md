@@ -57,10 +57,14 @@ npm --prefix frontend/backend run build
 npm --prefix frontend/backend run migrate
 
 # Testdaten anlegen
+read -r -s -p 'Testpasswort für Demo-Seed (mindestens 16 Zeichen): ' SECOPS_DEMO_USER_PASSWORD
+printf '\n'
+export SECOPS_DEMO_USER_PASSWORD
 npm --prefix frontend/backend run seed
 
 # Backend- und PostgreSQL RLS-Integrationstests ausführen
 npm --prefix frontend/backend test -- --runInBand
+unset SECOPS_DEMO_USER_PASSWORD
 ```
 
 ### 2.2 Frontend (React, Zustand Store & Vitest unter `frontend/`)
@@ -81,6 +85,10 @@ npm audit
 ```
 
 Audit snapshot (2026-11-14): frontend `npm audit` — 0 vulnerabilities. Backend `npm --prefix frontend/backend audit` — 7 LOW findings for `deepmerge@4.3.1` (GHSA-gcqx-w2h4) in Jest/`ts-jest` development dependencies; `npm --prefix frontend/backend audit --omit=dev` — 0 production findings. Upstream has no patched 4.x release; do not force npm's breaking downgrade. Exact current test evidence is in [NEXT_DEVELOPMENT_REPORT.md](../docs/development/NEXT_DEVELOPMENT_REPORT.md).
+
+### 2.3 Begrenzte lokale Performance-Baseline
+
+Für einen reproduzierbaren, ausschließlich lokalen Lauf siehe [Performance-Baseline](./backend/PERFORMANCE_BASELINE.md). Der Runner akzeptiert nur Loopback-URLs und benötigt eine eigens migrierte, kurzlebige Testdatenbank; niemals Produktion oder gemeinsam genutzte Umgebungen verwenden.
 
 ---
 
