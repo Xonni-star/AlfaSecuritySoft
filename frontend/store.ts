@@ -1701,7 +1701,12 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
               if (mutation.entityType === 'guardbook' && typeof mutation.payload.id === 'string' &&
                   typeof receipt.serverId === 'string' &&
                   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(receipt.serverId)) {
-                await offlineVault.relinkPendingAttachments(currentTenantId, mutation.payload.id, receipt.serverId);
+                await offlineVault.relinkPendingAttachments(
+                  currentTenantId,
+                  mutation.userId,
+                  mutation.payload.id,
+                  receipt.serverId
+                );
               }
               if (mutation?.entityType === 'patrol') {
                 if (mutation.payload?.recordType === 'round_start' && mutation.payload.roundId) {

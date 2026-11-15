@@ -1570,9 +1570,17 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
          FROM sites site
          JOIN employees employee ON employee.tenant_id=site.tenant_id
         WHERE site.tenant_id=$1
+          AND site.id NOT IN ($2,$3)
+          AND employee.id NOT IN ($4,$5)
         ORDER BY site.id,employee.id
         LIMIT 1`,
-      [TENANT_FFM_ID]
+      [
+        TENANT_FFM_ID,
+        createdSiteRestrictedSiteId,
+        createdSopSiteId,
+        createdSiteRestrictedEmployeeId,
+        createdSopEmployeeId
+      ]
     );
     expect(fixture.rows).toHaveLength(1);
     const entry = await migrationPool.query(
@@ -1586,9 +1594,9 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
 
     const attachmentKey = crypto.randomUUID();
     const attachmentBytes = Buffer.from([0xff, 0xd8, 0xff, 0x00, 0x01]);
-    const uploadAttachment = () => request(app)
+    const uploadAttachment = (authToken = token) => request(app)
       .post(`/api/v1/logbook/${createdAttachmentEntryId}/attachments`)
-      .set(authHeaders(token))
+      .set(authHeaders(authToken))
       .set('X-Idempotency-Key', attachmentKey)
       .set('X-File-Name', encodeURIComponent('guardbook-evidence.jpg'))
       .set('Content-Type', 'application/octet-stream')
@@ -1632,6 +1640,41 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
       .set('Content-Type', 'application/octet-stream')
       .send(Buffer.from([0xff, 0xd8, 0xff, 0x02, 0x03]));
     expect(changedPayload.status).toBe(409);
+
+      const replayUserEmail = `attachment-replay-${Date.now()}@example.test`;
+      const replayUserPasswordHash = await argon2.hash(SEED_PASSWORD, { type: argon2.argon2id });
+      const replayUser = await migrationPool.query(
+        `INSERT INTO users (email,password_hash,first_name,last_name,phone)
+         VALUES ($1,$2,'API','Attachment Replay','+49 30 004') RETURNING id`,
+        [replayUserEmail, replayUserPasswordHash]
+      );
+      const replayUserId = replayUser.rows[0].id;
+      try {
+        await insertTenantMembership(TENANT_FFM_ID, replayUserId);
+        const replayRole = await migrationPool.query(
+          `SELECT id FROM roles WHERE name='Einsatzleitung' LIMIT 1`
+        );
+        expect(replayRole.rows).toHaveLength(1);
+        await migrationPool.query(
+          'INSERT INTO user_roles (user_id,role_id,tenant_id) VALUES ($1,$2,$3)',
+          [replayUserId, replayRole.rows[0].id, TENANT_FFM_ID]
+        );
+        const replayToken = await login(replayUserEmail);
+        const otherUserRetry = await uploadAttachment(replayToken);
+        expect(otherUserRetry.status).toBe(409);
+        const originalUserRetry = await uploadAttachment();
+        expect(originalUserRetry.status).toBe(202);
+        expect(originalUserRetry.body.data.id).toBe(firstUpload.body.data.id);
+      } finally {
+        await migrationPool.query('DELETE FROM user_sessions WHERE user_id=$1', [replayUserId]);
+        await migrationPool.query('DELETE FROM user_roles WHERE user_id=$1 AND tenant_id=$2', [
+          replayUserId, TENANT_FFM_ID
+        ]);
+        await migrationPool.query('DELETE FROM tenant_memberships WHERE user_id=$1 AND tenant_id=$2', [
+          replayUserId, TENANT_FFM_ID
+        ]);
+        await migrationPool.query('DELETE FROM users WHERE id=$1', [replayUserId]);
+      }
 
     const foreignToken = await login(BAVARIA_USER_EMAIL);
     const foreignTenantUpload = await request(app)

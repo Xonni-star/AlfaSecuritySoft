@@ -572,13 +572,16 @@ export async function uploadGuardbookAttachment(req: Request, res: Response, nex
       }
 
       const existing = await db.query(
-        `SELECT request_hash,incident_id,document_id
+        `SELECT request_hash,incident_id,document_id,created_by
            FROM guardbook_attachment_idempotency
           WHERE tenant_id=$1 AND idempotency_key=$2`,
         [tenantId, idempotencyKey]
       );
       if (existing.rows.length) {
         const receipt = existing.rows[0];
+        if (receipt.created_by !== user.userId) {
+          throw httpError(409, 'Idempotenzschlüssel wurde von einem anderen Benutzer verwendet.');
+        }
         if (receipt.request_hash !== requestHash || receipt.incident_id !== incidentId) {
           throw httpError(409, 'Idempotenzschlüssel wurde mit abweichendem Dateiinhalt oder Wachbucheintrag wiederverwendet.');
         }

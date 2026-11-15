@@ -313,6 +313,33 @@ describe('offline guardbook reconnect exercise', () => {
     ]));
   });
 
+  test('relinks only the matching user’s pending attachment when local entity IDs overlap', async () => {
+    const localEntityId = crypto.randomUUID();
+    const serverEntityId = crypto.randomUUID();
+    const ownerAttachmentId = crypto.randomUUID();
+    const otherOwnerAttachmentId = crypto.randomUUID();
+    const ownerlessAttachmentId = crypto.randomUUID();
+    const attachment = {
+      tenantId,
+      entityId: localEntityId,
+      fileName: 'evidence.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: 5,
+      blobData: 'data:image/jpeg;base64,cGhvdG8=',
+      capturedAt: new Date().toISOString(),
+      synced: false
+    };
+    await offlineVault.saveAttachment({ ...attachment, id: ownerAttachmentId, userId });
+    await offlineVault.saveAttachment({ ...attachment, id: otherOwnerAttachmentId, userId: 'user-b' });
+    await offlineVault.saveAttachment({ ...attachment, id: ownerlessAttachmentId });
+
+    await offlineVault.relinkPendingAttachments(tenantId, userId, localEntityId, serverEntityId);
+
+    expect(await readAttachment(offlineVault, ownerAttachmentId)).toMatchObject({ entityId: serverEntityId });
+    expect(await readAttachment(offlineVault, otherOwnerAttachmentId)).toMatchObject({ entityId: localEntityId });
+    expect(await readAttachment(offlineVault, ownerlessAttachmentId)).toMatchObject({ entityId: localEntityId });
+  });
+
   test('keeps a guardbook conflict visible instead of retrying it automatically', async () => {
     const mutation = {
       id: 'guardbook-conflict-mutation',

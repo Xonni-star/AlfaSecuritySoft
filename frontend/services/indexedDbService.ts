@@ -818,7 +818,12 @@ export class IndexedDbService {
     });
   }
 
-  async relinkPendingAttachments(tenantId: string, localEntityId: string, serverEntityId: string): Promise<void> {
+  async relinkPendingAttachments(
+    tenantId: string,
+    userId: string,
+    localEntityId: string,
+    serverEntityId: string
+  ): Promise<void> {
     if (localEntityId === serverEntityId) return;
     const db = await this.init();
     return new Promise((resolve, reject) => {
@@ -830,7 +835,8 @@ export class IndexedDbService {
       const request = store.getAll();
       request.onsuccess = () => {
         for (const attachment of (request.result as StoredAttachment[]) || []) {
-          if (attachment.tenantId === tenantId && attachment.entityId === localEntityId && !attachment.synced) {
+          if (attachment.tenantId === tenantId && attachment.userId === userId &&
+              attachment.entityId === localEntityId && !attachment.synced) {
             attachment.entityId = serverEntityId;
             store.put(attachment);
           }
