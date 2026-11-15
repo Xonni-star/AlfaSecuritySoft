@@ -13,7 +13,8 @@
     "test": "jest --runInBand --detectOpenHandles",
     "test:clamav-integration": "ts-node src/integration/clamavAdapter.integration.ts",
     "test:backup-restore": "bash ../deploy/test_backup_restore.sh",
-    "test:dms-api-integration": "ts-node src/integration/dmsApi.integration.ts"
+    "test:dms-api-integration": "ts-node src/integration/dmsApi.integration.ts",
+    "test:phase9-e2e": "ts-node src/integration/phase9CoreWorkflows.integration.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1169.0",

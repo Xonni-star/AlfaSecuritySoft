@@ -346,6 +346,9 @@ jobs:
       - name: Vollständigen DMS-API-Flow mit PostgreSQL, MinIO und ClamAV prüfen
         run: npm run test:dms-api-integration
 
+      - name: Phase 9 Kernworkflows mit synthetischen Daten und lokalen Diensten prüfen
+        run: npm run test:phase9-e2e
+
   docker-production:
     name: Produktions-Docker – Konfiguration & Image-Builds
     runs-on: ubuntu-latest
