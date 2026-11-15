@@ -74,6 +74,13 @@ const incidentLinkSchema = z.object({
   recordId: uuid,
   clientMutationId: z.string().trim().min(8).max(64).regex(/^[A-Za-z0-9_-]+$/)
 }).strict();
+type IncidentLinkedRecordType = z.infer<typeof incidentLinkSchema>['recordType'];
+const linkedRecordReadPermissions: Record<IncidentLinkedRecordType, readonly string[]> = {
+  guardbook: ['logbook:read'],
+  handover: ['handovers:read'],
+  patrol_round: ['patrol:round:read', 'patrol:read'],
+  document: ['documents:read']
+};
 const transitionSchema = z.object({
   status: z.enum(alarmStatuses).optional(),
   action: z.enum(['acknowledge', 'escalate', 'resolve']).optional(),
@@ -115,6 +122,19 @@ function httpError(statusCode: number, message: string): Error & { statusCode: n
 function can(user: User, permission: string): boolean {
   return Boolean(user.permissionGrants?.some(grant => grant.code === permission)) ||
     (user.permissions?.includes(permission) ?? false);
+}
+
+function canReadLinkedRecordAtSite(
+  user: User, recordType: IncidentLinkedRecordType, siteId: string | null
+): boolean {
+  return linkedRecordReadPermissions[recordType].some(permission =>
+    (user.permissions?.includes(permission) ?? false) ||
+    (user.permissionGrants ?? []).some(grant =>
+      grant.code === permission &&
+      ((grant.dataScope === 'TENANT' && !grant.siteId) ||
+        (grant.dataScope === 'SITE' && grant.siteId === siteId))
+    )
+  );
 }
 
 function validateCapturedAt(capturedAt?: string): void {
@@ -715,6 +735,7 @@ export async function getAlarmIncidentReport(req: Request, res: Response, next: 
         `SELECT l.id,l.record_type,
                 COALESCE(l.guardbook_entry_id,l.handover_id,l.patrol_round_id,l.document_id) AS record_id,
                 COALESCE(g.title,h.general_text,r.status,d.title) AS record_summary,
+                COALESCE(g.site_id,h.site_id,r.site_id,d.site_id) AS record_site_id,
                 l.created_by,l.created_at
          FROM alarm_incident_links l
          LEFT JOIN guardbook_entries g
@@ -729,6 +750,15 @@ export async function getAlarmIncidentReport(req: Request, res: Response, next: 
          ORDER BY l.created_at,l.id`,
         [user.tenantId, incidentId]
       );
+      const linkedRecords = links.rows.map(link => {
+        const { record_site_id: recordSiteId, record_summary: recordSummary, ...metadata } = link;
+        return {
+          ...metadata,
+          record_summary: canReadLinkedRecordAtSite(user, link.record_type, recordSiteId)
+            ? recordSummary
+            : null
+        };
+      });
       const events = await db.query(
         `SELECT id,action,details,occurred_at,actor_user_id
          FROM emergency_management_events
@@ -743,7 +773,7 @@ export async function getAlarmIncidentReport(req: Request, res: Response, next: 
          ORDER BY occurred_at,id`,
         [user.tenantId, incidentId]
       );
-      return { incident, linkedRecords: links.rows, auditEvents: events.rows, actions: actions.rows };
+      return { incident, linkedRecords, auditEvents: events.rows, actions: actions.rows };
     });
     res.json({ success: true, data: report });
   } catch (error) { next(error); }
