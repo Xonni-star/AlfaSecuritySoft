@@ -282,12 +282,12 @@ export const ReportsModule: React.FC = () => {
         </div>
 
         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
-          <span className="text-slate-400 block text-[11px]">DIN 77200 Konformität</span>
+          <span className="text-slate-400 block text-[11px]">DIN-77200-Orientierung (interner Index)</span>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-xl font-bold text-emerald-400">{kpis.din77200ComplianceScore}%</span>
             <span className="text-xs text-slate-400">Audit-Index</span>
           </div>
-          <span className="text-[10px] text-slate-500">KRITIS & BSI Konform</span>
+          <span className="text-[10px] text-slate-500">Keine Zertifizierung oder Konformitätszusage</span>
         </div>
       </div>
 

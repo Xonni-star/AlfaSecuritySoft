@@ -49,4 +49,17 @@ describe('IANA local shift-time resolution', () => {
       date: '2026-01-01', startTime: '08:00', endTime: '08:00', endDate: '2026-01-01'
     }, 'UTC')).toThrow(/Schichtende/);
   });
+
+  test('night shifts across DST changes keep wall-clock times but change real duration', () => {
+    const hours = (r: ReturnType<typeof resolveShiftTime>) => (r.endsAt.getTime() - r.startsAt.getTime()) / 3_600_000;
+    const spring = resolveShiftTime({ date: '2026-03-28', startTime: '22:00', endTime: '06:00' }, 'Europe/Berlin');
+    const autumn = resolveShiftTime({ date: '2026-10-24', startTime: '22:00', endTime: '06:00' }, 'Europe/Berlin');
+    const regular = resolveShiftTime({ date: '2026-07-14', startTime: '22:00', endTime: '06:00' }, 'Europe/Berlin');
+
+    expect(hours(spring)).toBe(7);
+    expect(hours(autumn)).toBe(9);
+    expect(hours(regular)).toBe(8);
+    expect(spring.endsAt.toISOString()).toBe('2026-03-29T04:00:00.000Z');
+    expect(autumn.endsAt.toISOString()).toBe('2026-10-25T05:00:00.000Z');
+  });
 });

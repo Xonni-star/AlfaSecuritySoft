@@ -14,6 +14,8 @@ vi.mock('../store', () => ({
 vi.mock('../services/indexedDbService', () => ({
   offlineVault: {
     getStorageEstimates: mocks.getStorageEstimates,
+    listOwnerlessPendingAttachments: vi.fn(async () => []),
+    discardOwnerlessAttachment: vi.fn(async () => true),
     getDeviceId: vi.fn(() => 'device-a')
   }
 }));

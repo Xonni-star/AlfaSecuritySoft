@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- Kontrollierte Wiederherstellung für lokale Wachbuchanhänge ohne Benutzerzuordnung (Sync-Manager › Speicher): Sichern und ausdrücklich Verwerfen, nie automatischer Upload.
+- Regressionstest für Nachtschichten über Zeitumstellungen (7 h/9 h reale Dauer).
+
+### Geändert
+
+- Oberflächentexte behaupten keine DIN-77200-/KRITIS-/BSI-Konformität mehr.
+
 ### Fehlerkorrekturen
 
 - Sync-Quittungen weisen die Wiederverwendung einer Mutations-ID mit geändertem Entitätstyp oder Vorgang zurück.

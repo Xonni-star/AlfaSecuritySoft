@@ -256,6 +256,25 @@ describe('offline guardbook reconnect exercise', () => {
     expect(await offlineVault.getPendingAttachments(tenantId, userId)).toEqual([]);
   });
 
+  test('lists and discards only ownerless unsynced attachments of the same tenant on explicit request', async () => {
+    const base = {
+      tenantId, entityId: crypto.randomUUID(), fileName: 'f.jpg', mimeType: 'image/jpeg',
+      sizeBytes: 5, blobData: 'data:image/jpeg;base64,cGhvdG8=', capturedAt: new Date().toISOString(), synced: false
+    };
+    const ownerless = crypto.randomUUID();
+    const owned = crypto.randomUUID();
+    await offlineVault.saveAttachment({ ...base, id: ownerless });
+    await offlineVault.saveAttachment({ ...base, id: owned, userId });
+
+    expect((await offlineVault.listOwnerlessPendingAttachments(tenantId)).map((a) => a.id)).toEqual([ownerless]);
+    expect(await offlineVault.listOwnerlessPendingAttachments('another-tenant')).toEqual([]);
+    expect(await offlineVault.discardOwnerlessAttachment(owned, tenantId)).toBe(false);
+    expect(await offlineVault.discardOwnerlessAttachment(ownerless, 'another-tenant')).toBe(false);
+    expect(await offlineVault.discardOwnerlessAttachment(ownerless, tenantId)).toBe(true);
+    expect(await offlineVault.listOwnerlessPendingAttachments(tenantId)).toEqual([]);
+    expect(await readAttachment(offlineVault, owned)).toMatchObject({ userId });
+  });
+
   test('does not replay another same-tenant user’s or an ownerless legacy attachment after account switch', async () => {
     const ownerEntryId = crypto.randomUUID();
     const otherOwnerAttachmentId = crypto.randomUUID();

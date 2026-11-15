@@ -17,7 +17,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { useSecurityStore } from '../store';
-import { offlineVault } from '../services/indexedDbService';
+import { offlineVault, StoredAttachment } from '../services/indexedDbService';
 
 interface SyncManagerModalProps {
   isOpen: boolean;
@@ -47,6 +47,8 @@ export const SyncManagerModal: React.FC<SyncManagerModalProps> = ({ isOpen, onCl
   const [selectedConflict, setSelectedConflict] = useState<any | null>(null);
   const [resolutionError, setResolutionError] = useState('');
   const [isResolvingConflict, setIsResolvingConflict] = useState(false);
+  const [ownerlessAttachments, setOwnerlessAttachments] = useState<StoredAttachment[]>([]);
+  const [recoveryError, setRecoveryError] = useState('');
   const identityKey = `${currentTenantId}:${authUser?.id || currentUserId}`;
 
   const tenant = getCurrentTenant();
@@ -71,6 +73,36 @@ export const SyncManagerModal: React.FC<SyncManagerModalProps> = ({ isOpen, onCl
       return () => { isCurrent = false; };
     }
   }, [isOpen]);
+
+  const refreshOwnerless = React.useCallback(async () => {
+    try {
+      setOwnerlessAttachments(await offlineVault.listOwnerlessPendingAttachments(currentTenantId));
+      setRecoveryError('');
+    } catch (error) {
+      setRecoveryError(error instanceof Error ? error.message : 'Nicht zugeordnete Anhänge konnten nicht gelesen werden.');
+    }
+  }, [currentTenantId]);
+
+  useEffect(() => {
+    if (isOpen && activeTab === 'storage') void refreshOwnerless();
+  }, [isOpen, activeTab, refreshOwnerless]);
+
+  const handleExportOwnerless = (attachment: StoredAttachment) => {
+    const link = document.createElement('a');
+    link.href = attachment.blobData;
+    link.download = attachment.fileName;
+    link.click();
+  };
+
+  const handleDiscardOwnerless = async (attachment: StoredAttachment) => {
+    if (!window.confirm(`Lokalen Anhang „${attachment.fileName}“ endgültig verwerfen? Sichern Sie die Datei vorher über „Sichern“.`)) return;
+    try {
+      await offlineVault.discardOwnerlessAttachment(attachment.id, currentTenantId);
+      await refreshOwnerless();
+    } catch (error) {
+      setRecoveryError(error instanceof Error ? error.message : 'Anhang konnte nicht verworfen werden.');
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -410,6 +442,30 @@ export const SyncManagerModal: React.FC<SyncManagerModalProps> = ({ isOpen, onCl
               </p>
             )}
 
+            {(ownerlessAttachments.length > 0 || recoveryError) && (
+              <section aria-label="Nicht zugeordnete Wachbuchanhänge" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-[11px] space-y-3 text-amber-100">
+                <span className="font-bold block">Ältere Wachbuchanhänge ohne Benutzerzuordnung ({ownerlessAttachments.length})</span>
+                <p>
+                  Diese Dateien werden nie automatisch hochgeladen. Sichern Sie jede Datei, verwerfen Sie sie bei Bedarf
+                  und fügen Sie sie im jeweiligen Wachbucheintrag unter Ihrem eigenen Konto erneut hinzu.
+                </p>
+                {recoveryError && <p role="alert" className="text-red-300">{recoveryError}</p>}
+                <ul className="space-y-2">
+                  {ownerlessAttachments.map((attachment) => (
+                    <li key={attachment.id} className="flex items-center justify-between gap-2 rounded-lg bg-slate-900/70 p-2">
+                      <span className="truncate">
+                        {attachment.fileName} · {(attachment.sizeBytes / 1024).toFixed(0)} KB · {new Date(attachment.capturedAt).toLocaleString('de-DE')}
+                      </span>
+                      <span className="flex gap-2 shrink-0">
+                        <button type="button" onClick={() => handleExportOwnerless(attachment)} className="px-2 py-1 rounded bg-blue-600 text-white">Sichern</button>
+                        <button type="button" onClick={() => void handleDiscardOwnerless(attachment)} className="px-2 py-1 rounded bg-red-700 text-white">Verwerfen</button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
             <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-[11px] space-y-2 text-slate-400">
               <span className="font-bold text-slate-300 block">Sicherheitshinweis zu lokalen Daten:</span>
               <p>
@@ -423,7 +479,7 @@ export const SyncManagerModal: React.FC<SyncManagerModalProps> = ({ isOpen, onCl
         {/* Footer */}
         <div className="p-3 border-t border-slate-800 bg-[#0a0f1d] flex items-center justify-between text-xs text-slate-400">
           <span className="text-[11px]">
-            DIN 77200 Konformität: Revisionsgesichertes Logging aller Synchronisationsquittungen
+            Synchronisationsquittungen werden protokolliert (keine Zertifizierung)
           </span>
           <button
             onClick={clearCompletedSyncs}
