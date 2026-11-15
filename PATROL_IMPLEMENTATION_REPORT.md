@@ -1,6 +1,6 @@
 # Patrol management: implementation and acceptance audit
 
-**Status:** PR #14 is open and unmerged. This report reflects the complete 641-line brief and implementation in the current worktree. It does not claim production readiness, operational availability, or that device-level requirements have been verified.
+**Historical implementation and verification snapshot:** PR [#14](https://github.com/Xonni-star/SecurityOps-2.0/pull/14) merged on 2026-11-13 as `252d4bf6e8ff26d7b7855529952cb5340d8f8fa8`. The original audit described the unmerged implementation worktree; its PR/worktree details and test counts below are historical snapshot evidence, not a fresh run against current `main`. The merge does not establish production readiness, operational availability, or device-level acceptance.
 
 ## Implemented scope
 
@@ -36,7 +36,7 @@ Still not implemented or verified: direct photo capture and offline binary attac
 
 ### Local worktree
 
-Changes are on `xonni-star-feature-patrol-management`. PR [#14](https://github.com/Xonni-star/SecurityOps-2.0/pull/14) remains open against `main`. The verified project base is `5608b9010096ebac06a000ed2a2870dadd66ab60`; the latest implementation head is `d61057ee3a29a4c40586ff05de080bd0193855bb`. No merge was performed.
+The original implementation worktree used branch `xonni-star-feature-patrol-management`. The verified project base was `5608b9010096ebac06a000ed2a2870dadd66ab60`; its implementation head was `d61057ee3a29a4c40586ff05de080bd0193855bb`. PR #14 is now merged; the present mainline and CI status are maintained in [MAINLINE_INTEGRATION_STATUS.md](./MAINLINE_INTEGRATION_STATUS.md). The implementation-time validation listed below is not represented as a new post-merge run.
 
 - Backend TypeScript build: passed.
 - Full Backend Jest: 20 suites, 219 tests passed. The Patrol integration suite passed with security, grace-window, event-history, occurrence-filter, and stale/future/out-of-round completion timestamp regressions. Jest still reports an open `TCPWRAP` handle from the existing migration-pool test setup after successful completion.
@@ -59,6 +59,6 @@ All four required jobs passed for current code head `d61057ee3a29a4c40586ff05de0
 - [Production Docker – configuration and image builds](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43437507879/job/131926309728) — passed
 - [Root – npm ci, structure check, overall start](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43437507879/job/131926310190) — passed
 
-This report correction is documentation-only; the PR Checks tab is authoritative for the latest branch head.
+The historical report correction was documentation-only; the PR Checks tab is authoritative for the latest branch head.
 
-PR #14 stays open for independent review and will not be merged by this agent.
+PR #14 was open for independent review when the original implementation report was written and merged on 2026-11-13. The original implementation agent did not merge or deploy it.

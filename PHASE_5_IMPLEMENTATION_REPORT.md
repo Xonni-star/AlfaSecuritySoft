@@ -1,16 +1,18 @@
 # Phase 5 implementation report
 
-**Status:** Partial implementation; Phase 5 acceptance is incomplete. Production readiness is **not approved**.
+**Historical Phase 5 snapshot (checked 2026-11-15):** Partial implementation; Phase 5 acceptance was incomplete at the time of this report. Production readiness remains **not approved**.
 
 **Baseline checked:** 2026-11-15, `main` at `77fdb0955e3bbbef01690edc93dc630e443bfbe8`.
 
 **Work branch:** `xonni-star-phase-5-e2e-acceptance` (the app-managed branch prefix is applied).
-**PR:** [#45](https://github.com/Xonni-star/SecurityOps-2.0/pull/45), open against `main`. **Code/test commit:** `4de5604`.
+**PR:** [#45](https://github.com/Xonni-star/SecurityOps-2.0/pull/45), subsequently merged on 2026-11-15 as `24c14ba599017d1f35e94533393c209300caf28d`. **Code/test commit:** `4de5604`.
 **Hosted checks:** All seven jobs passed on implementation commit `8d3e2d7` in [run 43707028323](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707028323), report-update commit `52e7e3a` in [run 43707301221](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707301221), prior PR head `a25fcaf` in [run 43707565547](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707565547), and code/test commit `4de5604` in [run 43709859203](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43709859203).
+
+**Current disposition:** PR #45 is merged; the latest mainline CI and release-artifact evidence is recorded in [MAINLINE_INTEGRATION_STATUS.md](./MAINLINE_INTEGRATION_STATUS.md). This report preserves the Phase 5 implementation and validation snapshot; its former instruction to keep the PR open is historical and no longer actionable. Merge and passing CI do not close the production-acceptance gaps listed below.
 
 ## Baseline and scope
 
-At the baseline check, PR #44 (Phase 4) was merged and no PRs were open. Main CI run [43702382063](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702382063) passed seven jobs, and release-artifact run [43702607678](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702607678) passed both jobs. These are baseline results, not Phase 5 or production acceptance.
+At the Phase 5 baseline check, PR #44 (Phase 4) was merged and no PRs were open. Main CI run [43702382063](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702382063) passed seven jobs, and release-artifact run [43702607678](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702607678) passed both jobs. These are baseline results, not Phase 5 or production acceptance. The later merge and post-merge CI are separate evidence and are tracked in the current mainline report.
 
 This increment adds explicit alarm permission-scope enforcement, structured incident links to existing operational records, a combined incident report, guarded reconnect refresh, and mobile network-state accessibility. The PostgreSQL-backed journey now creates its own customer and site through the APIs, then exercises staffing, shift publication, SOP approval/assignment/acknowledgment, and linked alarm, guardbook, handover, patrol, and DMS operations with persistence assertions. It does not claim a new planning module, provider integration, or unsupported offline media flow.
 
@@ -131,8 +133,8 @@ The CI change eliminates **70 proven redundant executions** (14.6% of baseline i
 
 **Evidence-based ratings:** Local implementation and automated PostgreSQL/API coverage — **verified for the stated scope**. Full Phase 5 acceptance — **incomplete**. External-provider and device acceptance — **not tested/blocked as noted**. Production readiness — **not approved**.
 
-## Next steps
+## Next steps at the Phase 5 snapshot (historical)
 
-1. Keep PR #45 open and review the Phase 5 diff; do not merge or deploy before the remaining acceptance is complete.
+1. The original snapshot advised keeping PR #45 open for review. PR #45 has since merged; this item is retained only as historical context.
 2. Resolve or document the local MinIO image-access blocker, then run a full database-plus-object restore against an authorized test provider.
 3. Complete browser/device and external-provider acceptance; record actual production-like RPO/RTO and performance evidence before any production-readiness decision.
