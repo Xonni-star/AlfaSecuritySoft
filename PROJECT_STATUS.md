@@ -2,9 +2,9 @@
 
 **Status:** **PARTIAL / BLOCKED — not approved for production.** This is an evidence index, not a release or compliance approval.
 
-**Current `main`:** [`621874535ee480e56716ae8a7bd992272bc7a51a`](https://github.com/Xonni-star/SecurityOps-2.0/commit/621874535ee480e56716ae8a7bd992272bc7a51a)
+**Current `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
 **Last checked:** 2026-11-15 22:03 CET
-**Open PR:** [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62), rebased documentation updates. PRs #50–#61 and #63–#65 are merged.
+**Open PRs:** none. PRs #50–#65 are merged, including [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62).
 
 The project’s broader history and evidence are summarized in [PROJECT_COMPLETION_REPORT.md](./PROJECT_COMPLETION_REPORT.md). Phase 9 operations evidence and remaining gates are in [PHASE_9_COMPLETION_REPORT.md](./PHASE_9_COMPLETION_REPORT.md). Dated phase reports are retained as historical snapshots; their old PR and mainline claims are not current status.
 
@@ -19,7 +19,7 @@ The project’s broader history and evidence are summarized in [PROJECT_COMPLETI
 
 ### In development
 
-- PR #62 contains the re-based operational/documentation audit and project reports. Hosted CI passed 7/7 on head `6c8a52c`; the PR remains open and unmerged.
+- PR #62 (operational/documentation audit and project reports) is merged as `9df02aa`; its head `6c8a52c` passed 7/7 hosted CI.
 
 ### Open
 
@@ -34,7 +34,7 @@ The project’s broader history and evidence are summarized in [PROJECT_COMPLETI
 - PR #64 head `b814b65` passed **7/7 hosted CI jobs**. Its PR description records frontend typecheck, seven focused frontend tests, frontend build, backend build, 22 migration-parser tests, and 17 authorization/sync tests as passed. The PostgreSQL-backed migration/API suites were not run locally because a verified isolated database was unavailable.
 - Post-merge main CI run [43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on the exact current-main SHA.
 - The rebased docs head `6c8a52c` passed 7/7 hosted jobs in run 43761213396.
-- Prior CI/artifact results apply only to their stated revisions. No artifact validation has been observed for `6218745`.
+- Prior CI/artifact results apply only to their stated revisions.
 
 ### Production-approved
 
@@ -45,7 +45,7 @@ The project’s broader history and evidence are summarized in [PROJECT_COMPLETI
 | Validation | Result | Boundary |
 |---|---|---|
 | PR #64 hosted CI | **7/7 passed** on PR head `b814b65` | Pre-merge checks; does not replace post-merge CI. |
-| Main CI | **7/7 passed** on `6218745` | Post-merge run 43760703980 on exact current SHA. |
-| PR #62 hosted CI | **7/7 passed** | Run 43761213396 on rebased head `6c8a52c`; PR remains open. |
-| Artifact validation | No result observed for `6218745` | The 2/2 result on `bed939a` is earlier and must not be attributed to current main. |
+| Main CI | **7/7 passed** on `9df02aa` | Post-merge run [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) on exact current SHA. |
+| PR #62 hosted CI | **7/7 passed** | Run 43761213396 on head `6c8a52c`; PR since merged. |
+| Artifact validation | **2/2 passed** on `9df02aa` | Run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834). Not a release approval. |
 | Production acceptance | **Not performed / not established** | No deployment or production approval is claimed. |

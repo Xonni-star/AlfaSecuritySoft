@@ -3,9 +3,9 @@
 **Assessment:** **PARTIAL / BLOCKED.** This report records implemented work and evidence; it does not declare the overall project or Phase 9 complete, production-ready, or approved.
 
 **Phase 9 documentation baseline at kickoff:** `879ae951d6cea52fd84d01dc699cf2ed08843300`
-**Current `main`:** [`621874535ee480e56716ae8a7bd992272bc7a51a`](https://github.com/Xonni-star/SecurityOps-2.0/commit/621874535ee480e56716ae8a7bd992272bc7a51a)
+**Current `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
 **Last GitHub check:** 2026-11-15 22:03 CET
-**Open PR:** [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62) — rebased documentation/report update; no merge or deployment.
+**Open PRs:** none. [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62) (documentation/report update) is merged as `9df02aa`; no deployment was performed. Sections below describing #62 as open are the 22:03 CET snapshot. Current main CI: [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) 7/7; artifacts [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) 2/2.
 
 The kickoff commit is the Phase 9 documentation workstream’s verified mainline baseline, not the repository’s first commit. Current status and evidence links are in [PROJECT_STATUS.md](./PROJECT_STATUS.md) and [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md).
 
