@@ -49,13 +49,19 @@ cp frontend/backend/.env.example frontend/backend/.env
 
 # Datenbank vorbereiten
 npm --prefix frontend/backend run migrate
+read -r -s -p 'Testpasswort für Demo-Seed (mindestens 16 Zeichen): ' SECOPS_DEMO_USER_PASSWORD
+printf '\n'
+export SECOPS_DEMO_USER_PASSWORD
 npm --prefix frontend/backend run seed
+unset SECOPS_DEMO_USER_PASSWORD
 
 # Frontend + Backend parallel starten
 npm run dev
 ```
 
 `npm run dev` startet das Vite-Frontend und das SecurityOps-Backend (Standard-Port `8000`).
+Der optionale Seed verlangt ein eigenes Testpasswort (`SECOPS_DEMO_USER_PASSWORD`,
+mindestens 16 Zeichen); keine Seed-Daten oder Konten in produktive Umgebungen übernehmen.
 
 ---
 
@@ -99,6 +105,11 @@ Das Backend verweigert den Start bei fehlenden, ungültigen oder offensichtlich 
 | Dienstplanung | Backend/UI und weitergehende Workflows einschließlich konfigurierbarer täglicher, wöchentlicher und monatlicher Arbeitszeitlimits aus gemergten PRs [#33](https://github.com/Xonni-star/SecurityOps-2.0/pull/33) und [#36](https://github.com/Xonni-star/SecurityOps-2.0/pull/36) | Die Regeln gelten nur bei Konfiguration in einer aktiven, freigegebenen Profilrevision. Kalender-/Planungsabläufe und fokussierte Berliner DST-Tests sind keine Rechtskonformitäts- oder fachliche Produktionsabnahme. Aktueller Integrationsstatus: [Mainline-Integrationsbericht](./MAINLINE_INTEGRATION_STATUS.md) |
 
 Eine Produktions-Compose-Konfiguration ist vorhanden: [docker-compose.production.yml](./frontend/deploy/docker-compose.production.yml). Ihre Existenz belegt nicht, dass Services tatsächlich in Produktion deployed oder abgenommen wurden; die Statusangaben oben bleiben maßgeblich.
+
+Für einen isolierten Servertest dieser Phase-7-Version gibt es zusätzlich ein
+**nicht produktionsreifes** Linux-Testpaket (Docker Compose `.tar.gz` und Debian
+`.deb`) mit lokaler PostgreSQL-, MinIO- und ClamAV-Topologie:
+[deutsche Installations- und Bedienungsanleitung](./frontend/deploy/linux-test/README.md).
 
 ---
 

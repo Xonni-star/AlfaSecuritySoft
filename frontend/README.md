@@ -57,7 +57,11 @@ npm --prefix frontend/backend run build
 npm --prefix frontend/backend run migrate
 
 # Testdaten anlegen
+read -r -s -p 'Testpasswort für Demo-Seed (mindestens 16 Zeichen): ' SECOPS_DEMO_USER_PASSWORD
+printf '\n'
+export SECOPS_DEMO_USER_PASSWORD
 npm --prefix frontend/backend run seed
+unset SECOPS_DEMO_USER_PASSWORD
 
 # Backend- und PostgreSQL RLS-Integrationstests ausführen
 npm --prefix frontend/backend test -- --runInBand
