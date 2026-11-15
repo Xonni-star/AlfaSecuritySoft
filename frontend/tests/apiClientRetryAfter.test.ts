@@ -45,4 +45,28 @@ describe('API retry hints', () => {
       retryAfterMs: 60_000
     });
   });
+
+  test('preserves tenant choices returned for an ambiguous login', async () => {
+    const availableTenants = [
+      { id: 'tenant-a', name: 'Tenant A', role: 'Operator' },
+      { id: 'tenant-b', name: 'Tenant B', role: 'Administrator' }
+    ];
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      status: 400,
+      ok: false,
+      headers: new Headers(),
+      json: async () => ({
+        success: false,
+        code: 'AMBIGUOUS_TENANT_SELECTION',
+        message: 'Choose a tenant',
+        availableTenants
+      })
+    }));
+
+    await expect(apiClient.request('/auth/login')).rejects.toMatchObject({
+      status: 400,
+      code: 'AMBIGUOUS_TENANT_SELECTION',
+      availableTenants
+    });
+  });
 });

@@ -31,6 +31,12 @@ export interface Tenant {
   contactEmail: string;
 }
 
+export interface TenantSelectionOption {
+  id: string;
+  name: string;
+  role: string | null;
+}
+
 export interface Qualification {
   id: string;
   type: QualificationType;
@@ -706,6 +712,7 @@ export interface ResponseEnvelope<T = any> {
   data?: T;
   code?: string;
   errors?: string[];
+  availableTenants?: TenantSelectionOption[];
 }
 
 export interface ConflictResolutionPayload {

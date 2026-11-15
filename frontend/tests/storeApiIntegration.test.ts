@@ -18,8 +18,9 @@ vi.mock('../services/apiClient', () => {
     isNetworkError: boolean;
     code?: string;
     data?: unknown;
+    availableTenants?: Array<{ id: string; name: string; role: string | null }>;
     retryAfterMs?: number;
-    constructor(status: number, message: string, errors?: string[], isNetworkError = false, code?: string, data?: unknown, retryAfterMs?: number) {
+    constructor(status: number, message: string, errors?: string[], isNetworkError = false, code?: string, data?: unknown, retryAfterMs?: number, availableTenants?: Array<{ id: string; name: string; role: string | null }>) {
       super(message);
       this.status = status;
       this.errors = errors;
@@ -27,6 +28,7 @@ vi.mock('../services/apiClient', () => {
       this.code = code;
       this.data = data;
       this.retryAfterMs = retryAfterMs;
+      this.availableTenants = availableTenants;
     }
   }
 
@@ -43,6 +45,7 @@ const mockedApi = apiClient as unknown as {
   post: ReturnType<typeof vi.fn>;
   patch: ReturnType<typeof vi.fn>;
   setCsrfToken: ReturnType<typeof vi.fn>;
+  setTenantId: ReturnType<typeof vi.fn>;
 };
 const durableSOPQueue = new Map<string, StoredSOPAcknowledgement>();
 
@@ -1565,6 +1568,32 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     expect(state.authUser?.email).toBe('a.schmidt@ffm-sec.de');
     expect(state.clients).toHaveLength(1);
     expect(state.guardBook).toHaveLength(1);
+  });
+
+  test('explicit tenant selection is sent to login and becomes the active session tenant', async () => {
+    mockedApi.post.mockResolvedValueOnce({
+      csrfToken: 'csrf-tenant-token',
+      user: {
+        id: 'user-1',
+        email: 'multi-tenant@example.test',
+        fullName: 'Tenant User',
+        role: 'Operator',
+        tenantId: 'tenant-b',
+        tenantName: 'Tenant B',
+        permissions: ['customers:read']
+      }
+    });
+    mockReadEndpoints();
+
+    await useSecurityStore.getState().login('multi-tenant@example.test', 'secret', 'tenant-b');
+
+    expect(mockedApi.post).toHaveBeenCalledWith(
+      '/auth/login',
+      { email: 'multi-tenant@example.test', password: 'secret', requestedTenantId: 'tenant-b' },
+      { skipAuth: true }
+    );
+    expect(useSecurityStore.getState().currentTenantId).toBe('tenant-b');
+    expect(mockedApi.setTenantId).toHaveBeenCalledWith('tenant-b');
   });
 
   test('5. addSite persistiert ein Objekt über POST /sites', async () => {
