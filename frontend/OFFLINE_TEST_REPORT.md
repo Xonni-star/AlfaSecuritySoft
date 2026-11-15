@@ -34,3 +34,21 @@ The table above is historical project documentation, not evidence of real-device
 Focused frontend tests cover startup replay while already online, exact tenant/user outbox ownership (including unknown owners), visible date-range limits of the single planning cache, approval-gated variance/minus-hours, separate actual-time approval, planning notification read state, and planning UI regressions. These tests do not establish device/browser compatibility, background execution after the browser is closed, production operation, or legal compliance. Exact PR CI head/run mapping is maintained in the [Phase 2 final status report](../PHASE_2_FINAL_COMPLETION_REPORT.md).
 
 CI mapping for this verification snapshot: PR #16 head `a167379546d239ae7241974a3fbb4f9adb7e1868`, run `43498580680` (all four jobs passed); PR #19 head `811de4980835c16df03adc625dc76d55951d657a`, run `43499283441` (all four jobs passed). PR #19 is stacked on PR #16; both remain open and unmerged.
+
+## Offline guardbook exercise (2026-11-15)
+
+Current local verification:
+
+- `cd frontend && npm test` — 24 test files, 140 tests passed.
+- `cd frontend && npm run typecheck` — passed.
+- `cd frontend && npm run test:browser -- --workers=1` — passed in Chromium against a dedicated fixture server bound to `127.0.0.1`; no production endpoint, shared service, or Docker container was used.
+- `tests/offlineGuardbookReconnect.test.ts` uses jsdom events, an isolated `fake-indexeddb` database, and a mocked API. It simulates offline capture, IndexedDB close/reopen, reconnect, a missing receipt followed by retry with the same mutation ID, and a guardbook conflict receipt retained in the outbox.
+- `tests/storeApiIntegration.test.ts` separately checks partial/missing receipts and retry behavior. `tests/GuardBookModule.test.tsx` checks duplicate submission protection and retrying a failed local photo write without recreating the entry.
+
+The browser test exercises Chromium's actual offline/online network transition with `context.setOffline`, service-worker control, an offline queue write, reload while offline, and IndexedDB persistence of the same mutation and unsynced photo record. On reconnect, the local fixture commits the mutation but deliberately drops the first response; the browser retries with the same mutation ID, receives the same receipt, and the fixture reports exactly one server-side effect. The browser test uses an isolated in-memory test fixture, not the application backend; unit tests remain the evidence for conflict receipts, partial receipts, and duplicate-submit protection.
+
+### Chromium offline/reconnect scenario — PASSED against isolated fixture
+
+The first probe found that the app did not register its service worker and the service worker precache referenced paths not emitted by Vite. Production builds now register the worker and precache the built root/manifest files. The Playwright test now serves the built app and API fixture from a separate loopback-only Node server; it uses Chromium offline emulation rather than Playwright request interception. This validates browser persistence/reconnect behavior against a controlled local fixture, not a live backend or physical device.
+
+Full backend/device acceptance and photo replay remain **INCOMPLETE**. The guardbook form only writes photo data to IndexedDB. The existing DMS `POST /api/v1/documents` contract can upload raw bytes and link a persisted same-tenant guardbook entry with `relationshipType=incident` and `relationshipId`, but it generates a new server document ID per upload and defines no idempotency key or retry lookup. That is insufficient for safe replay after a lost response; no attachment upload/replay implementation was added without that API contract.
