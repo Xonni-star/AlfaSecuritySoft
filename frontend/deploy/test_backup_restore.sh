@@ -131,6 +131,7 @@ free_port() {
 POSTGRES_DB=restore_test
 POSTGRES_USER=restore_test_admin
 POSTGRES_PASSWORD="$(openssl rand -hex 24)"
+APP_DB_PASSWORD="$(openssl rand -hex 24)"
 BACKUP_ENCRYPTION_KEY="$(openssl rand -hex 32)"
 RESTORE_TEST_JWT_SECRET="$(openssl rand -hex 32)"
 MINIO_ROOT_USER=restoretest
@@ -328,6 +329,8 @@ if [ "$ALARM_LINK_RLS_COUNT" != 1 ]; then
     exit 1
 fi
 echo "[TEST] Migrationen verifiziert: $EXPECTED_MIGRATIONS; ENABLE/FORCE RLS auf 9 DMS-Tabellen und alarm_incident_links."
+compose exec -T db psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+    -c "ALTER ROLE secops_app_user WITH PASSWORD '$APP_DB_PASSWORD';"
 
 if [ "$MODE" = full ]; then
     S3_READY=0
@@ -515,6 +518,43 @@ elif [[ "$CROSS_TENANT_INSERT" != *"row-level security policy"* ]]; then
     exit 1
 fi
 echo "[TEST] Tenant-RLS verifiziert: getrennte Audit-Lesezugriffe und verweigerter Fremdtenant-Insert."
+
+echo "[TEST] Prüfe den Backend-Health-Endpunkt nach dem Restore mit secops_app_user."
+bounded_run 60 docker compose --env-file "$ENV_FILE" --project-name "$PROJECT" \
+    -f "$SCRIPT_DIR/docker-compose.minio.yml" \
+    -f "$SCRIPT_DIR/docker-compose.backup-restore-test.yml" \
+    run --rm --no-deps \
+    -e "DATABASE_URL=postgresql://secops_app_user:$APP_DB_PASSWORD@db:5432/$POSTGRES_DB" \
+    restore-test-migrate node -e '
+require("./dist/server.js");
+(async () => {
+  const deadline = Date.now() + 30000;
+  let lastError;
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/v1/health");
+      const body = await response.json();
+      if (response.status !== 200 || body.status !== "OPERATIONAL" ||
+          body.database !== "PostgreSQL 16+ Connected (RLS Active)") {
+        throw new Error(`Unexpected health response: HTTP ${response.status}, status ${body.status}`);
+      }
+      console.log("[TEST] Backend-Health nach Restore: OPERATIONAL; Datenbankzugriff mit secops_app_user.");
+      process.kill(process.pid, "SIGTERM");
+      return;
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+  }
+  console.error(`[TEST] Backend-Health nach Restore fehlgeschlagen: ${lastError}`);
+  process.exitCode = 1;
+  process.kill(process.pid, "SIGTERM");
+})().catch((error) => {
+  console.error(`[TEST] Backend-Smoke fehlgeschlagen: ${error}`);
+  process.exitCode = 1;
+  process.kill(process.pid, "SIGTERM");
+});
+'
 
 if [ "$MODE" = full ]; then
     verify_restored_object() {
