@@ -32,8 +32,9 @@ describe('SecurityOps 2.0 - CORS Whitelist & Header Security Tests', () => {
       .set('Origin', 'http://malicious-attacker.com');
 
     // Express CORS wirft Fehler bei unbekanntem Origin
-    expect(res.status).toBe(500);
-    expect(res.body.message).toBe('Interner Serverfehler');
+    expect(res.status).toBe(403);
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+    expect(res.body.message).toBe('Origin nicht zugelassen.');
   });
 
   test('3. Anfrage ohne Origin (z. B. Same-Origin oder interner Healthcheck) wird zugelassen', async () => {
@@ -99,8 +100,8 @@ describe('SecurityOps 2.0 - CORS Whitelist & Header Security Tests', () => {
   test('10. Preflight von einer nicht erlaubten Origin wird abgewiesen', async () => {
     const res = await preflight('PATCH', 'http://malicious-attacker.com');
 
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(403);
     expect(res.headers['access-control-allow-origin']).toBeUndefined();
-    expect(res.body.message).toBe('Interner Serverfehler');
+    expect(res.body.message).toBe('Origin nicht zugelassen.');
   });
 });
