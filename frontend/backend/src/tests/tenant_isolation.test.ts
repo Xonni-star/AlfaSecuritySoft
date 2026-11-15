@@ -1,5 +1,6 @@
 import { pool, migrationPool, withTenantTransaction, withSystemTransaction } from '../config/database';
 import { assignSop } from '../controllers/sopController';
+import { runWithAuthorizationContext, setActivePermissionCode } from '../middleware/requestAuthorizationContext';
 import { cleanupTestData, insertTenantMembership } from './testUtils';
 
 describe('PostgreSQL Row-Level Security (RLS) & Multi-Tenant Isolation', () => {
@@ -11,13 +12,20 @@ describe('PostgreSQL Row-Level Security (RLS) & Multi-Tenant Isolation', () => {
   let sopUserBId: string;
   let tenantRoleOnlyUserId: string;
   let tenantRoleOnlyEmployeeId: string;
+  let siteScopedUserId: string;
+  let tenantWideUserId: string;
   let sopAId: string;
   let sopA2Id: string;
   let sopBId: string;
   let assignmentAId: string;
   let versionA2Id: string;
   let planningPeriodAId: string;
+  let siteAId: string;
+  let siteAOutOfScopeId: string;
+  let siteBId: string;
   let planningShiftAId: string;
+  let planningShiftAOutOfScopeId: string;
+  let planningShiftBId: string;
   let coverRequestAId: string;
   let actualTimeAId: string;
   let actualTimeRevisionAId: string;
@@ -126,13 +134,89 @@ describe('PostgreSQL Row-Level Security (RLS) & Multi-Tenant Isolation', () => {
        VALUES ($1,$2,$3,'RLS Planning Site','Test address','Europe/Berlin') RETURNING id`,
       [tenantA, clientA.rows[0].id, `RLS-${Date.now()}`]
     );
+    siteAId = siteA.rows[0].id;
+    const siteAOutOfScope = await migrationPool.query(
+      `INSERT INTO sites (tenant_id,client_id,site_code,name,address,time_zone)
+       VALUES ($1,$2,$3,'RLS Out-of-Scope Site','Test address','Europe/Berlin') RETURNING id`,
+      [tenantA, clientA.rows[0].id, `RLS-OUT-${Date.now()}`]
+    );
+    siteAOutOfScopeId = siteAOutOfScope.rows[0].id;
+    const clientB = await migrationPool.query('SELECT id FROM clients WHERE tenant_id=$1 LIMIT 1', [tenantB]);
+    const siteB = await migrationPool.query(
+      `INSERT INTO sites (tenant_id,client_id,site_code,name,address,time_zone)
+       VALUES ($1,$2,$3,'RLS Foreign Tenant Site','Test address','Europe/Berlin') RETURNING id`,
+      [tenantB, clientB.rows[0].id, `RLS-B-${Date.now()}`]
+    );
+    siteBId = siteB.rows[0].id;
     const shiftA = await migrationPool.query(
       `INSERT INTO shifts
         (tenant_id,site_id,shift_date,start_time,end_time,required_qualification,revision_version)
        VALUES ($1,$2,'2026-01-02','08:00','16:00','Security',1) RETURNING id`,
-      [tenantA, siteA.rows[0].id]
+      [tenantA, siteAId]
     );
     planningShiftAId = shiftA.rows[0].id;
+    const shiftAOutOfScope = await migrationPool.query(
+      `INSERT INTO shifts
+        (tenant_id,site_id,shift_date,start_time,end_time,required_qualification,revision_version)
+       VALUES ($1,$2,'2026-01-03','08:00','16:00','Security',1) RETURNING id`,
+      [tenantA, siteAOutOfScopeId]
+    );
+    planningShiftAOutOfScopeId = shiftAOutOfScope.rows[0].id;
+    const shiftB = await migrationPool.query(
+      `INSERT INTO shifts
+        (tenant_id,site_id,shift_date,start_time,end_time,required_qualification,revision_version)
+       VALUES ($1,$2,'2026-01-02','08:00','16:00','Security',1) RETURNING id`,
+      [tenantB, siteBId]
+    );
+    planningShiftBId = shiftB.rows[0].id;
+    const scopedUser = await migrationPool.query(
+      `INSERT INTO users (email,password_hash,first_name,last_name)
+       VALUES ($1,'unused-test-hash','Site Scoped','RLS User') RETURNING id`,
+      [`site-scope-rls-${Date.now()}@example.test`]
+    );
+    siteScopedUserId = scopedUser.rows[0].id;
+    await insertTenantMembership(tenantA, siteScopedUserId);
+    const siteScopedRole = await migrationPool.query(
+      `INSERT INTO tenant_roles (tenant_id,name,description)
+       VALUES ($1,$2,'Site-scoped RLS matrix fixture') RETURNING id`,
+      [tenantA, `SiteScopeRls_${Date.now()}`]
+    );
+    await migrationPool.query(
+      `INSERT INTO tenant_role_permissions (tenant_id,role_id,permission_id,site_id,data_scope)
+       SELECT $1,$2,p.id,$3,'SITE'
+         FROM permissions p
+        WHERE p.code=ANY($4::text[])`,
+      [tenantA, siteScopedRole.rows[0].id, siteAId, ['planning:read', 'planning:manage']]
+    );
+    await migrationPool.query(
+      `INSERT INTO tenant_user_roles (tenant_id,user_id,role_id,site_id)
+       VALUES ($1,$2,$3,$4)`,
+      [tenantA, siteScopedUserId, siteScopedRole.rows[0].id, siteAId]
+    );
+    const tenantWideUser = await migrationPool.query(
+      `INSERT INTO users (email,password_hash,first_name,last_name)
+       VALUES ($1,'unused-test-hash','Tenant Wide','RLS User') RETURNING id`,
+      [`tenant-wide-rls-${Date.now()}@example.test`]
+    );
+    tenantWideUserId = tenantWideUser.rows[0].id;
+    await insertTenantMembership(tenantA, tenantWideUserId);
+    const tenantWideRole = await migrationPool.query(
+      `INSERT INTO tenant_roles (tenant_id,name,description)
+       VALUES ($1,$2,'Tenant-wide RLS matrix fixture') RETURNING id`,
+      [tenantA, `TenantWideRls_${Date.now()}`]
+    );
+    await migrationPool.query(
+      `INSERT INTO tenant_role_permissions (tenant_id,role_id,permission_id,data_scope)
+       SELECT $1,$2,p.id,'TENANT'
+         FROM permissions p
+        WHERE p.code=ANY($3::text[])`,
+      [tenantA, tenantWideRole.rows[0].id, ['planning:read', 'planning:manage']]
+    );
+    await migrationPool.query(
+      `INSERT INTO tenant_user_roles (tenant_id,user_id,role_id)
+       VALUES ($1,$2,$3)`,
+      [tenantA, tenantWideUserId, tenantWideRole.rows[0].id]
+    );
     await migrationPool.query(
       `INSERT INTO shift_staffing_assignments (tenant_id,shift_id,employee_id,assigned_by)
        VALUES ($1,$2,$3,$4)`,
@@ -262,7 +346,7 @@ describe('PostgreSQL Row-Level Security (RLS) & Multi-Tenant Isolation', () => {
       cleanup.release();
     }
     // Administrative Bereinigung inkl. Append-Only-Trigger (nur Testdatenbank).
-    await cleanupTestData([tenantA, tenantB],[sopUserAId,sopUserBId,tenantRoleOnlyUserId]);
+    await cleanupTestData([tenantA, tenantB],[sopUserAId,sopUserBId,tenantRoleOnlyUserId,siteScopedUserId,tenantWideUserId]);
     await pool.end();
     await migrationPool.end();
   });
@@ -314,6 +398,132 @@ describe('PostgreSQL Row-Level Security (RLS) & Multi-Tenant Isolation', () => {
         WHERE n.nspname='public' AND c.relname='schedule_periods'`
     );
     expect(flags.rows[0]).toEqual({ relrowsecurity: true, relforcerowsecurity: true });
+  });
+
+  test('Site-scoped, tenant-wide, and ungranted roles enforce tenant and site boundaries', async () => {
+    const withPermission = <T>(userId: string, permissionCode: string, callback: () => Promise<T>): Promise<T> =>
+      new Promise((resolve, reject) => {
+        runWithAuthorizationContext(userId, () => {
+          setActivePermissionCode(permissionCode);
+          callback().then(resolve, reject);
+        });
+      });
+
+    const readCases = [
+      { userId: siteScopedUserId, resource: 'sites', id: siteAId, scope: 'site role / assigned site', visible: true },
+      { userId: siteScopedUserId, resource: 'sites', id: siteAOutOfScopeId, scope: 'site role / other same-tenant site', visible: false },
+      { userId: siteScopedUserId, resource: 'sites', id: siteBId, scope: 'site role / foreign tenant', visible: false },
+      { userId: siteScopedUserId, resource: 'shifts', id: planningShiftAId, scope: 'site role / assigned site', visible: true },
+      { userId: siteScopedUserId, resource: 'shifts', id: planningShiftAOutOfScopeId, scope: 'site role / other same-tenant site', visible: false },
+      { userId: siteScopedUserId, resource: 'shifts', id: planningShiftBId, scope: 'site role / foreign tenant', visible: false },
+      { userId: tenantWideUserId, resource: 'sites', id: siteAId, scope: 'tenant role / first same-tenant site', visible: true },
+      { userId: tenantWideUserId, resource: 'sites', id: siteAOutOfScopeId, scope: 'tenant role / second same-tenant site', visible: true },
+      { userId: tenantWideUserId, resource: 'sites', id: siteBId, scope: 'tenant role / foreign tenant', visible: false },
+      { userId: tenantWideUserId, resource: 'shifts', id: planningShiftAId, scope: 'tenant role / first same-tenant site', visible: true },
+      { userId: tenantWideUserId, resource: 'shifts', id: planningShiftAOutOfScopeId, scope: 'tenant role / second same-tenant site', visible: true },
+      { userId: tenantWideUserId, resource: 'shifts', id: planningShiftBId, scope: 'tenant role / foreign tenant', visible: false },
+      { userId: sopUserAId, resource: 'sites', id: siteAId, scope: 'no planning grant / same tenant', visible: false },
+      { userId: sopUserAId, resource: 'shifts', id: planningShiftAId, scope: 'no planning grant / same tenant', visible: false }
+    ];
+
+    for (const testCase of readCases) {
+      const rows = await withPermission(testCase.userId, 'planning:read', () =>
+        withTenantTransaction(tenantA, async tx =>
+          (await tx.query(`SELECT id FROM ${testCase.resource} WHERE id=$1`, [testCase.id])).rows
+        )
+      );
+      expect({ scope: testCase.scope, count: rows.length }).toEqual({
+        scope: testCase.scope,
+        count: testCase.visible ? 1 : 0
+      });
+    }
+
+    const writeCases = [
+      { userId: siteScopedUserId, tenantId: tenantA, siteId: siteAId, shiftId: planningShiftAId, scope: 'site role / assigned site', allowed: true },
+      { userId: siteScopedUserId, tenantId: tenantA, siteId: siteAOutOfScopeId, shiftId: planningShiftAOutOfScopeId, scope: 'site role / other same-tenant site', allowed: false },
+      { userId: siteScopedUserId, tenantId: tenantB, siteId: siteBId, shiftId: planningShiftBId, scope: 'site role / foreign tenant', allowed: false },
+      { userId: tenantWideUserId, tenantId: tenantA, siteId: siteAId, shiftId: planningShiftAId, scope: 'tenant role / first same-tenant site', allowed: true },
+      { userId: tenantWideUserId, tenantId: tenantA, siteId: siteAOutOfScopeId, shiftId: planningShiftAOutOfScopeId, scope: 'tenant role / second same-tenant site', allowed: true },
+      { userId: tenantWideUserId, tenantId: tenantB, siteId: siteBId, shiftId: planningShiftBId, scope: 'tenant role / foreign tenant', allowed: false },
+      { userId: sopUserAId, tenantId: tenantA, siteId: siteAId, shiftId: planningShiftAId, scope: 'no planning grant / same tenant', allowed: false }
+    ];
+    const baseline = await migrationPool.query(
+      `SELECT id,tenant_id,site_id,required_qualification
+         FROM shifts
+        WHERE id=ANY($1::uuid[])
+        ORDER BY id`,
+      [[planningShiftAId, planningShiftAOutOfScopeId, planningShiftBId]]
+    );
+
+    for (const [index, testCase] of writeCases.entries()) {
+      const qualification = `RLS-MATRIX-${index}-${Date.now()}`;
+      const update = await withPermission(testCase.userId, 'planning:manage', () =>
+        withTenantTransaction(tenantA, tx => tx.query(
+          'UPDATE shifts SET required_qualification=$1 WHERE id=$2 RETURNING id',
+          [qualification, testCase.shiftId]
+        ))
+      );
+      expect({ scope: testCase.scope, count: update.rows.length }).toEqual({
+        scope: testCase.scope,
+        count: testCase.allowed ? 1 : 0
+      });
+      if (testCase.allowed) {
+        await withPermission(testCase.userId, 'planning:manage', () =>
+          withTenantTransaction(tenantA, tx => tx.query(
+            'UPDATE shifts SET required_qualification=$1 WHERE id=$2',
+            [baseline.rows.find(row => row.id === testCase.shiftId).required_qualification, testCase.shiftId]
+          ))
+        );
+      }
+
+      const insertMarker = `RLS-MATRIX-INSERT-${index}-${Date.now()}`;
+      if (testCase.allowed) {
+        const inserted = await withPermission(testCase.userId, 'planning:manage', () =>
+          withTenantTransaction(tenantA, async tx => {
+            return tx.query(
+              `INSERT INTO shifts
+                (tenant_id,site_id,shift_date,start_time,end_time,required_qualification,revision_version)
+               VALUES ($1,$2,'2026-01-04','08:00','16:00',$3,1) RETURNING id`,
+              [testCase.tenantId, testCase.siteId, insertMarker]
+            );
+          })
+        );
+        expect(inserted.rows).toHaveLength(1);
+        await migrationPool.query('DELETE FROM shifts WHERE id=$1', [inserted.rows[0].id]);
+      } else {
+        let denied: unknown;
+        try {
+          await withPermission(testCase.userId, 'planning:manage', () =>
+            withTenantTransaction(tenantA, tx => tx.query(
+              `INSERT INTO shifts
+                (tenant_id,site_id,shift_date,start_time,end_time,required_qualification,revision_version)
+               VALUES ($1,$2,'2026-01-04','08:00','16:00',$3,1)`,
+              [testCase.tenantId, testCase.siteId, insertMarker]
+            ))
+          );
+        } catch (error) {
+          denied = error;
+        }
+        if (!denied) {
+          await migrationPool.query('DELETE FROM shifts WHERE required_qualification=$1', [insertMarker]);
+        }
+        expect(denied).toMatchObject({ code: expect.stringMatching(/^(42501|P0001)$/) });
+        const insertedRows = await migrationPool.query(
+          'SELECT id FROM shifts WHERE required_qualification=$1',
+          [insertMarker]
+        );
+        expect(insertedRows.rows).toHaveLength(0);
+      }
+    }
+
+    const after = await migrationPool.query(
+      `SELECT id,tenant_id,site_id,required_qualification
+         FROM shifts
+        WHERE id=ANY($1::uuid[])
+        ORDER BY id`,
+      [[planningShiftAId, planningShiftAOutOfScopeId, planningShiftBId]]
+    );
+    expect(after.rows).toEqual(baseline.rows);
   });
 
   test('All planning tables enforce RLS and reject forged tenant writes', async () => {

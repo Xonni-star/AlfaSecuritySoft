@@ -39,6 +39,17 @@ let createdSopEmployeeId: string | undefined;
 let createdSopSiteId: string | undefined;
 let createdSopCustomerId: string | undefined;
 let createdSopShiftId: string | undefined;
+let createdJourneyEmployeeId: string | undefined;
+let createdJourneyEmployeeUserId: string | undefined;
+let createdJourneyEmployeeEmail: string | undefined;
+let createdJourneySopId: string | undefined;
+let createdJourneyPeriodId: string | undefined;
+let createdJourneyShiftId: string | undefined;
+let createdJourneyGuardbookEntryId: string | undefined;
+let createdJourneyHandoverId: string | undefined;
+let createdJourneyPatrolCheckpointId: string | undefined;
+let createdJourneyPatrolRoundId: string | undefined;
+let createdJourneyPatrolScanMutationId: string | undefined;
 let createdCrossTenantClientId: string | undefined;
 let createdCrossTenantSiteId: string | undefined;
 let createdAlarmPlanId: string | undefined;
@@ -278,6 +289,166 @@ afterAll(async () => {
         await cleanup.query('DELETE FROM alarm_escalation_rules WHERE tenant_id=$1 AND id=$2', [
           TENANT_FFM_ID, createdAlarmEscalationRuleId
         ]);
+      }
+    } finally {
+      await cleanup.query('SET session_replication_role = origin');
+      cleanup.release();
+    }
+  }
+  if (
+    createdJourneyEmployeeId || createdJourneyEmployeeUserId || createdJourneySopId ||
+    createdJourneyPeriodId || createdJourneyShiftId || createdJourneyGuardbookEntryId ||
+    createdJourneyHandoverId || createdJourneyPatrolCheckpointId || createdJourneyPatrolRoundId
+  ) {
+    const cleanup = await migrationPool.connect();
+    try {
+      await cleanup.query('SET session_replication_role = replica');
+      if (createdJourneyPatrolRoundId) {
+        const scans = await cleanup.query(
+          'SELECT id FROM patrol_scans WHERE tenant_id=$1 AND round_id=$2',
+          [TENANT_FFM_ID, createdJourneyPatrolRoundId]
+        );
+        const patrolEntityIds = [
+          createdJourneyPatrolCheckpointId,
+          createdJourneyPatrolRoundId,
+          ...scans.rows.map(row => row.id)
+        ].filter(Boolean);
+        await cleanup.query(
+          'DELETE FROM patrol_events WHERE tenant_id=$1 AND entity_id=ANY($2::uuid[])',
+          [TENANT_FFM_ID, patrolEntityIds]
+        );
+        await cleanup.query(
+          'DELETE FROM patrol_scan_attempts WHERE tenant_id=$1 AND client_mutation_id=$2',
+          [TENANT_FFM_ID, createdJourneyPatrolScanMutationId ?? null]
+        );
+        await cleanup.query(
+          'DELETE FROM patrol_scans WHERE tenant_id=$1 AND round_id=$2',
+          [TENANT_FFM_ID, createdJourneyPatrolRoundId]
+        );
+        await cleanup.query('DELETE FROM patrol_rounds WHERE tenant_id=$1 AND id=$2', [
+          TENANT_FFM_ID, createdJourneyPatrolRoundId
+        ]);
+      }
+      if (createdJourneyPatrolCheckpointId) {
+        await cleanup.query('DELETE FROM patrol_checkpoints WHERE tenant_id=$1 AND id=$2', [
+          TENANT_FFM_ID, createdJourneyPatrolCheckpointId
+        ]);
+      }
+      if (createdJourneyHandoverId) {
+        await cleanup.query(
+          `DELETE FROM handover_task_events WHERE tenant_id=$1 AND task_id IN (
+             SELECT id FROM handover_tasks WHERE tenant_id=$1 AND origin_handover_id=$2
+           )`,
+          [TENANT_FFM_ID, createdJourneyHandoverId]
+        );
+        await cleanup.query('DELETE FROM handover_tasks WHERE tenant_id=$1 AND origin_handover_id=$2', [
+          TENANT_FFM_ID, createdJourneyHandoverId
+        ]);
+        await cleanup.query('DELETE FROM handover_confirmations WHERE tenant_id=$1 AND handover_id=$2', [
+          TENANT_FFM_ID, createdJourneyHandoverId
+        ]);
+        await cleanup.query('DELETE FROM handover_documents WHERE tenant_id=$1 AND handover_id=$2', [
+          TENANT_FFM_ID, createdJourneyHandoverId
+        ]);
+        await cleanup.query('DELETE FROM handover_participants WHERE tenant_id=$1 AND handover_id=$2', [
+          TENANT_FFM_ID, createdJourneyHandoverId
+        ]);
+        await cleanup.query('DELETE FROM handover_events WHERE tenant_id=$1 AND handover_id=$2', [
+          TENANT_FFM_ID, createdJourneyHandoverId
+        ]);
+        await cleanup.query('DELETE FROM handovers WHERE tenant_id=$1 AND id=$2', [
+          TENANT_FFM_ID, createdJourneyHandoverId
+        ]);
+      }
+      if (createdJourneyGuardbookEntryId) {
+        await cleanup.query('DELETE FROM guardbook_revisions WHERE tenant_id=$1 AND entry_id=$2', [
+          TENANT_FFM_ID, createdJourneyGuardbookEntryId
+        ]);
+        await cleanup.query('DELETE FROM guardbook_entries WHERE tenant_id=$1 AND id=$2', [
+          TENANT_FFM_ID, createdJourneyGuardbookEntryId
+        ]);
+      }
+      if (createdJourneyShiftId) {
+        await cleanup.query('DELETE FROM schedule_rule_exceptions WHERE tenant_id=$1 AND finding_id IN (SELECT id FROM schedule_rule_findings WHERE tenant_id=$1 AND shift_id=$2)', [
+          TENANT_FFM_ID, createdJourneyShiftId
+        ]);
+        await cleanup.query('DELETE FROM schedule_rule_findings WHERE tenant_id=$1 AND shift_id=$2', [
+          TENANT_FFM_ID, createdJourneyShiftId
+        ]);
+        await cleanup.query('DELETE FROM shift_staffing_assignments WHERE tenant_id=$1 AND shift_id=$2', [
+          TENANT_FFM_ID, createdJourneyShiftId
+        ]);
+        await cleanup.query('DELETE FROM shift_staffing_requirements WHERE tenant_id=$1 AND shift_id=$2', [
+          TENANT_FFM_ID, createdJourneyShiftId
+        ]);
+        await cleanup.query('DELETE FROM shift_cover_requests WHERE tenant_id=$1 AND shift_id=$2', [
+          TENANT_FFM_ID, createdJourneyShiftId
+        ]);
+        await cleanup.query('DELETE FROM shift_actual_times WHERE tenant_id=$1 AND shift_id=$2', [
+          TENANT_FFM_ID, createdJourneyShiftId
+        ]);
+        await cleanup.query('DELETE FROM planning_notifications WHERE tenant_id=$1 AND entity_id=$2', [
+          TENANT_FFM_ID, createdJourneyShiftId
+        ]);
+        await cleanup.query(
+          'DELETE FROM planning_audit_events WHERE tenant_id=$1 AND entity_id=ANY($2::uuid[])',
+          [TENANT_FFM_ID, [createdJourneyShiftId, createdJourneyPeriodId].filter(Boolean)]
+        );
+        await cleanup.query('DELETE FROM shifts WHERE tenant_id=$1 AND id=$2', [
+          TENANT_FFM_ID, createdJourneyShiftId
+        ]);
+      }
+      if (createdJourneyPeriodId) {
+        await cleanup.query('DELETE FROM planning_notifications WHERE tenant_id=$1 AND entity_id=$2', [
+          TENANT_FFM_ID, createdJourneyPeriodId
+        ]);
+        await cleanup.query('DELETE FROM schedule_periods WHERE tenant_id=$1 AND id=$2', [
+          TENANT_FFM_ID, createdJourneyPeriodId
+        ]);
+      }
+      if (createdJourneySopId) {
+        await cleanup.query('DELETE FROM sop_assignments WHERE tenant_id=$1 AND sop_id=$2', [
+          TENANT_FFM_ID, createdJourneySopId
+        ]);
+        await cleanup.query('DELETE FROM sop_assignment_targets WHERE tenant_id=$1 AND sop_id=$2', [
+          TENANT_FFM_ID, createdJourneySopId
+        ]);
+        await cleanup.query('DELETE FROM sop_events WHERE tenant_id=$1 AND sop_id=$2', [
+          TENANT_FFM_ID, createdJourneySopId
+        ]);
+        await cleanup.query(
+          'UPDATE sop_instructions SET current_version_id=NULL,draft_version_id=NULL WHERE tenant_id=$1 AND id=$2',
+          [TENANT_FFM_ID, createdJourneySopId]
+        );
+        await cleanup.query('DELETE FROM sop_versions WHERE tenant_id=$1 AND sop_id=$2', [
+          TENANT_FFM_ID, createdJourneySopId
+        ]);
+        await cleanup.query('DELETE FROM sop_instructions WHERE tenant_id=$1 AND id=$2', [
+          TENANT_FFM_ID, createdJourneySopId
+        ]);
+      }
+      if (createdJourneyEmployeeId) {
+        await cleanup.query('DELETE FROM employee_qualifications WHERE tenant_id=$1 AND employee_id=$2', [
+          TENANT_FFM_ID, createdJourneyEmployeeId
+        ]);
+        await cleanup.query('DELETE FROM employee_site_assignments WHERE tenant_id=$1 AND employee_id=$2', [
+          TENANT_FFM_ID, createdJourneyEmployeeId
+        ]);
+        await cleanup.query('DELETE FROM employees WHERE tenant_id=$1 AND id=$2', [
+          TENANT_FFM_ID, createdJourneyEmployeeId
+        ]);
+      }
+      if (createdJourneyEmployeeUserId) {
+        await cleanup.query(
+          'DELETE FROM audit_logs WHERE tenant_id=$1 AND (target_entity=$2 OR user_email=$3)',
+          [TENANT_FFM_ID, createdJourneyEmployeeId ?? null, createdJourneyEmployeeEmail ?? null]
+        );
+        await cleanup.query('DELETE FROM user_sessions WHERE user_id=$1', [createdJourneyEmployeeUserId]);
+        await cleanup.query('DELETE FROM user_roles WHERE user_id=$1', [createdJourneyEmployeeUserId]);
+        await cleanup.query('DELETE FROM tenant_memberships WHERE tenant_id=$1 AND user_id=$2', [
+          TENANT_FFM_ID, createdJourneyEmployeeUserId
+        ]);
+        await cleanup.query('DELETE FROM users WHERE id=$1', [createdJourneyEmployeeUserId]);
       }
     } finally {
       await cleanup.query('SET session_replication_role = origin');
@@ -1650,6 +1821,301 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
       querySpy.mockRestore();
       log.mockRestore();
     }
+  });
+
+  test('Representative business journey persists planning, SOP, guardbook, alarm, handover, patrol, report and audit records', async () => {
+    if (!createdWorkflowCustomerId || !createdSiteId || !createdEmployeeId) {
+      throw new Error('The API-created customer, site and employee fixtures must exist before the Phase 4 journey.');
+    }
+
+    const suffix = crypto.randomBytes(6).toString('hex');
+    const leadToken = await login(SEED_USER_EMAIL);
+    const authorToken = await login(SOP_AUTHOR_EMAIL);
+    const reviewerToken = await login(SOP_REVIEWER_EMAIL);
+    const approverToken = await login(SOP_APPROVER_EMAIL);
+    const dates = await migrationPool.query(
+      'SELECT CURRENT_DATE::text AS today,(CURRENT_DATE+3)::text AS shift_date,(CURRENT_DATE+365)::text AS expiry_date'
+    );
+    const { today, shift_date: shiftDate, expiry_date: expiryDate } = dates.rows[0];
+    const employeeEmail = `phase4-journey-${suffix}@example.test`;
+    createdJourneyEmployeeEmail = employeeEmail;
+
+    const employeeResponse = await request(app).post('/api/v1/employees').set(authHeaders(leadToken)).send({
+      personnelNumber: `PH4-${suffix}`,
+      firstName: 'Phase Four',
+      lastName: 'Journey',
+      email: employeeEmail,
+      phone: '+49 30 400',
+      role: 'Wachdienstmitarbeiter',
+      status: 'Aktiv',
+      weeklyHours: 40,
+      hourlyRate: 19,
+      dateOfJoining: today,
+      assignedSiteIds: [createdSiteId]
+    });
+    expect(employeeResponse.status).toBe(201);
+    createdJourneyEmployeeId = employeeResponse.body.data.id;
+
+    const qualificationResponse = await request(app)
+      .post(`/api/v1/employees/${createdJourneyEmployeeId}/qualifications`)
+      .set(authHeaders(leadToken))
+      .send({
+        type: 'Sachkundeprüfung § 34a',
+        certificateNumber: `PH4-CERT-${suffix}`,
+        issueDate: today,
+        expiryDate,
+        verified: true,
+        documentReference: `phase4-${suffix}`
+      });
+    expect(qualificationResponse.status).toBe(201);
+    expect(qualificationResponse.body.data.status).toBe('VALID');
+
+    const passwordHash = await argon2.hash(SEED_PASSWORD, { type: argon2.argon2id });
+    const journeyUser = await migrationPool.query(
+      `INSERT INTO users (email,password_hash,first_name,last_name,phone)
+       VALUES ($1,$2,'Phase Four','Journey','+49 30 400') RETURNING id`,
+      [employeeEmail, passwordHash]
+    );
+    const journeyUserId = journeyUser.rows[0].id as string;
+    createdJourneyEmployeeUserId = journeyUserId;
+    await insertTenantMembership(TENANT_FFM_ID, journeyUserId);
+    const guardRole = await migrationPool.query(
+      "SELECT id FROM roles WHERE name='Wachdienstmitarbeiter' LIMIT 1"
+    );
+    expect(guardRole.rows).toHaveLength(1);
+    await migrationPool.query(
+      'INSERT INTO user_roles (user_id,role_id,tenant_id) VALUES ($1,$2,$3)',
+      [journeyUserId, guardRole.rows[0].id, TENANT_FFM_ID]
+    );
+    const linked = await request(app)
+      .patch(`/api/v1/employees/${createdJourneyEmployeeId}/account`)
+      .set(authHeaders(authorToken))
+      .send({ userId: journeyUserId, revisionVersion: employeeResponse.body.data.revision_version });
+    expect(linked.status).toBe(200);
+    const employeeToken = await login(employeeEmail);
+
+    const period = await request(app).post('/api/v1/planning/periods').set(authHeaders(leadToken)).send({
+      name: `Phase 4 journey ${suffix}`,
+      dateFrom: shiftDate,
+      dateTo: shiftDate,
+      timeZone: 'Europe/Berlin'
+    });
+    expect(period.status).toBe(201);
+    createdJourneyPeriodId = period.body.data.id;
+
+    const planningShift = await request(app).post('/api/v1/planning/shifts').set(authHeaders(leadToken)).send({
+      siteId: createdSiteId,
+      schedulePeriodId: createdJourneyPeriodId,
+      date: shiftDate,
+      startTime: '08:00',
+      endTime: '16:00',
+      type: 'Tagdienst',
+      requiredQualification: 'Sachkundeprüfung § 34a',
+      requiredStaffCount: 1,
+      clientMutationId: `ph4-shift-${suffix}`
+    });
+    expect(planningShift.status).toBe(201);
+    createdJourneyShiftId = planningShift.body.data.shift.id;
+
+    const assigned = await request(app)
+      .post(`/api/v1/planning/shifts/${createdJourneyShiftId}/assignments`)
+      .set(authHeaders(leadToken))
+      .send({
+        employeeId: createdJourneyEmployeeId,
+        expectedVersion: planningShift.body.data.shift.revision_version
+      });
+    expect(assigned.status).toBe(200);
+
+    const published = await request(app)
+      .post(`/api/v1/planning/periods/${createdJourneyPeriodId}/publish`)
+      .set(authHeaders(leadToken))
+      .send({ expectedVersion: period.body.data.revision_version });
+    expect(published.status).toBe(200);
+    expect(published.body.data.period.status).toBe('published');
+
+    const sop = await request(app).post('/api/v1/sops').set(authHeaders(authorToken)).send({
+      sopNumber: `PH4-${suffix}`,
+      title: 'Phase 4 journey instruction',
+      description: 'Representative workflow instruction',
+      category: 'Allgemeine Dienstanweisung',
+      content: 'Read the site access and incident response instructions.',
+      mandatoryAcknowledgment: true,
+      effectiveFrom: today
+    });
+    expect(sop.status).toBe(201);
+    createdJourneySopId = sop.body.data.id;
+    expect((await request(app).post(`/api/v1/sops/${createdJourneySopId}/submit`)
+      .set(authHeaders(authorToken)).send({})).status).toBe(201);
+    expect((await request(app).post(`/api/v1/sops/${createdJourneySopId}/review`)
+      .set(authHeaders(reviewerToken)).send({ decision: 'reviewed', comment: 'Phase 4 workflow review.' })).status).toBe(200);
+    expect((await request(app).post(`/api/v1/sops/${createdJourneySopId}/approve`)
+      .set(authHeaders(approverToken)).send({})).status).toBe(200);
+    expect((await request(app).post(`/api/v1/sops/${createdJourneySopId}/publish`)
+      .set(authHeaders(approverToken)).send({})).status).toBe(200);
+    const sopAssignment = await request(app)
+      .post(`/api/v1/sops/${createdJourneySopId}/assignments`)
+      .set(authHeaders(authorToken))
+      .send({
+        targets: [{ type: 'site', id: createdSiteId }],
+        dueAt: new Date(Date.now() + 5 * 86400000).toISOString()
+      });
+    expect(sopAssignment.status).toBe(201);
+    const employeeInstructions = await request(app).get('/api/v1/sops').set(authHeaders(employeeToken));
+    const instruction = employeeInstructions.body.data.find((item: any) => item.id === createdJourneySopId);
+    expect(instruction).toMatchObject({ current_user_acknowledgment: 'unacknowledged' });
+    const acknowledged = await request(app)
+      .post(`/api/v1/sops/assignments/${instruction.assignment_id}/acknowledge`)
+      .set(authHeaders(employeeToken))
+      .send({
+        confirmed: true,
+        clientMutationId: `ph4-sop-ack-${suffix}`,
+        capturedAt: new Date().toISOString()
+      });
+    expect(acknowledged.status).toBe(200);
+
+    const alarmType = await migrationPool.query(
+      "SELECT id FROM alarm_types WHERE tenant_id=$1 AND code='ema' LIMIT 1",
+      [TENANT_FFM_ID]
+    );
+    expect(alarmType.rows).toHaveLength(1);
+    const alarm = await request(app).post('/api/v1/alarms').set(authHeaders(leadToken)).send({
+      siteId: createdSiteId,
+      alarmTypeId: alarmType.rows[0].id,
+      severity: 'Dringend',
+      title: `Phase 4 journey alarm ${suffix}`,
+      description: 'Representative incident at the assigned site.'
+    });
+    expect(alarm.status).toBe(201);
+    const alarmId = alarm.body.data.incident.id as string;
+    createdAlarmIncidentIds.push(alarmId);
+
+    const logbook = await request(app).post('/api/v1/logbook').set(authHeaders(leadToken)).send({
+      siteId: createdSiteId,
+      guardId: createdJourneyEmployeeId,
+      category: 'Vorkommnis',
+      priority: 'Normal',
+      title: `Phase 4 journey logbook ${suffix}`,
+      description: `Persisted after alarm ${alarmId} was reported.`,
+      policeInvolved: false
+    });
+    expect(logbook.status).toBe(201);
+    createdJourneyGuardbookEntryId = logbook.body.data.id;
+
+    const handover = await request(app).post('/api/v1/handovers').set(authHeaders(leadToken)).send({
+      siteId: createdSiteId,
+      shiftId: createdJourneyShiftId,
+      occurredAt: new Date().toISOString(),
+      outgoingEmployeeId: createdEmployeeId,
+      incomingEmployeeId: createdJourneyEmployeeId,
+      generalText: 'Shift handover for the Phase 4 journey.',
+      incidents: `Alarm ${alarmId} was reported.`,
+      importantNotes: '',
+      safetyInformation: '',
+      clientMutationId: `ph4-handover-${suffix}`,
+      tasks: [{
+        title: 'Review the reported alarm',
+        description: 'Confirm the site response log is complete.',
+        assignedEmployeeId: createdJourneyEmployeeId,
+        priority: 'normal',
+        dueAt: null
+      }]
+    });
+    expect(handover.status).toBe(201);
+    createdJourneyHandoverId = handover.body.data.id;
+
+    const checkpoint = await request(app).post('/api/v1/patrol/checkpoints').set(authHeaders(leadToken)).send({
+      siteId: createdSiteId,
+      code: `PH4-${suffix}`,
+      name: `Phase 4 journey checkpoint ${suffix}`
+    });
+    expect(checkpoint.status).toBe(201);
+    createdJourneyPatrolCheckpointId = checkpoint.body.data.id;
+    const checkpointToken = checkpoint.body.data.scanPayload.split(':').at(-1) as string;
+    const startedAt = new Date(Date.now() - 30000).toISOString();
+    const startedRound = await request(app)
+      .post('/api/v1/patrol/rounds')
+      .set(authHeaders(employeeToken))
+      .send({
+        siteId: createdSiteId,
+        startedAt,
+        clientMutationId: `ph4-round-${suffix}`
+      });
+    expect(startedRound.status).toBe(201);
+    createdJourneyPatrolRoundId = startedRound.body.data.id;
+
+    createdJourneyPatrolScanMutationId = `ph4-scan-${suffix}`;
+    const scannedAt = new Date(Date.now() - 10000).toISOString();
+    const scan = await request(app).post('/api/v1/patrol/sync').set(authHeaders(employeeToken)).send({
+      deviceId: `ph4-device-${suffix}`,
+      mutations: [{
+        clientUuid: createdJourneyPatrolScanMutationId,
+        entityType: 'patrol',
+        action: 'CREATE',
+        clientTimestamp: scannedAt,
+        baseVersion: 1,
+        payload: {
+          siteId: createdSiteId,
+          checkpointId: createdJourneyPatrolCheckpointId,
+          roundId: createdJourneyPatrolRoundId,
+          method: 'QR_CODE',
+          checkpointToken,
+          checkpointTokenVersion: 1,
+          scannedAt
+        }
+      }]
+    });
+    expect(scan.status).toBe(200);
+    expect(scan.body.data[0].status).toBe('SYNCED');
+
+    const completedAt = new Date().toISOString();
+    const completedRound = await request(app)
+      .post(`/api/v1/patrol/rounds/${createdJourneyPatrolRoundId}/complete`)
+      .set(authHeaders(employeeToken))
+      .send({ completedAt, notes: 'Checkpoint verified.' });
+    expect(completedRound.status).toBe(200);
+
+    const coverage = await request(app)
+      .get(`/api/v1/planning/reports/coverage?from=${shiftDate}&to=${shiftDate}`)
+      .set(authHeaders(leadToken));
+    expect(coverage.status).toBe(200);
+    expect(coverage.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ shift_id: createdJourneyShiftId, required_count: 1, assigned_count: 1, shortfall: 0 })
+    ]));
+    const audit = await request(app)
+      .get(`/api/v1/planning/audit?entityId=${createdJourneyShiftId}`)
+      .set(authHeaders(leadToken));
+    expect(audit.status).toBe(200);
+    expect(audit.body.data.map((event: any) => event.event_type)).toContain('shift.employee_assigned');
+
+    const persisted = await migrationPool.query(
+      `SELECT
+         (SELECT count(*)::int FROM employee_qualifications WHERE tenant_id=$1 AND employee_id=$2 AND qualification_type='Sachkundeprüfung § 34a' AND status='VALID') AS qualifications,
+         (SELECT count(*)::int FROM sop_assignments WHERE tenant_id=$1 AND sop_id=$3 AND employee_id=$2 AND acknowledged_at IS NOT NULL) AS acknowledgments,
+         (SELECT count(*)::int FROM guardbook_entries WHERE tenant_id=$1 AND id=$4) AS logbook_entries,
+         (SELECT count(*)::int FROM alarm_incidents WHERE tenant_id=$1 AND id=$5) AS alarms,
+         (SELECT count(*)::int FROM handovers WHERE tenant_id=$1 AND id=$6 AND shift_id=$7) AS handovers,
+         (SELECT count(*)::int FROM patrol_scans WHERE tenant_id=$1 AND round_id=$8) AS patrol_scans,
+         (SELECT count(*)::int FROM patrol_rounds WHERE tenant_id=$1 AND id=$8 AND status='completed') AS completed_rounds`,
+      [
+        TENANT_FFM_ID,
+        createdJourneyEmployeeId,
+        createdJourneySopId,
+        createdJourneyGuardbookEntryId,
+        alarmId,
+        createdJourneyHandoverId,
+        createdJourneyShiftId,
+        createdJourneyPatrolRoundId
+      ]
+    );
+    expect(persisted.rows[0]).toEqual({
+      qualifications: 1,
+      acknowledgments: 1,
+      logbook_entries: 1,
+      alarms: 1,
+      handovers: 1,
+      patrol_scans: 1,
+      completed_rounds: 1
+    });
   });
 
 });
