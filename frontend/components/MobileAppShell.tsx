@@ -77,9 +77,9 @@ export const MobileAppShell: React.FC = () => {
       </div>
 
       {/* Main View Switcher */}
-      <div className="flex-1">
+      <div className="flex-1 pb-20">
         {activeMobileView === 'home' && (
-          <div className="space-y-4 pb-20 text-xs">
+          <div className="space-y-4 text-xs">
             {/* Quick Status Cards */}
             <div className="grid grid-cols-2 gap-3">
               <button
