@@ -4,7 +4,9 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   addGuardBookEntry: vi.fn(),
+  saveAttachment: vi.fn(),
   state: {
+    currentTenantId: 'tenant-a',
     getTenantGuardBook: vi.fn(() => []),
     getTenantSites: vi.fn(() => [{
       id: 'site-a',
@@ -30,7 +32,7 @@ vi.mock('../store', () => ({
 }));
 
 vi.mock('../services/indexedDbService', () => ({
-  offlineVault: { saveAttachment: vi.fn() }
+  offlineVault: { saveAttachment: mocks.saveAttachment }
 }));
 
 import { GuardBookModule } from '../components/GuardBookModule';
@@ -57,6 +59,7 @@ describe('GuardBookModule offline capture', () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     container.remove();
+    vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
 
@@ -96,5 +99,70 @@ describe('GuardBookModule offline capture', () => {
     expect(container.querySelector<HTMLInputElement>('input[placeholder^="z. B."]')?.value).toBe('Offline-Vorfall');
     expect(container.querySelector('textarea')?.value).toBe('Wichtiger Sachverhalt');
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('IndexedDB quota exceeded');
+  });
+
+  test('retries a failed photo write against the persisted entry without creating it again', async () => {
+    const persistedEntryId = 'gb-persisted-entry-id';
+    mocks.addGuardBookEntry.mockResolvedValueOnce(persistedEntryId);
+    mocks.saveAttachment
+      .mockRejectedValueOnce(new Error('IndexedDB write failed'))
+      .mockResolvedValueOnce(undefined);
+    vi.stubGlobal('FileReader', class {
+      onload?: (event: { target: { result: string } | null }) => void;
+      readAsDataURL(): void {
+        this.onload?.({ target: { result: 'data:image/jpeg;base64,cGhvdG8=' } });
+      }
+    });
+
+    await act(async () => root.render(<GuardBookModule />));
+    const openButton = Array.from(container.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Ereignis erfassen'));
+    await act(async () => openButton?.click());
+
+    const title = container.querySelector<HTMLInputElement>('input[placeholder^="z. B."]');
+    const description = container.querySelector<HTMLTextAreaElement>('textarea');
+    const photoInput = container.querySelector<HTMLInputElement>('input[type="file"]');
+    if (!title || !description || !photoInput) throw new Error('Wachbucheintragsformular fehlt');
+    await act(async () => {
+      setValue(title, 'Foto-Vorfall');
+      setValue(description, 'Sachverhalt mit Fotodokumentation');
+      Object.defineProperty(photoInput, 'files', {
+        configurable: true,
+        value: [new File(['photo'], 'incident.jpg', { type: 'image/jpeg' })]
+      });
+      photoInput.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(container.querySelector('img[alt="Vorschau"]')).not.toBeNull();
+
+    const form = container.querySelector('form');
+    if (!form) throw new Error('Wachbucheintragsformular fehlt');
+    await act(async () => {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('Wachbucheintrag ist gespeichert');
+    expect(container.querySelector('button[type="submit"]')?.textContent).toContain('Foto erneut speichern');
+    expect(container.querySelector<HTMLInputElement>('input[placeholder^="z. B."]')?.disabled).toBe(true);
+    expect(mocks.addGuardBookEntry).toHaveBeenCalledOnce();
+    expect(mocks.saveAttachment).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      id: `att-${persistedEntryId}`,
+      tenantId: 'tenant-a',
+      entityId: persistedEntryId
+    }));
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
+    });
+
+    expect(mocks.addGuardBookEntry).toHaveBeenCalledOnce();
+    expect(mocks.saveAttachment).toHaveBeenCalledTimes(2);
+    expect(mocks.saveAttachment.mock.calls[1][0]).toMatchObject({
+      id: `att-${persistedEntryId}`,
+      tenantId: 'tenant-a',
+      entityId: persistedEntryId,
+      blobData: mocks.saveAttachment.mock.calls[0][0].blobData
+    });
+    expect(container.querySelector('form')).toBeNull();
   });
 });

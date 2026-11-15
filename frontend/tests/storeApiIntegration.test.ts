@@ -1229,7 +1229,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
       currentUserId: 'user-regression'
     });
 
-    await useSecurityStore.getState().addGuardBookEntry({
+    const persistedEntryId = await useSecurityStore.getState().addGuardBookEntry({
       siteId: siteRow.id,
       siteName: siteRow.name,
       guardId: employeeRow.id,
@@ -1245,8 +1245,15 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
 
     const state = useSecurityStore.getState();
     expect(state.guardBook).toEqual(expect.arrayContaining([
-      expect.objectContaining({ title: 'Manuell erfasster Vorfall', description: 'Sachverhalt wurde von der Wachkraft selbst eingetragen.' })
+      expect.objectContaining({
+        id: persistedEntryId,
+        title: 'Manuell erfasster Vorfall',
+        description: 'Sachverhalt wurde von der Wachkraft selbst eingetragen.'
+      })
     ]));
+    expect(mutationWrite).toHaveBeenCalledWith(expect.objectContaining({
+      payload: expect.objectContaining({ id: persistedEntryId })
+    }));
     expect(state.syncQueue[0]).toMatchObject({
       tenantId: 'tenant-frankfurt',
       entityType: 'guardbook',
