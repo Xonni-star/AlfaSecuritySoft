@@ -16,12 +16,12 @@ const noopLogger = () => {};
 const MIGRATION_VERSIONS = [
   '001', '002', '003', '004', '005', '006', '007', '009', '011', '012', '013', '014',
   '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025', '026',
-  '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039'
+  '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040'
 ];
 const MIGRATION_VERSIONS_WITH_010 = [
   '001', '002', '003', '004', '005', '006', '007', '009', '010', '011', '012', '013',
   '014', '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025',
-  '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039'
+  '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040'
 ];
 
 function migrationUrl(): string {
@@ -509,20 +509,26 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
     )).toHaveLength(1);
   });
 
-  test('034 scopes document relationships, alarm escalation children and patrol route versions through their site', async () => {
+  test('document, alarm and patrol RLS preserve site and customer tenant scopes', async () => {
     const db = await createTestDatabase();
     await runMigrations({ connectionString: withDatabaseName(db), migrationsDir: makeMigrationsDir(), logger: noopLogger });
     const tenantId = randomUUID();
     const userId = randomUUID();
     const otherUserId = randomUUID();
+    const tenantUserId = randomUUID();
+    const ownUserId = randomUUID();
     const clientId = randomUUID();
     const siteAId = randomUUID();
     const siteBId = randomUUID();
     const tenantRoleId = randomUUID();
+    const tenantWideRoleId = randomUUID();
+    const ownRoleId = randomUUID();
     const globalRoleId = randomUUID();
     const documentCategoryId = randomUUID();
     const documentId = randomUUID();
     const siteADocumentId = randomUUID();
+    const customerDocumentId = randomUUID();
+    const ownDocumentId = randomUUID();
     const alarmTypeId = randomUUID();
     const ruleId = randomUUID();
     const incidentId = randomUUID();
@@ -538,13 +544,16 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
     );
     await queryInDatabase(db,
       `INSERT INTO users (id,email,password_hash,first_name,last_name)
-       VALUES ($1,$2,'test-hash','Scope','User'),($3,$4,'test-hash','Other','User')`,
-      [userId, `${userId}@secops.test`, otherUserId, `${otherUserId}@secops.test`]
+       VALUES ($1,$2,'test-hash','Scope','User'),($3,$4,'test-hash','Other','User'),
+              ($5,$6,'test-hash','Tenant','User'),($7,$8,'test-hash','Own','User')`,
+      [userId, `${userId}@secops.test`, otherUserId, `${otherUserId}@secops.test`,
+        tenantUserId, `${tenantUserId}@secops.test`, ownUserId, `${ownUserId}@secops.test`]
     );
     await queryInDatabase(db,
       `INSERT INTO tenant_memberships (tenant_id,user_id,first_name,last_name)
-       VALUES ($1,$2,'Scope','User'),($1,$3,'Other','User')`,
-      [tenantId, userId, otherUserId]
+       VALUES ($1,$2,'Scope','User'),($1,$3,'Other','User'),
+              ($1,$4,'Tenant','User'),($1,$5,'Own','User')`,
+      [tenantId, userId, otherUserId, tenantUserId, ownUserId]
     );
     await queryInDatabase(db,
       `INSERT INTO clients
@@ -560,6 +569,11 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
     await queryInDatabase(db,
       `INSERT INTO tenant_roles (id,tenant_id,name) VALUES ($1,$2,'Scope role')`,
       [tenantRoleId, tenantId]
+    );
+    await queryInDatabase(db,
+      `INSERT INTO tenant_roles (id,tenant_id,name)
+       VALUES ($1,$2,'Tenant-wide document role'),($3,$2,'Own document role')`,
+      [tenantWideRoleId, tenantId, ownRoleId]
     );
     await queryInDatabase(db,
       `INSERT INTO roles (id,name) VALUES ($1,'Scope escalation role')`,
@@ -578,6 +592,25 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
       [tenantId, tenantRoleId, siteAId, ['documents:read', 'documents:update', 'alarm:read', 'alarm:escalation:manage', 'patrol:route:read']]
     );
     await queryInDatabase(db,
+      `INSERT INTO tenant_role_permissions (tenant_id,role_id,permission_id,site_id,data_scope)
+       SELECT $1,$2,p.id,NULL,'TENANT'
+         FROM permissions p
+        WHERE p.code='documents:read'`,
+      [tenantId, tenantWideRoleId]
+    );
+    await queryInDatabase(db,
+      `INSERT INTO tenant_role_permissions (tenant_id,role_id,permission_id,site_id,data_scope)
+       SELECT $1,$2,p.id,NULL,'OWN'
+         FROM permissions p
+        WHERE p.code='documents:read'`,
+      [tenantId, ownRoleId]
+    );
+    await queryInDatabase(db,
+      `INSERT INTO tenant_user_roles (tenant_id,user_id,role_id)
+       VALUES ($1,$2,$3),($1,$4,$5)`,
+      [tenantId, tenantUserId, tenantWideRoleId, ownUserId, ownRoleId]
+    );
+    await queryInDatabase(db,
       `INSERT INTO document_categories (id,tenant_id,name,created_by)
        VALUES ($1,$2,'Scope category',$3)`,
       [documentCategoryId, tenantId, userId]
@@ -588,9 +621,19 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
       [documentId, tenantId, documentCategoryId, userId, siteADocumentId]
     );
     await queryInDatabase(db,
+      `INSERT INTO documents (id,tenant_id,title,category_id,created_by,responsible_user_id)
+       VALUES ($1,$2,'Customer document',$3,$4,NULL),($5,$2,'Own document',$3,$4,$6)`,
+      [customerDocumentId, tenantId, documentCategoryId, userId, ownDocumentId, ownUserId]
+    );
+    await queryInDatabase(db,
       `INSERT INTO document_relationships (tenant_id,document_id,relationship_type,site_id)
        VALUES ($1,$2,'site',$3),($1,$4,'site',$5)`,
       [tenantId, documentId, siteBId, siteADocumentId, siteAId]
+    );
+    await queryInDatabase(db,
+      `INSERT INTO document_relationships (tenant_id,document_id,relationship_type,customer_id)
+       VALUES ($1,$2,'customer',$3)`,
+      [tenantId, customerDocumentId, clientId]
     );
     await queryInDatabase(db,
       `INSERT INTO alarm_escalation_rules (id,tenant_id,name,site_id,created_by,updated_by)
@@ -651,10 +694,27 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
       await app.query("SELECT set_config('app.current_permission','documents:read',true)");
       expect((await app.query('SELECT id FROM documents WHERE id=$1', [documentId])).rows).toEqual([]);
       expect((await app.query('SELECT id FROM documents WHERE id=$1', [siteADocumentId])).rows).toEqual([{ id: siteADocumentId }]);
+      expect((await app.query('SELECT id FROM documents WHERE id=$1', [customerDocumentId])).rows).toEqual([]);
       expect((await app.query('SELECT document_id FROM document_relationships WHERE document_id=$1', [documentId])).rows).toEqual([]);
+      expect((await app.query('SELECT document_id FROM document_relationships WHERE document_id=$1', [customerDocumentId])).rows).toEqual([]);
       expect((await app.query('UPDATE documents SET title=$2 WHERE id=$1 RETURNING id', [documentId, 'Changed out of scope']))
         .rows).toEqual([]);
 
+      await app.query("SELECT set_config('app.current_user_id',$1,true)", [tenantUserId]);
+      expect((await app.query(
+        'SELECT id FROM documents WHERE id=ANY($1::uuid[]) ORDER BY id',
+        [[documentId, siteADocumentId, customerDocumentId]]
+      )).rows.map((row) => row.id).sort()).toEqual([documentId, siteADocumentId, customerDocumentId].sort());
+      expect((await app.query(
+        'SELECT document_id FROM document_relationships WHERE document_id=$1',
+        [customerDocumentId]
+      )).rows).toEqual([{ document_id: customerDocumentId }]);
+
+      await app.query("SELECT set_config('app.current_user_id',$1,true)", [ownUserId]);
+      expect((await app.query('SELECT id FROM documents WHERE id=$1', [ownDocumentId])).rows).toEqual([{ id: ownDocumentId }]);
+      expect((await app.query('SELECT id FROM documents WHERE id=$1', [customerDocumentId])).rows).toEqual([]);
+
+      await app.query("SELECT set_config('app.current_user_id',$1,true)", [userId]);
       await app.query("SELECT set_config('app.current_permission','documents:update',true)");
       expect((await app.query(
         'UPDATE documents SET title=$2 WHERE id=$1 RETURNING id',
