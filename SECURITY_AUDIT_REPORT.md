@@ -15,7 +15,7 @@
 
 - Frontend tests, typecheck, and production build passed on the current local revision.
 - Backend build and tests passed against an isolated PostgreSQL 16 database.
-- Hosted PR run [43767753872](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43767753872) passed 7/7 on `b02c164`. A subsequent test-only E2E fixture correction passed locally and awaits hosted CI.
+- Hosted PR run [43768237786](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43768237786) passed 7/7 on `7f9bdfc`. The standalone Chromium fixture passed locally but is not part of that workflow.
 
 ## Remaining security gates
 

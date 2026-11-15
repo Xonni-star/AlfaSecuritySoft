@@ -6,7 +6,7 @@
 | Area | Status | Evidence / limitation |
 |---|---|---|
 | Production Docker Compose configuration | **BESTANDEN** | `docker compose -f frontend/deploy/docker-compose.production.yml config --no-interpolate --quiet` exited successfully. |
-| Docker image build and service validation | **TEILWEISE BESTANDEN** | Hosted PR CI run [43767753872](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43767753872) passed all 7 jobs on `b02c164`; this remains CI evidence, not a deployed environment. |
+| Docker image build and service validation | **TEILWEISE BESTANDEN** | Hosted PR CI run [43768237786](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43768237786) passed all 7 jobs on `7f9bdfc`; this remains CI evidence, not a deployed environment. |
 | PostgreSQL local test setup | **BESTANDEN** | Migrations, seed, and backend Jest suite ran against an isolated ephemeral PostgreSQL 16 container with synthetic test data. This was not a production-like restore. |
 | Linux installation | **NICHT GETESTET** | The current worktree ran on macOS; no clean Linux host installation was executed. |
 | HTTPS, reverse proxy, secrets, monitoring, and operations handoff | **NICHT GETESTET** | No deployed environment was available or changed. |

@@ -2,7 +2,7 @@
 
 **Status:** **TEILWEISE BESTANDEN / BLOCKIERT.** This is an evidence-based status report, not a Phase 9 completion, production-readiness, or release approval.
 
-**Repository state checked:** `main` at `9df02aaa5ef01de78e0fe5d53be446b2037db24d`; PR #66 open. Hosted run [43767753872](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43767753872) passed 7/7 on `b02c164`; a test-only E2E fixture correction awaits hosted checks.
+**Repository state checked:** `main` at `9df02aaa5ef01de78e0fe5d53be446b2037db24d`; PR #66 open. Hosted run [43768237786](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43768237786) passed 7/7 on `7f9bdfc`; the standalone browser fixture passed locally but is not part of hosted CI.
 
 | Area | Status | Evidence and remaining boundary |
 |---|---|---|
@@ -18,7 +18,7 @@
 | Backup and restore | **TEILWEISE BESTANDEN** | Compose configuration and prior isolated CI restore checks passed; no production-like external-provider restore was performed here. |
 | Linux installation | **NICHT GETESTET** | No clean Linux host install was run in this macOS worktree. |
 | Docker configuration | **BESTANDEN** | Production Compose syntax/config validation passed locally. |
-| CI/CD | **TEILWEISE BESTANDEN** | PR commit `b02c164` passed all 7 hosted jobs; following E2E fixture test correction awaits hosted validation. |
+| CI/CD | **TEILWEISE BESTANDEN** | PR commit `7f9bdfc` passed all 7 hosted jobs; the standalone E2E fixture runs separately and passed locally. |
 | Documentation | **TEILWEISE BESTANDEN** | Current-state and evidence documents were refreshed; remaining deployment, recovery, and production acceptance limitations are explicitly retained. |
 | Mobile/device usability | **NICHT GETESTET** | No physical device acceptance was performed. |
 | RPO/RTO and production readiness | **BLOCKIERT** | Operator targets and a production-like restore environment are prerequisites; no measurements or production approval are claimed. |

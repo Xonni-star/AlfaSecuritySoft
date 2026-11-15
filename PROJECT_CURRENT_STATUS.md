@@ -1,6 +1,6 @@
 # SecurityOps 2.0 — Current project status
 
-**Last verified:** 2026-11-15 23:14 CET
+**Last verified:** 2026-11-15 23:18 CET
 
 **Verified `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
 
@@ -25,7 +25,7 @@ This is the current evidence index. Phase reports and dated status sections rema
 | Mainline CI | **DONE** | Post-merge [CI run 43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on `6218745` (the #64 merge); run [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed **7/7 jobs** on the exact current-main SHA `9df02aaa5ef01de78e0fe5d53be446b2037db24d`: root checks, frontend, PostgreSQL 16 backend/Jest, isolated restore, ClamAV adapter, DMS API flow, and production Compose/image validation. |
 | Release package validation | **PARTIAL** | The latest artifact run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2 on current `main` `9df02aa`. Packaging/provenance/install validation is not a deployment or production release. |
 | Documentation PR validation | **DONE** | PR #62 (head `6c8a52c`, hosted [CI run 43761213396](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43761213396) 7/7) is merged as `9df02aa`. |
-| Current PR validation | **TEILWEISE BESTANDEN** | PR #66 CI [run 43767753872](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43767753872) passed 7/7 on `b02c164`. A subsequent test-only correction to the offline browser fixture passed locally; hosted CI for that final test revision is pending. |
+| Current PR validation | **BESTANDEN** | PR #66 CI [run 43768237786](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43768237786) passed 7/7 on `7f9bdfc`. The separate Chromium offline fixture passed locally; it is not part of the hosted CI workflow. |
 | Current local changes | **BESTANDEN** | Frontend: 28 Vitest files / 157 tests, typecheck, and production build passed. Backend: migration and seed ran against an isolated ephemeral PostgreSQL 16 instance; build and 34 Jest suites / 315 tests passed. Production Compose config validation passed. These are local results; they do not replace hosted CI for the new head. |
 | Test-only Linux install | **DONE** | PR #56 merged. The tar/deb installer and lifecycle guidance explicitly target isolated testing; they are not production installers. |
 | Backup/restore | **PARTIAL** | CI and local drills exercise synthetic DB and local object-store recovery. A real S3-provider restore, production-like restore, scanner/provider acceptance, and measured RPO/RTO are not evidenced. |

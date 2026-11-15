@@ -4,8 +4,8 @@
 
 **Phase 9 documentation baseline at kickoff:** `879ae951d6cea52fd84d01dc699cf2ed08843300`
 **Current `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
-**Last GitHub check:** 2026-11-15 23:14 CET
-**Open PR:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66); PRs #50–#65 are merged. [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62) is merged as `9df02aa`; no deployment was performed. Main CI [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed 7/7 and artifacts [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2. PR #66 CI [43767753872](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43767753872) passed 7/7 on `b02c164`; a subsequent test-only E2E correction awaits hosted validation.
+**Last GitHub check:** 2026-11-15 23:18 CET
+**Open PR:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66); PRs #50–#65 are merged. [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62) is merged as `9df02aa`; no deployment was performed. Main CI [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed 7/7 and artifacts [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2. PR #66 CI [43768237786](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43768237786) passed 7/7 on `7f9bdfc`; the separate Chromium offline fixture passed locally.
 
 The historical workstream notes below retain the PR #62-open state from their original snapshot and do not describe the current GitHub state.
 
