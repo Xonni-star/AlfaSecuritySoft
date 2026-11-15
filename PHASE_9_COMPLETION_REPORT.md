@@ -4,11 +4,11 @@
 
 **Verified `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
 
-**Last GitHub check:** 2026-11-15 23:04 CET; PR #66 open; PRs #50–#65 merged. Main CI [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed 7/7 and artifacts [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2 on `9df02aa`. PR #66 CI [43766936797](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43766936797) passed 7/7 on code commit `edd5919`. The older PR #62-open statements below are historical snapshot text, superseded by its merge.
+**Last GitHub check:** 2026-11-15 23:09 CET; PR #66 open; PRs #50–#65 merged. Main CI [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed 7/7 and artifacts [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2 on `9df02aa`. PR #66 CI [43767322367](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43767322367) passed 7/7 on `ebc57a4`. The older PR #62-open statements below are historical snapshot text, superseded by its merge.
 
 **Current status index:** [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md)
 
-**Review update (2026-11-15 23:04 CET):** PR #66 is open. Its code commit passed all 7 hosted jobs, and the report refresh is being validated separately. Local checks also passed the full frontend suite (157), typecheck/build, backend build and 315 Jest tests on an isolated PostgreSQL 16 instance, plus production Compose configuration validation. Changes include CSV formula/field protection and a controlled local recovery view for ownerless GuardBook attachments; production/device acceptance remains unperformed.
+**Review update (2026-11-15 23:09 CET):** PR #66 is open. Its latest commit passed all 7 hosted jobs. Local checks also passed the full frontend suite (157), typecheck/build, backend build and 315 Jest tests on an isolated PostgreSQL 16 instance, plus production Compose configuration validation. Changes include CSV formula/field protection and a controlled local recovery view for ownerless GuardBook attachments; production/device acceptance remains unperformed.
 
 Phase 9 reviewed operational scripts and owned Markdown/runbook guidance against the current mainline and demonstrated test evidence. Historical status snapshots have been retained and labeled; their old PR counts, SHA values, and open/closed state are not live status. PR #64 is now merged and post-merge current-main CI passed 7/7, but offline authenticated-backend/device/provider acceptance and other operational gates remain outstanding, so Phase 9 is not complete.
 

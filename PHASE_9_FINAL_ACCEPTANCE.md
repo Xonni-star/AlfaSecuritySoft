@@ -2,7 +2,7 @@
 
 **Status:** **TEILWEISE BESTANDEN / BLOCKIERT.** This is an evidence-based status report, not a Phase 9 completion, production-readiness, or release approval.
 
-**Repository state checked:** `main` at `9df02aaa5ef01de78e0fe5d53be446b2037db24d`; PR #66 open. Application-code commit `edd5919` passed 7/7 hosted checks; a later report-only refresh is being checked separately.
+**Repository state checked:** `main` at `9df02aaa5ef01de78e0fe5d53be446b2037db24d`; PR #66 open. Latest PR commit `ebc57a4` passed 7/7 hosted checks.
 
 | Area | Status | Evidence and remaining boundary |
 |---|---|---|
@@ -18,7 +18,7 @@
 | Backup and restore | **TEILWEISE BESTANDEN** | Compose configuration and prior isolated CI restore checks passed; no production-like external-provider restore was performed here. |
 | Linux installation | **NICHT GETESTET** | No clean Linux host install was run in this macOS worktree. |
 | Docker configuration | **BESTANDEN** | Production Compose syntax/config validation passed locally. |
-| CI/CD | **TEILWEISE BESTANDEN** | Application-code commit `edd5919` passed 7/7 hosted jobs; report-only documentation refresh has its own pending run. |
+| CI/CD | **TEILWEISE BESTANDEN** | Latest PR commit `ebc57a4` passed all 7 hosted jobs. |
 | Documentation | **TEILWEISE BESTANDEN** | Current-state and evidence documents were refreshed; remaining deployment, recovery, and production acceptance limitations are explicitly retained. |
 | Mobile/device usability | **NICHT GETESTET** | No physical device acceptance was performed. |
 | RPO/RTO and production readiness | **BLOCKIERT** | Operator targets and a production-like restore environment are prerequisites; no measurements or production approval are claimed. |
