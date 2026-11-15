@@ -25,6 +25,7 @@ export const GuardBookModule: React.FC = () => {
     getTenantGuardBook,
     getTenantSites,
     getTenantEmployees,
+    currentTenantId,
     addGuardBookEntry,
     updateGuardBookStage,
     resolveGuardBookEntry,
@@ -38,6 +39,9 @@ export const GuardBookModule: React.FC = () => {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState('');
+  const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
   const [selectedEntryForRevision, setSelectedEntryForRevision] = useState<GuardBookEntry | null>(null);
 
   // Form states for new entry
@@ -80,44 +84,56 @@ export const GuardBookModule: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const siteObj = sites.find((s) => s.id === selectedSiteId);
     const guardObj = employees.find((e) => e.id === selectedGuardId);
 
-    const newId = `gb-${Date.now()}`;
+    setIsSubmitting(true);
+    setSubmissionError('');
+    let entryId = savedEntryId;
+    try {
+      if (!entryId) {
+        entryId = await addGuardBookEntry({
+          siteId: selectedSiteId,
+          siteName: siteObj?.name || 'Unbekanntes Objekt',
+          guardId: selectedGuardId,
+          guardName: guardObj ? `${guardObj.firstName} ${guardObj.lastName}` : 'Wachkraft',
+          category,
+          priority,
+          stage: 'Erfasst',
+          title: title || 'Dienstprotokoll',
+          description,
+          policeInvolved,
+          resolved: category === 'Routinemeldung' || category === 'Kontrollgang'
+        });
+        setSavedEntryId(entryId);
+      }
 
-    addGuardBookEntry({
-      siteId: selectedSiteId,
-      siteName: siteObj?.name || 'Unbekanntes Objekt',
-      guardId: selectedGuardId,
-      guardName: guardObj ? `${guardObj.firstName} ${guardObj.lastName}` : 'Wachkraft',
-      category,
-      priority,
-      stage: 'Erfasst',
-      title: title || 'Dienstprotokoll',
-      description,
-      policeInvolved,
-      resolved: category === 'Routinemeldung' || category === 'Kontrollgang'
-    });
+      if (photoPreview) {
+        await offlineVault.saveAttachment({
+          id: `att-${entryId}`,
+          tenantId: currentTenantId,
+          entityId: entryId,
+          fileName: 'vorfall_fotodokumentation.jpg',
+          mimeType: 'image/jpeg',
+          sizeBytes: Math.round(photoPreview.length * 0.75),
+          blobData: photoPreview,
+          capturedAt: new Date().toISOString(),
+          synced: isOnline
+        });
+      }
 
-    if (photoPreview) {
-      await offlineVault.saveAttachment({
-        id: `att-${Date.now()}`,
-        tenantId: siteObj?.tenantId || 'tenant-frankfurt',
-        entityId: newId,
-        fileName: 'vorfall_fotodokumentation.jpg',
-        mimeType: 'image/jpeg',
-        sizeBytes: Math.round(photoPreview.length * 0.75),
-        blobData: photoPreview,
-        capturedAt: new Date().toISOString(),
-        synced: isOnline
-      }).catch(console.error);
+      setIsModalOpen(false);
+      setSavedEntryId(null);
+      setTitle('');
+      setDescription('');
+      setPhotoPreview(null);
+      setAiAnalysis(null);
+    } catch (error) {
+      setSubmissionError(error instanceof Error ? error.message : 'Eintrag konnte nicht lokal gespeichert werden.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsModalOpen(false);
-    setTitle('');
-    setDescription('');
-    setPhotoPreview(null);
-    setAiAnalysis(null);
   };
 
   return (
@@ -139,8 +155,11 @@ export const GuardBookModule: React.FC = () => {
           </p>
         </div>
 
-                  <button
-          onClick={() => setIsModalOpen(true)}
+        <button
+          onClick={() => {
+            setSubmissionError('');
+            setIsModalOpen(true);
+          }}
           className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-lg shadow-blue-600/20 transition flex items-center gap-2 shrink-0 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
@@ -342,12 +361,20 @@ export const GuardBookModule: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 mt-4 text-xs">
+              {submissionError && (
+                <p role="alert" className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-rose-300">
+                  {savedEntryId
+                    ? `Wachbucheintrag ist gespeichert, das Foto konnte nicht gespeichert werden. Bitte erneut versuchen: ${submissionError}`
+                    : `Eintrag nicht gespeichert: ${submissionError}`}
+                </p>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-400 mb-1 font-medium">Sicherheitsobjekt *</label>
                   <select
                     value={selectedSiteId}
                     onChange={(e) => setSelectedSiteId(e.target.value)}
+                    disabled={Boolean(savedEntryId)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200"
                     required
                   >
@@ -362,6 +389,7 @@ export const GuardBookModule: React.FC = () => {
                   <select
                     value={selectedGuardId}
                     onChange={(e) => setSelectedGuardId(e.target.value)}
+                    disabled={Boolean(savedEntryId)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200"
                     required
                   >
@@ -378,6 +406,7 @@ export const GuardBookModule: React.FC = () => {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value as any)}
+                    disabled={Boolean(savedEntryId)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200"
                   >
                     <option value="Vorkommnis">Vorkommnis</option>
@@ -394,6 +423,7 @@ export const GuardBookModule: React.FC = () => {
                   <select
                     value={priority}
                     onChange={(e) => setPriority(e.target.value as any)}
+                    disabled={Boolean(savedEntryId)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200"
                   >
                     <option value="Normal">Normal</option>
@@ -409,6 +439,7 @@ export const GuardBookModule: React.FC = () => {
                       type="checkbox"
                       checked={policeInvolved}
                       onChange={(e) => setPoliceInvolved(e.target.checked)}
+                      disabled={Boolean(savedEntryId)}
                       className="rounded bg-slate-800 border-slate-700 text-blue-600 focus:ring-0"
                     />
                     <span>Polizei alarmiert (110)</span>
@@ -422,6 +453,7 @@ export const GuardBookModule: React.FC = () => {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  disabled={Boolean(savedEntryId)}
                   placeholder="z. B. Einbruchmelder Auslösung Sektor C"
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200"
                   required
@@ -434,6 +466,7 @@ export const GuardBookModule: React.FC = () => {
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  disabled={Boolean(savedEntryId)}
                   placeholder="Geben Sie hier Stichworte oder den vollständigen Bericht ein..."
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-200 focus:outline-none focus:border-blue-500"
                   required
@@ -449,7 +482,13 @@ export const GuardBookModule: React.FC = () => {
                   </span>
                   <label className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white cursor-pointer font-semibold">
                     <span>Foto auswählen</span>
-                    <input type="file" accept="image/*" onChange={handlePhotoCapture} className="hidden" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoCapture}
+                      disabled={Boolean(savedEntryId)}
+                      className="hidden"
+                    />
                   </label>
                 </div>
 
@@ -459,6 +498,7 @@ export const GuardBookModule: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPhotoPreview(null)}
+                      disabled={Boolean(savedEntryId)}
                       className="absolute -top-1.5 -right-1.5 bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px]"
                     >
                       ✕
@@ -466,7 +506,6 @@ export const GuardBookModule: React.FC = () => {
                   </div>
                 )}
               </div>
-
               <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
                 <button
                   type="button"
@@ -477,9 +516,16 @@ export const GuardBookModule: React.FC = () => {
                 </button>
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow"
                 >
-                  {isOnline ? 'Protokolleintrag speichern' : 'Offline vormerken'}
+                  {isSubmitting
+                    ? 'Speichere…'
+                    : savedEntryId && photoPreview
+                      ? 'Foto erneut speichern'
+                      : isOnline
+                        ? 'Protokolleintrag speichern'
+                        : 'Offline vormerken'}
                 </button>
               </div>
             </form>

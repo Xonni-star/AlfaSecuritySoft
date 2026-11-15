@@ -720,7 +720,7 @@ interface SecurityOpsStore {
   addShiftSwapRequest: (request: Omit<ShiftSwapRequest, 'id' | 'tenantId' | 'status' | 'requestedAt'>) => void;
   addReportDefinition: (definition: Omit<ReportDefinition, 'id' | 'createdAt'>) => void;
   deleteReportDefinition: (id: string) => void;
-  addGuardBookEntry: (entry: Omit<GuardBookEntry, 'id' | 'timestamp' | 'tenantId'>) => Promise<void>;
+  addGuardBookEntry: (entry: Omit<GuardBookEntry, 'id' | 'timestamp' | 'tenantId'>) => Promise<string>;
   updateGuardBookStage: (id: string, stage: GuardBookEntry['stage'], note?: string) => void;
   resolveGuardBookEntry: (id: string, note: string) => void;
   pendingSOPAcknowledgements: SOPPendingAcknowledgement[];
@@ -2802,6 +2802,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
     if (isOnline) {
       get().triggerManualSync().catch(console.error);
     }
+    return entryId;
   },
 
   updateGuardBookStage: (id, stage, note) => {
