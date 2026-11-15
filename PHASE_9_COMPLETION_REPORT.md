@@ -2,13 +2,13 @@
 
 **Assessment:** **PARTIAL / BLOCKED.** This is an evidence-based interim report, not a Phase 9 completion declaration or production-readiness approval.
 
-**Verified `main`:** [`cd01c489c729211ed54a5921f2e326effea71460`](https://github.com/Xonni-star/SecurityOps-2.0/commit/cd01c489c729211ed54a5921f2e326effea71460)
+**Verified `main`:** [`621874535ee480e56716ae8a7bd992272bc7a51a`](https://github.com/Xonni-star/SecurityOps-2.0/commit/621874535ee480e56716ae8a7bd992272bc7a51a)
 
-**Last GitHub check:** 2026-11-15 21:42 CET; PRs #62 and #64 open; PRs #50–#61, #63, and #65 merged.
+**Last GitHub check:** 2026-11-15 21:59 CET; PR #62 open; PRs #50–#61, #63–#65 merged.
 
 **Current status index:** [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md)
 
-Phase 9 reviewed operational scripts and owned Markdown/runbook guidance against the current mainline and demonstrated test evidence. Historical status snapshots have been retained and labeled; their old PR counts, SHA values, and open/closed state are not live status. This interim update records the verified current mainline and open-workstream evidence; final offline-sync and tenant-security outcomes remain outstanding, so Phase 9 is not complete.
+Phase 9 reviewed operational scripts and owned Markdown/runbook guidance against the current mainline and demonstrated test evidence. Historical status snapshots have been retained and labeled; their old PR counts, SHA values, and open/closed state are not live status. PR #64 is now merged and post-merge current-main CI passed 7/7, but offline authenticated-backend/device/provider acceptance and other operational gates remain outstanding, so Phase 9 is not complete.
 
 ## Evidence and markers
 
@@ -19,16 +19,16 @@ Phase 9 reviewed operational scripts and owned Markdown/runbook guidance against
 
 ### Mainline and merged changes — DONE
 
-GitHub’s `main` resolved to `cd01c489c729211ed54a5921f2e326effea71460`, the merge commit for #65. PRs #50–#61, #63, and #65 are merged; PR #62 (this documentation audit) and PR #64 (offline attachment sync) are open. Merged PR titles, commit prefixes, and times are in [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md). PRs #60, #61, #63, and #65 each show 7/7 successful hosted checks.
+GitHub’s `main` resolved to `621874535ee480e56716ae8a7bd992272bc7a51a`, the squash merge commit for #64. PRs #50–#61 and #63–#65 are merged; PR #62 (this documentation audit) is open. Merged PR titles, commit prefixes, and times are in [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md). PRs #60, #61, #63, #64, and #65 each show 7/7 successful hosted checks; the #64 head was `b814b65`.
 
-On that exact main SHA:
+For the current main SHA:
 
-- Post-merge [SecurityOps 2.0 CI run 43757895649](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43757895649) passed **7/7 jobs**: root install/structure/startup, frontend install/typecheck/Vitest/build, PostgreSQL 16 backend migrations/build/Jest, isolated backup/restore, DMS with PostgreSQL/private MinIO/ClamAV, ClamAV adapter, and production Compose validation/image builds.
-- The latest post-merge artifact run, [43757089831](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43757089831), passed **2/2 jobs** on the preceding current-main SHA `bed939a`. An artifact run for `cd01c48` was not yet observed at this check. Artifact creation is not a release approval, deploy, or proof of customer operation.
+- Post-merge [SecurityOps 2.0 CI run 43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on `621874535ee480e56716ae8a7bd992272bc7a51a`: root checks, frontend typecheck/tests/build, PostgreSQL 16 backend migration/build/Jest, isolated restore, ClamAV adapter, DMS API flow, and production Compose/image validation. This is hosted CI evidence, not production acceptance.
+- The latest post-merge artifact run, [43757089831](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43757089831), passed **2/2 jobs** on the preceding main SHA `bed939a`. An artifact run for `6218745` was not yet observed. Artifact creation is not a release approval, deploy, or proof of customer operation.
 - PR checks for #50–#58, #60, #61, and #63 each showed 7/7 success. PR #59 had an empty PR-level check rollup; the successful post-merge run on `879ae95` is historical evidence for that tree. PR-level and post-merge results are not conflated.
 - PR #63 adds synthetic API coverage through employee qualification, planning publication, both handover confirmations, and a MinIO/ClamAV document upload, download, and audit flow. This is CI evidence, not provider or production acceptance.
 - PR #65 adds tenant/site/role authorization-boundary integration tests. Its 7/7 PR checks and the bounded workstream’s “no confirmed high-confidence issue” result do not amount to a comprehensive security review or production acceptance.
-- The open documentation PR #62 is at head `59274c856edea1264803b31424f29e7c8a5d7739`; its hosted [CI run 43758367874](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43758367874) passed **7/7 jobs**. It remains unmerged pending offline-sync resolution.
+- The documentation PR #62 has been rebased onto the current mainline and updated for the merged offline-sync result. Its previous head `b0e339b` passed 7/7, but that run predates this rebase and is not validation of the new report contents. The current rebased PR checks must pass before this documentation change is considered validated.
 
 ## Operations and documentation audit
 
@@ -36,11 +36,11 @@ On that exact main SHA:
 |---|---|---|
 | Linux test install, update and rollback | **DONE / PARTIAL** | The Phase 7 `linux-test` package is correctly labeled test-only. Its runbook explains that `update.sh` rebuilds the source already in the package, not a newly fetched release; it warns that a DB migration can make old images unusable and recommends restoring a prior backup. This is not a production update/rollback mechanism. |
 | Production update and rollback | **PARTIAL** | The production guide now directs operators to a reviewed immutable release ref, requires a pre-update DB and object-store backup, and explicitly states that a prior application image is safe only when compatible with the migrated schema. There is no automated schema rollback. A restore requires a matching database backup and independently restored/versioned S3 objects; if compatibility or provider state is uncertain, use a forward fix and do not claim rollback readiness. |
-| Backup and restore | **PARTIAL** | The checked-in restore regression script verifies the migration set `001`–`007`, `009`, `011`–`040`, synthetic tenant/RLS data, and local object-store recovery. CI and local tests do not establish provider-side S3 versioning/replication, real-provider recovery, production data restore, or measured RPO/RTO. The CI DMS/ClamAV integration is a test-environment result, not production scanner/provider acceptance. |
-| API, architecture and security documentation | **PARTIAL** | Current mainline evidence includes #54’s CORS rejection behavior, #55’s explicit tenant choice, #57’s customer-linked document scope correction, #58’s dependency change, #63’s synthetic API-flow coverage, and #65’s authorization-boundary integration tests; current-main CI passes. The bounded tenant-security workstream reported no confirmed high-confidence issue. This does not establish independent operational or customer security sign-off. |
-| Offline sync and SOP assignment | **PARTIAL / BLOCKED** | The SOP API documents tenant-bound sessions, immutable assignments/version acknowledgements, and its own durable offline queue. The merged Chromium test covers reconnect/retry against a loopback fixture; this is not authenticated application-backend or physical-device acceptance. PR #64 is open at `9d1a59a`; hosted run 43759198646 passed 6/7 jobs but failed Backend during Jest `afterAll`, when cleanup deleted an employee still referenced by a GuardBook entry (`fk_guardbook_guard_tenant`). The prior attachment response assertion no longer appears as the current failure, but the latest suite still fails. Same-tenant user-isolation review is not complete: pending uploads are now filtered by tenant and user, while attachment relinking and server receipt lookup remain tenant-scoped in the reviewed head. These are unconfirmed boundary concerns, and the workstream has not supplied a final verified outcome. |
+| Backup and restore | **PARTIAL** | The checked-in restore regression script verifies the migration set through `041`, synthetic tenant/RLS data, and local object-store recovery. CI and local tests do not establish provider-side S3 versioning/replication, real-provider recovery, production data restore, or measured RPO/RTO. The CI DMS/ClamAV integration is a test-environment result, not production scanner/provider acceptance. |
+| API, architecture and security documentation | **PARTIAL** | Current mainline includes #54’s CORS rejection behavior, #55’s explicit tenant choice, #57’s customer-linked document scope correction, #58’s dependency change, #63’s synthetic API-flow coverage, #64’s tenant-scoped idempotency receipts for GuardBook attachments, and #65’s authorization-boundary integration tests. Current-main CI passed 7/7 in run 43760703980. The bounded tenant-security workstream reported no confirmed high-confidence issue. This does not establish independent operational or customer security sign-off. |
+| Offline sync and SOP assignment | **PARTIAL** | PR #64 merged at `621874535ee480e56716ae8a7bd992272bc7a51a`; its head `b814b65` passed 7/7 hosted PR checks and code review found no blockers. Migration 041 creates a tenant-scoped idempotency table with a creator owner, unique tenant/idempotency and tenant/document constraints, RLS, and app-role select/insert grants. User-owned attachments can upload idempotently after reconnect. Existing local attachments without `userId` are never auto-uploaded or assigned an owner; the UI warns and the user must re-add them. Legacy attachments whose GuardBook entry was already acknowledged with a non-UUID local ID cannot be linked. These known limitations plus the absence of authenticated-backend/device acceptance mean offline readiness remains partial. |
 | Readiness statements and historical snapshots | **DONE** | `PROJECT_CURRENT_STATUS.md` is the current status index. Dated Phase 6–8, Phase 7, mainline, offline, and deployment snapshots remain intact with explicit as-of labels and links forward rather than being rewritten as though they described current `main`. |
-| Final Phase 9 conclusion | **BLOCKED** | Tenant-authorization test work is merged, but offline-sync CI and user-boundary review remain unresolved. This report remains interim; do not mark Phase 9 complete or production-ready based on the mainline CI alone. |
+| Final Phase 9 conclusion | **BLOCKED** | Offline-sync changes and current-main CI are merged/passing, but authenticated-backend/device/provider acceptance and recovery/operations gates remain open. This report remains interim; do not mark Phase 9 complete or production-ready based on CI alone. |
 
 ## Remaining gates
 
@@ -48,6 +48,7 @@ On that exact main SHA:
 2. **OPEN — Provider recovery:** run a controlled restore using the actual intended non-production S3 provider, including database/object consistency, versioning/retention, scanner availability, and documented recovery steps.
 3. **OPEN — RPO/RTO:** define service-owner-approved targets and measure them in a repeatable, representative recovery exercise. The historical test durations are not RTO.
 4. **OPEN — Production and customer acceptance:** verify the selected production environment, secrets, TLS/network, monitoring, restore ownership, release process, and product acceptance. Passing CI and package validation do not satisfy these gates.
-5. **BLOCKED — Coordinator closure:** resolve the PR #64 teardown failure; complete the user-boundary review for attachment relinking/idempotency; incorporate the final offline-sync outcome; then re-check the live main SHA/PR state before Phase 9 sign-off.
+5. **OPEN — Offline acceptance:** test the merged flow with an authenticated application backend and representative devices; verify the documented `userId`-less and non-UUID legacy cases; retain run-specific evidence.
+6. **BLOCKED — Coordinator closure:** refresh the live main SHA/PR state after documentation PR checks and obtain remaining operational acceptance before Phase 9 sign-off.
 
 **Conclusion:** Phase 9 remains **PARTIAL / BLOCKED**. No production deployment, production approval, or phase completion is claimed.

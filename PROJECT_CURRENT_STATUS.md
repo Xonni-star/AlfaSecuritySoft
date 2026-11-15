@@ -1,10 +1,10 @@
 # SecurityOps 2.0 — Current project status
 
-**Last verified:** 2026-11-15 21:42 CET
+**Last verified:** 2026-11-15 21:59 CET
 
-**Verified `main`:** [`cd01c489c729211ed54a5921f2e326effea71460`](https://github.com/Xonni-star/SecurityOps-2.0/commit/cd01c489c729211ed54a5921f2e326effea71460)
+**Verified `main`:** [`621874535ee480e56716ae8a7bd992272bc7a51a`](https://github.com/Xonni-star/SecurityOps-2.0/commit/621874535ee480e56716ae8a7bd992272bc7a51a)
 
-**GitHub pull requests:** PRs [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62) (this documentation audit) and [#64](https://github.com/Xonni-star/SecurityOps-2.0/pull/64) (offline attachment sync) are open. PRs #50–#61, #63, and #65 are merged.
+**GitHub pull requests:** PR [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62) (this documentation audit) is open. PRs #50–#61, #63–#65 are merged.
 
 **Overall readiness:** **PARTIAL / BLOCKED — not approved or verified for production.**
 
@@ -21,21 +21,21 @@ This is the current evidence index. Phase reports and dated status sections rema
 
 | Area | Status | Evidence and limits |
 |---|---|---|
-| Mainline integration | **DONE** | Current `main` is `cd01c489c729211ed54a5921f2e326effea71460`. PRs #50–#61, #63, and #65 are merged; #62 and #64 remain open. |
-| Mainline CI | **DONE** | Post-merge [CI run 43757895649](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43757895649) passed **7/7 jobs** on the exact current-main SHA, including frontend, PostgreSQL 16 backend/Jest, isolated restore, DMS/ClamAV, and production Compose/image validation. |
-| Release package validation | **DONE** | Post-merge [artifact run 43757089831](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43757089831) passed **2/2 jobs** on the current-main SHA. Packaging/provenance/install validation is not a deployment or production release. |
-| Documentation PR validation | **DONE** | Open PR #62 is based on `main` at head `59274c856edea1264803b31424f29e7c8a5d7739`; hosted CI run [43758367874](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43758367874) passed **7/7 jobs**. It remains open and unmerged pending the final offline-sync outcome. |
+| Mainline integration | **DONE** | Current `main` is `621874535ee480e56716ae8a7bd992272bc7a51a`. PRs #50–#61, #63–#65 are merged; #62 remains open. |
+| Mainline CI | **DONE** | Post-merge [CI run 43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on the exact current-main SHA `621874535ee480e56716ae8a7bd992272bc7a51a`: root checks, frontend, PostgreSQL 16 backend/Jest, isolated restore, ClamAV adapter, DMS API flow, and production Compose/image validation. |
+| Release package validation | **PARTIAL** | The latest recorded artifact run [43757089831](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43757089831) passed 2/2 on the preceding mainline `bed939a`; no artifact result for `6218745` was observed. Packaging/provenance/install validation is not a deployment or production release. |
+| Documentation PR validation | **OPEN** | PR #62 remains open against `main`. Its previous head `b0e339b` passed 7/7, but that result predates the requested rebase and report additions. Rebased documentation checks must be verified before reporting them as passing. |
 | Test-only Linux install | **DONE** | PR #56 merged. The tar/deb installer and lifecycle guidance explicitly target isolated testing; they are not production installers. |
 | Backup/restore | **PARTIAL** | CI and local drills exercise synthetic DB and local object-store recovery. A real S3-provider restore, production-like restore, scanner/provider acceptance, and measured RPO/RTO are not evidenced. |
-| Offline and SOP workflows | **PARTIAL / BLOCKED** | Merged CI covers the checked-in workflows and the Chromium loopback-fixture scenario. PR #64 remains open at `9d1a59a`; latest hosted run 43759198646 passed 6/7 jobs but failed Backend during Jest `afterAll`: cleanup deletes an employee while a GuardBook entry still references it (`fk_guardbook_guard_tenant`). The workstream is still assessing same-tenant user isolation: the offline pending-upload query now filters by tenant and user, but the reviewed attachment relink and server receipt lookup remain tenant-scoped. These are review concerns, not confirmed exploitable vulnerabilities. The fixture is not the authenticated application backend or a physical device. |
+| Offline and SOP workflows | **PARTIAL** | PR #64 is merged as `621874535ee480e56716ae8a7bd992272bc7a51a`; its PR head `b814b65` passed 7/7 hosted checks and code review reported no blockers. Post-merge main CI run 43760703980 also passed 7/7 on `6218745`. Migration 041 adds tenant-scoped idempotency receipts with `created_by` ownership. Stored attachments with a `userId` can be uploaded idempotently after reconnect. Existing local attachments without `userId` are not auto-uploaded or assigned an owner; users must re-add them. Legacy attachments whose entry is already acknowledged with a non-UUID local ID cannot be linked. The Chromium fixture is not the authenticated application backend or a physical device. |
 | Security and tenancy | **PARTIAL** | PR #57 and #58 and tenant-authorization test PR #65 are merged. PR #65 passed 7/7 hosted checks; the bounded workstream reported no confirmed high-confidence issue. This is not a comprehensive security review or customer/production acceptance. |
 | Performance | **PARTIAL** | PR #53 adds a bounded local baseline. Its workload and environment do not establish production capacity, an SLA, or resource headroom. |
 | Production/provider/device acceptance | **OPEN** | No evidence here establishes a production deployment, real-provider behavior, customer acceptance, or physical-device acceptance. |
-| Cross-workstream final sign-off | **BLOCKED** | Tenant-authorization test work is merged, but offline-sync CI and user-boundary review remain unresolved; do not close Phase 9 until PR #64 is fixed/reviewed and its final outcome is recorded. |
+| Cross-workstream final sign-off | **OPEN** | Offline-sync changes are merged and both PR checks and current-main CI passed; authenticated-backend/device/provider acceptance and remaining operational gates are outstanding. Do not close Phase 9 or mark production-ready based on CI alone. |
 
-## Merged PRs #50–#61, #63, and #65
+## Merged PRs #50–#61 and #63–#65
 
-The PR check-rollup for #50–#58, #60, #61, and #63 showed all seven hosted CI jobs successful on each PR. PR #59 had no PR-level check rollup; its post-merge CI and artifact validation were recorded in the historical snapshot below. The exact current-main checks above are the stronger post-merge evidence and apply to the merged tree.
+The PR check-rollup for #50–#58, #60, #61, and #63–#65 showed all seven hosted CI jobs successful on each PR. PR #59 had no PR-level check rollup; its post-merge CI and artifact validation were recorded in the historical snapshot below. The exact current-main CI above is the post-merge evidence for the latest merged tree.
 
 | PR | Merged change | Merge commit | Merged (UTC) |
 |---|---|---|---|
@@ -52,6 +52,7 @@ The PR check-rollup for #50–#58, #60, #61, and #63 showed all seven hosted CI 
 | [#60](https://github.com/Xonni-star/SecurityOps-2.0/pull/60) | Harden planning validation and approvals | `563efd6` | 2026-11-15 20:07:22 |
 | [#61](https://github.com/Xonni-star/SecurityOps-2.0/pull/61) | Improve global search keyboard accessibility | `084314e` | 2026-11-15 20:08:52 |
 | [#63](https://github.com/Xonni-star/SecurityOps-2.0/pull/63) | Test Phase 9 core online workflows | `bed939a` | 2026-11-15 20:13:07 |
+| [#64](https://github.com/Xonni-star/SecurityOps-2.0/pull/64) | Sync GuardBook attachments offline; add idempotent, tenant-scoped attachment receipts | `6218745` | 2026-11-15 20:54:49 |
 | [#65](https://github.com/Xonni-star/SecurityOps-2.0/pull/65) | Strengthen tenant authorization boundary coverage | `cd01c48` | 2026-11-15 20:24:25 |
 
 ## Preserved historical status evidence
