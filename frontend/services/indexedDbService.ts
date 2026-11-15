@@ -764,14 +764,14 @@ export class IndexedDbService {
     });
   }
 
-  async getPendingAttachments(tenantId: string): Promise<StoredAttachment[]> {
+  async getPendingAttachments(tenantId: string, userId: string): Promise<StoredAttachment[]> {
     const db = await this.init();
     return new Promise((resolve, reject) => {
       const tx = db.transaction('attachments', 'readonly');
       const request = tx.objectStore('attachments').getAll();
       request.onsuccess = () => resolve(
         ((request.result as StoredAttachment[]) || [])
-          .filter((attachment) => attachment.tenantId === tenantId && !attachment.synced)
+          .filter((attachment) => attachment.tenantId === tenantId && attachment.userId === userId && !attachment.synced)
           .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt) || a.id.localeCompare(b.id))
       );
       request.onerror = () => reject(request.error || new Error('Lesen ausstehender Wachbuchanhänge fehlgeschlagen'));

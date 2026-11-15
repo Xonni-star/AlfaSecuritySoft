@@ -1626,7 +1626,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       if (pendingItems.length === 0) {
         const allItems = await offlineVault.getOutbox(currentTenantId, undefined, currentUserId);
         if (!isCurrentSyncIdentity()) return { success: 0, failed: 0, conflicts: 0 };
-        const attachmentSync = await syncPendingGuardbookAttachments(currentTenantId, isCurrentSyncIdentity);
+        const attachmentSync = await syncPendingGuardbookAttachments(currentTenantId, currentUserId, isCurrentSyncIdentity);
         scheduleGuardbookAttachmentRetry(currentTenantId, currentUserId, attachmentSync.maxRetryCount);
         set({
           syncQueue: allItems.map(offlineOutboxToQueueItem),
@@ -1785,7 +1785,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       const remainingOutbox = await offlineVault.getOutbox(currentTenantId, undefined, currentUserId);
       scheduleOutboxRetry(remainingOutbox);
       if (!isCurrentSyncIdentity()) return { success: successCount, failed: failedCount, conflicts: conflictCount };
-      const attachmentSync = await syncPendingGuardbookAttachments(currentTenantId, isCurrentSyncIdentity);
+      const attachmentSync = await syncPendingGuardbookAttachments(currentTenantId, currentUserId, isCurrentSyncIdentity);
       failedCount += attachmentSync.failed;
       scheduleGuardbookAttachmentRetry(currentTenantId, currentUserId, attachmentSync.maxRetryCount);
       set({
@@ -3245,9 +3245,11 @@ function storedAttachmentToFile(attachment: StoredAttachment): File {
 
 async function syncPendingGuardbookAttachments(
   tenantId: string,
+  userId: string,
   isCurrentIdentity: () => boolean
 ): Promise<{ failed: number; maxRetryCount: number }> {
-  const attachments = await offlineVault.getPendingAttachments(tenantId);
+  if (typeof globalThis.indexedDB === 'undefined') return { failed: 0, maxRetryCount: 0 };
+  const attachments = await offlineVault.getPendingAttachments(tenantId, userId);
   let failed = 0;
   let maxRetryCount = 0;
   for (const attachment of attachments) {
@@ -3263,6 +3265,7 @@ async function syncPendingGuardbookAttachments(
         tenantId,
         candidateIdempotencyKey
       );
+      if (!isCurrentIdentity() || !useSecurityStore.getState().isOnline) break;
       const document = await apiClient.uploadFile<{
         id: string;
         tenant_id: string;
@@ -3274,6 +3277,7 @@ async function syncPendingGuardbookAttachments(
         undefined,
         { idempotencyKey }
       );
+      if (!isCurrentIdentity()) break;
       if (!document || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(document.id) ||
           document.tenant_id !== tenantId || document.linked_entity_type !== 'incident' ||
           document.linked_entity_id !== attachment.entityId) {
@@ -3281,6 +3285,7 @@ async function syncPendingGuardbookAttachments(
       }
       await offlineVault.markAttachmentSynced(attachment.id, tenantId, document.id);
     } catch (error) {
+      if (!isCurrentIdentity()) break;
       failed += 1;
       await offlineVault.markAttachmentUploadFailed(
         attachment.id,

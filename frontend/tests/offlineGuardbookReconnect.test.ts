@@ -81,6 +81,7 @@ describe('offline guardbook reconnect exercise', () => {
     await offlineVault.saveAttachment({
       id: attachmentId,
       tenantId,
+      userId,
       entityId: entryId,
       fileName: 'vorfall.jpg',
       mimeType: 'image/jpeg',
@@ -179,6 +180,7 @@ describe('offline guardbook reconnect exercise', () => {
     await offlineVault.saveAttachment({
       id: attachmentId,
       tenantId,
+      userId,
       entityId: entryId,
       fileName: 'vorfall.jpg',
       mimeType: 'image/jpeg',
@@ -251,7 +253,55 @@ describe('offline guardbook reconnect exercise', () => {
       serverDocumentId: acceptedDocuments.get(persistedIdempotencyKey ?? '')?.id,
       lastUploadError: undefined
     });
-    expect(await offlineVault.getPendingAttachments(tenantId)).toEqual([]);
+    expect(await offlineVault.getPendingAttachments(tenantId, userId)).toEqual([]);
+  });
+
+  test('does not replay another same-tenant user’s or an ownerless legacy attachment after account switch', async () => {
+    const ownerEntryId = crypto.randomUUID();
+    const otherOwnerAttachmentId = crypto.randomUUID();
+    const legacyAttachmentId = crypto.randomUUID();
+    await offlineVault.saveAttachment({
+      id: otherOwnerAttachmentId,
+      tenantId,
+      userId,
+      entityId: ownerEntryId,
+      fileName: 'user-a.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: 5,
+      blobData: 'data:image/jpeg;base64,cGhvdG8=',
+      capturedAt: new Date().toISOString(),
+      synced: false
+    });
+    await offlineVault.saveAttachment({
+      id: legacyAttachmentId,
+      tenantId,
+      entityId: ownerEntryId,
+      fileName: 'legacy.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: 5,
+      blobData: 'data:image/jpeg;base64,cGhvdG8=',
+      capturedAt: new Date().toISOString(),
+      synced: false
+    });
+    useSecurityStore.setState((state) => ({
+      currentUserId: 'user-b',
+      authUser: state.authUser ? { ...state.authUser, id: 'user-b', email: 'user-b@offline.test' } : null
+    }));
+
+    const upload = vi.spyOn(apiClient, 'uploadFile');
+    const result = await useSecurityStore.getState().triggerManualSync();
+
+    expect(result).toMatchObject({ success: 0, failed: 0, conflicts: 0 });
+    expect(upload).not.toHaveBeenCalled();
+    expect(await offlineVault.getPendingAttachments(tenantId, userId)).toHaveLength(1);
+    expect(await offlineVault.getPendingAttachments(tenantId, 'user-b')).toEqual([]);
+    expect(await readAttachment(offlineVault, otherOwnerAttachmentId)).toMatchObject({
+      userId,
+      synced: false
+    });
+    const ownerlessLegacyAttachment = await readAttachment(offlineVault, legacyAttachmentId);
+    expect(ownerlessLegacyAttachment).toMatchObject({ synced: false });
+    expect(ownerlessLegacyAttachment).not.toHaveProperty('userId');
   });
 
   test('keeps a guardbook conflict visible instead of retrying it automatically', async () => {
