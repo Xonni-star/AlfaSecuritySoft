@@ -778,6 +778,20 @@ export class IndexedDbService {
     });
   }
 
+  async getOwnerlessPendingAttachmentCount(tenantId: string): Promise<number> {
+    const db = await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('attachments', 'readonly');
+      const request = tx.objectStore('attachments').getAll();
+      request.onsuccess = () => resolve(
+        ((request.result as StoredAttachment[]) || [])
+          .filter((attachment) => attachment.tenantId === tenantId && !attachment.synced && !attachment.userId)
+          .length
+      );
+      request.onerror = () => reject(request.error || new Error('Lesen nicht zugeordneter Wachbuchanhänge fehlgeschlagen'));
+    });
+  }
+
   async setAttachmentIdempotencyKey(id: string, tenantId: string, idempotencyKey: string): Promise<string> {
     const db = await this.init();
     return new Promise((resolve, reject) => {

@@ -622,9 +622,10 @@ export async function uploadGuardbookAttachment(req: Request, res: Response, nex
             sha256_hash,scan_status,created_by,released_at,scanned_at,scan_error_code)
          VALUES ($1,$2,1,$3,$4,$5,$6,$7,$8,$9,
             CASE WHEN $10 THEN CURRENT_TIMESTAMP ELSE NULL END,
-            CASE WHEN $8 IN ('clean','infected') THEN CURRENT_TIMESTAMP ELSE NULL END,$11)`,
+            CASE WHEN $11 THEN CURRENT_TIMESTAMP ELSE NULL END,$12)`,
         [tenantId, documentId, filename, storageKey, file.contentType, bytes.length,
-          createHash('sha256').update(bytes).digest('hex'), scanStatus, user.userId, release, scanErrorCode]
+          createHash('sha256').update(bytes).digest('hex'), scanStatus, user.userId, release,
+          scanStatus === 'clean' || scanStatus === 'infected', scanErrorCode]
       );
       await setRelationship(db, tenantId, documentId, 'incident', incidentId);
       await audit(db, tenantId, documentId, user.userId, 'created', { title, guardbookEntryId: incidentId });

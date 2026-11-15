@@ -302,6 +302,15 @@ describe('offline guardbook reconnect exercise', () => {
     const ownerlessLegacyAttachment = await readAttachment(offlineVault, legacyAttachmentId);
     expect(ownerlessLegacyAttachment).toMatchObject({ synced: false });
     expect(ownerlessLegacyAttachment).not.toHaveProperty('userId');
+    expect(await offlineVault.getOwnerlessPendingAttachmentCount(tenantId)).toBe(1);
+    expect(await offlineVault.getOwnerlessPendingAttachmentCount('another-tenant')).toBe(0);
+    expect(useSecurityStore.getState().notifications).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        title: 'Ältere Wachbuchanhänge nicht synchronisiert',
+        type: 'warning',
+        message: expect.stringContaining('nicht automatisch hochgeladen')
+      })
+    ]));
   });
 
   test('keeps a guardbook conflict visible instead of retrying it automatically', async () => {
