@@ -4,7 +4,7 @@
 
 **Verified `main`:** [`cd01c489c729211ed54a5921f2e326effea71460`](https://github.com/Xonni-star/SecurityOps-2.0/commit/cd01c489c729211ed54a5921f2e326effea71460)
 
-**Last GitHub check:** 2026-11-15 21:28 CET; PRs #62 and #64 open; PRs #50–#61, #63, and #65 merged.
+**Last GitHub check:** 2026-11-15 21:32 CET; PRs #62 and #64 open; PRs #50–#61, #63, and #65 merged.
 
 **Current status index:** [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md)
 
@@ -28,6 +28,7 @@ On that exact main SHA:
 - PR checks for #50–#58, #60, #61, and #63 each showed 7/7 success. PR #59 had an empty PR-level check rollup; the successful post-merge run on `879ae95` is historical evidence for that tree. PR-level and post-merge results are not conflated.
 - PR #63 adds synthetic API coverage through employee qualification, planning publication, both handover confirmations, and a MinIO/ClamAV document upload, download, and audit flow. This is CI evidence, not provider or production acceptance.
 - PR #65 adds tenant/site/role authorization-boundary integration tests. Its 7/7 PR checks and the bounded workstream’s “no confirmed high-confidence issue” result do not amount to a comprehensive security review or production acceptance.
+- The open documentation PR #62 is at head `59274c856edea1264803b31424f29e7c8a5d7739`; its hosted [CI run 43758367874](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43758367874) passed **7/7 jobs**. It remains unmerged pending offline-sync resolution.
 
 ## Operations and documentation audit
 

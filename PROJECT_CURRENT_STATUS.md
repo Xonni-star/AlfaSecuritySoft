@@ -1,6 +1,6 @@
 # SecurityOps 2.0 — Current project status
 
-**Last verified:** 2026-11-15 21:28 CET
+**Last verified:** 2026-11-15 21:32 CET
 
 **Verified `main`:** [`cd01c489c729211ed54a5921f2e326effea71460`](https://github.com/Xonni-star/SecurityOps-2.0/commit/cd01c489c729211ed54a5921f2e326effea71460)
 
@@ -24,7 +24,7 @@ This is the current evidence index. Phase reports and dated status sections rema
 | Mainline integration | **DONE** | Current `main` is `cd01c489c729211ed54a5921f2e326effea71460`. PRs #50–#61, #63, and #65 are merged; #62 and #64 remain open. |
 | Mainline CI | **DONE** | Post-merge [CI run 43757895649](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43757895649) passed **7/7 jobs** on the exact current-main SHA, including frontend, PostgreSQL 16 backend/Jest, isolated restore, DMS/ClamAV, and production Compose/image validation. |
 | Release package validation | **DONE** | Post-merge [artifact run 43757089831](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43757089831) passed **2/2 jobs** on the current-main SHA. Packaging/provenance/install validation is not a deployment or production release. |
-| Documentation PR validation | **DONE** | Open PR #62 is based on `main` at head `5c270e2acf0a14626557864ac162e05fba13a47a`; its latest hosted CI passed **7/7 jobs**. It remains open and unmerged pending final workstream results. |
+| Documentation PR validation | **DONE** | Open PR #62 is based on `main` at head `59274c856edea1264803b31424f29e7c8a5d7739`; hosted CI run [43758367874](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43758367874) passed **7/7 jobs**. It remains open and unmerged pending the final offline-sync outcome. |
 | Test-only Linux install | **DONE** | PR #56 merged. The tar/deb installer and lifecycle guidance explicitly target isolated testing; they are not production installers. |
 | Backup/restore | **PARTIAL** | CI and local drills exercise synthetic DB and local object-store recovery. A real S3-provider restore, production-like restore, scanner/provider acceptance, and measured RPO/RTO are not evidenced. |
 | Offline and SOP workflows | **PARTIAL / BLOCKED** | Merged CI covers the checked-in workflows and the Chromium loopback-fixture scenario. PR #64 remains open at `ac706864`; its latest hosted run 43757746251 failed the Backend job while the other six passed. The GuardBook DMS attachment integration test expected HTTP 202 but received 500. The same-tenant cross-user attachment-isolation fix has not been reported as complete. The fixture is not the authenticated application backend or a physical device. |
