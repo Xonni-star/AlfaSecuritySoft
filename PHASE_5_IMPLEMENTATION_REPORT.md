@@ -5,7 +5,8 @@
 **Baseline checked:** 2026-11-15, `main` at `77fdb0955e3bbbef01690edc93dc630e443bfbe8`.
 
 **Work branch:** `xonni-star-phase-5-e2e-acceptance` (the app-managed branch prefix is applied).
-**Hosted checks before this continuation:** All seven jobs passed on implementation commit `8d3e2d7` in [run 43707028323](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707028323), on report-update commit `52e7e3a` in [run 43707301221](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707301221), and on PR head `a25fcaf` in [run 43707565547](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707565547). New continuation changes are awaiting hosted CI.
+**PR:** [#45](https://github.com/Xonni-star/SecurityOps-2.0/pull/45), open against `main`. **Code/test commit:** `4de5604`.
+**Hosted checks:** All seven jobs passed on implementation commit `8d3e2d7` in [run 43707028323](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707028323), report-update commit `52e7e3a` in [run 43707301221](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707301221), prior PR head `a25fcaf` in [run 43707565547](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707565547), and code/test commit `4de5604` in [run 43709859203](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43709859203).
 
 ## Baseline and scope
 
@@ -119,11 +120,11 @@ The CI change eliminates **70 proven redundant executions** (14.6% of baseline i
 - Backend: **29/29 suites and 291/291 tests passed** in 87.652 s; PostgreSQL-backed API, permission-scope regression, end-to-end journey, and migrations included. Backend TypeScript build passed. Jest emitted one open `TCPWRAP` handle diagnostic originating from the existing `patrol.integration.test.ts:35` setup; the suite passed.
 - Frontend: **19/19 files and 128/128 tests passed** in 6.27 s; typecheck and production build passed. Vite emitted an existing warning about `__dirname` under its native config loader; the build completed.
 - Backup/restore: `npm run test:backup-restore -- --database-only` passed. It applied and re-ran all 37 migrations through 039, verified RLS/FORCE RLS on nine DMS tables and `alarm_incident_links`, tested restored tenant-scoped data and the failure/restart path, and verified cleanup of its disposable resources. This local database-only mode does not test S3 objects or ClamAV.
-- **Hosted PR CI:** Both runs passed all seven jobs. Run [43707028323](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707028323) reported root startup (57 s), frontend (17 s), PostgreSQL/backend (2m11s), ClamAV adapter (1m), DMS API with PostgreSQL/private S3/ClamAV (1m17s), full schema/object-snapshot restore (1m27s), and production Docker (51 s). Run [43707301221](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707301221) also passed the full seven-job workflow. These timings are per-job durations.
+- **Hosted PR CI:** All seven jobs passed for code/test commit `4de5604` in run [43709859203](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43709859203): root startup (47 s), frontend tests/build (24 s), PostgreSQL/backend build/Jest (2m44s), ClamAV adapter (51 s), DMS API with PostgreSQL/private S3/ClamAV (1m18s), full schema/object-snapshot restore (1m28s), and production Docker (45 s). Earlier successful runs are listed above. These timings are per-job durations.
 
 ## Blockers, risks, and production checklist
 
-- **BLOCKED locally:** The combined PostgreSQL/MinIO restore path previously failed pulling `quay.io/minio/mc:RELEASE.2025-02-08T19-14-21Z` with `401 UNAUTHORIZED`. The database-only path passed. Hosted CI's isolated full schema/object-snapshot restore passed on the prior PR head; this continuation awaits a new hosted run, and neither result proves production-provider restore.
+- **BLOCKED locally:** The combined PostgreSQL/MinIO restore path previously failed pulling `quay.io/minio/mc:RELEASE.2025-02-08T19-14-21Z` with `401 UNAUTHORIZED`. The database-only path passed. Hosted CI's isolated full schema/object-snapshot restore passed in run [43709859203](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43709859203), but does not prove production-provider restore.
 - **NOT TESTED:** Physical mobile devices, browser/device matrix, camera/NFC/GPS behavior, multi-device offline acceptance, and external email/push/dispatch providers. The accessible reconnect control and offline store are covered in automated tests only.
 - **NOT MEASURED:** Production restore/RPO/RTO, performance under representative data, and `EXPLAIN ANALYZE`. No performance indexes or query optimizations were added; migration indexes are limited to link uniqueness/integrity.
 - **NOT APPROVED for production:** No production credentials, data, provider, or deployment were used. Before approval, complete provider-backed database plus object restore drills and measure RPO/RTO; exercise supported browsers and target mobile devices with offline-loss/conflict cases; configure and verify production storage/scanner and notification providers; review monitoring, operational recovery, migration rollout, tenant/RLS controls, and security; obtain domain/legal and product acceptance.
@@ -132,6 +133,6 @@ The CI change eliminates **70 proven redundant executions** (14.6% of baseline i
 
 ## Next steps
 
-1. Complete hosted CI for the current PR head, then review the Phase 5 diff.
+1. Keep PR #45 open and review the Phase 5 diff; do not merge or deploy before the remaining acceptance is complete.
 2. Resolve or document the local MinIO image-access blocker, then run a full database-plus-object restore against an authorized test provider.
 3. Complete browser/device and external-provider acceptance; record actual production-like RPO/RTO and performance evidence before any production-readiness decision.
