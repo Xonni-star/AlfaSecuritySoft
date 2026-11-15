@@ -390,19 +390,29 @@ export async function validateShiftCandidate(
     findings.push({
       code: 'QUALIFICATION_MISSING',
       severity: 'blocking',
-      message: `Mitarbeiter besitzt keine gültige Qualifikation "${candidate.requiredQualification}" für den Schichtbeginn.`
+      message: `Mitarbeiter besitzt keine gültige Qualifikation "${candidate.requiredQualification}" für den gesamten Schichtzeitraum.`,
+      details: { requiredQualification: candidate.requiredQualification, shiftEndDate: resolved.endDate }
     });
   }
 
   const absence = await client.query(
-    `SELECT 1 FROM employee_absences
+    `SELECT id,date_from::text AS date_from,date_to::text AS date_to FROM employee_absences
       WHERE tenant_id=$1 AND employee_id=$2 AND status='APPROVED'
         AND date_from <= $4::date AND date_to >= $3::date
       LIMIT 1`,
     [candidate.tenantId, candidate.employeeId, candidate.date, resolved.endDate]
   );
   if (absence.rows.length) {
-    findings.push({ code: 'APPROVED_ABSENCE', severity: 'blocking', message: 'Mitarbeiter hat eine genehmigte Abwesenheit im Schichtzeitraum.' });
+    findings.push({
+      code: 'APPROVED_ABSENCE',
+      severity: 'blocking',
+      message: 'Mitarbeiter hat eine genehmigte Abwesenheit im Schichtzeitraum.',
+      details: {
+        absenceId: absence.rows[0].id,
+        absenceFrom: absence.rows[0].date_from,
+        absenceTo: absence.rows[0].date_to
+      }
+    });
   }
 
   const overlap = await client.query(
@@ -419,7 +429,12 @@ export async function validateShiftCandidate(
     [candidate.tenantId, candidate.excludeShiftId ?? null, resolved.startsAt, resolved.endsAt, candidate.employeeId]
   );
   if (overlap.rows.length) {
-    findings.push({ code: 'SHIFT_OVERLAP', severity: 'blocking', message: 'Mitarbeiter ist einer zeitlich überlappenden Schicht zugewiesen.' });
+    findings.push({
+      code: 'SHIFT_OVERLAP',
+      severity: 'blocking',
+      message: 'Mitarbeiter ist einer zeitlich überlappenden Schicht zugewiesen.',
+      details: { conflictingShiftId: overlap.rows[0].id }
+    });
   }
 
   const minimumRestMinutes = numericRule(rules, 'minimum_rest_minutes');

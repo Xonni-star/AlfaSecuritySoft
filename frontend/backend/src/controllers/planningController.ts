@@ -1413,12 +1413,13 @@ export async function decideShiftSwap(req: Request, res: Response, next: NextFun
     const actorId = req.user!.userId;
     const result = await withTenantTransaction(tenantId, async client => {
       const swap = await client.query(
-        `SELECT id,shift_id,requester_employee_id,proposed_employee_id,status,revision_version
+        `SELECT id,shift_id,requester_employee_id,proposed_employee_id,requested_by,status,revision_version
            FROM shift_swap_requests WHERE tenant_id=$1 AND id=$2 FOR UPDATE`,
         [tenantId, requestId]
       );
       if (!swap.rows.length) return { status: 404 as const };
       const row = swap.rows[0];
+      if (row.requested_by === actorId) return { status: 403 as const };
       if (row.status !== 'pending' || Number(row.revision_version) !== input.expectedVersion) return { status: 409 as const };
       if (input.decision === 'approved') {
         const shift = await client.query(
@@ -1491,7 +1492,12 @@ export async function decideShiftSwap(req: Request, res: Response, next: NextFun
           RETURNING id,status,revision_version,decided_by,decided_at`,
         [input.decision, actorId, input.decisionNote ?? null, tenantId, requestId, input.expectedVersion]
       );
-      await writeAudit(client, tenantId, actorId, `shift_swap.${input.decision}`, 'shift_swap_request', requestId);
+      await writeAudit(client, tenantId, actorId, `shift_swap.${input.decision}`, 'shift_swap_request', requestId, {
+        shiftId: row.shift_id,
+        requesterEmployeeId: row.requester_employee_id,
+        proposedEmployeeId: row.proposed_employee_id,
+        decisionNote: input.decisionNote ?? null
+      });
       const notice = {
         shiftId: row.shift_id, requesterEmployeeId: row.requester_employee_id,
         proposedEmployeeId: row.proposed_employee_id
@@ -1507,6 +1513,7 @@ export async function decideShiftSwap(req: Request, res: Response, next: NextFun
       return { status: 200 as const, request: changed.rows[0] };
     });
     if (result.status === 404) res.status(404).json({ success: false, message: 'Diensttausch-Antrag oder Schicht nicht gefunden.' });
+    else if (result.status === 403) res.status(403).json({ success: false, message: 'Ein Diensttausch-Antrag darf nicht durch seinen Ersteller entschieden werden.' });
     else if (result.status === 409) res.status(409).json({ success: false, code: 'REVISION_CONFLICT' });
     else if (result.status === 422) sendValidationFailure(res, result.findings);
     else res.json({ success: true, data: result.request });
