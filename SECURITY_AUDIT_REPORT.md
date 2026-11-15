@@ -15,7 +15,7 @@
 
 - Frontend tests, typecheck, and production build passed on the current local revision.
 - Backend build and tests passed against an isolated PostgreSQL 16 database.
-- Hosted PR run [43764603109](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43764603109) passed 7/7 on prior PR head `164e0e6`; it does not cover the latest local edits.
+- Hosted PR run [43766936797](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43766936797) passed 7/7 on application-code commit `edd5919`. Subsequent changes only refresh status/evidence documents.
 
 ## Remaining security gates
 

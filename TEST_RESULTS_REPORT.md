@@ -12,7 +12,7 @@
 | PostgreSQL migrations and seed | **BESTANDEN** | All migrations and seed ran against a temporary, isolated PostgreSQL 16 container using synthetic test data. The container was stopped after the run. |
 | Backend tests | **BESTANDEN** | `cd frontend/backend && npm test -- --runInBand`: 34 suites, 315 tests passed against that isolated database. `apiRateLimit.test.ts` emitted an express-rate-limit diagnostic for a forwarded header; the suite passed. |
 | Production Compose configuration | **BESTANDEN** | `docker compose -f frontend/deploy/docker-compose.production.yml config --no-interpolate --quiet`. This validates configuration only; it does not deploy services. |
-| Hosted PR CI | **TEILWEISE BESTANDEN** | Run [43764603109](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43764603109) passed 7/7 on `164e0e6`. The newer local changes described by this PR were not included in that run; a new hosted run is required. |
+| Hosted PR CI | **BESTANDEN** | Run [43766936797](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43766936797) passed 7/7 on application-code commit `edd5919`. The later report-only refresh triggers a separate hosted run. |
 | Browser E2E on real authenticated services/device | **NICHT GETESTET** | No physical-device or authenticated live-backend acceptance was performed in this worktree. |
 | External S3 restore and measured RPO/RTO | **NICHT GETESTET** | No external provider restore or operational recovery-time measurement was performed. |
 
