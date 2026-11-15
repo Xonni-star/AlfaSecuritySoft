@@ -74,7 +74,16 @@ describe('App mobile navigation accessibility', () => {
     expect(document.activeElement).toBe(closeButton);
 
     await act(async () => {
-      closeButton?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      closeButton?.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true
+      }));
+    });
+    expect(document.activeElement).toBe(destinationButton);
+
+    await act(async () => {
+      destinationButton?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     });
     expect(container.querySelector('[role="dialog"]')).toBeNull();
     expect(document.activeElement).toBe(trigger);
@@ -89,6 +98,21 @@ describe('App mobile navigation accessibility', () => {
 
     const destinationButton = container.querySelector<HTMLButtonElement>('[role="dialog"] button:last-child');
     await act(async () => destinationButton?.click());
+
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  test('closes on backdrop click and restores trigger focus', async () => {
+    await act(async () => root.render(<App />));
+    const trigger = Array.from(container.querySelectorAll('button'))
+      .find(button => button.textContent === 'Open menu');
+    trigger?.focus();
+    await act(async () => trigger?.click());
+
+    const backdrop = container.querySelector('[role="dialog"]')?.parentElement;
+    if (!backdrop) throw new Error('Mobile menu backdrop is missing');
+    await act(async () => backdrop.click());
 
     expect(container.querySelector('[role="dialog"]')).toBeNull();
     expect(document.activeElement).toBe(trigger);
