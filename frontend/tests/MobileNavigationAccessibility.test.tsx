@@ -97,6 +97,7 @@ describe('navigation accessibility', () => {
 
     expect(nav?.querySelector('button[aria-current="page"]')).toBe(dutyButton);
     expect(dutyButton?.getAttribute('aria-current')).toBe('page');
+    expect(container.querySelector('[data-testid="mobile-duty-view"]')?.parentElement?.className).toContain('pb-20');
   });
 
   test('network control exposes its current state and a mobile-sized touch target', async () => {
