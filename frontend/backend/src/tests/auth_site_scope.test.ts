@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { requirePermission } from '../middleware/auth';
+import { requirePermission, requireSuperAdmin } from '../middleware/auth';
 
 const siteA = '11111111-1111-4111-8111-111111111111';
 const siteB = '22222222-2222-4222-8222-222222222222';
@@ -18,6 +18,7 @@ function runPermissionCheck(
     sitePermissions?: Array<{ code: string; siteId: string }>;
     ownPermissions?: string[];
     role?: string;
+    isSuperAdmin?: boolean;
   } = {}
 ) {
   const req = {
@@ -34,6 +35,7 @@ function runPermissionCheck(
       permissions: options.permissions ?? [],
       sitePermissions: options.sitePermissions ?? [grant, createGrant],
       ownPermissions: options.ownPermissions ?? [],
+      isSuperAdmin: options.isSuperAdmin ?? false,
       sessionHash: 'opaque-session-hash'
     }
   } as unknown as Request;
@@ -131,5 +133,35 @@ describe('site-scoped authorization', () => {
       sitePermissions: [userGrant]
     });
     expect(detail.next).not.toHaveBeenCalled();
+  });
+
+  test('system tenant administration requires the explicit system-admin account flag', () => {
+    const deniedNext = jest.fn();
+    const deniedRequest = {
+      user: {
+        userId: 'user-id',
+        email: 'tenant-admin@example.test',
+        tenantId: 'tenant-id',
+        role: 'Systemadministrator',
+        permissions: ['users:manage', 'roles:delegate_admin'],
+        isSuperAdmin: false,
+        sessionHash: 'session-hash'
+      }
+    } as unknown as Request;
+    const deniedResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis()
+    } as unknown as Response;
+
+    requireSuperAdmin(deniedRequest, deniedResponse, deniedNext);
+    expect(deniedNext).not.toHaveBeenCalled();
+    expect(deniedResponse.status).toHaveBeenCalledWith(403);
+
+    const allowedNext = jest.fn();
+    requireSuperAdmin({
+      ...deniedRequest,
+      user: { ...deniedRequest.user!, isSuperAdmin: true }
+    } as unknown as Request, deniedResponse, allowedNext);
+    expect(allowedNext).toHaveBeenCalledTimes(1);
   });
 });

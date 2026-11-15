@@ -78,6 +78,7 @@ export interface AuthUser {
   tenantId: string;
   tenantName: string;
   permissions: string[];
+  isSuperAdmin?: boolean;
 }
 
 function mapSOPRow(row: any, tenantId: string): SOPDocument {
@@ -999,8 +1000,9 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
           fullName: me.email ?? '',
           role: me.role ?? '',
           tenantId: me.tenantId ?? '',
-          tenantName: '',
-          permissions: Array.isArray(me.permissions) ? me.permissions : []
+          tenantName: me.tenantName ?? '',
+          permissions: Array.isArray(me.permissions) ? me.permissions : [],
+          isSuperAdmin: me.isSuperAdmin === true
         },
         isAuthenticated: true,
         currentTenantId: me.tenantId ?? me.tenant_id ?? '',

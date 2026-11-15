@@ -34,7 +34,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
 
     // 1. Benutzer abfragen
     const userResult = await query(
-      `SELECT id, email, password_hash, first_name, last_name, is_active, is_locked, failed_login_attempts, locked_until
+      `SELECT id, email, password_hash, first_name, last_name, is_active, is_locked, is_superadmin, failed_login_attempts, locked_until
        FROM users WHERE email = $1`,
       [email]
     );
@@ -204,6 +204,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
           role: roles.join(', ') || role_name || 'Mandantenzugang',
           tenantId: tenant_id,
           tenantName: tenant_name,
+          isSuperAdmin: user.is_superadmin,
           permissions
         }
       }

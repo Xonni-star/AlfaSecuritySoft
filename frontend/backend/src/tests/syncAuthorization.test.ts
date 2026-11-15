@@ -6,6 +6,7 @@ const user: AuthenticatedUser = {
   email: 'site.user@example.test',
   fullName: 'Site User',
   tenantId: '22222222-2222-4222-8222-222222222222',
+  tenantName: 'Tenant A',
   role: 'Site operator',
   permissions: [],
   sitePermissions: [{ code: 'shifts:manage', siteId: '33333333-3333-4333-8333-333333333333' }],

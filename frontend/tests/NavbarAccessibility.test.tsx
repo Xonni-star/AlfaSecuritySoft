@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   store: {
     currentUserRole: 'Einsatzleitung',
     setCurrentUserRole: vi.fn(),
+    authUser: { tenantName: 'Echter Mandant', isSuperAdmin: false },
     notifications: [],
     getTenantNotificationDeliveries: vi.fn(() => []),
     tenants: [],
@@ -69,5 +70,7 @@ describe('Navbar accessibility', () => {
     expect(container.querySelector('button[aria-label="Online. Offline-Modus aktivieren"]')?.getAttribute('aria-pressed')).toBe('false');
     expect(container.querySelector('button[aria-label^="Offline-Synchronisierung öffnen"]')).not.toBeNull();
     expect(container.querySelector('button[aria-label^="Benachrichtigungscenter öffnen"]')).not.toBeNull();
+    expect(container.textContent).toContain('Echter Mandant');
+    expect(container.querySelector('select[aria-label="Mandant auswählen"]')).toBeNull();
   });
 });

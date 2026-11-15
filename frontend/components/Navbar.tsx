@@ -37,9 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     setCurrentUserRole,
     notifications,
     getTenantNotificationDeliveries,
-    tenants,
-    currentTenantId,
-    setCurrentTenantId,
+    authUser,
     isOnline,
     toggleNetworkSimulation,
     syncQueue,
@@ -91,25 +89,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           </span>
         </button>
 
-        {/* Multi-Tenant Switcher */}
+        {/* Session-bound tenant label; switching requires a server-authorized session flow. */}
         <div className="hidden sm:flex items-center gap-1.5 ml-2 pl-3 border-l border-slate-800">
           <Building className="w-3.5 h-3.5 text-blue-400" />
-          <div className="text-left">
+          <div className="text-left" aria-label="Aktiver Mandant der authentifizierten Sitzung">
             <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold block leading-none">
               Mandant
             </span>
-            <select
-              value={currentTenantId}
-              onChange={(e) => setCurrentTenantId(e.target.value)}
-              className="bg-transparent text-xs text-slate-200 font-semibold focus:outline-none cursor-pointer max-w-[150px] md:max-w-[180px] truncate"
-              aria-label="Mandant auswählen"
-            >
-              {(tenants || []).map((t) => (
-                <option key={t.id} value={t.id} className="bg-slate-900 text-slate-200">
-                  {t.name}
-                </option>
-              ))}
-            </select>
+            <span className="block max-w-[150px] truncate text-xs font-semibold text-slate-200 md:max-w-[180px]">
+              {authUser?.tenantName || 'Aktive Sitzung'}
+            </span>
           </div>
         </div>
       </div>

@@ -8,7 +8,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { createApiRateLimiter } from './middleware/apiRateLimit';
 import { configureTrustedProxies } from './middleware/trustedProxies';
 import { rateLimitRedisClient, rateLimitStore } from './config/rateLimitRedis';
-import { authenticateJwt, requireAnyPermission, requirePermission } from './middleware/auth';
+import { authenticateJwt, requireAnyPermission, requirePermission, requireSuperAdmin } from './middleware/auth';
 import * as authController from './controllers/authController';
 import * as clientController from './controllers/clientController';
 import * as guardbookController from './controllers/guardbookController';
@@ -22,6 +22,7 @@ import * as alarmWorkflowController from './controllers/alarmWorkflowController'
 import * as patrolController from './controllers/patrolController';
 import * as planningController from './controllers/planningController';
 import * as userAdministrationController from './controllers/userAdministrationController';
+import * as tenantAdministrationController from './controllers/tenantAdministrationController';
 
 export const app = express();
 configureTrustedProxies(app, env.TRUST_PROXY);
@@ -119,6 +120,12 @@ app.get('/api/v1/admin/permissions', authenticateJwt, requirePermission('roles:r
 app.get('/api/v1/admin/sites', authenticateJwt, requirePermission('users:read'), userAdministrationController.listAdminSites);
 app.post('/api/v1/admin/roles', authenticateJwt, requirePermission('roles:manage'), userAdministrationController.createRole);
 app.patch('/api/v1/admin/roles/:id', authenticateJwt, requirePermission('roles:manage'), userAdministrationController.updateRole);
+
+// Systemweite Mandantenverwaltung ist von Mandantenwechsel und mandantenbezogener
+// Benutzer-/Rollenverwaltung getrennt und ausschließlich Systemadministratoren zugänglich.
+app.get('/api/v1/system/tenants', authenticateJwt, requireSuperAdmin, tenantAdministrationController.listTenants);
+app.post('/api/v1/system/tenants', authenticateJwt, requireSuperAdmin, tenantAdministrationController.createTenant);
+app.patch('/api/v1/system/tenants/:id', authenticateJwt, requireSuperAdmin, tenantAdministrationController.updateTenant);
 
 // Fachrouten (Alle mit RLS und granularer Berechtigungsprüfung geschützt)
 app.get('/api/v1/customers', authenticateJwt, requirePermission('customers:read'), clientController.listClients);

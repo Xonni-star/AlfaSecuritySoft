@@ -16,6 +16,7 @@ describe('SecurityOps 2.0 - Schritt 5R.2.7: Idempotenz zwischen Sync-Push und Ko
   let restrictedUserId: string;
   let siteScopedUserId: string;
   let siteScopedTargetUserId: string;
+  let tenantScopedTargetUserId: string;
   let testRoleEinsatzId: string;
   let testTokenA: string;
   let siteAId: string;
@@ -227,7 +228,7 @@ describe('SecurityOps 2.0 - Schritt 5R.2.7: Idempotenz zwischen Sync-Push und Ko
 
   afterAll(async () => {
     // Administrative Bereinigung inkl. Append-Only-Trigger (nur Testdatenbank).
-    await cleanupTestData([testTenantA, testTenantB], [testUserAId, planningApproverId, planningDeniedUserId, restrictedUserId, siteScopedUserId, siteScopedTargetUserId]);
+    await cleanupTestData([testTenantA, testTenantB], [testUserAId, planningApproverId, planningDeniedUserId, restrictedUserId, siteScopedUserId, siteScopedTargetUserId, tenantScopedTargetUserId]);
     await pool.end();
     await migrationPool.end();
   });
@@ -293,6 +294,17 @@ describe('SecurityOps 2.0 - Schritt 5R.2.7: Idempotenz zwischen Sync-Push und Ko
        VALUES ($1,$2,$3,$4),($1,$2,$3,$5)`,
       [testTenantA, siteScopedTargetUserId, roleId, siteAId, siteB.id]
     );
+    tenantScopedTargetUserId = (await pool.query(
+      `INSERT INTO users (email,password_hash,first_name,last_name)
+       VALUES ($1,'unused-test-hash','Tenant','Wide Target') RETURNING id`,
+      [`tenant.wide.target.${Date.now()}@secops.local`]
+    )).rows[0].id as string;
+    await insertTenantMembership(testTenantA, tenantScopedTargetUserId);
+    await migrationPool.query(
+      `INSERT INTO tenant_user_roles (tenant_id,user_id,role_id)
+       VALUES ($1,$2,$3)`,
+      [testTenantA, tenantScopedTargetUserId, roleId]
+    );
     const token = crypto.randomBytes(32).toString('base64url');
     await migrationPool.query(
       `INSERT INTO user_sessions (user_id,tenant_id,token_hash,expires_at,revoked)
@@ -315,6 +327,7 @@ describe('SecurityOps 2.0 - Schritt 5R.2.7: Idempotenz zwischen Sync-Push und Ko
     expect(targetUser.roles).toHaveLength(1);
     expect(targetUser.roles[0].siteId).toBe(siteAId);
     expect(targetUser.sites).toEqual([{ id: siteAId, name: expect.any(String) }]);
+    expect(siteFilteredUsers.body.data.some((entry: { id: string }) => entry.id === tenantScopedTargetUserId)).toBe(false);
 
     const push = (clientUuid: string, action: 'CREATE' | 'UPDATE', payload: Record<string, unknown>) =>
       request(app).post('/api/v1/sync/push').set(authHeaders(token)).send({
