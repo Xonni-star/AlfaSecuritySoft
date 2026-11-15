@@ -5,7 +5,7 @@
 **Baseline checked:** 2026-11-15, `main` at `77fdb0955e3bbbef01690edc93dc630e443bfbe8`.
 
 **Work branch:** `xonni-star-phase-5-e2e-acceptance` (the app-managed branch prefix is applied).
-**Hosted checks:** All seven jobs passed on implementation commit `8d3e2d7` in [run 43707028323](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707028323). A final report-only commit will trigger another run.
+**Hosted checks:** All seven jobs passed on implementation commit `8d3e2d7` in [run 43707028323](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707028323), and again on report-update commit `52e7e3a` in [run 43707301221](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707301221).
 
 ## Baseline and scope
 
@@ -55,8 +55,7 @@ The CI change eliminates **70 redundant executions** (14.6% of baseline invocati
 - Backend: **29/29 suites and 290/290 tests passed**; PostgreSQL-backed API and migration tests included. Backend TypeScript build passed.
 - Frontend: **19/19 files and 128/128 tests passed**; typecheck and production build passed. Vite emitted an existing warning about `__dirname` under its native config loader; the build completed.
 - Backup/restore: `npm run test:backup-restore -- --database-only` passed. It applied and re-ran all 37 migrations through 039, verified RLS/FORCE RLS on nine DMS tables and `alarm_incident_links`, tested restored tenant-scoped data and the failure/restart path, and verified cleanup of its disposable resources.
-- **Hosted PR CI:** All seven jobs passed in run [43707028323](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707028323): root startup (57 s), frontend (17 s), PostgreSQL/backend (2m11s), ClamAV adapter (1m), DMS API with PostgreSQL/private S3/ClamAV (1m17s), full schema/object-snapshot restore (1m27s), and production Docker (51 s). These timings are per-job durations.
-- **Final report-only commit CI:** Will be triggered after this report is updated; it is not represented by run 43707028323.
+- **Hosted PR CI:** Both runs passed all seven jobs. Run [43707028323](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707028323) reported root startup (57 s), frontend (17 s), PostgreSQL/backend (2m11s), ClamAV adapter (1m), DMS API with PostgreSQL/private S3/ClamAV (1m17s), full schema/object-snapshot restore (1m27s), and production Docker (51 s). Run [43707301221](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707301221) also passed the full seven-job workflow. These timings are per-job durations.
 
 ## Blockers, risks, and production checklist
 
@@ -69,6 +68,6 @@ The CI change eliminates **70 redundant executions** (14.6% of baseline invocati
 
 ## Next steps
 
-1. Review the Phase 5 diff and the final report-only commit's hosted CI results.
+1. Review the Phase 5 diff and complete the remaining device/provider acceptance.
 2. Resolve or document the local MinIO image-access blocker, then run a full database-plus-object restore against an authorized test provider.
 3. Complete browser/device and external-provider acceptance; record actual production-like RPO/RTO and performance evidence before any production-readiness decision.
