@@ -2,13 +2,13 @@
 
 **Historical snapshot:** This report records Phase 6 implementation and verification as of its original review, before PR #46 merged. The PR-open status and baseline below are historical and are superseded by the verified current status in [MAINLINE_INTEGRATION_STATUS.md](./MAINLINE_INTEGRATION_STATUS.md) and [PHASE_7_READINESS_REPORT.md](./PHASE_7_READINESS_REPORT.md).
 
-**Current status (verified 2026-11-15):** PR #46 merged into `main` at `98554b7e20786d86f5447dccac42857ac5db355f`. This merge does not represent a production deployment or approval.
+**Current GitHub status refreshed 2026-11-15 20:30 CET:** PR #46 is merged. `main` remains `d06c2d835270b43bd36bb3585fc45d7da7d58a50`; PRs #47–#49 are merged, while PRs [#50](https://github.com/Xonni-star/SecurityOps-2.0/pull/50)–[#58](https://github.com/Xonni-star/SecurityOps-2.0/pull/58) are open against `main`. Hosted CI passed 7/7 on #50–#58. PR #56's earlier backend/DMS failures and PR #57's earlier restore failure are superseded; #58's pending jobs have completed successfully. Branch-local #58 full Jest failures are not hosted CI results. Main CI [43726729355](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43726729355) passed 7/7 jobs and release-artifact validation [43726964671](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43726964671) passed 2/2 on that SHA. These workflows package/check artifacts; no production deployment or approval is established. Later offline, restore, performance, permission-scope, mobile usability, E2E/API, and dependency-audit results are not all in `main`; the documents customer-scope finding remains open there. The offline Chromium PR uses a loopback fixture rather than the application backend; photo upload/replay and real device/API acceptance remain incomplete. See [MAINLINE_INTEGRATION_STATUS.md](./MAINLINE_INTEGRATION_STATUS.md) and [PHASE_8_COMPLETION_REPORT.md](./PHASE_8_COMPLETION_REPORT.md) for evidence boundaries and remaining gates.
 
 **Mainline baseline:** `main` HEAD `24c14ba599017d1f35e94533393c209300caf28d`; PR #45 merged at that commit on 2026-11-15 at 11:50:37 UTC. The Phase 6 changes described here are not part of that baseline.
 
-**PR:** [#46](https://github.com/Xonni-star/SecurityOps-2.0/pull/46) is open against `main` from remote branch `phase-6-technical-consolidation`.
+**PR status at original report review:** [#46](https://github.com/Xonni-star/SecurityOps-2.0/pull/46) was open against `main` from remote branch `phase-6-technical-consolidation`; it later merged as recorded above.
 
-**Hosted CI:** Run [43713451943](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43713451943) passed **7/7 jobs** on code/test commit `f6df5f509db530bcf780824442cf54becc305e23`. This result applies to that exact head. Check the PR Checks tab for any later head before relying on its status. The PR remains open; no merge or deployment is claimed.
+**Hosted CI at original report review:** Run [43713451943](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43713451943) passed **7/7 jobs** on code/test commit `f6df5f509db530bcf780824442cf54becc305e23`. This result applies to that exact head; the merge and current-main evidence are recorded in the current GitHub status above.
 
 ## Baseline and evidence
 

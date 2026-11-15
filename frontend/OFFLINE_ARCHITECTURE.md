@@ -1,7 +1,7 @@
 # SecurityOps 2.0 - Phase 6: Offline-First Architektur
 
 > **Projektstatus: In Entwicklung; nicht für Produktion freigegeben.** Offlinefunktionen sind workflow-spezifisch; nicht alle Module oder End-to-End-Geräteabläufe sind implementiert oder abgenommen.
-> **Verifizierter Main-Stand:** `ba9ab4ddc5d9ef03a3d147a023f002a0abb0e547` (15.11.2026). Main-CI [43695784002](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695784002) bestand alle sieben Jobs; dies ersetzt keine Browser-/Geräteabnahme. Umfang und Grenzen unten beziehen sich auf den Quellcode, nicht auf eine allgemeine Offlinefähigkeit.
+> **Verifizierter Main-Stand (15.11.2026, 20:30 CET):** `d06c2d835270b43bd36bb3585fc45d7da7d58a50`. Main-CI [43726729355](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43726729355) bestand alle sieben Jobs; dies ersetzt keine Browser-/Geräteabnahme. Offenes PR [#52](https://github.com/Xonni-star/SecurityOps-2.0/pull/52) ergänzt einen Playwright/Chromium-Test gegen eine Loopback-Fixture, und dessen CI bestand 7/7; die Änderungen sind nicht gemergt. Authentifizierte Backend-/Geräteabnahme bleibt offen. Umfang und Grenzen unten beziehen sich auf den Quellcode, nicht auf eine allgemeine Offlinefähigkeit. Fotos besitzen keinen Upload-/Replay-Pfad und werden nicht synchronisiert.
 
 Der Phase-4-Änderungsstand behandelt HTTP `408` und `429` als wiederholbare Fehler der generischen Outbox und persistiert einen gültigen `Retry-After`-Wert (Sekunden oder HTTP-Datum) zusammen mit der Mutation. Die Wiedergabe wartet mindestens bis zu diesem Zeitpunkt; lokale Backoff-Grenzen, Idempotenz und die serverseitige Autorisierung bleiben bestehen. Die Alarm-Mutationsqueue nutzt weiterhin einen eigenen Retry-Pfad. Vitest prüft Header-Parsing, persistierte Verzögerung und Replay nach Rate-Limit; reale Browser-/Geräte- und Hintergrundausführung sind damit nicht nachgewiesen.
 
@@ -17,7 +17,7 @@ SecurityOps 2.0 ist als vollwertige Progressive Web App (PWA) nach modernen Webs
 Die lokale Speicherung erfolgt über die native Browser-IndexedDB `SecurityOps2_OfflineVault`:
 1. **`outbox` Store**: Warteschlange für erfasste Mutationen (`id`, `tenantId`, `entityType`, `action`, `payload`, `occurredAt`, `status`).
 2. **`inbox` Store**: Lokale Replikation von Mandantendaten (Objekte, Schichten, Notfallpläne).
-3. **`attachments` Store**: Allgemeiner lokaler Anhangsspeicher für explizit integrierte Workflows; Alarmfotos sind nicht angebunden.
+3. **`attachments` Store**: Allgemeiner lokaler Anhangsspeicher für explizit integrierte Workflows. Es gibt keinen Foto-Upload-/Replay-Pfad; lokal abgelegte Fotos werden nicht synchronisiert und dürfen nicht als synchronisiert angezeigt werden.
 4. **Fachspezifische Stores**: `sopAcknowledgements`, `alarmMutations`, `alarmPlanCache`, `patrolCheckpointCache`, `patrolRounds` und `planningCache` halten jeweils die dafür vorgesehenen Offline-Bestätigungen, Alarmmutationen/-caches, Kontrollgangsdaten und Planungsdaten.
 
 Die Geräte-ID wird in `localStorage` unter `secops_device_uuid` gespeichert; einen IndexedDB-Store `device_meta` gibt es nicht. Die aktuelle IndexedDB-Schemaversion ist 7.
