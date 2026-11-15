@@ -107,7 +107,7 @@ export async function authenticateJwt(req: Request, res: Response, next: NextFun
       isSuperAdmin: row.is_superadmin,
       sessionHash:tokenHash
     };
-    runWithAuthorizationContext(row.user_id, next);
+    runWithAuthorizationContext(row.user_id, row.tenant_id, next);
   } catch (error) {
     next(error);
   }

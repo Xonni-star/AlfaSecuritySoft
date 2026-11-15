@@ -85,11 +85,15 @@ export async function withTenantTransaction<T>(
   tenantId: string,
   callback: (client: PoolClient) => Promise<T>
 ): Promise<T> {
+  const requestContext = getRequestAuthorizationContext();
+  if (requestContext && requestContext.tenantId !== tenantId) {
+    throw new Error('Authenticated request cannot switch tenant context.');
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     await client.query("SELECT set_config('app.current_tenant', $1, true)", [tenantId]);
-    const requestContext = getRequestAuthorizationContext();
     await client.query(
       `SELECT set_config('app.current_user_id',$1,true),
               set_config('app.current_permission',$2,true)`,

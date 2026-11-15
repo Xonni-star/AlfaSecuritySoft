@@ -47,9 +47,21 @@ let createdJourneyPeriodId: string | undefined;
 let createdJourneyShiftId: string | undefined;
 let createdJourneyGuardbookEntryId: string | undefined;
 let createdJourneyHandoverId: string | undefined;
+let createdJourneyDocumentId: string | undefined;
 let createdJourneyPatrolCheckpointId: string | undefined;
 let createdJourneyPatrolRoundId: string | undefined;
 let createdJourneyPatrolScanMutationId: string | undefined;
+let createdAlarmScopeTestUserId: string | undefined;
+let createdAlarmScopeRoleId: string | undefined;
+let createdAlarmScopePermissionIds: string[] = [];
+let createdAlarmScopeGrantSnapshot: Array<{
+  permission_id: string;
+  site_id: string | null;
+  data_scope: 'TENANT' | 'SITE' | 'OWN';
+  can_delegate: boolean;
+}> = [];
+let createdAlarmScopeRuleId: string | undefined;
+let createdAlarmScopeStepId: string | undefined;
 let createdCrossTenantClientId: string | undefined;
 let createdCrossTenantSiteId: string | undefined;
 let createdAlarmPlanId: string | undefined;
@@ -245,6 +257,10 @@ afterAll(async () => {
     try {
       await cleanup.query('SET session_replication_role = replica');
       await cleanup.query(
+        'DELETE FROM alarm_incident_links WHERE tenant_id=$1 AND alarm_incident_id=ANY($2::uuid[])',
+        [TENANT_FFM_ID,createdAlarmIncidentIds]
+      );
+      await cleanup.query(
         `DELETE FROM emergency_management_events
          WHERE tenant_id=$1 AND (emergency_plan_id=$2 OR alarm_incident_id=ANY($3::uuid[]))`,
         [TENANT_FFM_ID,createdAlarmPlanId ?? null,createdAlarmIncidentIds]
@@ -269,6 +285,14 @@ afterAll(async () => {
         `DELETE FROM alarm_escalation_jobs WHERE tenant_id=$1 AND alarm_incident_id=ANY($2::uuid[])`,
         [TENANT_FFM_ID,createdAlarmIncidentIds]
       );
+      if (createdAlarmScopeRuleId) {
+        await cleanup.query('DELETE FROM alarm_escalation_steps WHERE tenant_id=$1 AND rule_id=$2', [
+          TENANT_FFM_ID,createdAlarmScopeRuleId
+        ]);
+        await cleanup.query('DELETE FROM alarm_escalation_rules WHERE tenant_id=$1 AND id=$2', [
+          TENANT_FFM_ID,createdAlarmScopeRuleId
+        ]);
+      }
       await cleanup.query(
         `DELETE FROM alarm_mutation_receipts
          WHERE tenant_id=$1 AND response_json->'incident'->>'id'=ANY($2::text[])`,
@@ -517,6 +541,49 @@ afterAll(async () => {
       await cleanup.query('SET session_replication_role = origin');
       cleanup.release();
     }
+  }
+  if (createdJourneyDocumentId) {
+    const cleanup = await migrationPool.connect();
+    try {
+      await cleanup.query('SET session_replication_role = replica');
+      const versions = await cleanup.query(
+        'SELECT DISTINCT storage_key FROM document_versions WHERE tenant_id=$1 AND document_id=$2',
+        [TENANT_FFM_ID, createdJourneyDocumentId]
+      );
+      await cleanup.query('DELETE FROM document_audit_events WHERE tenant_id=$1 AND document_id=$2', [TENANT_FFM_ID, createdJourneyDocumentId]);
+      await cleanup.query('DELETE FROM document_tag_assignments WHERE tenant_id=$1 AND document_id=$2', [TENANT_FFM_ID, createdJourneyDocumentId]);
+      await cleanup.query('DELETE FROM document_relationships WHERE tenant_id=$1 AND document_id=$2', [TENANT_FFM_ID, createdJourneyDocumentId]);
+      await cleanup.query('DELETE FROM document_storage_deletion_outbox WHERE tenant_id=$1 AND document_id=$2', [TENANT_FFM_ID, createdJourneyDocumentId]);
+      await cleanup.query('UPDATE document_versions SET restored_from_version=NULL WHERE tenant_id=$1 AND document_id=$2', [TENANT_FFM_ID, createdJourneyDocumentId]);
+      await cleanup.query('DELETE FROM document_versions WHERE tenant_id=$1 AND document_id=$2', [TENANT_FFM_ID, createdJourneyDocumentId]);
+      await cleanup.query('DELETE FROM documents WHERE tenant_id=$1 AND id=$2', [TENANT_FFM_ID, createdJourneyDocumentId]);
+      for (const version of versions.rows) await removeDocumentBlob(version.storage_key);
+    } finally {
+      await cleanup.query('SET session_replication_role = origin');
+      cleanup.release();
+    }
+  }
+  if (createdAlarmScopeRoleId && createdAlarmScopePermissionIds.length) {
+    await migrationPool.query(
+      'DELETE FROM tenant_role_permissions WHERE tenant_id=$1 AND role_id=$2 AND permission_id=ANY($3::uuid[])',
+      [TENANT_FFM_ID,createdAlarmScopeRoleId,createdAlarmScopePermissionIds]
+    );
+    for (const grant of createdAlarmScopeGrantSnapshot) {
+      await migrationPool.query(
+        `INSERT INTO tenant_role_permissions
+           (tenant_id,role_id,permission_id,site_id,data_scope,can_delegate)
+         VALUES ($1,$2,$3,$4,$5,$6)`,
+        [TENANT_FFM_ID,createdAlarmScopeRoleId,grant.permission_id,grant.site_id,grant.data_scope,grant.can_delegate]
+      );
+    }
+  }
+  if (createdAlarmScopeTestUserId) {
+    await migrationPool.query('DELETE FROM user_sessions WHERE user_id=$1', [createdAlarmScopeTestUserId]);
+    await migrationPool.query('DELETE FROM tenant_user_roles WHERE tenant_id=$1 AND user_id=$2', [
+      TENANT_FFM_ID,createdAlarmScopeTestUserId
+    ]);
+    await migrationPool.query('DELETE FROM alarm_mutation_receipts WHERE actor_user_id=$1', [createdAlarmScopeTestUserId]);
+    await migrationPool.query('DELETE FROM users WHERE id=$1', [createdAlarmScopeTestUserId]);
   }
   if (createdDmsFolderId) {
     await migrationPool.query('DELETE FROM document_folders WHERE tenant_id=$1 AND id=$2', ['11111111-1111-1111-1111-111111111111', createdDmsFolderId]);
@@ -1823,7 +1890,7 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
     }
   });
 
-  test('Representative business journey persists planning, SOP, guardbook, alarm, handover, patrol, report and audit records', async () => {
+  test('Phase 5 correlates alarm, guardbook, handover, patrol, DMS evidence, report and audit records', async () => {
     if (!createdWorkflowCustomerId || !createdSiteId || !createdEmployeeId) {
       throw new Error('The API-created customer, site and employee fixtures must exist before the Phase 4 journey.');
     }
@@ -2067,12 +2134,255 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
     expect(scan.status).toBe(200);
     expect(scan.body.data[0].status).toBe('SYNCED');
 
+    const incompletePatrolLink = await request(app)
+      .post(`/api/v1/alarms/${alarmId}/links`)
+      .set(authHeaders(leadToken))
+      .send({
+        recordType: 'patrol_round',
+        recordId: createdJourneyPatrolRoundId,
+        clientMutationId: `ph5-pending-patrol-${suffix}`
+      });
+    expect(incompletePatrolLink.status).toBe(404);
+
     const completedAt = new Date().toISOString();
     const completedRound = await request(app)
       .post(`/api/v1/patrol/rounds/${createdJourneyPatrolRoundId}/complete`)
       .set(authHeaders(employeeToken))
       .send({ completedAt, notes: 'Checkpoint verified.' });
     expect(completedRound.status).toBe(200);
+
+    const categories = await request(app).get('/api/v1/documents/categories').set(authHeaders(leadToken));
+    expect(categories.status).toBe(200);
+    const reportCategoryId = categories.body.data.find((item: any) => item.name === 'Einsatzberichte')?.id;
+    expect(reportCategoryId).toBeTruthy();
+    const incidentDocument = await request(app)
+      .post('/api/v1/documents')
+      .query({
+        title: `Phase 5 incident evidence ${suffix}`,
+        categoryId: reportCategoryId,
+        relationshipType: 'site',
+        relationshipId: createdSiteId
+      })
+      .set(authHeaders(leadToken))
+      .set('Content-Type', 'application/octet-stream')
+      .set('X-File-Name', encodeURIComponent(`phase5-${suffix}.pdf`))
+      .send(Buffer.from('%PDF-1.7\nPhase 5 incident evidence\n'));
+    expect(incidentDocument.status).toBe(201);
+    createdJourneyDocumentId = incidentDocument.body.data.id;
+
+    const linksToCreate = [
+      { recordType: 'guardbook', recordId: createdJourneyGuardbookEntryId, clientMutationId: `ph5-link-log-${suffix}` },
+      { recordType: 'handover', recordId: createdJourneyHandoverId, clientMutationId: `ph5-link-handover-${suffix}` },
+      { recordType: 'patrol_round', recordId: createdJourneyPatrolRoundId, clientMutationId: `ph5-link-patrol-${suffix}` },
+      { recordType: 'document', recordId: createdJourneyDocumentId, clientMutationId: `ph5-link-document-${suffix}` }
+    ];
+    const createdLinks = [];
+    for (const link of linksToCreate) {
+      const response = await request(app)
+        .post(`/api/v1/alarms/${alarmId}/links`)
+        .set(authHeaders(leadToken))
+        .send(link);
+      expect(response.status).toBe(201);
+      createdLinks.push(response.body.data);
+    }
+
+    const retriedLink = await request(app)
+      .post(`/api/v1/alarms/${alarmId}/links`)
+      .set(authHeaders(leadToken))
+      .send(linksToCreate[0]);
+    expect(retriedLink.status).toBe(200);
+    expect(retriedLink.body.data.id).toBe(createdLinks[0].id);
+
+    const duplicateTarget = await request(app)
+      .post(`/api/v1/alarms/${alarmId}/links`)
+      .set(authHeaders(leadToken))
+      .send({ ...linksToCreate[0], clientMutationId: `ph5-link-log-again-${suffix}` });
+    expect(duplicateTarget.status).toBe(200);
+    expect(duplicateTarget.body.data.id).toBe(createdLinks[0].id);
+
+    const reusedMutation = await request(app)
+      .post(`/api/v1/alarms/${alarmId}/links`)
+      .set(authHeaders(leadToken))
+      .send({ ...linksToCreate[0], recordType: 'handover', recordId: createdJourneyHandoverId });
+    expect(reusedMutation.status).toBe(409);
+
+    const linkedRecords = await request(app).get(`/api/v1/alarms/${alarmId}/links`).set(authHeaders(leadToken));
+    expect(linkedRecords.status).toBe(200);
+    expect(linkedRecords.body.data).toHaveLength(4);
+    expect(linkedRecords.body.data.map((item: any) => item.record_type).sort())
+      .toEqual(['document', 'guardbook', 'handover', 'patrol_round']);
+    const incidentReport = await request(app).get(`/api/v1/alarms/${alarmId}/report`).set(authHeaders(leadToken));
+    expect(incidentReport.status).toBe(200);
+    expect(incidentReport.body.data.linkedRecords).toHaveLength(4);
+    expect(incidentReport.body.data.auditEvents.filter((item: any) => item.action === 'incident_record_linked')).toHaveLength(4);
+
+    const otherSiteAlarm = await request(app).post('/api/v1/alarms').set(authHeaders(leadToken)).send({
+      siteId: createdSiteRestrictedSiteId,
+      alarmTypeId: alarmType.rows[0].id,
+      severity: 'Normal',
+      title: `Phase 5 out-of-scope alarm ${suffix}`,
+      description: 'Site-scope isolation fixture.'
+    });
+    expect(otherSiteAlarm.status).toBe(201);
+    const otherSiteAlarmId = otherSiteAlarm.body.data.incident.id as string;
+    createdAlarmIncidentIds.push(otherSiteAlarmId);
+
+    const scopeUser = await migrationPool.query(
+      `INSERT INTO users (email,password_hash,first_name,last_name,phone)
+       VALUES ($1,$2,'Phase Five','Scoped Reader','+49 30 401') RETURNING id`,
+      [`phase5-scope-${suffix}@example.test`, passwordHash]
+    );
+    const scopeTestUserId = scopeUser.rows[0].id as string;
+    createdAlarmScopeTestUserId = scopeTestUserId;
+    await insertTenantMembership(TENANT_FFM_ID, scopeTestUserId);
+    const scopeRole = await migrationPool.query(
+      "SELECT id FROM tenant_roles WHERE tenant_id=$1 AND name='Einsatzleitung'",
+      [TENANT_FFM_ID]
+    );
+    expect(scopeRole.rows).toHaveLength(1);
+    const scopeRoleId = scopeRole.rows[0].id as string;
+    createdAlarmScopeRoleId = scopeRoleId;
+    const scopedPermissions = await migrationPool.query(
+      `SELECT id,code FROM permissions
+       WHERE code=ANY($1::text[]) ORDER BY code`,
+      [['alarm:read','alarm:action:create','alarm:notifications:read']]
+    );
+    expect(scopedPermissions.rows.map((permission: any) => permission.code).sort())
+      .toEqual(['alarm:action:create','alarm:notifications:read','alarm:read']);
+    createdAlarmScopePermissionIds = scopedPermissions.rows.map((permission: any) => permission.id);
+    const priorScopeGrants = await migrationPool.query(
+      `SELECT permission_id,site_id,data_scope,can_delegate
+       FROM tenant_role_permissions
+       WHERE tenant_id=$1 AND role_id=$2 AND permission_id=ANY($3::uuid[])`,
+      [TENANT_FFM_ID,scopeRoleId,createdAlarmScopePermissionIds]
+    );
+    createdAlarmScopeGrantSnapshot = priorScopeGrants.rows;
+    await migrationPool.query(
+      `DELETE FROM tenant_role_permissions
+       WHERE tenant_id=$1 AND role_id=$2 AND permission_id=ANY($3::uuid[])`,
+      [TENANT_FFM_ID,scopeRoleId,createdAlarmScopePermissionIds]
+    );
+    for (const permission of scopedPermissions.rows) {
+      await migrationPool.query(
+        `INSERT INTO tenant_role_permissions
+           (tenant_id,role_id,permission_id,site_id,data_scope)
+         VALUES ($1,$2,$3,$4,'SITE')`,
+        [TENANT_FFM_ID,scopeRoleId,permission.id,createdSiteId]
+      );
+    }
+    await migrationPool.query(
+      `INSERT INTO tenant_user_roles (tenant_id,user_id,role_id,site_id,assigned_by)
+       SELECT $1,$2,$3,$4,id FROM users WHERE email=$5`,
+      [TENANT_FFM_ID,scopeTestUserId,scopeRoleId,createdSiteId,SEED_USER_EMAIL]
+    );
+    const scopedToken = await login(`phase5-scope-${suffix}@example.test`);
+
+    const scopedLinks = await request(app)
+      .get(`/api/v1/alarms/${alarmId}/links`)
+      .set(authHeaders(scopedToken));
+    const scopedReport = await request(app)
+      .get(`/api/v1/alarms/${alarmId}/report`)
+      .set(authHeaders(scopedToken));
+    expect(scopedLinks.status).toBe(200);
+    expect(scopedReport.status).toBe(200);
+    const scopedSites = await request(app).get('/api/v1/alarm-sites').set(authHeaders(scopedToken));
+    expect(scopedSites.status).toBe(200);
+    expect(scopedSites.body.data.map((site: any) => site.id)).toEqual([createdSiteId]);
+    const scopedAlarms = await request(app)
+      .get(`/api/v1/alarms?siteId=${createdSiteId}`)
+      .set(authHeaders(scopedToken));
+    expect(scopedAlarms.status).toBe(200);
+    expect(scopedAlarms.body.data.items.every((incident: any) => incident.site_id === createdSiteId)).toBe(true);
+    expect((await request(app)
+      .get(`/api/v1/alarms?siteId=${createdSiteRestrictedSiteId}`)
+      .set(authHeaders(scopedToken))).status).toBe(403);
+    const scopedDuplicateLink = await request(app)
+      .post(`/api/v1/alarms/${alarmId}/links`)
+      .set(authHeaders(scopedToken))
+      .send({ ...linksToCreate[0], clientMutationId: `ph5-scoped-repeat-${suffix}` });
+    expect(scopedDuplicateLink.status).toBe(200);
+
+    expect((await request(app).get(`/api/v1/alarms/${otherSiteAlarmId}/links`)
+      .set(authHeaders(scopedToken))).status).toBe(404);
+    expect((await request(app).get(`/api/v1/alarms/${otherSiteAlarmId}/report`)
+      .set(authHeaders(scopedToken))).status).toBe(404);
+    expect((await request(app).post(`/api/v1/alarms/${otherSiteAlarmId}/links`)
+      .set(authHeaders(scopedToken))
+      .send({ ...linksToCreate[0], clientMutationId: `ph5-scoped-denied-${suffix}` })).status).toBe(404);
+    const foreignTenantToken = await login(BAVARIA_USER_EMAIL);
+    expect((await request(app)
+      .get(`/api/v1/alarms/${alarmId}/report`)
+      .set(authHeaders(foreignTenantToken))).status).toBe(404);
+    expect((await request(app)
+      .post(`/api/v1/alarms/${alarmId}/links`)
+      .set(authHeaders(foreignTenantToken))
+      .send({ ...linksToCreate[0], clientMutationId: `ph5-foreign-tenant-${suffix}` })).status).toBe(404);
+
+    const leadUserId = (await migrationPool.query('SELECT id FROM users WHERE email=$1', [SEED_USER_EMAIL])).rows[0].id;
+    const escalationRoleId = (await migrationPool.query(
+      "SELECT id FROM roles WHERE name='Einsatzleitung' LIMIT 1"
+    )).rows[0].id;
+    const scopedRule = await migrationPool.query(
+      `INSERT INTO alarm_escalation_rules
+         (tenant_id,name,site_id,alarm_type_id,minimum_severity,created_by,updated_by)
+       VALUES ($1,$2,$3,$4,'Niedrig',$5,$5) RETURNING id`,
+      [TENANT_FFM_ID,`Phase 5 scoped status ${suffix}`,createdSiteId,alarmType.rows[0].id,leadUserId]
+    );
+    createdAlarmScopeRuleId = scopedRule.rows[0].id;
+    const scopedStep = await migrationPool.query(
+      `INSERT INTO alarm_escalation_steps
+         (tenant_id,rule_id,step_number,delay_minutes,recipient_role_id,channel)
+       VALUES ($1,$2,1,0,$3,'email') RETURNING id`,
+      [TENANT_FFM_ID,createdAlarmScopeRuleId,escalationRoleId]
+    );
+    createdAlarmScopeStepId = scopedStep.rows[0].id;
+    for (const [targetIncidentId,lastError] of [
+      [alarmId, 'Phase 5 in-scope sentinel'],
+      [otherSiteAlarmId, 'Phase 5 scope sentinel']
+    ]) {
+      await migrationPool.query(
+        `INSERT INTO alarm_escalation_jobs
+           (tenant_id,alarm_incident_id,rule_id,step_id,scheduled_at,last_error)
+         VALUES ($1,$2,$3,$4,CURRENT_TIMESTAMP,$5)`,
+        [TENANT_FFM_ID,targetIncidentId,createdAlarmScopeRuleId,createdAlarmScopeStepId,lastError]
+      );
+    }
+    const scopedEscalationStatus = await request(app)
+      .get('/api/v1/alarm-escalation-status')
+      .set(authHeaders(scopedToken));
+    expect(scopedEscalationStatus.status).toBe(200);
+    expect(scopedEscalationStatus.body.data.map((item: any) => item.alarm_incident_id)).toContain(alarmId);
+    expect(scopedEscalationStatus.body.data.map((item: any) => item.alarm_incident_id)).not.toContain(otherSiteAlarmId);
+    expect(scopedEscalationStatus.body.data.map((item: any) => item.last_error))
+      .not.toContain('Phase 5 scope sentinel');
+
+    const archivedAlarm = await request(app).post('/api/v1/alarms').set(authHeaders(leadToken)).send({
+      siteId: createdSiteId,
+      alarmTypeId: alarmType.rows[0].id,
+      severity: 'Normal',
+      title: `Phase 5 archived alarm ${suffix}`,
+      description: 'Archived incident link rejection fixture.'
+    });
+    expect(archivedAlarm.status).toBe(201);
+    const archivedAlarmId = archivedAlarm.body.data.incident.id as string;
+    createdAlarmIncidentIds.push(archivedAlarmId);
+    const resolved = await request(app).post(`/api/v1/alarms/${archivedAlarmId}/transitions`)
+      .set(authHeaders(leadToken))
+      .send({ status: 'abgeschlossen', note: 'Phase 5 test resolution.', revisionVersion: 1 });
+    expect(resolved.status).toBe(200);
+    const archived = await request(app).post(`/api/v1/alarms/${archivedAlarmId}/transitions`)
+      .set(authHeaders(leadToken))
+      .send({
+        status: 'archiviert',
+        note: 'Phase 5 test archive.',
+        revisionVersion: resolved.body.data.incident.revision_version
+      });
+    expect(archived.status).toBe(200);
+    const archivedLink = await request(app)
+      .post(`/api/v1/alarms/${archivedAlarmId}/links`)
+      .set(authHeaders(scopedToken))
+      .send({ ...linksToCreate[0], clientMutationId: `ph5-archived-link-${suffix}` });
+    expect(archivedLink.status).toBe(409);
 
     const coverage = await request(app)
       .get(`/api/v1/planning/reports/coverage?from=${shiftDate}&to=${shiftDate}`)
@@ -2095,7 +2405,9 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
          (SELECT count(*)::int FROM alarm_incidents WHERE tenant_id=$1 AND id=$5) AS alarms,
          (SELECT count(*)::int FROM handovers WHERE tenant_id=$1 AND id=$6 AND shift_id=$7) AS handovers,
          (SELECT count(*)::int FROM patrol_scans WHERE tenant_id=$1 AND round_id=$8) AS patrol_scans,
-         (SELECT count(*)::int FROM patrol_rounds WHERE tenant_id=$1 AND id=$8 AND status='completed') AS completed_rounds`,
+         (SELECT count(*)::int FROM patrol_rounds WHERE tenant_id=$1 AND id=$8 AND status='completed') AS completed_rounds,
+         (SELECT count(*)::int FROM alarm_incident_links WHERE tenant_id=$1 AND alarm_incident_id=$5) AS incident_links,
+         (SELECT count(*)::int FROM emergency_management_events WHERE tenant_id=$1 AND alarm_incident_id=$5 AND action='incident_record_linked') AS link_audit_events`,
       [
         TENANT_FFM_ID,
         createdJourneyEmployeeId,
@@ -2114,7 +2426,9 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
       alarms: 1,
       handovers: 1,
       patrol_scans: 1,
-      completed_rounds: 1
+      completed_rounds: 1,
+      incident_links: 4,
+      link_audit_events: 4
     });
   });
 

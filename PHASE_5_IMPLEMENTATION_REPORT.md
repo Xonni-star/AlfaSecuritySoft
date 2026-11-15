@@ -1,0 +1,73 @@
+# Phase 5 implementation report
+
+**Status:** Partial implementation; Phase 5 acceptance is incomplete. Production readiness is **not approved**.
+
+**Baseline checked:** 2026-11-15, `main` at `77fdb0955e3bbbef01690edc93dc630e443bfbe8`.
+
+**Work branch:** `xonni-star-phase-5-e2e-acceptance` (the app-managed branch prefix is applied).
+**Hosted checks for this branch:** Pending PR creation.
+
+## Baseline and scope
+
+At the baseline check, PR #44 (Phase 4) was merged and no PRs were open. Main CI run [43702382063](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702382063) passed seven jobs, and release-artifact run [43702607678](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702607678) passed both jobs. These are baseline results, not Phase 5 or production acceptance.
+
+This increment adds explicit alarm permission-scope enforcement, structured incident links to existing operational records, a combined incident report, guarded reconnect refresh, and mobile network-state accessibility. It exercises existing planning, guardbook, handover, patrol, and DMS APIs in a PostgreSQL-backed journey. It does not claim a new planning module, provider integration, or unsupported offline media flow.
+
+## Implementation and changed files
+
+- **Authorization and RLS:** `requestAuthorizationContext` carries the authenticated user, tenant, and active route permission. Tenant transactions reject a tenant mismatch. Alarm site scope comes only from the active permission's explicit `TENANT` or `SITE` grants; role labels and employee assignments do not broaden it. Offline alarm mutations select and set their own permission code before the tenant transaction.
+- **Cross-module workflow and integrity:** Migration `039_alarm_incident_links.sql` adds tenant-composite foreign keys, one-target-per-link checks, idempotency receipts, unique target constraints, tenant RLS/FORCE RLS, and the `incident_record_linked` audit action while preserving existing actions. `GET /alarms/:id/links`, `POST /alarms/:id/links`, and `GET /alarms/:id/report` expose scoped links and an aggregate report. Supported records are guardbook entries, handovers, completed patrol rounds, and site-related documents. Duplicate targets and matching retries are idempotent; mutation-ID payload changes conflict; archived incidents cannot receive links.
+- **Offline/mobile:** The store can refresh after successful sync or an empty outbox only when the current identity is still active; pending, failed, or conflicted generic outbox work suppresses that refresh. The reconnect control now exposes an accessible name, pressed state, and visible online/offline label.
+- **CI/test inventory:** The CI-only standalone migration-test rerun was removed. Migrations remain covered by the full backend Jest suite; no unique test definitions were deleted.
+
+Changed files: `.github/workflows/ci.yml`, `MAINLINE_INTEGRATION_STATUS.md`, `PHASE_5_IMPLEMENTATION_REPORT.md`, `README.md`, `frontend/ALARM_EMERGENCY_API.md`, `frontend/BACKUP_RESTORE.md`, `frontend/USER_ADMINISTRATION_API.md`, `frontend/backend/src/app.ts`, `frontend/backend/src/config/database.ts`, `frontend/backend/src/controllers/alarmWorkflowController.ts`, `frontend/backend/src/middleware/auth.ts`, `frontend/backend/src/middleware/requestAuthorizationContext.ts`, `frontend/backend/src/migrations/039_alarm_incident_links.sql`, `frontend/backend/src/tests/alarmWorkflowController.test.ts`, `frontend/backend/src/tests/api_integration.test.ts`, `frontend/backend/src/tests/auth_site_scope.test.ts`, `frontend/backend/src/tests/migrations.test.ts`, `frontend/backend/src/tests/tenant_isolation.test.ts`, `frontend/components/MobileAppShell.tsx`, `frontend/deploy/test_backup_restore.sh`, `frontend/store.ts`, `frontend/tests/MobileNavigationAccessibility.test.tsx`, and `frontend/tests/storeApiIntegration.test.ts`.
+
+## Security and workflow evidence
+
+The integration journey covers alarm creation, linking a guardbook entry, handover, completed patrol round, and DMS document, then verifies the aggregate report and append-only audit events. It also checks duplicate links, repeat mutation IDs, changed payloads, out-of-scope site reads/writes, a foreign tenant, archived-incident protection, and permission-scoped alarm/escalation data. Controller tests cover explicit site grants, role-name non-escalation, required archive permission, sync authorization, and private-contact redaction.
+
+| Critical scenario | Retained evidence |
+|---|---|
+| Authentication/session boundaries | `auth.test.ts`, `auth_session.test.ts`, `auth_boundary.test.ts`, plus API integration login/session flows |
+| Tenant isolation and RLS | `tenant_isolation.test.ts`, `auth_site_scope.test.ts`, PostgreSQL `api_integration.test.ts`, and `migrations.test.ts` |
+| Authorization, site scope, and role boundaries | `alarmWorkflowController.test.ts`, `syncAuthorization.test.ts`, `auth_site_scope.test.ts`, and the Phase 5 API journey |
+| Data integrity and migration | Full migration Jest suite; fresh apply and post-restore rerun through migration 039 |
+| Idempotency and offline-loss/conflict handling | API integration and frontend `storeApiIntegration.test.ts`; alarm mutation receipts and outbox conflict paths remain exercised |
+| Restore and service recovery after failure | `test_backup_restore.sh --database-only`, including tenant RLS and failed-restore service restart |
+| Mobile reconnect/accessibility | `MobileNavigationAccessibility.test.tsx` and frontend offline store tests |
+
+## Test reduction and measured runtimes
+
+The objective was an evidence-based reduction of roughly 50%, not a reduction at the expense of critical coverage. The baseline hosted measurements were frontend **122 tests / 19 files, 9.13 s**; backend **288 tests / 29 suites, 68.792 s**; and a separate migration invocation repeating **70 tests, 50.634 s**. That is 480 test executions across the baseline invocations, including 70 duplicate executions. The unique baseline definitions totaled 410.
+
+| Suite/job | Baseline | Phase 5 result |
+|---|---:|---:|
+| Frontend | 122 tests / 19 files; 9.13 s (hosted baseline) | 128 tests / 19 files; 8.36 s (local) |
+| Backend Jest, including migrations | 288 tests / 29 suites; 68.792 s (hosted baseline) | 290 tests / 29 suites; 114.43 s (local PostgreSQL) |
+| Standalone migration rerun | 70 duplicate tests; 50.634 s (hosted baseline) | Removed; migration suite still runs in backend Jest |
+| Executed test count | 480 baseline executions | 418 Phase 5 executions |
+| Unique test definitions | 410 baseline | 418 Phase 5 |
+
+The CI change eliminates **70 redundant executions** (14.6% of baseline invocations and 50.634 s in the measured baseline job). Eight new test definitions were added, so the net execution-count reduction is **62/480 (12.9%)**. These measurements came from hosted baseline and local Phase 5 runs, so frontend/backend elapsed-time comparisons are not fully environment-matched. No unique tests were removed or disabled. The evidence supports only this deduplication; a 50% cut would remove or weaken distinct coverage and is not justified.
+
+## Verification results
+
+- Backend: **29/29 suites and 290/290 tests passed**; PostgreSQL-backed API and migration tests included. Backend TypeScript build passed.
+- Frontend: **19/19 files and 128/128 tests passed**; typecheck and production build passed. Vite emitted an existing warning about `__dirname` under its native config loader; the build completed.
+- Backup/restore: `npm run test:backup-restore -- --database-only` passed. It applied and re-ran all 37 migrations through 039, verified RLS/FORCE RLS on nine DMS tables and `alarm_incident_links`, tested restored tenant-scoped data and the failure/restart path, and verified cleanup of its disposable resources.
+- **Hosted Phase 5 CI:** Pending PR creation; no result is claimed here.
+
+## Blockers, risks, and production checklist
+
+- **BLOCKED locally:** The combined PostgreSQL/MinIO restore path previously failed pulling `quay.io/minio/mc:RELEASE.2025-02-08T19-14-21Z` with `401 UNAUTHORIZED`. The database-only path passed; this does not prove DMS-object restore. Hosted restore CI remains pending.
+- **NOT TESTED:** Physical mobile devices, browser/device matrix, camera/NFC/GPS behavior, multi-device offline acceptance, and external email/push/dispatch providers. The accessible reconnect control and offline store are covered in automated tests only.
+- **NOT MEASURED:** Production restore/RPO/RTO, performance under representative data, and `EXPLAIN ANALYZE`. No performance indexes or query optimizations were added; migration indexes are limited to link uniqueness/integrity.
+- **NOT APPROVED for production:** No production credentials, data, provider, or deployment were used. Before approval, complete provider-backed database plus object restore drills and measure RPO/RTO; exercise supported browsers and target mobile devices with offline-loss/conflict cases; configure and verify production storage/scanner and notification providers; review monitoring, operational recovery, migration rollout, tenant/RLS controls, and security; obtain domain/legal and product acceptance.
+
+**Evidence-based ratings:** Local implementation and automated PostgreSQL/API coverage — **verified for the stated scope**. Full Phase 5 acceptance — **incomplete**. External-provider and device acceptance — **not tested/blocked as noted**. Production readiness — **not approved**.
+
+## Next steps
+
+1. Review the Phase 5 diff and obtain hosted PR CI results, including the complete restore job; update this report with those results.
+2. Resolve or document the local MinIO image-access blocker, then run a full database-plus-object restore against an authorized test provider.
+3. Complete browser/device and external-provider acceptance; record actual production-like RPO/RTO and performance evidence before any production-readiness decision.

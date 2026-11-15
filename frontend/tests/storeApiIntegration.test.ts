@@ -374,6 +374,189 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     }
   });
 
+  test('refreshes the tenant snapshot after a fully acknowledged reconnect sync', async () => {
+    mockReadEndpoints();
+    const mutation = {
+      id: 'reconnect-guardbook-mutation',
+      tenantId: 'tenant-frankfurt',
+      userId: 'user-regression',
+      entityType: 'guardbook',
+      action: 'CREATE',
+      payload: { title: 'Offline-Vorfall' },
+      occurredAt: '2026-11-13T10:00:00.000Z',
+      baseVersion: 1,
+      retryCount: 0,
+      status: 'PENDING'
+    };
+    vi.spyOn(offlineVault, 'getPendingOutbox').mockResolvedValueOnce([mutation] as any);
+    vi.spyOn(offlineVault, 'getOutbox').mockResolvedValueOnce([]);
+    const markSynced = vi.spyOn(offlineVault, 'markSynced').mockResolvedValue(undefined);
+    mockedApi.post.mockResolvedValueOnce([{
+      clientUuid: mutation.id,
+      status: 'SYNCED',
+      serverId: 'server-logbook-entry',
+      serverVersion: 1
+    }]);
+    useSecurityStore.setState({
+      isOnline: true,
+      isAuthenticated: true,
+      currentTenantId: mutation.tenantId,
+      currentUserId: mutation.userId,
+      authUser: {
+        id: mutation.userId, email: '', fullName: '', role: '',
+        tenantId: mutation.tenantId, tenantName: '', permissions: []
+      },
+      guardBook: [{
+        id: 'local-stale-entry',
+        tenantId: mutation.tenantId,
+        title: 'Veralteter lokaler Stand'
+      }] as any
+    });
+
+    const result = await useSecurityStore.getState().triggerManualSync({ refreshAfterSync: true });
+
+    expect(result).toMatchObject({ success: 1, failed: 0, conflicts: 0 });
+    expect(markSynced).toHaveBeenCalledWith(mutation.id);
+    expect(mockedApi.get).toHaveBeenCalledWith('/logbook');
+    expect(useSecurityStore.getState().guardBook).toEqual([
+      expect.objectContaining({ id: logbookRow.id, title: 'API Wachbucheintrag' })
+    ]);
+  });
+
+  test('refreshes an empty outbox only when reconnect explicitly requests it', async () => {
+    vi.spyOn(offlineVault, 'getPendingOutbox').mockResolvedValue([]);
+    vi.spyOn(offlineVault, 'getOutbox').mockResolvedValue([]);
+    const refresh = vi.spyOn(useSecurityStore.getState(), 'loadTenantData').mockResolvedValue(undefined);
+    useSecurityStore.setState({
+      isOnline: true,
+      isAuthenticated: true,
+      currentTenantId: 'tenant-frankfurt',
+      currentUserId: 'user-regression',
+      authUser: {
+        id: 'user-regression', email: '', fullName: '', role: '',
+        tenantId: 'tenant-frankfurt', tenantName: '', permissions: []
+      }
+    });
+
+    await useSecurityStore.getState().triggerManualSync();
+    expect(refresh).not.toHaveBeenCalled();
+
+    await useSecurityStore.getState().triggerManualSync({ refreshWhenOutboxEmpty: true });
+
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(refresh).toHaveBeenCalledWith({ preserveCurrentData: true });
+  });
+
+  test('does not refresh an empty pending queue while failed or conflicted outbox rows remain', async () => {
+    const unresolvedRows = [
+      {
+        id: 'deferred-failed-mutation',
+        tenantId: 'tenant-frankfurt',
+        userId: 'user-regression',
+        entityType: 'guardbook',
+        action: 'CREATE',
+        payload: { title: 'Retry later' },
+        occurredAt: '2026-11-13T10:00:00.000Z',
+        baseVersion: 1,
+        retryCount: 1,
+        status: 'FAILED',
+        retryable: true,
+        nextAttemptAt: new Date(Date.now() + 60_000).toISOString()
+      },
+      {
+        id: 'conflicted-mutation',
+        tenantId: 'tenant-frankfurt',
+        userId: 'user-regression',
+        entityType: 'guardbook',
+        action: 'UPDATE',
+        payload: { title: 'Needs review' },
+        occurredAt: '2026-11-13T10:01:00.000Z',
+        baseVersion: 1,
+        retryCount: 0,
+        status: 'CONFLICT'
+      }
+    ];
+    vi.spyOn(offlineVault, 'getPendingOutbox').mockResolvedValue([]);
+    vi.spyOn(offlineVault, 'getOutbox').mockResolvedValue(unresolvedRows as any);
+    const refresh = vi.spyOn(useSecurityStore.getState(), 'loadTenantData').mockResolvedValue(undefined);
+    useSecurityStore.setState({
+      isOnline: true,
+      isAuthenticated: true,
+      currentTenantId: 'tenant-frankfurt',
+      currentUserId: 'user-regression',
+      authUser: {
+        id: 'user-regression', email: '', fullName: '', role: '',
+        tenantId: 'tenant-frankfurt', tenantName: '', permissions: []
+      }
+    });
+
+    const result = await useSecurityStore.getState().triggerManualSync({ refreshWhenOutboxEmpty: true });
+
+    expect(result).toMatchObject({ success: 0, failed: 0, conflicts: 0 });
+    expect(refresh).not.toHaveBeenCalled();
+    expect(useSecurityStore.getState().syncQueue).toMatchObject([
+      { id: 'deferred-failed-mutation', status: 'failed' },
+      { id: 'conflicted-mutation', status: 'conflict' }
+    ]);
+  });
+
+  test('does not refresh after the sync identity changes while checking an empty outbox', async () => {
+    let resolveOutbox!: (records: any[]) => void;
+    vi.spyOn(offlineVault, 'getPendingOutbox').mockResolvedValue([]);
+    const getOutbox = vi.spyOn(offlineVault, 'getOutbox').mockReturnValueOnce(
+      new Promise(resolve => { resolveOutbox = resolve; })
+    );
+    const refresh = vi.spyOn(useSecurityStore.getState(), 'loadTenantData').mockResolvedValue(undefined);
+    useSecurityStore.setState({
+      isOnline: true,
+      isAuthenticated: true,
+      currentTenantId: 'tenant-frankfurt',
+      currentUserId: 'user-regression',
+      authUser: {
+        id: 'user-regression', email: '', fullName: '', role: '',
+        tenantId: 'tenant-frankfurt', tenantName: '', permissions: []
+      }
+    });
+
+    const sync = useSecurityStore.getState().triggerManualSync({ refreshWhenOutboxEmpty: true });
+    await vi.waitFor(() => expect(getOutbox).toHaveBeenCalledOnce());
+    useSecurityStore.setState({
+      currentUserId: 'different-user',
+      authUser: {
+        id: 'different-user', email: '', fullName: '', role: '',
+        tenantId: 'tenant-frankfurt', tenantName: '', permissions: []
+      }
+    });
+    resolveOutbox([]);
+
+    await sync;
+
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  test('preserves the current offline view when a post-sync snapshot endpoint fails', async () => {
+    mockReadEndpoints();
+    mockedApi.get.mockImplementation((endpoint: string) => endpoint === '/logbook'
+      ? Promise.reject(new Error('Snapshot temporarily unavailable'))
+      : readEndpoint(endpoint));
+    const localEntry = {
+      id: 'local-offline-entry',
+      tenantId: 'tenant-frankfurt',
+      title: 'Lokal bestätigter Eintrag'
+    };
+    useSecurityStore.setState({
+      isOnline: false,
+      currentTenantId: 'tenant-frankfurt',
+      currentUserId: 'user-regression',
+      guardBook: [localEntry] as any
+    });
+
+    await useSecurityStore.getState().loadTenantData({ preserveCurrentData: true });
+
+    expect(useSecurityStore.getState().guardBook).toEqual([localEntry]);
+    expect(useSecurityStore.getState().dataLoadError).toContain('Snapshot temporarily unavailable');
+  });
+
   test('retries a server-committed mutation after restart without applying its effect twice', async () => {
     const originalIndexedDB = globalThis.indexedDB;
     offlineVault.close();
