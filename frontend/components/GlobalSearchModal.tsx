@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, ArrowRight, Building, MapPin, Users, BookOpen, Key, CheckSquare, FileText } from 'lucide-react';
 import { useSecurityStore } from '../store';
 import { GlobalSearchResult } from '../types';
@@ -12,6 +12,9 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, on
   const { performGlobalSearch, setActiveTab } = useSecurityStore();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<GlobalSearchResult[]>([]);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (query.trim().length >= 2) {
@@ -21,12 +24,47 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, on
     }
   }, [query, performGlobalSearch]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialogRef.current?.querySelector<HTMLInputElement>('input')?.focus();
+    return () => {
+      if (previouslyFocused?.isConnected) previouslyFocused.focus();
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSelectResult = (targetTab: string) => {
     setActiveTab(targetTab);
     onClose();
     setQuery('');
+  };
+
+  const handleDialogKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      onCloseRef.current();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const focusableElements = dialogRef.current?.querySelectorAll<HTMLElement>(
+      'input:not([disabled]), button:not([disabled])'
+    );
+    if (!focusableElements?.length) return;
+
+    const first = focusableElements[0];
+    const last = focusableElements[focusableElements.length - 1];
+    if (event.shiftKey && (document.activeElement === first || !dialogRef.current?.contains(document.activeElement))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !dialogRef.current?.contains(document.activeElement))) {
+      event.preventDefault();
+      first.focus();
+    }
   };
 
   const getCategoryIcon = (cat: GlobalSearchResult['category']) => {
@@ -44,25 +82,40 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, on
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-20">
-      <div className="bg-[#0b1329] border border-slate-700 rounded-2xl max-w-2xl w-full flex flex-col shadow-2xl overflow-hidden ring-1 ring-white/10">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="global-search-dialog-title"
+        onKeyDown={handleDialogKeyDown}
+        className="bg-[#0b1329] border border-slate-700 rounded-2xl max-w-2xl w-full flex flex-col shadow-2xl overflow-hidden ring-1 ring-white/10"
+      >
+        <h2 id="global-search-dialog-title" className="sr-only">Globale Suche</h2>
         {/* Search Header */}
         <div className="p-4 border-b border-slate-800 flex items-center gap-3 bg-[#0f172a]">
           <Search className="w-5 h-5 text-blue-400 shrink-0" />
           <input
             type="text"
-            autoFocus
+            aria-label="Globale Suche"
+            aria-controls="global-search-results"
+            aria-expanded={query.trim().length >= 2}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Globale Suche über Kunden, Objekte, Mitarbeiter, Wachbuch, Schlüssel & Dokumente..."
             className="w-full bg-transparent text-sm text-slate-100 focus:outline-none placeholder:text-slate-500 font-medium"
           />
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Suche schließen"
+            className="p-1 rounded-lg text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Results List */}
-        <div className="max-h-96 overflow-y-auto p-3 space-y-1 text-xs">
+        <div id="global-search-results" aria-live="polite" className="max-h-96 overflow-y-auto p-3 space-y-1 text-xs">
           {query.trim().length < 2 ? (
             <div className="p-6 text-center text-slate-500 text-xs">
               Tippen Sie mindestens 2 Zeichen ein, um systemweit zu suchen...
@@ -73,10 +126,11 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, on
             </div>
           ) : (
             results.map((res) => (
-              <div
+              <button
+                type="button"
                 key={`${res.category}-${res.id}`}
                 onClick={() => handleSelectResult(res.targetTab)}
-                className="p-3 rounded-xl bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 cursor-pointer flex items-center justify-between transition group"
+                className="w-full text-left p-3 rounded-xl bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 flex items-center justify-between transition group"
               >
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-slate-800/90 shrink-0">
@@ -96,7 +150,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, on
                   </span>
                   <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-400 group-hover:translate-x-0.5 transition" />
                 </div>
-              </div>
+              </button>
             ))
           )}
         </div>
