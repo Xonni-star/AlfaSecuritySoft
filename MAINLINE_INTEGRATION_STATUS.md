@@ -2,7 +2,7 @@
 
 **Status checked:** 2026-11-15
 
-**Main:** `77fdb0955e3bbbef01690edc93dc630e443bfbe8`
+**Main:** `24c14ba599017d1f35e94533393c209300caf28d`
 
 **Project status:** In development; not approved for production.
 
@@ -10,7 +10,7 @@ This report distinguishes implementation in merged code, automated CI, isolated 
 
 ## Pull requests and current main CI
 
-PRs [#25](https://github.com/Xonni-star/SecurityOps-2.0/pull/25) through [#44](https://github.com/Xonni-star/SecurityOps-2.0/pull/44) are merged. At the latest baseline check, no PRs were open. PR #44 (Phase 4) merged on 2026-11-15 with merge commit `77fdb0955e3bbbef01690edc93dc630e443bfbe8`. Main CI run [43702382063](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702382063) passed all seven jobs on that exact commit; release-artifact run [43702607678](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702607678) passed both packaging and validation jobs. The older release-artifact failure [43695992978](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695992978) is historical, not the current mainline result. The verified merge commits for PRs #25–#34 are:
+PRs [#25](https://github.com/Xonni-star/SecurityOps-2.0/pull/25) through [#45](https://github.com/Xonni-star/SecurityOps-2.0/pull/45) are merged. PR #45 (Phase 5) merged on 2026-11-15 at `24c14ba599017d1f35e94533393c209300caf28d`. No PRs were open at the mainline baseline check. Main CI run [43710871856](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43710871856) passed all seven jobs on that exact commit; release-artifact run [43711105799](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43711105799) passed both packaging and validation jobs. The preceding Phase 4 mainline run [43702382063](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702382063) and release run [43702607678](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702607678) remain valid historical evidence for commit `77fdb0955e3bbbef01690edc93dc630e443bfbe8`, not the current mainline result. The older release-artifact failure [43695992978](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695992978) is also historical. Verified merge commits for PRs #25–#34 are:
 
 | PR | Merged commit |
 |---|---|
@@ -39,8 +39,27 @@ PRs [#35](https://github.com/Xonni-star/SecurityOps-2.0/pull/35) through [#38](h
 | #42 | `556d7b7` | Harden offline sync and SOP assignment workflows, enforce document relationship/owner scope, and update restore migration expectations. |
 | #43 | `ba9ab4d` | Phase 3 security, integration, and release hardening. |
 | #44 | `77fdb09` | Phase 4 integration hardening. |
+| #45 | `24c14ba` | Phase 5 scoped alarm workflows and offline safety. |
 
-The current main CI run [43702382063](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702382063) passed its seven jobs: root startup, frontend, PostgreSQL/backend, ClamAV adapter, DMS API, isolated restore, and production Docker. The subsequent release-artifact run [43702607678](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702607678) passed both packaging and validation, including extraction, provenance checks, and production-dependency installation. The older failure [43695992978](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695992978) exposed the missing-hidden-file issue; the current mainline release run demonstrates that the artifact validates now. These are CI/artifact results, not a production deployment or acceptance result.
+The current main CI run [43710871856](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43710871856) passed its seven jobs: root startup, frontend, PostgreSQL/backend, ClamAV adapter, DMS API, isolated restore, and production Docker. Its test output reports 29/29 backend suites and 291/291 Jest tests, and 19/19 frontend test files passed. The separate release-artifact run [43711105799](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43711105799) passed both packaging and validation jobs, including extraction, provenance checks, and production-dependency installation. The older failure [43695992978](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695992978) exposed the missing-hidden-file issue; the current mainline release run demonstrates that the artifact validates now. These are CI/artifact results, not a production deployment or acceptance result.
+
+## Phase 6 PR #46 validation
+
+PR [#46](https://github.com/Xonni-star/SecurityOps-2.0/pull/46) is open against `main` from the exact remote branch `phase-6-technical-consolidation`. It contains the local Phase 6 increment in `frontend/components/Navbar.tsx` and `frontend/tests/NavbarAccessibility.test.tsx`; these changes are not part of the `main` baseline above. Dashboard and quick-search navigation now use semantic keyboard-operable buttons, icon-only actions have accessible names, and the online/offline control exposes its state. One focused regression case was added.
+
+Hosted CI run [43713451943](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43713451943) passed **7/7 jobs** on code/test commit `f6df5f509db530bcf780824442cf54becc305e23`: root startup, frontend, PostgreSQL/backend, ClamAV adapter, DMS API, full-schema/object-snapshot restore, and production Docker. This run validates that exact PR head only. For any later PR head, check the PR Checks tab for its current result.
+
+The CD release-artifact workflow is triggered by `workflow_run` on `main` only, so it was not triggered for PR #46. Release-artifact run [43711105799](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43711105799) remains baseline evidence for main commit `24c14ba599017d1f35e94533393c209300caf28d`; it does not validate the Phase 6 PR head. PR #46 remains open; no merge or deployment is claimed.
+
+Local test inventory changed from the Phase 5/main baseline of 29 backend suites / 291 tests and 19 frontend files / 128 tests to 29 / 291 and 20 frontend files / 129 tests. No cases were removed. The following local checks passed:
+
+- Frontend typecheck, 20/20 Vitest files and 129/129 tests, and production build.
+- Backend TypeScript build and 29/29 Jest suites / 291/291 tests against an isolated PostgreSQL 16 instance after applying and seeding the full schema.
+- 37 migrations applied; database-only backup/restore passed, including post-restore migration/RLS checks and the failed-restore service-restart path.
+- Root `npm ci` and root structure check; production Compose validation and backend/frontend Docker image builds; `git diff --check`.
+- Dependency audits: frontend 0 findings; backend full dependency tree 7 LOW `deepmerge@4.3.1` findings (GHSA-gcqx-w48m-w2h4) in development dependencies; backend `--omit=dev` 0 findings. Do not force the breaking Jest downgrade suggested by npm.
+
+The first local backend test attempt without the required test environment failed at the deliberate configuration guard. The complete run with test-only environment configuration and isolated PostgreSQL 16 passed; the initial guarded failure is not counted as a passing test run. The database-only restore excluded S3 and ClamAV. External providers, physical devices, and production deployment have not been tested. See [PHASE_6_IMPLEMENTATION_REPORT.md](./PHASE_6_IMPLEMENTATION_REPORT.md) for scope and limits.
 
 Main CI run [43612331431](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43612331431) passed all seven jobs on `4b7cd7de1b26755a0379b67f7222d55ef2deeb4b`, including root checks/startup, frontend tests/build, backend PostgreSQL/migration/build/Jest, ClamAV adapter integration, full DMS API integration, full-schema backup/restore integration, and production Docker configuration/image builds. Release-artifacts run [43612645484](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43612645484) also succeeded on the same commit, building a package from CI artifacts. This is artifact generation, not a production deployment.
 
@@ -64,9 +83,11 @@ The PR #38 restore job runs the repository migration runner across the full curr
 
 | Evidence type | What is established | What is not established |
 |---|---|---|
-| Implementation | PRs #25–#44 are merged into the listed mainline; the current main contains their changes. | End-user acceptance or production readiness. |
-| Automated CI | All seven jobs passed on exact current main commit `77fdb0955e3bbbef01690edc93dc630e443bfbe8`; both release-artifact jobs passed on the same commit. | Deployed configuration, production traffic, or successful operation in a customer environment. |
+| Implementation | PRs #25–#45 are merged into the listed mainline; the current main contains their changes. | End-user acceptance or production readiness. |
+| Automated CI | All seven jobs passed on exact current main commit `24c14ba599017d1f35e94533393c209300caf28d`; both release-artifact jobs passed for that commit. | Deployed configuration, production traffic, or successful operation in a customer environment. |
 | Isolated tests | DMS API/scanner and full-schema restore checks, plus focused planning/offline tests, exercise their stated test scopes. | Full production installation or restore, external-provider acceptance, or all-device/browser behavior. |
 | Production/provider acceptance | None established by this report. | Production rollout and restore, external-provider acceptance, browser/device acceptance, and legal/domain review remain outstanding. |
 
 No full production installation or restore, external-provider acceptance, legal review, or browser/device acceptance has been established. The backend development dependency tree's last recorded audit identified a LOW `deepmerge@4.3.1` advisory in Jest/`ts-jest` development dependencies; the production-only audit found no production findings at that snapshot. This is not a production dependency finding.
+
+Phase 5's implementation details and its local/hosted test snapshot are preserved in [PHASE_5_IMPLEMENTATION_REPORT.md](./PHASE_5_IMPLEMENTATION_REPORT.md). Phase 6's implementation, local verification, PR #46 hosted result, evidence limits, and next-phase recommendations are in [PHASE_6_IMPLEMENTATION_REPORT.md](./PHASE_6_IMPLEMENTATION_REPORT.md).

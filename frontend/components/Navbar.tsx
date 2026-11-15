@@ -67,24 +67,29 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         )}
 
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20 ring-1 ring-white/20">
+        <button
+          type="button"
+          onClick={() => setActiveTab('dashboard')}
+          aria-label="Zum Dashboard"
+          className="flex items-center gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+        >
+          <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20 ring-1 ring-white/20">
             <Shield className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
+          </span>
+          <span className="flex flex-col">
+            <span className="flex items-center gap-1.5">
               <span className="font-extrabold text-base sm:text-lg tracking-wider text-white">
                 SECURITY<span className="text-blue-400">OPS</span>
               </span>
               <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/30">
                 2.0
               </span>
-            </div>
-            <p className="text-[9px] text-slate-400 tracking-tight hidden lg:block">
+            </span>
+            <span className="text-[9px] text-slate-400 tracking-tight hidden lg:block">
               DIN 77200 & § 34a GewO Enterprise Core
-            </p>
-          </div>
-        </div>
+            </span>
+          </span>
+        </button>
 
         {/* Multi-Tenant Switcher */}
         <div className="hidden sm:flex items-center gap-1.5 ml-2 pl-3 border-l border-slate-800">
@@ -110,22 +115,26 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Global Quick Search (Ctrl+K) */}
-      <div
+      <button
+        type="button"
         onClick={onOpenGlobalSearch}
-        className="hidden xl:flex items-center relative max-w-xs w-full mx-2 cursor-pointer group"
+        aria-label="Globale Suche öffnen"
+        className="hidden xl:flex items-center relative max-w-xs w-full mx-2 cursor-pointer group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
       >
         <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 group-hover:text-blue-400 transition-colors" />
-        <div className="w-full bg-slate-900/90 text-xs text-slate-400 pl-9 pr-3 py-1.5 rounded-lg border border-slate-800 group-hover:border-blue-500/50 flex items-center justify-between">
+        <span className="w-full bg-slate-900/90 text-xs text-slate-400 pl-9 pr-3 py-1.5 rounded-lg border border-slate-800 group-hover:border-blue-500/50 flex items-center justify-between">
           <span>Objekte, Wachkräfte, Vorfälle...</span>
           <kbd className="px-1.5 py-0.2 rounded bg-slate-800 text-[10px] font-mono text-slate-400">Ctrl+K</kbd>
-        </div>
-      </div>
+        </span>
+      </button>
 
       {/* Action Controls */}
       <div className="flex items-center gap-1.5 sm:gap-2">
         {/* Toggle Mobile App Shell vs Desktop Workspace */}
         <button
+          type="button"
           onClick={() => setActiveTab(activeTab === 'mobile_app' ? 'dashboard' : 'mobile_app')}
+          aria-label={activeTab === 'mobile_app' ? 'Desktop-Modus öffnen' : 'Mitarbeiter-App öffnen'}
           className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition ${
             activeTab === 'mobile_app'
               ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
@@ -138,7 +147,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
 
         <button
+          type="button"
           onClick={onOpenGlobalSearch}
+          aria-label="Globale Suche öffnen"
           className="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 xl:hidden transition"
           title="Globale Suche"
         >
@@ -146,7 +157,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
 
         <button
+          type="button"
           onClick={toggleTheme}
+          aria-label={`Wechseln zu ${theme === 'dark' ? 'Light Mode' : 'Dark Mode'}`}
           className="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 transition"
           title={`Wechseln zu ${theme === 'dark' ? 'Light Mode' : 'Dark Mode'}`}
         >
@@ -155,7 +168,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-lg p-1">
           <button
+            type="button"
             onClick={toggleNetworkSimulation}
+            aria-label={isOnline ? 'Online. Offline-Modus aktivieren' : 'Offline. Verbindung wiederherstellen'}
+            aria-pressed={!isOnline}
             className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold transition ${
               isOnline
                 ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
@@ -167,7 +183,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={onOpenSyncManager}
+            aria-label={`Offline-Synchronisierung öffnen. Ausstehende Einträge: ${pendingSyncs}`}
             className="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-800 text-slate-300 text-xs font-mono"
             title="Offline-Sync"
           >
@@ -181,7 +199,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         <button
+          type="button"
           onClick={onOpenNotifications}
+          aria-label={`Benachrichtigungscenter öffnen. Ungelesen: ${unreadDeliveries}`}
           className="relative p-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 transition"
           title="Benachrichtigungscenter"
         >
