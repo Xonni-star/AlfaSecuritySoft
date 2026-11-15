@@ -582,7 +582,7 @@ interface SecurityOpsStore {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
-  loadTenantData: () => Promise<void>;
+  loadTenantData: (options?: { preserveCurrentData?: boolean }) => Promise<void>;
   loadAlarmIncidents: (filters: AlarmIncidentQuery) => Promise<void>;
   loadMoreAlarmIncidents: () => Promise<void>;
   alarmIncidentFilterQuery: string;
@@ -618,7 +618,7 @@ interface SecurityOpsStore {
   toggleNetworkSimulation: () => void;
   syncQueue: OfflineQueueItem[];
   enqueueOfflineAction: (item: Omit<OfflineQueueItem, 'id' | 'createdAt' | 'status' | 'retryCount'> & { id?: string }) => Promise<void>;
-  triggerManualSync: (options?: { retryFailed?: boolean }) => Promise<{ success: number; failed: number; conflicts: number }>;
+  triggerManualSync: (options?: { retryFailed?: boolean; refreshAfterSync?: boolean; refreshWhenOutboxEmpty?: boolean }) => Promise<{ success: number; failed: number; conflicts: number }>;
   resolveConflict: (queueId: string, resolution: 'USE_LOCAL' | 'USE_SERVER' | 'RECORD_AS_EXCEPTION') => Promise<void>;
   clearCompletedSyncs: () => void;
 
@@ -955,7 +955,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         ...emptyTenantData()
       });
       await get().loadTenantData();
-      void get().triggerManualSync();
+      void get().triggerManualSync({ refreshAfterSync: true });
     } catch (error: any) {
       apiClient.setCsrfToken(null);
       set({
@@ -1017,7 +1017,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       });
       apiClient.setTenantId(me.tenantId ?? me.tenant_id ?? '');
       await get().loadTenantData();
-      void get().triggerManualSync();
+      void get().triggerManualSync({ refreshAfterSync: true });
     } catch {
       apiClient.setCsrfToken(null);
       set({
@@ -1031,36 +1031,47 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
     }
   },
 
-  loadTenantData: async () => {
+  loadTenantData: async (options = {}) => {
     const requestIdentity = currentSOPIdentity(get());
     const alarmRequest = ++alarmIncidentRequestId;
     const alarmFilterQuery = get().alarmIncidentFilterQuery;
-    set({
-      isLoadingData: true,
-      dataLoadError: null,
-      // Keine Mock-/Bestandsdaten als scheinbare PostgreSQL-Daten anzeigen.
-      clients: [],
-      sites: [],
-      employees: [],
-      guardBook: [],
-      shifts: [],
-      keys: [],
-      tasks: [],
-      documents: [],
-      sops: [],
-      alarmTypes: [],
-      alarmSites: [],
-      emergencyPlans: [],
-      alarmIncidents: [],
-      alarmIncidentFilterQuery: alarmFilterQuery,
-      alarmIncidentNextCursor: null,
-      hasMoreAlarmIncidents: false,
-      isLoadingMoreAlarmIncidents: false,
-      pendingAlarmMutations: [],
-      shiftSwaps: [],
-      reportDefinitions: [],
-      pendingSOPAcknowledgements: []
-    });
+    if (options.preserveCurrentData) {
+      set({
+        isLoadingData: true,
+        dataLoadError: null,
+        alarmIncidentFilterQuery: alarmFilterQuery,
+        alarmIncidentNextCursor: null,
+        hasMoreAlarmIncidents: false,
+        isLoadingMoreAlarmIncidents: false
+      });
+    } else {
+      set({
+        isLoadingData: true,
+        dataLoadError: null,
+        // Keine Mock-/Bestandsdaten als scheinbare PostgreSQL-Daten anzeigen.
+        clients: [],
+        sites: [],
+        employees: [],
+        guardBook: [],
+        shifts: [],
+        keys: [],
+        tasks: [],
+        documents: [],
+        sops: [],
+        alarmTypes: [],
+        alarmSites: [],
+        emergencyPlans: [],
+        alarmIncidents: [],
+        alarmIncidentFilterQuery: alarmFilterQuery,
+        alarmIncidentNextCursor: null,
+        hasMoreAlarmIncidents: false,
+        isLoadingMoreAlarmIncidents: false,
+        pendingAlarmMutations: [],
+        shiftSwaps: [],
+        reportDefinitions: [],
+        pendingSOPAcknowledgements: []
+      });
+    }
 
     const permissions = get().authUser?.permissions || [];
     const canReadDocuments = permissions.includes('documents:read');
@@ -1344,7 +1355,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       get().isOnline &&
       isCurrentSOPIdentity(requestIdentity.tenantId, requestIdentity.userId)
     ) {
-      void get().triggerManualSync();
+      void get().triggerManualSync({ refreshAfterSync: true });
     }
   },
 
@@ -1518,7 +1529,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
     if (nextState) {
       void get().syncPendingSOPAcknowledgements();
       void get().syncPendingAlarmMutations();
-      get().triggerManualSync();
+      get().triggerManualSync({ refreshWhenOutboxEmpty: true });
       get().addNotification(
         'Verbindung wiederhergestellt',
         'Das System synchronisiert jetzt ausstehende Offline-Ereignisse mit der PostgreSQL-Datenbank.',
@@ -1618,6 +1629,9 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         });
         scheduleOutboxRetry(allItems);
         isSyncRunningMutex = false;
+        if (options.refreshWhenOutboxEmpty && allItems.length === 0 && isCurrentSyncIdentity()) {
+          await get().loadTenantData({ preserveCurrentData: true });
+        }
         return { success: 0, failed: 0, conflicts: 0 };
       }
 
@@ -1760,6 +1774,17 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         isSyncing: false,
         lastSyncTime: new Date().toLocaleTimeString()
       });
+
+      if (
+        options.refreshAfterSync &&
+        successCount > 0 &&
+        failedCount === 0 &&
+        conflictCount === 0 &&
+        remainingOutbox.length === 0 &&
+        isCurrentSyncIdentity()
+      ) {
+        await get().loadTenantData({ preserveCurrentData: true });
+      }
 
       if (successCount > 0) {
         get().addNotification(
@@ -3176,7 +3201,7 @@ function scheduleOutboxRetry(records: OutboxMutation[]): void {
 
   outboxRetryTimer = setTimeout(() => {
     outboxRetryTimer = null;
-    void useSecurityStore.getState().triggerManualSync();
+    void useSecurityStore.getState().triggerManualSync({ refreshAfterSync: true });
   }, Math.max(0, nextAttempt - Date.now()));
 }
 
@@ -3185,7 +3210,7 @@ if (typeof window !== 'undefined') {
     useSecurityStore.setState({ isOnline: true });
     void useSecurityStore.getState().syncPendingSOPAcknowledgements();
     void useSecurityStore.getState().syncPendingAlarmMutations();
-    void useSecurityStore.getState().triggerManualSync();
+    void useSecurityStore.getState().triggerManualSync({ refreshWhenOutboxEmpty: true });
   });
   window.addEventListener('offline', () => {
     useSecurityStore.setState({ isOnline: false });

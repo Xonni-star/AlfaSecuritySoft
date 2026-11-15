@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from 'express';
 import { PoolClient } from 'pg';
 import { z } from 'zod';
 import { withTenantTransaction } from '../config/database';
+import { getRequestAuthorizationContext, setActivePermissionCode } from '../middleware/requestAuthorizationContext';
 
 const uuid = z.string().guid();
 const date = z.string().date();
@@ -68,6 +69,18 @@ const actionSchema = z.object({
   capturedAt: z.string().datetime({ offset: true }).optional(),
   clientMutationId: z.string().trim().min(8).max(64).default(() => randomUUID())
 }).strict();
+const incidentLinkSchema = z.object({
+  recordType: z.enum(['guardbook', 'handover', 'patrol_round', 'document']),
+  recordId: uuid,
+  clientMutationId: z.string().trim().min(8).max(64).regex(/^[A-Za-z0-9_-]+$/)
+}).strict();
+type IncidentLinkedRecordType = z.infer<typeof incidentLinkSchema>['recordType'];
+const linkedRecordReadPermissions: Record<IncidentLinkedRecordType, readonly string[]> = {
+  guardbook: ['logbook:read'],
+  handover: ['handovers:read'],
+  patrol_round: ['patrol:round:read', 'patrol:read'],
+  document: ['documents:read']
+};
 const transitionSchema = z.object({
   status: z.enum(alarmStatuses).optional(),
   action: z.enum(['acknowledge', 'escalate', 'resolve']).optional(),
@@ -98,6 +111,7 @@ const escalationRuleSchema = z.object({
 
 type User = NonNullable<Request['user']>;
 type SiteScope = string[] | null;
+type ExplicitPermissionScope = { tenantWide: boolean; siteIds: string[] };
 type MutationKind = 'incident_report' | 'action_create' | 'status_change';
 type PageCursor = { timestamp: string; id: string };
 
@@ -106,7 +120,21 @@ function httpError(statusCode: number, message: string): Error & { statusCode: n
 }
 
 function can(user: User, permission: string): boolean {
-  return user.permissions?.includes(permission) ?? false;
+  return Boolean(user.permissionGrants?.some(grant => grant.code === permission)) ||
+    (user.permissions?.includes(permission) ?? false);
+}
+
+function canReadLinkedRecordAtSite(
+  user: User, recordType: IncidentLinkedRecordType, siteId: string | null
+): boolean {
+  return linkedRecordReadPermissions[recordType].some(permission =>
+    (user.permissions?.includes(permission) ?? false) ||
+    (user.permissionGrants ?? []).some(grant =>
+      grant.code === permission &&
+      ((grant.dataScope === 'TENANT' && !grant.siteId) ||
+        (grant.dataScope === 'SITE' && grant.siteId === siteId))
+    )
+  );
 }
 
 function validateCapturedAt(capturedAt?: string): void {
@@ -168,24 +196,49 @@ function pageResult<T extends { id: string; [key: string]: any }>(
   };
 }
 
-async function siteScope(db: PoolClient, user: User): Promise<SiteScope> {
-  if (['Systemadministrator', 'Geschäftsführung', 'Einsatzleitung', 'Qualitätsmanagement'].includes(user.role)) {
-    return null;
-  }
-  const result = await db.query(
-    `SELECT DISTINCT esa.site_id
-     FROM employees e
-     JOIN employee_site_assignments esa
-       ON esa.tenant_id=e.tenant_id AND esa.employee_id=e.id
-     WHERE e.tenant_id=$1 AND lower(e.email)=lower($2) AND e.archived_at IS NULL`,
-    [user.tenantId, user.email]
-  );
-  return result.rows.map((row: { site_id: string }) => row.site_id);
+function permissionSiteScope(user: User, permissionCode?: string): SiteScope {
+  if (!permissionCode) return [];
+  const grants = (user.permissionGrants ?? []).filter(grant => grant.code === permissionCode);
+  if (grants.some(grant => grant.dataScope === 'TENANT' && !grant.siteId)) return null;
+  return [...new Set(grants
+    .filter(grant => grant.dataScope === 'SITE' && grant.siteId)
+    .map(grant => grant.siteId!))];
 }
 
-async function assertSiteAccess(db: PoolClient, user: User, siteId: string): Promise<void> {
-  const scope = await siteScope(db, user);
+function siteScope(user: User): SiteScope {
+  const context = getRequestAuthorizationContext();
+  if (!context || context.userId !== user.userId || context.tenantId !== user.tenantId) return [];
+  return permissionSiteScope(user, context.permissionCode);
+}
+
+async function assertSiteAccess(_db: PoolClient, user: User, siteId: string): Promise<void> {
+  const scope = siteScope(user);
   if (scope && !scope.includes(siteId)) throw httpError(403, 'Kein Zugriff auf dieses Objekt.');
+}
+
+function explicitPermissionScope(user: User, permissionCode: string): ExplicitPermissionScope {
+  const grants = (user.permissionGrants ?? []).filter(grant => grant.code === permissionCode);
+  return {
+    tenantWide: grants.some(grant => grant.dataScope === 'TENANT' && !grant.siteId),
+    siteIds: [...new Set(grants
+      .filter(grant => grant.dataScope === 'SITE' && grant.siteId)
+      .map(grant => grant.siteId!))]
+  };
+}
+
+async function getIncidentForPermissionSite(
+  db: PoolClient, user: User, incidentId: string, permissionCode: string, lock = false
+): Promise<any> {
+  const result = await db.query(
+    `SELECT * FROM alarm_incidents WHERE tenant_id=$1 AND id=$2 ${lock ? 'FOR UPDATE' : ''}`,
+    [user.tenantId, incidentId]
+  );
+  if (!result.rows.length) throw httpError(404, 'Alarmvorfall nicht gefunden.');
+  const scope = explicitPermissionScope(user, permissionCode);
+  if (!scope.tenantWide && !scope.siteIds.includes(result.rows[0].site_id)) {
+    throw httpError(403, 'Kein Zugriff auf dieses Objekt.');
+  }
+  return result.rows[0];
 }
 
 async function assertEmployeeAssigned(db: PoolClient, tenantId: string, employeeId: string, siteId: string): Promise<void> {
@@ -315,7 +368,7 @@ export async function listAlarmSites(req: Request, res: Response, next: NextFunc
   try {
     const user = req.user!;
     const data = await withTenantTransaction(user.tenantId, async db => {
-      const scope = await siteScope(db, user);
+      const scope = siteScope(user);
       const result = await db.query(
         `SELECT s.id,s.client_id AS customer_id,s.name
          FROM sites s JOIN clients c ON c.id=s.client_id AND c.tenant_id=s.tenant_id
@@ -365,7 +418,7 @@ export async function listEmergencyPlansV2(req: Request, res: Response, next: Ne
   try {
     const user = req.user!;
     const result = await withTenantTransaction(user.tenantId, async db => {
-      const scope = await siteScope(db, user);
+      const scope = siteScope(user);
       const plans = await db.query(
         `SELECT p.id,p.tenant_id,p.customer_id,c.company_name AS customer_name,p.site_id,s.name AS site_name,
                 p.alarm_type_id,t.code AS scenario,t.label AS alarm_type_label,p.owner_employee_id,
@@ -651,6 +704,179 @@ export async function listAlarmEventsV2(req: Request, res: Response, next: NextF
   } catch (error) { next(error); }
 }
 
+export async function listAlarmIncidentLinks(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const incidentId = uuid.parse(req.params.id);
+    const user = req.user!;
+    const links = await withTenantTransaction(user.tenantId, async db => {
+      await getIncidentForPermissionSite(db, user, incidentId, 'alarm:read');
+      const result = await db.query(
+        `SELECT id,record_type,
+                COALESCE(guardbook_entry_id,handover_id,patrol_round_id,document_id) AS record_id,
+                client_mutation_id,created_by,created_at
+         FROM alarm_incident_links
+         WHERE tenant_id=$1 AND alarm_incident_id=$2
+         ORDER BY created_at,id`,
+        [user.tenantId, incidentId]
+      );
+      return result.rows;
+    });
+    res.json({ success: true, data: links });
+  } catch (error) { next(error); }
+}
+
+export async function getAlarmIncidentReport(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const incidentId = uuid.parse(req.params.id);
+    const user = req.user!;
+    const report = await withTenantTransaction(user.tenantId, async db => {
+      const incident = await getIncidentForPermissionSite(db, user, incidentId, 'alarm:read');
+      const links = await db.query(
+        `SELECT l.id,l.record_type,
+                COALESCE(l.guardbook_entry_id,l.handover_id,l.patrol_round_id,l.document_id) AS record_id,
+                COALESCE(g.title,h.general_text,r.status,d.title) AS record_summary,
+                COALESCE(g.site_id,h.site_id,r.site_id,d.site_id) AS record_site_id,
+                l.created_by,l.created_at
+         FROM alarm_incident_links l
+         LEFT JOIN guardbook_entries g
+           ON g.tenant_id=l.tenant_id AND g.id=l.guardbook_entry_id
+         LEFT JOIN handovers h
+           ON h.tenant_id=l.tenant_id AND h.id=l.handover_id
+         LEFT JOIN patrol_rounds r
+           ON r.tenant_id=l.tenant_id AND r.id=l.patrol_round_id
+         LEFT JOIN documents d
+           ON d.tenant_id=l.tenant_id AND d.id=l.document_id
+         WHERE l.tenant_id=$1 AND l.alarm_incident_id=$2
+         ORDER BY l.created_at,l.id`,
+        [user.tenantId, incidentId]
+      );
+      const linkedRecords = links.rows.map(link => {
+        const { record_site_id: recordSiteId, record_summary: recordSummary, ...metadata } = link;
+        return {
+          ...metadata,
+          record_summary: canReadLinkedRecordAtSite(user, link.record_type, recordSiteId)
+            ? recordSummary
+            : null
+        };
+      });
+      const events = await db.query(
+        `SELECT id,action,details,occurred_at,actor_user_id
+         FROM emergency_management_events
+         WHERE tenant_id=$1 AND alarm_incident_id=$2
+         ORDER BY occurred_at,id`,
+        [user.tenantId, incidentId]
+      );
+      const actions = await db.query(
+        `SELECT id,action_type,description,result,attachment_document_id,occurred_at,actor_user_id
+         FROM alarm_event_actions
+         WHERE tenant_id=$1 AND alarm_incident_id=$2
+         ORDER BY occurred_at,id`,
+        [user.tenantId, incidentId]
+      );
+      return { incident, linkedRecords, auditEvents: events.rows, actions: actions.rows };
+    });
+    res.json({ success: true, data: report });
+  } catch (error) { next(error); }
+}
+
+export async function linkAlarmIncidentRecord(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const incidentId = uuid.parse(req.params.id);
+    const body = incidentLinkSchema.parse(req.body);
+    const user = req.user!;
+    const targetColumns = {
+      guardbook: 'guardbook_entry_id',
+      handover: 'handover_id',
+      patrol_round: 'patrol_round_id',
+      document: 'document_id'
+    } as const;
+    const targetColumn = targetColumns[body.recordType];
+    const payloadHash = createHash('sha256')
+      .update(JSON.stringify({ incidentId, recordType: body.recordType, recordId: body.recordId }))
+      .digest('hex');
+    const result = await withTenantTransaction(user.tenantId, async db => {
+      const incident = await getIncidentForPermissionSite(db, user, incidentId, 'alarm:action:create', true);
+      if (incident.status === 'archiviert') {
+        throw httpError(409, 'Archivierte Alarmvorfälle können nicht geändert werden.');
+      }
+      let related: { exists: boolean } | undefined;
+      switch (body.recordType) {
+        case 'guardbook':
+          related = (await db.query(
+            'SELECT EXISTS (SELECT 1 FROM guardbook_entries WHERE tenant_id=$1 AND id=$2 AND site_id=$3) AS exists',
+            [user.tenantId, body.recordId, incident.site_id]
+          )).rows[0];
+          break;
+        case 'handover':
+          related = (await db.query(
+            'SELECT EXISTS (SELECT 1 FROM handovers WHERE tenant_id=$1 AND id=$2 AND site_id=$3) AS exists',
+            [user.tenantId, body.recordId, incident.site_id]
+          )).rows[0];
+          break;
+        case 'patrol_round':
+          related = (await db.query(
+            `SELECT EXISTS (SELECT 1 FROM patrol_rounds
+              WHERE tenant_id=$1 AND id=$2 AND site_id=$3 AND status='completed') AS exists`,
+            [user.tenantId, body.recordId, incident.site_id]
+          )).rows[0];
+          break;
+        case 'document':
+          related = (await db.query(
+            `SELECT EXISTS (
+               SELECT 1 FROM documents d
+               JOIN document_relationships r ON r.tenant_id=d.tenant_id AND r.document_id=d.id
+               WHERE d.tenant_id=$1 AND d.id=$2 AND d.archived_at IS NULL
+                 AND (r.site_id=$3 OR EXISTS (
+                   SELECT 1 FROM guardbook_entries g
+                   WHERE g.tenant_id=r.tenant_id AND g.id=r.incident_id AND g.site_id=$3
+                 ))
+             ) AS exists`,
+            [user.tenantId, body.recordId, incident.site_id]
+          )).rows[0];
+          break;
+      }
+      if (!related?.exists) throw httpError(404, 'Verknüpfter Datensatz nicht gefunden oder gehört zu einem anderen Objekt.');
+
+      const created = await db.query(
+        `INSERT INTO alarm_incident_links
+           (tenant_id,alarm_incident_id,record_type,${targetColumn},client_mutation_id,payload_hash,created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)
+         ON CONFLICT DO NOTHING
+         RETURNING id,record_type,${targetColumn} AS record_id,client_mutation_id,created_by,created_at`,
+        [user.tenantId, incidentId, body.recordType, body.recordId, body.clientMutationId, payloadHash, user.userId]
+      );
+      if (created.rows.length) {
+        await event(db,user.tenantId,incidentId,null,user.userId,'incident_record_linked',{
+          linkId: created.rows[0].id, recordType: body.recordType, recordId: body.recordId
+        });
+        return { link: created.rows[0], created: true };
+      }
+
+      const priorMutation = await db.query(
+        `SELECT id,record_type,${targetColumn} AS record_id,client_mutation_id,payload_hash,created_by,created_at
+         FROM alarm_incident_links WHERE tenant_id=$1 AND client_mutation_id=$2`,
+        [user.tenantId, body.clientMutationId]
+      );
+      if (priorMutation.rows.length) {
+        if (priorMutation.rows[0].payload_hash !== payloadHash) {
+          throw httpError(409, 'Die clientMutationId wurde bereits für einen anderen Alarmbezug verwendet.');
+        }
+        const { payload_hash: _hash, ...link } = priorMutation.rows[0];
+        return { link, created: false };
+      }
+      const duplicateTarget = await db.query(
+        `SELECT id,record_type,${targetColumn} AS record_id,client_mutation_id,created_by,created_at
+         FROM alarm_incident_links
+         WHERE tenant_id=$1 AND alarm_incident_id=$2 AND record_type=$3 AND ${targetColumn}=$4`,
+        [user.tenantId, incidentId, body.recordType, body.recordId]
+      );
+      if (!duplicateTarget.rows.length) throw httpError(409, 'Der Alarmbezug konnte nicht gespeichert werden.');
+      return { link: duplicateTarget.rows[0], created: false };
+    });
+    res.status(result.created ? 201 : 200).json({ success: true, data: result.link });
+  } catch (error) { next(error); }
+}
+
 export async function archiveEmergencyPlanV2(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const planId = uuid.parse(req.params.id);
@@ -681,7 +907,7 @@ export async function listEmergencyContacts(req: Request, res: Response, next: N
   try {
     const user = req.user!;
     const data = await withTenantTransaction(user.tenantId, async db => {
-      const scope = await siteScope(db, user);
+      const scope = siteScope(user);
       const result = await db.query(
         `SELECT c.id,c.customer_id,c.site_id,c.emergency_plan_id,c.contact_type,c.role,c.name,c.phone,
                 c.email,c.notes,c.revision_version,c.created_at,c.updated_at
@@ -705,7 +931,7 @@ export async function createEmergencyContact(req: Request, res: Response, next: 
     const body = contactCreateSchema.parse(req.body);
     const user = req.user!;
     const data = await withTenantTransaction(user.tenantId, async db => {
-      const scope = await siteScope(db, user);
+      const scope = siteScope(user);
       let customerId = body.customerId ?? null;
       let siteId = body.siteId ?? null;
       let planId = body.emergencyPlanId ?? null;
@@ -1023,7 +1249,7 @@ export async function listAlarmIncidentsV2(req: Request, res: Response, next: Ne
     const cursor = decodePageCursor(filters.cursor);
     const user = req.user!;
     const data = await withTenantTransaction(user.tenantId, async db => {
-      const scope = await siteScope(db, user);
+      const scope = siteScope(user);
       if (filters.siteId) await assertSiteAccess(db, user, filters.siteId);
       const values: unknown[] = [user.tenantId];
       const clauses = ['a.tenant_id=$1'];
@@ -1083,7 +1309,7 @@ export async function listRecentAlarmEvents(req: Request, res: Response, next: N
     const limit = z.coerce.number().int().min(1).max(100).default(25).parse(req.query.limit);
     const user = req.user!;
     const data = await withTenantTransaction(user.tenantId, async db => {
-      const scope = await siteScope(db, user);
+      const scope = siteScope(user);
       const result = await db.query(
         `SELECT e.id,e.action,e.details,e.occurred_at,e.alarm_incident_id,e.emergency_plan_id,
                 a.incident_number,a.title,COALESCE(a.site_id,p.site_id) AS site_id,s.name AS site_name,
@@ -1268,6 +1494,7 @@ export async function syncAlarmMutations(req: Request, res: Response, next: Next
         if (!can(user, requiredPermission)) {
           throw httpError(403, `Zugriff verweigert: Fehlende Berechtigung '${requiredPermission}'`);
         }
+        setActivePermissionCode(requiredPermission);
         const response = await withTenantTransaction(user.tenantId, async db => {
           const payload: Record<string, unknown> = {
             ...mutation.payload,
@@ -1567,8 +1794,10 @@ export async function listAlarmEscalationStatus(req: Request, res: Response, nex
   try {
     const user = req.user!;
     const data = await withTenantTransaction(user.tenantId, async db => {
-      const manager = ['Systemadministrator','Geschäftsführung','Einsatzleitung','Qualitätsmanagement'].includes(user.role);
-      const scope = await siteScope(db, user);
+      const scope = explicitPermissionScope(user, 'alarm:notifications:read');
+      if (!scope.tenantWide && scope.siteIds.length === 0) {
+        throw httpError(403, 'Keine explizite Objekt- oder Mandantenberechtigung vorhanden.');
+      }
       const result = await db.query(
         `SELECT j.id AS job_id,j.alarm_incident_id,j.status AS job_status,j.attempt_count,
                 j.scheduled_at,j.retry_at,j.last_error,j.updated_at,
@@ -1580,11 +1809,10 @@ export async function listAlarmEscalationStatus(req: Request, res: Response, nex
          JOIN alarm_incidents a ON a.id=j.alarm_incident_id AND a.tenant_id=j.tenant_id
          JOIN alarm_escalation_steps s ON s.id=j.step_id AND s.tenant_id=j.tenant_id
          LEFT JOIN alarm_notifications n ON n.escalation_job_id=j.id AND n.tenant_id=j.tenant_id
-         WHERE j.tenant_id=$1 AND ($2::boolean OR n.recipient_user_id=$3)
-           AND ($4::uuid[] IS NULL OR a.site_id=ANY($4))
+         WHERE j.tenant_id=$1 AND ($2::boolean OR a.site_id=ANY($3::uuid[]))
          GROUP BY j.tenant_id,j.id,a.incident_number,a.title,a.status,s.channel
          ORDER BY j.scheduled_at DESC LIMIT 500`,
-        [user.tenantId, manager, user.userId, scope]
+        [user.tenantId, scope.tenantWide, scope.siteIds]
       );
       return result.rows;
     });

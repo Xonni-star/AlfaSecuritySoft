@@ -295,7 +295,7 @@ if [ "$DB_HEALTH" != healthy ]; then
     exit 1
 fi
 
-EXPECTED_MIGRATIONS="001,002,003,004,005,006,007,009,011,012,013,014,015,016,017,018,019,020,021,022,023,024,025,026,027,028,029,030,031,032,033,034,035,036,037,038"
+EXPECTED_MIGRATIONS="001,002,003,004,005,006,007,009,011,012,013,014,015,016,017,018,019,020,021,022,023,024,025,026,027,028,029,030,031,032,033,034,035,036,037,038,039"
 echo "[TEST] Führe die Repository-Migrationen in der isolierten Testdatenbank aus."
 bounded_run 600 docker compose --env-file "$ENV_FILE" --project-name "$PROJECT" \
     -f "$SCRIPT_DIR/docker-compose.minio.yml" \
@@ -320,7 +320,14 @@ if [ "$DMS_RLS_COUNT" != 9 ]; then
     echo "Fehler: ENABLE/FORCE ROW LEVEL SECURITY wurde nicht auf allen neun DMS-Tabellen gefunden (Anzahl: $DMS_RLS_COUNT)." >&2
     exit 1
 fi
-echo "[TEST] Migrationen verifiziert: $EXPECTED_MIGRATIONS; ENABLE/FORCE RLS auf 9 DMS-Tabellen."
+ALARM_LINK_RLS_COUNT="$(compose exec -T db psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+    -At -c "SELECT count(*) FROM pg_class WHERE relnamespace = 'public'::regnamespace
+        AND relname = 'alarm_incident_links' AND relrowsecurity AND relforcerowsecurity;")"
+if [ "$ALARM_LINK_RLS_COUNT" != 1 ]; then
+    echo "Fehler: ENABLE/FORCE ROW LEVEL SECURITY fehlt auf alarm_incident_links." >&2
+    exit 1
+fi
+echo "[TEST] Migrationen verifiziert: $EXPECTED_MIGRATIONS; ENABLE/FORCE RLS auf 9 DMS-Tabellen und alarm_incident_links."
 
 if [ "$MODE" = full ]; then
     S3_READY=0

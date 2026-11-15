@@ -63,12 +63,15 @@ export const MobileAppShell: React.FC = () => {
         <div className="flex items-center gap-1.5">
           <button
             onClick={toggleNetworkSimulation}
-            className={`p-2 rounded-xl flex items-center gap-1 text-[11px] font-semibold transition ${
+            aria-label={isOnline ? 'Online. Offline-Modus aktivieren' : 'Offline. Verbindung wiederherstellen'}
+            aria-pressed={!isOnline}
+            className={`min-h-11 min-w-11 p-2 rounded-xl flex items-center justify-center gap-1 text-[11px] font-semibold transition ${
               isOnline ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/20 text-rose-400 animate-pulse'
             }`}
             title="Netzwerk umschalten"
           >
             {isOnline ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
+            <span>{isOnline ? 'Online' : 'Offline'}</span>
           </button>
         </div>
       </div>

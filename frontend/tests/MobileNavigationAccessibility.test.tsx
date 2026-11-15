@@ -59,6 +59,7 @@ describe('navigation accessibility', () => {
     document.body.appendChild(container);
     root = createRoot(container);
     mocks.state.activeTab = 'dashboard';
+    mocks.state.isOnline = true;
     vi.clearAllMocks();
   });
 
@@ -96,6 +97,25 @@ describe('navigation accessibility', () => {
 
     expect(nav?.querySelector('button[aria-current="page"]')).toBe(dutyButton);
     expect(dutyButton?.getAttribute('aria-current')).toBe('page');
+  });
+
+  test('network control exposes its current state and a mobile-sized touch target', async () => {
+    await act(async () => root.render(<MobileAppShell />));
+
+    const onlineButton = container.querySelector<HTMLButtonElement>('button[aria-label="Online. Offline-Modus aktivieren"]');
+    expect(onlineButton?.getAttribute('aria-pressed')).toBe('false');
+    expect(onlineButton?.textContent).toContain('Online');
+    expect(onlineButton?.className).toContain('min-h-11');
+    expect(onlineButton?.className).toContain('min-w-11');
+
+    mocks.state.isOnline = false;
+    await act(async () => root.render(<MobileAppShell />));
+
+    const offlineButton = container.querySelector<HTMLButtonElement>('button[aria-label="Offline. Verbindung wiederherstellen"]');
+    expect(offlineButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(offlineButton?.textContent).toContain('Offline');
+    await act(async () => offlineButton?.click());
+    expect(mocks.state.toggleNetworkSimulation).toHaveBeenCalledOnce();
   });
 
   test('sidebar navigation is named and marks the active page', async () => {

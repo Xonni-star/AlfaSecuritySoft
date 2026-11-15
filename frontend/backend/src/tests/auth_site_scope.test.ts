@@ -17,6 +17,7 @@ function runPermissionCheck(
     permissions?: string[];
     sitePermissions?: Array<{ code: string; siteId: string }>;
     ownPermissions?: string[];
+    role?: string;
   } = {}
 ) {
   const req = {
@@ -29,7 +30,7 @@ function runPermissionCheck(
       userId: '33333333-3333-4333-8333-333333333333',
       email: 'site-user@example.test',
       tenantId: '44444444-4444-4444-8444-444444444444',
-      role: 'Object lead',
+      role: options.role ?? 'Object lead',
       permissions: options.permissions ?? [],
       sitePermissions: options.sitePermissions ?? [grant, createGrant],
       ownPermissions: options.ownPermissions ?? [],
@@ -87,6 +88,16 @@ describe('site-scoped authorization', () => {
       permissions: ['planning:read']
     });
     expect(result.next).toHaveBeenCalledTimes(1);
+  });
+
+  test('a role name cannot substitute for an explicit permission grant', () => {
+    const result = runPermissionCheck('POST', '/api/v1/admin/users', 'users:manage', {
+      permissions: [],
+      sitePermissions: [],
+      role: 'System administrator'
+    });
+    expect(result.next).not.toHaveBeenCalled();
+    expect(result.res.status).toHaveBeenCalledWith(403);
   });
 
   test('allows OWN only for implemented owner-scoped permissions', () => {

@@ -326,6 +326,9 @@ app.get('/api/v1/patrol/events', authenticateJwt, requireAnyPermission('patrol:h
 app.post('/api/v1/patrol/sync', authenticateJwt, syncController.pushPatrolMutations);
 app.get('/api/v1/alarms/recent-events', authenticateJwt, requirePermission('alarm:read'), alarmWorkflowController.listRecentAlarmEvents);
 app.get('/api/v1/alarms/:id/events', authenticateJwt, requirePermission('alarm:read'), alarmWorkflowController.listAlarmEventsV2);
+app.get('/api/v1/alarms/:id/links', authenticateJwt, requirePermission('alarm:read'), alarmWorkflowController.listAlarmIncidentLinks);
+app.get('/api/v1/alarms/:id/report', authenticateJwt, requirePermission('alarm:read'), alarmWorkflowController.getAlarmIncidentReport);
+app.post('/api/v1/alarms/:id/links', authenticateJwt, requirePermission('alarm:action:create'), alarmWorkflowController.linkAlarmIncidentRecord);
 app.get('/api/v1/alarms/:id/actions', authenticateJwt, requirePermission('alarm:read'), alarmWorkflowController.listAlarmActions);
 app.post('/api/v1/alarms/:id/actions', authenticateJwt, requirePermission('alarm:action:create'), alarmWorkflowController.createAlarmAction);
 app.get('/api/v1/alarms/:id/status-history', authenticateJwt, requirePermission('alarm:read'), alarmWorkflowController.listAlarmStatusHistory);

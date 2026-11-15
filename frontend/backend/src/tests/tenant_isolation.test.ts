@@ -403,7 +403,7 @@ describe('PostgreSQL Row-Level Security (RLS) & Multi-Tenant Isolation', () => {
   test('Site-scoped, tenant-wide, and ungranted roles enforce tenant and site boundaries', async () => {
     const withPermission = <T>(userId: string, permissionCode: string, callback: () => Promise<T>): Promise<T> =>
       new Promise((resolve, reject) => {
-        runWithAuthorizationContext(userId, () => {
+        runWithAuthorizationContext(userId, tenantA, () => {
           setActivePermissionCode(permissionCode);
           callback().then(resolve, reject);
         });
@@ -524,6 +524,16 @@ describe('PostgreSQL Row-Level Security (RLS) & Multi-Tenant Isolation', () => {
       [[planningShiftAId, planningShiftAOutOfScopeId, planningShiftBId]]
     );
     expect(after.rows).toEqual(baseline.rows);
+  });
+
+  test('an authenticated request cannot switch its database tenant context', async () => {
+    await expect(new Promise<void>((resolve, reject) => {
+      runWithAuthorizationContext(siteScopedUserId, tenantA, () => {
+        withTenantTransaction(tenantB, async tx => {
+          await tx.query('SELECT id FROM sites');
+        }).then(() => resolve(), reject);
+      });
+    })).rejects.toThrow('Authenticated request cannot switch tenant context.');
   });
 
   test('All planning tables enforce RLS and reject forged tenant writes', async () => {

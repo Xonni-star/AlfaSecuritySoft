@@ -1,6 +1,6 @@
 # Alarm- und Notfallmanagement: API
 
-Alle Pfade verwenden `/api/v1`, erfordern eine gültige Sitzung und nutzen ausschließlich den Tenant der authentifizierten Datenbanksitzung. PostgreSQL erzwingt `FORCE ROW LEVEL SECURITY`; nicht übergeordnete Rollen werden zusätzlich auf Sites begrenzt, die dem angemeldeten Mitarbeiter über `employee_site_assignments` zugewiesen sind. Die UI-Tenant-Auswahl ist kein Autorisierungsmerkmal.
+Alle Pfade verwenden `/api/v1`, erfordern eine gültige Sitzung und nutzen ausschließlich den Tenant der authentifizierten Datenbanksitzung. PostgreSQL erzwingt `FORCE ROW LEVEL SECURITY`. Der Alarmcontroller bindet die Objekt-/Site-Prüfung an den expliziten Grant der aktiven Routenberechtigung: `TENANT` gilt mandantenweit, `SITE` nur für dessen konkrete Site. Rollenname und Mitarbeiterzuordnung erweitern diesen Scope nicht. Die UI-Tenant-Auswahl ist kein Autorisierungsmerkmal.
 
 ## Berechtigungen
 
@@ -51,6 +51,9 @@ Alle Antworten verwenden den üblichen `{ success, data }`-Envelope. `POST /alar
 | `GET /alarms/:id/events` | `alarm:read` | Cursor-paginierte unveränderliche Ereignisse |
 | `GET /alarms/:id/actions` | `alarm:read` | Cursor-paginierte Maßnahmen/Notizen |
 | `POST /alarms/:id/actions` | `alarm:action:create` | Maßnahme oder Notiz mit Beschreibung, Ergebnis und optional vorhandenem DMS-Dokument erfassen |
+| `GET /alarms/:id/links` | `alarm:read` | Mandanten-/site-scoped verknüpfte Arbeitsdatensätze |
+| `POST /alarms/:id/links` | `alarm:action:create` | Wachbucheintrag, Übergabe, abgeschlossenen Kontrollgang oder standortbezogenes DMS-Dokument strukturiert verknüpfen |
+| `GET /alarms/:id/report` | `alarm:read` | Alarm, verknüpfte Datensätze, Maßnahmen und Audit-Ereignisse gemeinsam abrufen |
 | `GET /alarms/:id/status-history` | `alarm:read` | Cursor-paginierte append-only Statushistorie |
 | `GET /alarms/:id/assignments` | `alarm:read` | Einsatzkraft-Zuweisungen |
 | `POST /alarms/:id/assignments` | `alarm:assign` | Einsatzkraft zuweisen/entfernen |
@@ -69,6 +72,10 @@ Alle Antworten verwenden den üblichen `{ success, data }`-Envelope. `POST /alar
 Notfallpläne besitzen Entwurfs-/Veröffentlichungs-/Archivstatus, fortlaufende unveränderliche Versions-Snapshots, Kunden-/Site-/Alarmart-Zuordnung, verantwortliche Person und Gültigkeitszeitraum. Veröffentlichen erfordert eine Version, ein Gültigkeitsbeginn sowie aktive Alarmart, Kunde und Site. Bei einer Vorfallmeldung wird der veröffentlichte Plan nur verknüpft, wenn Kunde, Site, Alarmart und Gültigkeitszeitraum übereinstimmen; die konkrete veröffentlichte Version wird eingefroren.
 
 Statusübergänge werden mit authentifiziertem Akteur, serverseitigem Zeitstempel und Begründung protokolliert. Die fachlich zulässigen Übergänge führen vom neuen Ereignis über Bearbeitung/Eskalation und Entwarnung zum Abschluss; nur abgeschlossene Ereignisse dürfen archiviert werden. Aktionen und Statushistorie sind append-only. Revisionen verhindern, dass konkurrierende Änderungen still überschreiben.
+
+## Verknüpfte Arbeitsdatensätze
+
+`POST /alarms/:id/links` erwartet `{ "recordType": "guardbook" | "handover" | "patrol_round" | "document", "recordId": "<UUID>", "clientMutationId": "<ID>" }`. Der Server prüft den expliziten Berechtigungsscope, den Mandanten- und Objektbezug des Alarmvorfalls und des Zieldatensatzes; Kontrollgänge müssen abgeschlossen sein und archivierte Alarme sind schreibgeschützt. Ein erfolgreicher neuer Link und das zugehörige unveränderliche Audit-Ereignis werden gemeinsam gespeichert. Wiederholungen mit derselben Mutations-ID und demselben Inhalt geben den bestehenden Link zurück; ein doppeltes Ziel mit neuer Mutations-ID gibt ebenfalls den bereits vorhandenen Link zurück. Die Wiederverwendung einer Mutations-ID mit abweichendem Inhalt wird als HTTP 409 abgewiesen. Die Datenbank erzwingt mandantengebundene Fremdschlüssel und RLS auf den Links. `GET /alarms/:id/report` liefert die zusammengeführte Alarmansicht für diese Beziehungen; `record_summary` wird nur mit der passenden Leseberechtigung im Scope der verknüpften Site ausgegeben (`logbook:read`, `handovers:read`, `patrol:round:read` oder `patrol:read`, `documents:read`). Ohne diese Berechtigung ist die Zusammenfassung `null`, während Alarmbericht und Link-Metadaten weiterhin verfügbar sind. Der Bericht ersetzt nicht die bestehenden fachlichen APIs der verknüpften Module.
 
 ## Eskalation und Benachrichtigung
 

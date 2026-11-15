@@ -1,5 +1,6 @@
 import { Request, NextFunction } from 'express';
 import { withTenantTransaction } from '../config/database';
+import { runWithAuthorizationContext, setActivePermissionCode } from '../middleware/requestAuthorizationContext';
 import {
   listEmergencyPlanVersions,
   listRecentAlarmEvents,
@@ -15,20 +16,35 @@ jest.mock('../config/database', () => ({
 const tenantId = '11111111-1111-4111-8111-111111111111';
 const userId = '22222222-2222-4222-8222-222222222222';
 const siteId = '33333333-3333-4333-8333-333333333333';
+const outOfScopeSiteId = '77777777-7777-4777-8777-777777777777';
 const incidentId = '44444444-4444-4444-8444-444444444444';
 const db = { query: jest.fn() };
 
 function request(overrides: Partial<Request> = {}): Request {
+  const { user: userOverride, ...otherOverrides } = overrides;
+  const permissions = userOverride?.permissions ?? ['alarm:read', 'alarm:report', 'alarm:respond'];
   return {
     params: { id: incidentId },
     query: {},
     body: {},
     user: {
       userId, tenantId, email: 'guard@example.test', fullName: 'Guard User', role: 'Objektleitung',
-      permissions: ['alarm:read', 'alarm:report', 'alarm:respond'], sessionHash: 'hash'
+      permissions,
+      permissionGrants: userOverride?.permissionGrants ??
+        permissions.map(code => ({ code, dataScope: 'TENANT' as const })),
+      ...userOverride
     },
-    ...overrides
+    ...otherOverrides
   } as unknown as Request;
+}
+
+async function withPermissionContext(permissionCode: string, callback: () => Promise<void>): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    runWithAuthorizationContext(userId, tenantId, () => {
+      setActivePermissionCode(permissionCode);
+      void callback().then(resolve, reject);
+    });
+  });
 }
 
 function response(): any {
@@ -77,15 +93,21 @@ describe('site-scoped alarm workflow', () => {
     expect(withTenantTransaction).not.toHaveBeenCalled();
   });
 
-  test('rejects reporting an incident outside the authenticated employee site assignments', async () => {
-    db.query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
+  test('rejects reporting an incident outside the explicit site grant regardless of role name', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
 
-    await reportAlarmIncidentV2(request({
+    await withPermissionContext('alarm:report', () => reportAlarmIncidentV2(request({
+      user: {
+        userId, tenantId, email: 'guard@example.test', fullName: 'Guard User', role: 'Einsatzleitung',
+        permissions: [],
+        permissionGrants: [{ code: 'alarm:report', dataScope: 'SITE', siteId: outOfScopeSiteId }],
+        sessionHash: 'hash'
+      },
       body: { siteId, alarmTypeId: '55555555-5555-4555-8555-555555555555', severity: 'Kritisch', title: 'Alarm' }
-    }), response(), next);
+    }), response(), next));
 
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
-    expect(db.query).toHaveBeenCalledTimes(2);
+    expect(db.query).toHaveBeenCalledTimes(1);
   });
 
   test('requires alarm:archive in addition to response permission for incident archival', async () => {
@@ -93,27 +115,35 @@ describe('site-scoped alarm workflow', () => {
       id: incidentId, site_id: siteId, status: 'abgeschlossen', revision_version: 1
     }] });
 
-    await transitionAlarmIncidentV2(request({
+    await withPermissionContext('alarm:respond', () => transitionAlarmIncidentV2(request({
       user: {
         userId, tenantId, email: 'lead@example.test', fullName: 'Lead User', role: 'Einsatzleitung',
         permissions: ['alarm:read', 'alarm:respond'], sessionHash: 'hash'
       },
       body: { status: 'archiviert', note: 'Archiviert', revisionVersion: 1 }
-    }), response(), next);
+    }), response(), next));
 
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
     expect(db.query).toHaveBeenCalledTimes(2);
   });
 
-  test('returns only events for sites assigned to the caller', async () => {
+  test('filters recent events by the explicit site grant, not employee assignment or role name', async () => {
     const eventRow = { id: 'event-id', site_id: siteId, site_name: 'Objekt A', action: 'incident_reported' };
-    db.query.mockResolvedValueOnce({ rows: [{ site_id: siteId }] }).mockResolvedValueOnce({ rows: [eventRow] });
+    db.query.mockResolvedValueOnce({ rows: [eventRow] });
     const res = response();
 
-    await listRecentAlarmEvents(request(), res, next);
+    await withPermissionContext('alarm:read', () => listRecentAlarmEvents(request({
+      user: {
+        userId, tenantId, email: 'lead@example.test', fullName: 'Lead User', role: 'Einsatzleitung',
+        permissions: [],
+        permissionGrants: [{ code: 'alarm:read', dataScope: 'SITE', siteId }],
+        sessionHash: 'hash'
+      }
+    }), res, next));
 
     expect(next).not.toHaveBeenCalled();
-    expect(db.query.mock.calls[1][0]).toContain('s.id=ANY($2)');
+    expect(db.query.mock.calls[0][0]).toContain('s.id=ANY($2)');
+    expect(db.query.mock.calls[0][1]).toEqual([tenantId, [siteId], 25]);
     expect(res.body.data).toEqual([eventRow]);
   });
 
@@ -121,11 +151,11 @@ describe('site-scoped alarm workflow', () => {
     const planId = '66666666-6666-4666-8666-666666666666';
     const version = { id: 'version-id', contact_snapshot: [{ name: 'Private contact', phone: '+49 30 1' }] };
     db.query.mockResolvedValueOnce({ rows: [{ site_id: siteId }] })
-      .mockResolvedValueOnce({ rows: [{ site_id: siteId }] })
       .mockResolvedValueOnce({ rows: [version] });
     const res = response();
 
-    await listEmergencyPlanVersions(request({ params: { id: planId } }), res, next);
+    await withPermissionContext('alarm:read', () =>
+      listEmergencyPlanVersions(request({ params: { id: planId } }), res, next));
 
     expect(next).not.toHaveBeenCalled();
     expect(res.body.data).toEqual([{ ...version, contact_snapshot: [] }]);

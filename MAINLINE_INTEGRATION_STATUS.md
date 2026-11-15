@@ -2,7 +2,7 @@
 
 **Status checked:** 2026-11-15
 
-**Main:** `ba9ab4ddc5d9ef03a3d147a023f002a0abb0e547`
+**Main:** `77fdb0955e3bbbef01690edc93dc630e443bfbe8`
 
 **Project status:** In development; not approved for production.
 
@@ -10,7 +10,7 @@ This report distinguishes implementation in merged code, automated CI, isolated 
 
 ## Pull requests and current main CI
 
-PRs [#25](https://github.com/Xonni-star/SecurityOps-2.0/pull/25) through [#43](https://github.com/Xonni-star/SecurityOps-2.0/pull/43) are merged. At the baseline check no PRs were open; the Phase 4 increment is now under [PR #44](https://github.com/Xonni-star/SecurityOps-2.0/pull/44), open against `main` from `phase-4-system-integration-hardening` at `1d85bd2ad77f397ff6334a1922d6009578848a47`. Its seven-job CI run [43698096776](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43698096776) passed. The verified merge commits for PRs #25–#34 are:
+PRs [#25](https://github.com/Xonni-star/SecurityOps-2.0/pull/25) through [#44](https://github.com/Xonni-star/SecurityOps-2.0/pull/44) are merged. At the latest baseline check, no PRs were open. PR #44 (Phase 4) merged on 2026-11-15 with merge commit `77fdb0955e3bbbef01690edc93dc630e443bfbe8`. Main CI run [43702382063](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702382063) passed all seven jobs on that exact commit; release-artifact run [43702607678](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702607678) passed both packaging and validation jobs. The older release-artifact failure [43695992978](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695992978) is historical, not the current mainline result. The verified merge commits for PRs #25–#34 are:
 
 | PR | Merged commit |
 |---|---|
@@ -38,8 +38,9 @@ PRs [#35](https://github.com/Xonni-star/SecurityOps-2.0/pull/35) through [#38](h
 | #41 | `62ee68d` | Refresh verified mainline and storage status documentation. |
 | #42 | `556d7b7` | Harden offline sync and SOP assignment workflows, enforce document relationship/owner scope, and update restore migration expectations. |
 | #43 | `ba9ab4d` | Phase 3 security, integration, and release hardening. |
+| #44 | `77fdb09` | Phase 4 integration hardening. |
 
-Main CI run [43695784002](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695784002) passed all seven jobs on `ba9ab4ddc5d9ef03a3d147a023f002a0abb0e547`: root startup, frontend, PostgreSQL/backend, ClamAV adapter, DMS API, isolated restore, and production Docker. Release-artifact run [43695992978](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695992978) failed during artifact validation because `frontend/deploy/.env.example` was absent from the downloaded artifact. The file is tracked and the source archive contains it; the release upload step used `actions/upload-artifact@v4` without `include-hidden-files`, which omits dotfiles by default. The Phase 4 branch enables hidden-file inclusion and its local release-bundle validator passes; all seven jobs of its PR CI run [43698096776](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43698096776) passed. Hosted release confirmation remains untested because this workflow only packages after a successful CI run on `main`. This is a packaging defect, not a production deployment or acceptance result.
+The current main CI run [43702382063](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702382063) passed its seven jobs: root startup, frontend, PostgreSQL/backend, ClamAV adapter, DMS API, isolated restore, and production Docker. The subsequent release-artifact run [43702607678](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702607678) passed both packaging and validation, including extraction, provenance checks, and production-dependency installation. The older failure [43695992978](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695992978) exposed the missing-hidden-file issue; the current mainline release run demonstrates that the artifact validates now. These are CI/artifact results, not a production deployment or acceptance result.
 
 Main CI run [43612331431](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43612331431) passed all seven jobs on `4b7cd7de1b26755a0379b67f7222d55ef2deeb4b`, including root checks/startup, frontend tests/build, backend PostgreSQL/migration/build/Jest, ClamAV adapter integration, full DMS API integration, full-schema backup/restore integration, and production Docker configuration/image builds. Release-artifacts run [43612645484](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43612645484) also succeeded on the same commit, building a package from CI artifacts. This is artifact generation, not a production deployment.
 
@@ -63,8 +64,8 @@ The PR #38 restore job runs the repository migration runner across the full curr
 
 | Evidence type | What is established | What is not established |
 |---|---|---|
-| Implementation | PRs #25–#43 are merged into the listed mainline; the current main contains their changes. | End-user acceptance or production readiness. |
-| Automated CI | The seven-job CI run passed on the exact current main commit. The release-artifact workflow failed validation because the upload omitted `.env.example`; the Phase 4 branch fix passes local bundle validation but has no hosted release run yet. | Deployed configuration, production traffic, or successful operation in a customer environment. |
+| Implementation | PRs #25–#44 are merged into the listed mainline; the current main contains their changes. | End-user acceptance or production readiness. |
+| Automated CI | All seven jobs passed on exact current main commit `77fdb0955e3bbbef01690edc93dc630e443bfbe8`; both release-artifact jobs passed on the same commit. | Deployed configuration, production traffic, or successful operation in a customer environment. |
 | Isolated tests | DMS API/scanner and full-schema restore checks, plus focused planning/offline tests, exercise their stated test scopes. | Full production installation or restore, external-provider acceptance, or all-device/browser behavior. |
 | Production/provider acceptance | None established by this report. | Production rollout and restore, external-provider acceptance, browser/device acceptance, and legal/domain review remain outstanding. |
 
