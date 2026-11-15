@@ -730,6 +730,28 @@ export async function assignSop(req: Request, res: Response, next: NextFunction)
       if (sop.current_version_id) {
         await materializeAssignments(db, user.tenantId, sopId, sop.current_version_id);
       }
+      const employeeIds = inserted
+        .filter(target => target.target_type === 'employee')
+        .map(target => target.employee_id);
+      if (sop.current_version_id && employeeIds.length) {
+        await db.query(
+          `INSERT INTO planning_notifications
+            (tenant_id,recipient_user_id,event_type,entity_type,entity_id,details)
+           SELECT $1,e.account_user_id,'sop.assignment.created','sop',$2::uuid,
+                  jsonb_build_object('sopId',$2::uuid,'employeeId',e.id,'versionId',$3::uuid,'dueAt',$4::timestamptz)
+           FROM employees e
+           JOIN tenant_memberships membership
+             ON membership.tenant_id=e.tenant_id AND membership.user_id=e.account_user_id
+            AND membership.is_active=true AND membership.is_locked=false
+           WHERE e.tenant_id=$1::uuid AND e.id=ANY($5::uuid[])
+             AND e.account_user_id IS NOT NULL AND e.account_user_id<>$6::uuid
+             AND EXISTS (
+               SELECT 1 FROM tenant_user_roles role
+                WHERE role.tenant_id=e.tenant_id AND role.user_id=e.account_user_id
+             )`,
+          [user.tenantId,sopId,sop.current_version_id,body.dueAt ?? null,employeeIds,user.userId]
+        );
+      }
       await writeEvent(db, user.tenantId, sopId, user.userId, 'assigned', sop.current_version_id,
         { targetCount: body.targets.length, dueAt: body.dueAt ?? null });
       return { targets: inserted, versionId: sop.current_version_id };

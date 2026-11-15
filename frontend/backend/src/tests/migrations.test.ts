@@ -16,12 +16,12 @@ const noopLogger = () => {};
 const MIGRATION_VERSIONS = [
   '001', '002', '003', '004', '005', '006', '007', '009', '011', '012', '013', '014',
   '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025', '026',
-  '027', '028', '029', '030', '031', '032', '033', '034', '035', '036'
+  '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037'
 ];
 const MIGRATION_VERSIONS_WITH_010 = [
   '001', '002', '003', '004', '005', '006', '007', '009', '010', '011', '012', '013',
   '014', '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025',
-  '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036'
+  '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037'
 ];
 
 function migrationUrl(): string {
@@ -521,6 +521,7 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
     const globalRoleId = randomUUID();
     const documentCategoryId = randomUUID();
     const documentId = randomUUID();
+    const siteADocumentId = randomUUID();
     const alarmTypeId = randomUUID();
     const ruleId = randomUUID();
     const incidentId = randomUUID();
@@ -582,13 +583,13 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
     );
     await queryInDatabase(db,
       `INSERT INTO documents (id,tenant_id,title,category_id,created_by)
-       VALUES ($1,$2,'Site B document',$3,$4)`,
-      [documentId, tenantId, documentCategoryId, userId]
+       VALUES ($1,$2,'Site B document',$3,$4),($5,$2,'Site A document',$3,$4)`,
+      [documentId, tenantId, documentCategoryId, userId, siteADocumentId]
     );
     await queryInDatabase(db,
       `INSERT INTO document_relationships (tenant_id,document_id,relationship_type,site_id)
-       VALUES ($1,$2,'site',$3)`,
-      [tenantId, documentId, siteBId]
+       VALUES ($1,$2,'site',$3),($1,$4,'site',$5)`,
+      [tenantId, documentId, siteBId, siteADocumentId, siteAId]
     );
     await queryInDatabase(db,
       `INSERT INTO alarm_escalation_rules (id,tenant_id,name,site_id,created_by,updated_by)
@@ -648,7 +649,10 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
 
       await app.query("SELECT set_config('app.current_permission','documents:read',true)");
       expect((await app.query('SELECT id FROM documents WHERE id=$1', [documentId])).rows).toEqual([]);
+      expect((await app.query('SELECT id FROM documents WHERE id=$1', [siteADocumentId])).rows).toEqual([{ id: siteADocumentId }]);
       expect((await app.query('SELECT document_id FROM document_relationships WHERE document_id=$1', [documentId])).rows).toEqual([]);
+      expect((await app.query('UPDATE documents SET title=$2 WHERE id=$1 RETURNING id', [documentId, 'Changed out of scope']))
+        .rows).toEqual([]);
 
       await app.query("SELECT set_config('app.current_permission','alarm:read',true)");
       expect((await app.query('SELECT id FROM alarm_incidents WHERE id=$1', [incidentId])).rows).toEqual([]);

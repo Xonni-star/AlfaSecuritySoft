@@ -469,8 +469,13 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
       status: 'PENDING'
     };
     const markSynced = vi.spyOn(offlineVault, 'markSynced').mockResolvedValue(undefined);
+    const updateStatus = vi.spyOn(offlineVault, 'updateMutationStatus').mockResolvedValue(undefined);
     vi.spyOn(offlineVault, 'getPendingOutbox').mockResolvedValue([mutation] as any);
-    vi.spyOn(offlineVault, 'getOutbox').mockResolvedValue([mutation] as any);
+    vi.spyOn(offlineVault, 'getOutbox').mockResolvedValue([{
+      ...mutation,
+      status: 'FAILED',
+      errorMessage: 'Keine Synchronisationsquittung für diese Mutation erhalten; der Serverstatus ist ungeklärt.'
+    }] as any);
     mockedApi.post.mockResolvedValueOnce([{
       clientUuid: 'unrelated-mutation',
       status: 'SYNCED',
@@ -489,11 +494,99 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
 
     const result = await useSecurityStore.getState().triggerManualSync();
 
-    expect(result.success).toBe(0);
+    expect(result).toMatchObject({ success: 0, failed: 1, conflicts: 0 });
     expect(markSynced).not.toHaveBeenCalled();
+    expect(updateStatus).toHaveBeenCalledWith(mutation.id, 'FAILED', {
+      errorMessage: 'Keine Synchronisationsquittung für diese Mutation erhalten; der Serverstatus ist ungeklärt.',
+      retryable: true
+    });
     expect(useSecurityStore.getState().syncQueue).toEqual([
-      expect.objectContaining({ id: mutation.id, status: 'pending' })
+      expect.objectContaining({ id: mutation.id, status: 'failed' })
     ]);
+  });
+
+  test('keeps a submitted mutation unresolved when its acknowledgement is missing and retries with the same ID', async () => {
+    const acknowledgedMutation = {
+      id: 'acknowledged-mutation',
+      tenantId: 'tenant-frankfurt',
+      userId: 'user-regression',
+      entityType: 'task',
+      action: 'CREATE',
+      payload: { title: 'Acknowledged task' },
+      occurredAt: '2026-11-13T09:00:00.000Z',
+      baseVersion: 1,
+      retryCount: 0,
+      status: 'PENDING'
+    };
+    const mutation = {
+      id: 'missing-ack-mutation',
+      tenantId: 'tenant-frankfurt',
+      userId: 'user-regression',
+      entityType: 'task',
+      action: 'CREATE',
+      payload: { title: 'Mutation without acknowledgement' },
+      occurredAt: '2026-11-13T10:00:00.000Z',
+      baseVersion: 1,
+      retryCount: 0,
+      status: 'PENDING'
+    };
+    const updateStatus = vi.spyOn(offlineVault, 'updateMutationStatus').mockResolvedValue(undefined);
+    const markSynced = vi.spyOn(offlineVault, 'markSynced').mockResolvedValue(undefined);
+    vi.spyOn(offlineVault, 'getPendingOutbox')
+      .mockResolvedValueOnce([acknowledgedMutation, mutation] as any)
+      .mockResolvedValueOnce([mutation] as any);
+    vi.spyOn(offlineVault, 'getOutbox')
+      .mockResolvedValueOnce([{
+        ...mutation,
+        status: 'FAILED',
+        retryable: true,
+        errorMessage: 'Keine Synchronisationsquittung für diese Mutation erhalten; der Serverstatus ist ungeklärt.'
+      }] as any)
+      .mockResolvedValueOnce([]);
+    mockedApi.post
+      .mockResolvedValueOnce([{ clientUuid: acknowledgedMutation.id, status: 'SYNCED' }])
+      .mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED' }]);
+    useSecurityStore.setState({
+      isOnline: true,
+      isAuthenticated: true,
+      currentTenantId: mutation.tenantId,
+      currentUserId: mutation.userId,
+      authUser: {
+        id: mutation.userId, email: '', fullName: '', role: '',
+        tenantId: mutation.tenantId, tenantName: '', permissions: ['tasks:manage']
+      }
+    });
+
+    const firstResult = await useSecurityStore.getState().triggerManualSync();
+
+    expect(firstResult).toMatchObject({ success: 1, failed: 1, conflicts: 0 });
+    expect(updateStatus).toHaveBeenCalledWith(mutation.id, 'FAILED', {
+      errorMessage: 'Keine Synchronisationsquittung für diese Mutation erhalten; der Serverstatus ist ungeklärt.',
+      retryable: true
+    });
+    expect(markSynced).toHaveBeenCalledWith(acknowledgedMutation.id);
+    expect(markSynced).not.toHaveBeenCalledWith(mutation.id);
+    expect(useSecurityStore.getState().syncQueue).toEqual([
+      expect.objectContaining({
+        id: mutation.id,
+        status: 'failed',
+        errorMessage: 'Keine Synchronisationsquittung für diese Mutation erhalten; der Serverstatus ist ungeklärt.'
+      })
+    ]);
+
+    const retryResult = await useSecurityStore.getState().triggerManualSync({ retryFailed: true });
+
+    expect(retryResult).toMatchObject({ success: 1, failed: 0, conflicts: 0 });
+    expect(offlineVault.getPendingOutbox).toHaveBeenLastCalledWith(
+      mutation.tenantId,
+      mutation.userId,
+      { includeFailed: true }
+    );
+    expect(mockedApi.post.mock.calls.map(([, payload]) => (payload as any).mutations[0].clientUuid))
+      .toEqual([acknowledgedMutation.id, mutation.id]);
+    expect((mockedApi.post.mock.calls[0][1] as any).mutations.map((item: any) => item.clientUuid))
+      .toEqual([acknowledgedMutation.id, mutation.id]);
+    expect(markSynced).toHaveBeenCalledWith(mutation.id);
   });
 
   test('does not apply a sync receipt after the active identity changes in flight', async () => {

@@ -1640,9 +1640,11 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
             inFlightItems = [];
             continue;
           }
+          const acknowledgedMutationIds = new Set<string>();
           for (const receipt of receipts) {
             const mutation = orderedItems.find(item => item.id === receipt.clientUuid);
             if (!mutation) continue;
+            acknowledgedMutationIds.add(mutation.id);
             if (receipt.status === 'SYNCED') {
               if (mutation?.entityType === 'patrol') {
                 if (mutation.payload?.recordType === 'round_start' && mutation.payload.roundId) {
@@ -1677,6 +1679,14 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
                 }));
               }
             }
+          }
+          for (const mutation of orderedItems) {
+            if (acknowledgedMutationIds.has(mutation.id)) continue;
+            failedCount++;
+            await offlineVault.updateMutationStatus(mutation.id, 'FAILED', {
+              errorMessage: 'Keine Synchronisationsquittung für diese Mutation erhalten; der Serverstatus ist ungeklärt.',
+              retryable: true
+            });
           }
           inFlightItems = [];
         }
