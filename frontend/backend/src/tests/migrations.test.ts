@@ -16,12 +16,12 @@ const noopLogger = () => {};
 const MIGRATION_VERSIONS = [
   '001', '002', '003', '004', '005', '006', '007', '009', '011', '012', '013', '014',
   '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025', '026',
-  '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037'
+  '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038'
 ];
 const MIGRATION_VERSIONS_WITH_010 = [
   '001', '002', '003', '004', '005', '006', '007', '009', '010', '011', '012', '013',
   '014', '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025',
-  '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037'
+  '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038'
 ];
 
 function migrationUrl(): string {
@@ -514,6 +514,7 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
     await runMigrations({ connectionString: withDatabaseName(db), migrationsDir: makeMigrationsDir(), logger: noopLogger });
     const tenantId = randomUUID();
     const userId = randomUUID();
+    const otherUserId = randomUUID();
     const clientId = randomUUID();
     const siteAId = randomUUID();
     const siteBId = randomUUID();
@@ -537,13 +538,13 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
     );
     await queryInDatabase(db,
       `INSERT INTO users (id,email,password_hash,first_name,last_name)
-       VALUES ($1,$2,'test-hash','Scope','User')`,
-      [userId, `${userId}@secops.test`]
+       VALUES ($1,$2,'test-hash','Scope','User'),($3,$4,'test-hash','Other','User')`,
+      [userId, `${userId}@secops.test`, otherUserId, `${otherUserId}@secops.test`]
     );
     await queryInDatabase(db,
       `INSERT INTO tenant_memberships (tenant_id,user_id,first_name,last_name)
-       VALUES ($1,$2,'Scope','User')`,
-      [tenantId, userId]
+       VALUES ($1,$2,'Scope','User'),($1,$3,'Other','User')`,
+      [tenantId, userId, otherUserId]
     );
     await queryInDatabase(db,
       `INSERT INTO clients
@@ -574,7 +575,7 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
        SELECT $1,$2,p.id,$3,'SITE'
          FROM permissions p
         WHERE p.code = ANY($4::text[])`,
-      [tenantId, tenantRoleId, siteAId, ['documents:read', 'alarm:read', 'alarm:escalation:manage', 'patrol:route:read']]
+      [tenantId, tenantRoleId, siteAId, ['documents:read', 'documents:update', 'alarm:read', 'alarm:escalation:manage', 'patrol:route:read']]
     );
     await queryInDatabase(db,
       `INSERT INTO document_categories (id,tenant_id,name,created_by)
@@ -653,6 +654,18 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
       expect((await app.query('SELECT document_id FROM document_relationships WHERE document_id=$1', [documentId])).rows).toEqual([]);
       expect((await app.query('UPDATE documents SET title=$2 WHERE id=$1 RETURNING id', [documentId, 'Changed out of scope']))
         .rows).toEqual([]);
+
+      await app.query("SELECT set_config('app.current_permission','documents:update',true)");
+      expect((await app.query(
+        'UPDATE documents SET title=$2 WHERE id=$1 RETURNING id',
+        [siteADocumentId, 'Updated within site scope']
+      )).rows).toEqual([{ id: siteADocumentId }]);
+      await app.query('SAVEPOINT cross_site_document_owner');
+      await expect(app.query(
+        'UPDATE documents SET responsible_user_id=$2 WHERE id=$1',
+        [siteADocumentId, otherUserId]
+      )).rejects.toMatchObject({ code: '42501' });
+      await app.query('ROLLBACK TO SAVEPOINT cross_site_document_owner');
 
       await app.query("SELECT set_config('app.current_permission','alarm:read',true)");
       expect((await app.query('SELECT id FROM alarm_incidents WHERE id=$1', [incidentId])).rows).toEqual([]);
