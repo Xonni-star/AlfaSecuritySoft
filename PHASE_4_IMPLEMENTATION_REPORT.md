@@ -4,9 +4,9 @@
 
 **Reviewed base:** `main` at `ba9ab4ddc5d9ef03a3d147a023f002a0abb0e547` (PR #43).
 
-**PR:** [#44](https://github.com/Xonni-star/SecurityOps-2.0/pull/44), open against `main` from `phase-4-system-integration-hardening` at `b306d1a986fba4fec1da492f0013f16d223f930f` for this test increment.
+**PR:** [#44](https://github.com/Xonni-star/SecurityOps-2.0/pull/44), open against `main` from `phase-4-system-integration-hardening`. Latest verified PR head before this report synchronization: `9bb2ce35d59548cd4fece7e0514606b7309d1efb`.
 
-**PR CI:** **PASSED** — all seven jobs on this increment in [run 43700884110](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43700884110).
+**PR CI:** **PASSED** — all seven jobs on the latest verified head in [run 43701128066](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43701128066). The test/code increment also passed all seven jobs in [run 43700884110](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43700884110).
 
 ## Starting state
 
@@ -51,7 +51,7 @@ The latest main CI run [43695784002](https://github.com/Xonni-star/SecurityOps-2
 | Root structure, workflow YAML, restore shell syntax, diff whitespace | **PASSED** |
 | Local release bundle | **PASSED** — verifier accepted the assembled bundle and all 36 migration assets |
 | Main CI at base commit | **PASSED** — seven jobs in run [43695784002](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695784002) |
-| PR CI for this increment | **PASSED** — all seven jobs for head `b306d1a986fba4fec1da492f0013f16d223f930f` in [run 43700884110](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43700884110) |
+| PR CI | **PASSED** — all seven jobs for the test/code head in [run 43700884110](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43700884110), and all seven for the latest verified PR head `9bb2ce35d59548cd4fece7e0514606b7309d1efb` in [run 43701128066](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43701128066) |
 | Hosted release verification of this change | **NOT TESTED** — its `workflow_run` trigger only packages CI runs on `main`; merging is explicitly out of scope |
 | Browser/device E2E and real mobile hardware | **NOT TESTED** — no Playwright/Cypress/WebDriver configuration was found; camera/NFC and multi-device offline behavior were not exercised |
 | Representative-scale performance / `EXPLAIN ANALYZE` | **NOT TESTED** — no representative dataset or workload was available; no query or index change was made |
