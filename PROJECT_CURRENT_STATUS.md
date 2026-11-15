@@ -1,6 +1,6 @@
 # SecurityOps 2.0 — Current project status
 
-**Last verified:** 2026-11-15 21:32 CET
+**Last verified:** 2026-11-15 21:42 CET
 
 **Verified `main`:** [`cd01c489c729211ed54a5921f2e326effea71460`](https://github.com/Xonni-star/SecurityOps-2.0/commit/cd01c489c729211ed54a5921f2e326effea71460)
 
@@ -27,11 +27,11 @@ This is the current evidence index. Phase reports and dated status sections rema
 | Documentation PR validation | **DONE** | Open PR #62 is based on `main` at head `59274c856edea1264803b31424f29e7c8a5d7739`; hosted CI run [43758367874](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43758367874) passed **7/7 jobs**. It remains open and unmerged pending the final offline-sync outcome. |
 | Test-only Linux install | **DONE** | PR #56 merged. The tar/deb installer and lifecycle guidance explicitly target isolated testing; they are not production installers. |
 | Backup/restore | **PARTIAL** | CI and local drills exercise synthetic DB and local object-store recovery. A real S3-provider restore, production-like restore, scanner/provider acceptance, and measured RPO/RTO are not evidenced. |
-| Offline and SOP workflows | **PARTIAL / BLOCKED** | Merged CI covers the checked-in workflows and the Chromium loopback-fixture scenario. PR #64 remains open at `ac706864`; its latest hosted run 43757746251 failed the Backend job while the other six passed. The GuardBook DMS attachment integration test expected HTTP 202 but received 500. The same-tenant cross-user attachment-isolation fix has not been reported as complete. The fixture is not the authenticated application backend or a physical device. |
+| Offline and SOP workflows | **PARTIAL / BLOCKED** | Merged CI covers the checked-in workflows and the Chromium loopback-fixture scenario. PR #64 remains open at `9d1a59a`; latest hosted run 43759198646 passed 6/7 jobs but failed Backend during Jest `afterAll`: cleanup deletes an employee while a GuardBook entry still references it (`fk_guardbook_guard_tenant`). The workstream is still assessing same-tenant user isolation: the offline pending-upload query now filters by tenant and user, but the reviewed attachment relink and server receipt lookup remain tenant-scoped. These are review concerns, not confirmed exploitable vulnerabilities. The fixture is not the authenticated application backend or a physical device. |
 | Security and tenancy | **PARTIAL** | PR #57 and #58 and tenant-authorization test PR #65 are merged. PR #65 passed 7/7 hosted checks; the bounded workstream reported no confirmed high-confidence issue. This is not a comprehensive security review or customer/production acceptance. |
 | Performance | **PARTIAL** | PR #53 adds a bounded local baseline. Its workload and environment do not establish production capacity, an SLA, or resource headroom. |
 | Production/provider/device acceptance | **OPEN** | No evidence here establishes a production deployment, real-provider behavior, customer acceptance, or physical-device acceptance. |
-| Cross-workstream final sign-off | **BLOCKED** | Tenant-authorization test work is merged, but offline-sync remains unresolved; do not close Phase 9 until PR #64 is fixed/reviewed and its final outcome is recorded. |
+| Cross-workstream final sign-off | **BLOCKED** | Tenant-authorization test work is merged, but offline-sync CI and user-boundary review remain unresolved; do not close Phase 9 until PR #64 is fixed/reviewed and its final outcome is recorded. |
 
 ## Merged PRs #50–#61, #63, and #65
 
