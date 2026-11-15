@@ -61,6 +61,16 @@ describe('SOP separation of duties and acknowledgements', () => {
     expect(res.statusCode).toBe(201);
     expect(res.body.data.targets).toEqual([target]);
     expect(transaction.query.mock.calls[3][0]).toContain("t.target_type='employee'");
+    const [notificationSql, notificationParams] = transaction.query.mock.calls[4];
+    expect(notificationSql).toContain('INSERT INTO planning_notifications');
+    expect(notificationSql).toContain("'sop.assignment.created','sop'");
+    expect(notificationSql).toContain('e.tenant_id=$1::uuid AND e.id=ANY($5::uuid[])');
+    expect(notificationSql).toContain('JOIN tenant_memberships membership');
+    expect(notificationSql).toContain('membership.is_active=true AND membership.is_locked=false');
+    expect(notificationSql).toContain('FROM tenant_user_roles role');
+    expect(notificationParams).toEqual([
+      tenantId, sopId, versionId, null, [employeeId], userId
+    ]);
   });
 
   test('author cannot review their own instruction or write a review event', async () => {

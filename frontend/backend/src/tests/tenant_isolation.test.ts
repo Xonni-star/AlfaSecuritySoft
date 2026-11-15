@@ -1,4 +1,5 @@
 import { pool, migrationPool, withTenantTransaction, withSystemTransaction } from '../config/database';
+import { assignSop } from '../controllers/sopController';
 import { cleanupTestData, insertTenantMembership } from './testUtils';
 
 describe('PostgreSQL Row-Level Security (RLS) & Multi-Tenant Isolation', () => {
@@ -8,6 +9,8 @@ describe('PostgreSQL Row-Level Security (RLS) & Multi-Tenant Isolation', () => {
   let employeeBId: string;
   let sopUserAId: string;
   let sopUserBId: string;
+  let tenantRoleOnlyUserId: string;
+  let tenantRoleOnlyEmployeeId: string;
   let sopAId: string;
   let sopA2Id: string;
   let sopBId: string;
@@ -72,17 +75,44 @@ describe('PostgreSQL Row-Level Security (RLS) & Multi-Tenant Isolation', () => {
        VALUES ($1,'unused-test-hash','SOP','B') RETURNING id`,
       [`sop-rls-b-${Date.now()}@example.test`]
     );
+    const tenantRoleOnlyUser = await migrationPool.query(
+      `INSERT INTO users (email,password_hash,first_name,last_name)
+       VALUES ($1,'unused-test-hash','Tenant Role','Recipient') RETURNING id`,
+      [`sop-tenant-role-${Date.now()}@example.test`]
+    );
     sopUserAId = userA.rows[0].id;
     sopUserBId = userB.rows[0].id;
+    tenantRoleOnlyUserId = tenantRoleOnlyUser.rows[0].id;
     await insertTenantMembership(tenantA, sopUserAId);
     await insertTenantMembership(tenantB, sopUserBId);
+    await insertTenantMembership(tenantA, tenantRoleOnlyUserId);
     const planningRole = await migrationPool.query(
       `INSERT INTO roles (name,description) VALUES ($1,'Planning notification RLS fixture') RETURNING id`,
       [`PlanningRls_${Date.now()}`]
     );
     await migrationPool.query(
-      `INSERT INTO user_roles (user_id,role_id,tenant_id) VALUES ($1,$2,$3),($4,$2,$5)`,
-      [sopUserAId, planningRole.rows[0].id, tenantA, sopUserBId, tenantB]
+      `INSERT INTO user_roles (user_id,role_id,tenant_id) VALUES ($1,$2,$3),($4,$2,$5),($6,$2,$3)`,
+      [sopUserAId, planningRole.rows[0].id, tenantA, sopUserBId, tenantB, tenantRoleOnlyUserId]
+    );
+    const tenantRole = await migrationPool.query(
+      `INSERT INTO tenant_roles (tenant_id,name,description)
+       VALUES ($1,$2,'SOP notification recipient fixture') RETURNING id`,
+      [tenantA, `SOPNotify_${Date.now()}`]
+    );
+    await migrationPool.query(
+      `INSERT INTO tenant_user_roles (tenant_id,user_id,role_id) VALUES ($1,$2,$3)`,
+      [tenantA, tenantRoleOnlyUserId, tenantRole.rows[0].id]
+    );
+    const notificationEmployee = await migrationPool.query(
+      `INSERT INTO employees
+        (tenant_id,personnel_number,first_name,last_name,email,phone,date_of_joining,account_user_id)
+       VALUES ($1,$2,'Notification','Recipient',$3,'+49 30 3','2026-01-01',$4) RETURNING id`,
+      [tenantA, `RLS-SOP-NOTIFY-${Date.now()}`, `sop-recipient-${Date.now()}@example.test`, tenantRoleOnlyUserId]
+    );
+    tenantRoleOnlyEmployeeId = notificationEmployee.rows[0].id;
+    await migrationPool.query(
+      'DELETE FROM user_roles WHERE tenant_id=$1 AND user_id=$2',
+      [tenantA, tenantRoleOnlyUserId]
     );
     const planningPeriod = await migrationPool.query(
       `INSERT INTO schedule_periods (tenant_id,name,date_from,date_to,time_zone,created_by)
@@ -226,13 +256,13 @@ describe('PostgreSQL Row-Level Security (RLS) & Multi-Tenant Isolation', () => {
         await cleanup.query('DELETE FROM sop_instructions WHERE tenant_id=$1 AND id=$2',[tenantId,sopId]);
       }
       await cleanup.query('DELETE FROM employee_absences WHERE tenant_id=ANY($1::uuid[])',[ [tenantA,tenantB] ]);
-      await cleanup.query('DELETE FROM employees WHERE id=ANY($1::uuid[])',[[employeeAId,employeeBId]]);
+      await cleanup.query('DELETE FROM employees WHERE id=ANY($1::uuid[])',[[employeeAId,employeeBId,tenantRoleOnlyEmployeeId]]);
     } finally {
       await cleanup.query('SET session_replication_role = origin');
       cleanup.release();
     }
     // Administrative Bereinigung inkl. Append-Only-Trigger (nur Testdatenbank).
-    await cleanupTestData([tenantA, tenantB],[sopUserAId,sopUserBId]);
+    await cleanupTestData([tenantA, tenantB],[sopUserAId,sopUserBId,tenantRoleOnlyUserId]);
     await pool.end();
     await migrationPool.end();
   });
@@ -516,6 +546,45 @@ describe('PostgreSQL Row-Level Security (RLS) & Multi-Tenant Isolation', () => {
     const systemRows = await withSystemTransaction(async tx => (await tx.query('SELECT * FROM sop_assignments')).rows);
     expect(systemRows).toHaveLength(0);
     expect(assignmentAId).toBeTruthy();
+  });
+
+  test('explicit SOP assignment notifies an employee account with only a tenant_user_roles assignment', async () => {
+    const membership = await migrationPool.query(
+      `SELECT 1 FROM tenant_user_roles WHERE tenant_id=$1 AND user_id=$2`,
+      [tenantA, tenantRoleOnlyUserId]
+    );
+    const legacyRole = await migrationPool.query(
+      `SELECT 1 FROM user_roles WHERE tenant_id=$1 AND user_id=$2`,
+      [tenantA, tenantRoleOnlyUserId]
+    );
+    expect(membership.rows).toHaveLength(1);
+    expect(legacyRole.rows).toHaveLength(0);
+
+    const res: any = { statusCode: 200, body: undefined };
+    res.status = jest.fn((status: number) => { res.statusCode = status; return res; });
+    res.json = jest.fn((body: unknown) => { res.body = body; return res; });
+    const next = jest.fn();
+    await assignSop({
+      params: { id: sopAId },
+      body: { targets: [{ type: 'employee', id: tenantRoleOnlyEmployeeId }] },
+      user: { userId: sopUserAId, tenantId: tenantA }
+    } as any, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(201);
+    const notification = await migrationPool.query(
+      `SELECT tenant_id,recipient_user_id,event_type,entity_type,entity_id
+         FROM planning_notifications
+        WHERE tenant_id=$1 AND recipient_user_id=$2 AND entity_id=$3`,
+      [tenantA, tenantRoleOnlyUserId, sopAId]
+    );
+    expect(notification.rows).toEqual([expect.objectContaining({
+      tenant_id: tenantA,
+      recipient_user_id: tenantRoleOnlyUserId,
+      event_type: 'sop.assignment.created',
+      entity_type: 'sop',
+      entity_id: sopAId
+    })]);
   });
 
   test('SOP target FKs reject foreign employees and version links reject a different SOP in the same tenant', async () => {

@@ -295,7 +295,7 @@ if [ "$DB_HEALTH" != healthy ]; then
     exit 1
 fi
 
-EXPECTED_MIGRATIONS="001,002,003,004,005,006,007,009,011,012,013,014,015,016,017,018,019,020,021,022,023,024,025,026,027,028,029,030,031,032,033,034,035,036"
+EXPECTED_MIGRATIONS="001,002,003,004,005,006,007,009,011,012,013,014,015,016,017,018,019,020,021,022,023,024,025,026,027,028,029,030,031,032,033,034,035,036,037,038"
 echo "[TEST] Führe die Repository-Migrationen in der isolierten Testdatenbank aus."
 bounded_run 600 docker compose --env-file "$ENV_FILE" --project-name "$PROJECT" \
     -f "$SCRIPT_DIR/docker-compose.minio.yml" \

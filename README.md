@@ -95,6 +95,8 @@ Das Backend verweigert den Start bei fehlenden, ungültigen oder offensichtlich 
 | Offline-Sync | IndexedDB-Outbox und modulbezogene Sync-Pfade, einschließlich des begrenzten, persistenten Retry-Backoffs aus gemergtem PR [#32](https://github.com/Xonni-star/SecurityOps-2.0/pull/32) | Nicht jede Funktion und jedes Binärartefakt ist offline verfügbar; Offline-Sync ist keine Zusicherung für Hintergrundausführung nach dem Schließen des Browsers |
 | Dienstplanung | Backend/UI und weitergehende Workflows einschließlich konfigurierbarer täglicher, wöchentlicher und monatlicher Arbeitszeitlimits aus gemergten PRs [#33](https://github.com/Xonni-star/SecurityOps-2.0/pull/33) und [#36](https://github.com/Xonni-star/SecurityOps-2.0/pull/36) | Die Regeln gelten nur bei Konfiguration in einer aktiven, freigegebenen Profilrevision. Kalender-/Planungsabläufe und fokussierte Berliner DST-Tests sind keine Rechtskonformitäts- oder fachliche Produktionsabnahme. Aktueller Integrationsstatus: [Mainline-Integrationsbericht](./MAINLINE_INTEGRATION_STATUS.md) |
 
+Eine Produktions-Compose-Konfiguration ist vorhanden: [docker-compose.production.yml](./frontend/deploy/docker-compose.production.yml). Ihre Existenz belegt nicht, dass Services tatsächlich in Produktion deployed oder abgenommen wurden; die Statusangaben oben bleiben maßgeblich.
+
 ---
 
 ## Tests und Build
