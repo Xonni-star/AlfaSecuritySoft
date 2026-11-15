@@ -21,6 +21,7 @@ vi.mock('../services/indexedDbService', () => ({
 }));
 
 import { SyncManagerModal } from '../components/SyncManagerModal';
+import { offlineVault } from '../services/indexedDbService';
 
 function shiftConflict(serverPayload?: Record<string, unknown>) {
   return {
@@ -147,5 +148,26 @@ describe('SyncManagerModal shift conflict snapshots', () => {
 
     expect(container.textContent).toContain('Dieser Browser stellt keine verlässliche Speicherbelegung bereit.');
     expect(container.textContent).not.toContain('1.19 MB');
+  });
+
+  test('shows the local entry identifier for an ownerless attachment recovery', async () => {
+    vi.mocked(offlineVault.listOwnerlessPendingAttachments).mockResolvedValue([{
+      id: 'legacy-attachment',
+      tenantId: 'tenant-a',
+      entityId: 'legacy-local-entry',
+      fileName: 'legacy.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: 1024,
+      blobData: 'data:image/jpeg;base64,cGhvdG8=',
+      capturedAt: '2026-11-15T10:00:00.000Z',
+      synced: false
+    }]);
+    await act(async () => root.render(<SyncManagerModal isOpen onClose={vi.fn()} />));
+    const storageTab = Array.from(container.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('IndexedDB Speicher'));
+    await act(async () => storageTab?.click());
+
+    expect(container.textContent).toContain('legacy.jpg');
+    expect(container.textContent).toContain('Lokale Wachbuch-ID: legacy-local-entry');
   });
 });

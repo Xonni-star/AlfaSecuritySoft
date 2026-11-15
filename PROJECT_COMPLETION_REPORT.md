@@ -4,8 +4,12 @@
 
 **Phase 9 documentation baseline at kickoff:** `879ae951d6cea52fd84d01dc699cf2ed08843300`
 **Current `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
-**Last GitHub check:** 2026-11-15 22:03 CET
-**Open PRs:** none. [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62) (documentation/report update) is merged as `9df02aa`; no deployment was performed. Sections below describing #62 as open are the 22:03 CET snapshot. Current main CI: [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) 7/7; artifacts [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) 2/2.
+**Last GitHub check:** 2026-11-15 22:52 CET
+**Open PR:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66); PRs #50–#65 are merged. [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62) is merged as `9df02aa`; no deployment was performed. Main CI [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed 7/7 and artifacts [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2. PR #66 CI [43764603109](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43764603109) passed 7/7 on the earlier head `164e0e6`; later local changes are not covered.
+
+The historical workstream notes below retain the PR #62-open state from their original snapshot and do not describe the current GitHub state.
+
+The current local PR #66 revision passed frontend Vitest (157 tests), typecheck and production build, and the backend build plus 315 Jest tests after migrations and seeds against an isolated PostgreSQL 16 container. Production Compose configuration validation passed. Hosted CI has not yet run on this updated revision.
 
 The kickoff commit is the Phase 9 documentation workstream’s verified mainline baseline, not the repository’s first commit. Current status and evidence links are in [PROJECT_STATUS.md](./PROJECT_STATUS.md) and [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md).
 
@@ -50,13 +54,14 @@ This documentation workstream changed Markdown and runbook documentation only; i
 
 ## In development
 
-- PR #62: documentation rebase and updated project/phase reports. Its new head `6c8a52c51ff3b47a20be9a0579e863861744c891` passed 7/7 in hosted run [43761213396](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43761213396). The PR remains open and unmerged.
+- PR #62’s documentation rebase and project/phase reports are merged as `9df02aa`. The older statement that #62 remained open is historical.
+- PR #66 is currently open and contains these report changes plus offline attachment recovery, CSV export safety, and DST regression coverage. Its last hosted run [43764603109](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43764603109) passed 7/7 on earlier head `164e0e6`; newly added changes require a fresh CI run.
 - Mainline post-merge CI for PR #64: run [43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on exact SHA `621874535ee480e56716ae8a7bd992272bc7a51a`.
 
 ## Open
 
 - Authenticated-backend validation of offline attachment upload/replay and representative physical-device/browser acceptance.
-- Existing local attachments without `userId` are intentionally never auto-uploaded or assigned an owner. The UI warns, and the user must re-add them. Previously acknowledged entries with non-UUID local IDs cannot be linked. These cases are not automatically repaired.
+- Existing local attachments without `userId` are never auto-uploaded or assigned an owner. PR #66 adds a local recovery view to save an attachment or explicitly discard it, and shows its local entry ID; previously acknowledged entries with non-UUID local IDs still require manual re-addition.
 - Provider-backed object storage and scanner acceptance, production-like backup/restore, data-retention validation, and measured/approved RPO/RTO.
 - Production environment, secrets, TLS/network, monitoring, operational ownership, customer acceptance, and release approval.
 - A final Phase 9 sign-off after remaining operational gates receive evidence.

@@ -3,8 +3,8 @@
 **Status:** **PARTIAL / BLOCKED — not approved for production.** This is an evidence index, not a release or compliance approval.
 
 **Current `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
-**Last checked:** 2026-11-15 22:03 CET
-**Open PRs:** none. PRs #50–#65 are merged, including [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62).
+**Last checked:** 2026-11-15 22:52 CET
+**Open PR:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66). PRs #50–#65 are merged, including [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62).
 
 The project’s broader history and evidence are summarized in [PROJECT_COMPLETION_REPORT.md](./PROJECT_COMPLETION_REPORT.md). Phase 9 operations evidence and remaining gates are in [PHASE_9_COMPLETION_REPORT.md](./PHASE_9_COMPLETION_REPORT.md). Dated phase reports are retained as historical snapshots; their old PR and mainline claims are not current status.
 
@@ -19,7 +19,8 @@ The project’s broader history and evidence are summarized in [PROJECT_COMPLETI
 
 ### In development
 
-- PR #62 (operational/documentation audit and project reports) is merged as `9df02aa`; its head `6c8a52c` passed 7/7 hosted CI.
+- PR #66 adds controlled recovery of ownerless offline attachments, a CSV-export correction, DST tests, and current status-doc updates. Hosted CI run 43764603109 passed 7/7 on earlier head `164e0e6`; newly added changes still require push and hosted validation.
+- Current local revision passed all 157 frontend tests, frontend typecheck/build, backend build and 315 backend tests after applying migrations and seeds to isolated PostgreSQL 16. Docker Compose production configuration also validated; hosted CI for the new head is pending.
 
 ### Open
 
@@ -48,4 +49,5 @@ The project’s broader history and evidence are summarized in [PROJECT_COMPLETI
 | Main CI | **7/7 passed** on `9df02aa` | Post-merge run [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) on exact current SHA. |
 | PR #62 hosted CI | **7/7 passed** | Run 43761213396 on head `6c8a52c`; PR since merged. |
 | Artifact validation | **2/2 passed** on `9df02aa` | Run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834). Not a release approval. |
+| Current PR #66 | **7/7 passed on prior head** | Run [43764603109](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43764603109) validates `164e0e6`, not subsequent local changes. |
 | Production acceptance | **Not performed / not established** | No deployment or production approval is claimed. |

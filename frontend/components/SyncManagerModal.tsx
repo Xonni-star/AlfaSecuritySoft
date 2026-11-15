@@ -453,8 +453,13 @@ export const SyncManagerModal: React.FC<SyncManagerModalProps> = ({ isOpen, onCl
                 <ul className="space-y-2">
                   {ownerlessAttachments.map((attachment) => (
                     <li key={attachment.id} className="flex items-center justify-between gap-2 rounded-lg bg-slate-900/70 p-2">
-                      <span className="truncate">
-                        {attachment.fileName} · {(attachment.sizeBytes / 1024).toFixed(0)} KB · {new Date(attachment.capturedAt).toLocaleString('de-DE')}
+                      <span className="min-w-0">
+                        <span className="block truncate">
+                          {attachment.fileName} · {(attachment.sizeBytes / 1024).toFixed(0)} KB · {new Date(attachment.capturedAt).toLocaleString('de-DE')}
+                        </span>
+                        <span className="block truncate text-slate-400">
+                          Lokale Wachbuch-ID: <code>{attachment.entityId}</code>
+                        </span>
                       </span>
                       <span className="flex gap-2 shrink-0">
                         <button type="button" onClick={() => handleExportOwnerless(attachment)} className="px-2 py-1 rounded bg-blue-600 text-white">Sichern</button>

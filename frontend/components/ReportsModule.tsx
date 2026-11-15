@@ -41,6 +41,15 @@ import { ReportDefinition, ReportCategory, UserRole } from '../types';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
+const serializeCsvCell = (value: unknown): string => {
+  let text = String(value ?? '');
+  // Neutralize text formulas even after whitespace, control characters, or a BOM.
+  if (typeof value === 'string' && /^[\s\u0000-\u001f\u007f-\u009f]*[=+\-@]/u.test(text)) {
+    text = `'${text}`;
+  }
+  return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
 export const ReportsModule: React.FC = () => {
   const {
     calculateTenantKPIs,
@@ -154,9 +163,9 @@ export const ReportsModule: React.FC = () => {
       return;
     }
 
-    const headers = Object.keys(rows[0]).join(';');
-    const csvContent = 'data:text/csv;charset=utf-8,﻿' + [headers, ...rows.map((r) => Object.values(r).join(';'))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const headers = Object.keys(rows[0]).map(serializeCsvCell).join(';');
+    const csvContent = '\uFEFF' + [headers, ...rows.map((r) => Object.values(r).map(serializeCsvCell).join(';'))].join('\n');
+    const encodedUri = `data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`;
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
     link.setAttribute('download', `SecurityOps_${dataSource}_${new Date().toISOString().split('T')[0]}.csv`);

@@ -1,10 +1,10 @@
 # SecurityOps 2.0 — Current project status
 
-**Last verified:** 2026-11-15 22:35 CET
+**Last verified:** 2026-11-15 22:52 CET
 
 **Verified `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
 
-**GitHub pull requests:** No pull requests are open. PRs #50–#65 are merged, including [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62) (documentation audit).
+**GitHub pull requests:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66) is open; PRs #50–#65 are merged, including [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62).
 
 **Overall readiness:** **PARTIAL / BLOCKED — not approved or verified for production.**
 
@@ -25,9 +25,11 @@ This is the current evidence index. Phase reports and dated status sections rema
 | Mainline CI | **DONE** | Post-merge [CI run 43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on `6218745` (the #64 merge); run [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed **7/7 jobs** on the exact current-main SHA `9df02aaa5ef01de78e0fe5d53be446b2037db24d`: root checks, frontend, PostgreSQL 16 backend/Jest, isolated restore, ClamAV adapter, DMS API flow, and production Compose/image validation. |
 | Release package validation | **PARTIAL** | The latest artifact run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2 on current `main` `9df02aa`. Packaging/provenance/install validation is not a deployment or production release. |
 | Documentation PR validation | **DONE** | PR #62 (head `6c8a52c`, hosted [CI run 43761213396](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43761213396) 7/7) is merged as `9df02aa`. |
+| Current PR validation | **PARTIAL** | PR #66 CI [run 43764603109](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43764603109) passed 7/7 on `164e0e6`. Additional local changes made after that run have not yet been pushed or validated by hosted CI. |
+| Current local changes | **BESTANDEN** | Frontend: 28 Vitest files / 157 tests, typecheck, and production build passed. Backend: migration and seed ran against an isolated ephemeral PostgreSQL 16 instance; build and 34 Jest suites / 315 tests passed. Production Compose config validation passed. These are local results; they do not replace hosted CI for the new head. |
 | Test-only Linux install | **DONE** | PR #56 merged. The tar/deb installer and lifecycle guidance explicitly target isolated testing; they are not production installers. |
 | Backup/restore | **PARTIAL** | CI and local drills exercise synthetic DB and local object-store recovery. A real S3-provider restore, production-like restore, scanner/provider acceptance, and measured RPO/RTO are not evidenced. |
-| Offline and SOP workflows | **PARTIAL** | PR #64 is merged as `621874535ee480e56716ae8a7bd992272bc7a51a`; its PR head `b814b65` passed 7/7 hosted checks and code review reported no blockers. Post-merge main CI run 43760703980 also passed 7/7 on `6218745`. Migration 041 adds tenant-scoped idempotency receipts with `created_by` ownership. Stored attachments with a `userId` can be uploaded idempotently after reconnect. Existing local attachments without `userId` are not auto-uploaded or assigned an owner; users must re-add them. Legacy attachments whose entry is already acknowledged with a non-UUID local ID cannot be linked. The Chromium fixture is not the authenticated application backend or a physical device. |
+| Offline and SOP workflows | **PARTIAL** | PR #64 is merged as `621874535ee480e56716ae8a7bd992272bc7a51a`; its PR head `b814b65` passed 7/7 hosted checks and code review reported no blockers. Post-merge main CI run 43760703980 also passed 7/7 on `6218745`. Migration 041 adds tenant-scoped idempotency receipts with `created_by` ownership. Stored attachments with a `userId` can be uploaded idempotently after reconnect. Ownerless local attachments remain ineligible for automatic upload or owner assignment; PR #66 adds a controlled local recovery view to save them or explicitly discard, with the local entry ID shown. Legacy attachments whose entry is already acknowledged with a non-UUID local ID still require manual re-addition. The Chromium fixture is not the authenticated application backend or a physical device. |
 | Security and tenancy | **PARTIAL** | PR #57 and #58 and tenant-authorization test PR #65 are merged. PR #65 passed 7/7 hosted checks; the bounded workstream reported no confirmed high-confidence issue. This is not a comprehensive security review or customer/production acceptance. |
 | Performance | **PARTIAL** | PR #53 adds a bounded local baseline. Its workload and environment do not establish production capacity, an SLA, or resource headroom. |
 | Production/provider/device acceptance | **OPEN** | No evidence here establishes a production deployment, real-provider behavior, customer acceptance, or physical-device acceptance. |
