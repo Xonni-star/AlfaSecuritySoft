@@ -5,7 +5,7 @@
 **Baseline checked:** 2026-11-15, `main` at `77fdb0955e3bbbef01690edc93dc630e443bfbe8`.
 
 **Work branch:** `xonni-star-phase-5-e2e-acceptance` (the app-managed branch prefix is applied).
-**Hosted checks for this branch:** Pending PR creation.
+**Hosted checks:** All seven jobs passed on implementation commit `8d3e2d7` in [run 43707028323](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707028323). A final report-only commit will trigger another run.
 
 ## Baseline and scope
 
@@ -55,11 +55,12 @@ The CI change eliminates **70 redundant executions** (14.6% of baseline invocati
 - Backend: **29/29 suites and 290/290 tests passed**; PostgreSQL-backed API and migration tests included. Backend TypeScript build passed.
 - Frontend: **19/19 files and 128/128 tests passed**; typecheck and production build passed. Vite emitted an existing warning about `__dirname` under its native config loader; the build completed.
 - Backup/restore: `npm run test:backup-restore -- --database-only` passed. It applied and re-ran all 37 migrations through 039, verified RLS/FORCE RLS on nine DMS tables and `alarm_incident_links`, tested restored tenant-scoped data and the failure/restart path, and verified cleanup of its disposable resources.
-- **Hosted Phase 5 CI:** Pending PR creation; no result is claimed here.
+- **Hosted PR CI:** All seven jobs passed in run [43707028323](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43707028323): root startup (57 s), frontend (17 s), PostgreSQL/backend (2m11s), ClamAV adapter (1m), DMS API with PostgreSQL/private S3/ClamAV (1m17s), full schema/object-snapshot restore (1m27s), and production Docker (51 s). These timings are per-job durations.
+- **Final report-only commit CI:** Will be triggered after this report is updated; it is not represented by run 43707028323.
 
 ## Blockers, risks, and production checklist
 
-- **BLOCKED locally:** The combined PostgreSQL/MinIO restore path previously failed pulling `quay.io/minio/mc:RELEASE.2025-02-08T19-14-21Z` with `401 UNAUTHORIZED`. The database-only path passed; this does not prove DMS-object restore. Hosted restore CI remains pending.
+- **BLOCKED locally:** The combined PostgreSQL/MinIO restore path previously failed pulling `quay.io/minio/mc:RELEASE.2025-02-08T19-14-21Z` with `401 UNAUTHORIZED`. The database-only path passed. Hosted CI's isolated full schema/object-snapshot restore passed, but does not prove production-provider restore.
 - **NOT TESTED:** Physical mobile devices, browser/device matrix, camera/NFC/GPS behavior, multi-device offline acceptance, and external email/push/dispatch providers. The accessible reconnect control and offline store are covered in automated tests only.
 - **NOT MEASURED:** Production restore/RPO/RTO, performance under representative data, and `EXPLAIN ANALYZE`. No performance indexes or query optimizations were added; migration indexes are limited to link uniqueness/integrity.
 - **NOT APPROVED for production:** No production credentials, data, provider, or deployment were used. Before approval, complete provider-backed database plus object restore drills and measure RPO/RTO; exercise supported browsers and target mobile devices with offline-loss/conflict cases; configure and verify production storage/scanner and notification providers; review monitoring, operational recovery, migration rollout, tenant/RLS controls, and security; obtain domain/legal and product acceptance.
@@ -68,6 +69,6 @@ The CI change eliminates **70 redundant executions** (14.6% of baseline invocati
 
 ## Next steps
 
-1. Review the Phase 5 diff and obtain hosted PR CI results, including the complete restore job; update this report with those results.
+1. Review the Phase 5 diff and the final report-only commit's hosted CI results.
 2. Resolve or document the local MinIO image-access blocker, then run a full database-plus-object restore against an authorized test provider.
 3. Complete browser/device and external-provider acceptance; record actual production-like RPO/RTO and performance evidence before any production-readiness decision.
