@@ -313,6 +313,7 @@ jobs:
       JWT_SECRET: dms-integration-only-secret-not-for-production-0001
       JWT_EXPIRES_IN: 8h
       CORS_ORIGIN: http://localhost:3000
+      SECOPS_DEMO_USER_PASSWORD: DMS-ci-only-seed-password-not-for-use
       DMS_SCAN_REQUIRED: "true"
       DMS_SCANNER_PROVIDER: clamav
       DMS_CLAMAV_HOST: clamav

@@ -8,7 +8,14 @@ import { InMemoryDocumentObjectStore, readDocumentBlob, removeDocumentBlob, setD
 import { setDocumentScanner, DocumentScannerUnavailableError } from '../services/documentScanner';
 import { claimDueAlarmEscalationJobs } from '../services/alarmEscalationWorker';
 
-const SEED_PASSWORD = 'SecOpsVault2025SecurePassword!';
+function getSeedPassword(): string {
+  const password = process.env.SECOPS_DEMO_USER_PASSWORD;
+  if (!password || password.length < 16) {
+    throw new Error('SECOPS_DEMO_USER_PASSWORD must be set to the password used by the test database seed.');
+  }
+  return password;
+}
+const SEED_PASSWORD = getSeedPassword();
 const SEED_USER_EMAIL = 'a.schmidt@ffm-sec.de';
 const BAVARIA_USER_EMAIL = 'api.bavaria@secops.local';
 const SITE_RESTRICTED_USER_EMAIL = 'api.site-restricted@secops.local';

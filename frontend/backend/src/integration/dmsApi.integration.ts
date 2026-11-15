@@ -23,7 +23,14 @@ const connectionTimeoutMs = 1500;
 const tenantFrankfurtId = '11111111-1111-1111-1111-111111111111';
 const tenantBavariaId = '22222222-2222-2222-2222-222222222222';
 const seedEmail = 'a.schmidt@ffm-sec.de';
-const seedPassword = 'SecOpsVault2025SecurePassword!';
+function getSeedPassword(): string {
+  const password = process.env.SECOPS_DEMO_USER_PASSWORD;
+  if (!password || password.length < 16) {
+    throw new Error('SECOPS_DEMO_USER_PASSWORD must be set to the password used by the test database seed.');
+  }
+  return password;
+}
+const seedPassword = getSeedPassword();
 const boundaryEmail = `dms-api-boundary-${crypto.randomUUID()}@example.test`;
 const boundaryPassword = `DmsApiBoundary-${crypto.randomUUID()}!`;
 const cleanPdf = Buffer.from('%PDF-1.7\nSecurityOps clean DMS integration fixture.\n%%EOF\n');

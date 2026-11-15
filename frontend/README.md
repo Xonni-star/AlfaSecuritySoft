@@ -61,10 +61,10 @@ read -r -s -p 'Testpasswort für Demo-Seed (mindestens 16 Zeichen): ' SECOPS_DEM
 printf '\n'
 export SECOPS_DEMO_USER_PASSWORD
 npm --prefix frontend/backend run seed
-unset SECOPS_DEMO_USER_PASSWORD
 
 # Backend- und PostgreSQL RLS-Integrationstests ausführen
 npm --prefix frontend/backend test -- --runInBand
+unset SECOPS_DEMO_USER_PASSWORD
 ```
 
 ### 2.2 Frontend (React, Zustand Store & Vitest unter `frontend/`)
