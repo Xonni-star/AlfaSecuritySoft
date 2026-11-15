@@ -342,13 +342,16 @@ export async function pushSyncMutations(req: Request, res: Response, next: NextF
             const title = mut.payload.title || 'Offline erfasster Vorfall';
             const description = mut.payload.description || '';
             const policeInvolved = Boolean(mut.payload.policeInvolved);
+            const requestedEntryId = z.string().uuid().safeParse(mut.payload.id).success
+              ? mut.payload.id
+              : null;
 
             const insertRes = await client.query(
-              `INSERT INTO guardbook_entries (tenant_id, site_id, guard_id, category, priority, title, description, police_involved, client_mutation_id)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+              `INSERT INTO guardbook_entries (id, tenant_id, site_id, guard_id, category, priority, title, description, police_involved, client_mutation_id)
+               VALUES (COALESCE($1::uuid, uuid_generate_v4()), $2, $3, $4, $5, $6, $7, $8, $9, $10)
                ON CONFLICT (tenant_id, client_mutation_id) DO NOTHING
                RETURNING id, title`,
-              [tenantId, siteId, guardId, category, priority, title, description, policeInvolved, mut.clientUuid]
+              [requestedEntryId, tenantId, siteId, guardId, category, priority, title, description, policeInvolved, mut.clientUuid]
             );
 
             if (insertRes.rows.length > 0) {

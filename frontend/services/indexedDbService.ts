@@ -42,6 +42,7 @@ export interface OutboxMutation {
 export interface StoredAttachment {
   id: string;
   tenantId: string;
+  userId?: string;
   entityId: string;
   fileName: string;
   mimeType: string;
@@ -49,6 +50,10 @@ export interface StoredAttachment {
   blobData: string;
   capturedAt: string;
   synced: boolean;
+  idempotencyKey?: string;
+  serverDocumentId?: string;
+  lastUploadError?: string;
+  uploadRetryCount?: number;
 }
 
 export interface StoredSOPAcknowledgement {
@@ -738,8 +743,12 @@ export class IndexedDbService {
 
   async saveAttachment(attachment: StoredAttachment): Promise<void> {
     const MAX_BYTES = 5 * 1024 * 1024;
+    const allowedMimeTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp']);
     if (attachment.sizeBytes > MAX_BYTES) {
       throw new Error(`Dateigröße (${(attachment.sizeBytes / 1024 / 1024).toFixed(2)} MB) überschreitet das Limit von 5 MB.`);
+    }
+    if (!allowedMimeTypes.has(attachment.mimeType)) {
+      throw new Error('Der Dateityp ist für Wachbuchanhänge nicht freigegeben.');
     }
 
     const db = await this.init();
@@ -752,6 +761,115 @@ export class IndexedDbService {
 
       const store = tx.objectStore('attachments');
       store.put(attachment);
+    });
+  }
+
+  async getPendingAttachments(tenantId: string): Promise<StoredAttachment[]> {
+    const db = await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('attachments', 'readonly');
+      const request = tx.objectStore('attachments').getAll();
+      request.onsuccess = () => resolve(
+        ((request.result as StoredAttachment[]) || [])
+          .filter((attachment) => attachment.tenantId === tenantId && !attachment.synced)
+          .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt) || a.id.localeCompare(b.id))
+      );
+      request.onerror = () => reject(request.error || new Error('Lesen ausstehender Wachbuchanhänge fehlgeschlagen'));
+    });
+  }
+
+  async setAttachmentIdempotencyKey(id: string, tenantId: string, idempotencyKey: string): Promise<string> {
+    const db = await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('attachments', 'readwrite');
+      tx.oncomplete = () => resolve(idempotencyKey);
+      tx.onerror = () => reject(tx.error || new Error(`Idempotenzschlüssel für Wachbuchanhang ${id} konnte nicht gespeichert werden`));
+      tx.onabort = () => reject(tx.error || new Error(`Idempotenzschlüssel für Wachbuchanhang ${id} wurde abgebrochen`));
+      const store = tx.objectStore('attachments');
+      const request = store.get(id);
+      request.onsuccess = () => {
+        const attachment = request.result as StoredAttachment | undefined;
+        if (!attachment || attachment.tenantId !== tenantId) {
+          tx.abort();
+          return;
+        }
+        if (attachment.idempotencyKey) {
+          resolve(attachment.idempotencyKey);
+          return;
+        }
+        attachment.idempotencyKey = idempotencyKey;
+        store.put(attachment);
+      };
+      request.onerror = () => reject(request.error || new Error(`Wachbuchanhang ${id} konnte nicht gelesen werden`));
+    });
+  }
+
+  async relinkPendingAttachments(tenantId: string, localEntityId: string, serverEntityId: string): Promise<void> {
+    if (localEntityId === serverEntityId) return;
+    const db = await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('attachments', 'readwrite');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error('Lokale Wachbuchanhänge konnten nicht mit dem bestätigten Eintrag verknüpft werden'));
+      tx.onabort = () => reject(tx.error || new Error('Neuverknüpfung lokaler Wachbuchanhänge wurde abgebrochen'));
+      const store = tx.objectStore('attachments');
+      const request = store.getAll();
+      request.onsuccess = () => {
+        for (const attachment of (request.result as StoredAttachment[]) || []) {
+          if (attachment.tenantId === tenantId && attachment.entityId === localEntityId && !attachment.synced) {
+            attachment.entityId = serverEntityId;
+            store.put(attachment);
+          }
+        }
+      };
+      request.onerror = () => reject(request.error || new Error('Lokale Wachbuchanhänge konnten nicht gelesen werden'));
+    });
+  }
+
+  async markAttachmentSynced(id: string, tenantId: string, serverDocumentId: string): Promise<void> {
+    const db = await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('attachments', 'readwrite');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error(`Wachbuchanhang ${id} konnte nicht bestätigt werden`));
+      tx.onabort = () => reject(tx.error || new Error(`Bestätigung für Wachbuchanhang ${id} wurde abgebrochen`));
+      const store = tx.objectStore('attachments');
+      const request = store.get(id);
+      request.onsuccess = () => {
+        const attachment = request.result as StoredAttachment | undefined;
+        if (!attachment || attachment.tenantId !== tenantId) {
+          tx.abort();
+          return;
+        }
+        attachment.synced = true;
+        attachment.serverDocumentId = serverDocumentId;
+        attachment.lastUploadError = undefined;
+        store.put(attachment);
+      };
+      request.onerror = () => reject(request.error || new Error(`Wachbuchanhang ${id} konnte nicht gelesen werden`));
+    });
+  }
+
+  async markAttachmentUploadFailed(id: string, tenantId: string, errorMessage: string): Promise<void> {
+    const db = await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('attachments', 'readwrite');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error(`Fehlerstatus für Wachbuchanhang ${id} konnte nicht gespeichert werden`));
+      tx.onabort = () => reject(tx.error || new Error(`Fehlerstatus für Wachbuchanhang ${id} wurde abgebrochen`));
+      const store = tx.objectStore('attachments');
+      const request = store.get(id);
+      request.onsuccess = () => {
+        const attachment = request.result as StoredAttachment | undefined;
+        if (!attachment || attachment.tenantId !== tenantId) {
+          tx.abort();
+          return;
+        }
+        attachment.lastUploadError = errorMessage;
+        attachment.uploadRetryCount = (attachment.uploadRetryCount ?? 0) + 1;
+        store.put(attachment);
+      };
+      request.onerror = () => reject(request.error || new Error(`Wachbuchanhang ${id} konnte nicht gelesen werden`));
     });
   }
 }

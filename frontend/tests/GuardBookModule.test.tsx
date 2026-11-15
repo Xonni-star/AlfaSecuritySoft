@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   saveAttachment: vi.fn(),
   state: {
     currentTenantId: 'tenant-a',
+    currentUserId: 'user-a',
+    triggerManualSync: vi.fn(),
     getTenantGuardBook: vi.fn(() => []),
     getTenantSites: vi.fn(() => [{
       id: 'site-a',
@@ -28,7 +30,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../store', () => ({
-  useSecurityStore: () => mocks.state
+  useSecurityStore: Object.assign(() => mocks.state, { getState: () => mocks.state })
 }));
 
 vi.mock('../services/indexedDbService', () => ({
@@ -54,6 +56,7 @@ describe('GuardBookModule offline capture', () => {
     document.body.appendChild(container);
     root = createRoot(container);
     mocks.state.addGuardBookEntry = mocks.addGuardBookEntry;
+    mocks.state.isOnline = false;
   });
 
   afterEach(async () => {
@@ -180,8 +183,9 @@ describe('GuardBookModule offline capture', () => {
     expect(container.querySelector<HTMLInputElement>('input[placeholder^="z. B."]')?.disabled).toBe(true);
     expect(mocks.addGuardBookEntry).toHaveBeenCalledOnce();
     expect(mocks.saveAttachment).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      id: `att-${persistedEntryId}`,
+      id: expect.stringMatching(/^[0-9a-f-]{36}$/i),
       tenantId: 'tenant-a',
+      userId: 'user-a',
       entityId: persistedEntryId
     }));
 
@@ -192,8 +196,9 @@ describe('GuardBookModule offline capture', () => {
     expect(mocks.addGuardBookEntry).toHaveBeenCalledOnce();
     expect(mocks.saveAttachment).toHaveBeenCalledTimes(2);
     expect(mocks.saveAttachment.mock.calls[1][0]).toMatchObject({
-      id: `att-${persistedEntryId}`,
+      id: mocks.saveAttachment.mock.calls[0][0].id,
       tenantId: 'tenant-a',
+      userId: 'user-a',
       entityId: persistedEntryId,
       blobData: mocks.saveAttachment.mock.calls[0][0].blobData
     });
@@ -238,8 +243,10 @@ describe('GuardBookModule offline capture', () => {
     });
 
     expect(mocks.saveAttachment).toHaveBeenCalledWith(expect.objectContaining({
-      id: 'att-gb-local-photo',
+      id: expect.stringMatching(/^[0-9a-f-]{36}$/i),
+      userId: 'user-a',
       synced: false
     }));
+    expect(mocks.state.triggerManualSync).toHaveBeenCalledOnce();
   });
 });

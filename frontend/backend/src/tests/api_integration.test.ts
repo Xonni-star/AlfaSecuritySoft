@@ -41,6 +41,8 @@ let archivedCustomerSiteCode: string | undefined;
 let createdTaskId: string | undefined;
 let createdDmsDocumentId: string | undefined;
 let createdDmsFolderId: string | undefined;
+let createdAttachmentEntryId: string | undefined;
+const createdAttachmentDocumentIds: string[] = [];
 let createdSopId: string | undefined;
 let createdSopEmployeeId: string | undefined;
 let createdSopSiteId: string | undefined;
@@ -82,6 +84,12 @@ const keyNumber = `API-KEY-${Date.now()}`;
 
 class ApiIntegrationDocumentObjectStore extends InMemoryDocumentObjectStore {
   failDeletes = false;
+  failPuts = false;
+
+  async put(key: string, bytes: Buffer, _contentType?: string): Promise<void> {
+    if (this.failPuts) throw new Error('test object store upload unavailable');
+    await super.put(key, bytes);
+  }
 
   async delete(key: string): Promise<void> {
     if (this.failDeletes) throw new Error('test object store unavailable');
@@ -90,6 +98,11 @@ class ApiIntegrationDocumentObjectStore extends InMemoryDocumentObjectStore {
 }
 
 const apiIntegrationObjectStore = new ApiIntegrationDocumentObjectStore();
+
+afterEach(() => {
+  apiIntegrationObjectStore.failPuts = false;
+  setDocumentScanner({ scan: async () => 'clean' });
+});
 
 async function login(email: string): Promise<string> {
   const response = await request(app)
@@ -634,6 +647,41 @@ afterAll(async () => {
       TENANT_FFM_ID, createdAlarmReportTenantUserId
     ]);
     await migrationPool.query('DELETE FROM users WHERE id=$1', [createdAlarmReportTenantUserId]);
+  }
+  if (createdAttachmentEntryId) {
+    const storedFiles = await migrationPool.query(
+      'SELECT storage_key FROM document_versions WHERE tenant_id=$1 AND document_id=ANY($2::uuid[])',
+      [TENANT_FFM_ID, createdAttachmentDocumentIds]
+    );
+    for (const row of storedFiles.rows) await removeDocumentBlob(row.storage_key);
+    const cleanup = await migrationPool.connect();
+    try {
+      await cleanup.query('SET session_replication_role = replica');
+      await cleanup.query('DELETE FROM guardbook_attachment_idempotency WHERE tenant_id=$1 AND incident_id=$2', [
+        TENANT_FFM_ID, createdAttachmentEntryId
+      ]);
+      await cleanup.query('DELETE FROM document_audit_events WHERE tenant_id=$1 AND document_id=ANY($2::uuid[])', [
+        TENANT_FFM_ID, createdAttachmentDocumentIds
+      ]);
+      await cleanup.query('DELETE FROM document_relationships WHERE tenant_id=$1 AND document_id=ANY($2::uuid[])', [
+        TENANT_FFM_ID, createdAttachmentDocumentIds
+      ]);
+      await cleanup.query('DELETE FROM document_versions WHERE tenant_id=$1 AND document_id=ANY($2::uuid[])', [
+        TENANT_FFM_ID, createdAttachmentDocumentIds
+      ]);
+      await cleanup.query('DELETE FROM documents WHERE tenant_id=$1 AND id=ANY($2::uuid[])', [
+        TENANT_FFM_ID, createdAttachmentDocumentIds
+      ]);
+      await cleanup.query('DELETE FROM guardbook_revisions WHERE tenant_id=$1 AND entry_id=$2', [
+        TENANT_FFM_ID, createdAttachmentEntryId
+      ]);
+      await cleanup.query('DELETE FROM guardbook_entries WHERE tenant_id=$1 AND id=$2', [
+        TENANT_FFM_ID, createdAttachmentEntryId
+      ]);
+    } finally {
+      await cleanup.query('SET session_replication_role = origin');
+      cleanup.release();
+    }
   }
   if (createdDmsFolderId) {
     await migrationPool.query('DELETE FROM document_folders WHERE tenant_id=$1 AND id=$2', ['11111111-1111-1111-1111-111111111111', createdDmsFolderId]);
@@ -1313,6 +1361,124 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
         const chunks: Buffer[] = [];
         response.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
         response.on('end', () => callback(null, Buffer.concat(chunks)));
+      });
+
+      test('GuardBook DMS attachments are tenant-bound, payload-idempotent, quarantined on scan errors, and recover after storage errors', async () => {
+        const token = await login(SEED_USER_EMAIL);
+        const fixture = await migrationPool.query(
+          `SELECT site.id AS site_id, employee.id AS guard_id
+             FROM sites site
+             JOIN employees employee ON employee.tenant_id=site.tenant_id
+            WHERE site.tenant_id=$1
+            ORDER BY site.id,employee.id
+            LIMIT 1`,
+          [TENANT_FFM_ID]
+        );
+        expect(fixture.rows).toHaveLength(1);
+        const entry = await migrationPool.query(
+          `INSERT INTO guardbook_entries
+             (tenant_id,site_id,guard_id,category,priority,title,description,police_involved)
+           VALUES ($1,$2,$3,'Vorkommnis','Normal',$4,'Synthetic attachment sync integration fixture.',false)
+           RETURNING id`,
+          [TENANT_FFM_ID, fixture.rows[0].site_id, fixture.rows[0].guard_id, `Attachment sync ${Date.now()}`]
+        );
+        createdAttachmentEntryId = entry.rows[0].id;
+
+        const attachmentKey = crypto.randomUUID();
+        const attachmentBytes = Buffer.from([0xff, 0xd8, 0xff, 0x00, 0x01]);
+        const uploadAttachment = () => request(app)
+          .post(`/api/v1/logbook/${createdAttachmentEntryId}/attachments`)
+          .set(authHeaders(token))
+          .set('X-Idempotency-Key', attachmentKey)
+          .set('X-File-Name', encodeURIComponent('guardbook-evidence.jpg'))
+          .set('Content-Type', 'application/octet-stream')
+          .send(attachmentBytes);
+
+        setDocumentScanner({
+          scan: async () => { throw new DocumentScannerUnavailableError('test scanner unavailable'); }
+        });
+        const firstUpload = await uploadAttachment();
+        expect(firstUpload.status).toBe(202);
+        expect(firstUpload.body.data).toMatchObject({
+          scan_status: 'unavailable',
+          file_released: false,
+          linked_entity_type: 'incident',
+          linked_entity_id: createdAttachmentEntryId
+        });
+        createdAttachmentDocumentIds.push(firstUpload.body.data.id);
+
+        const repeatedUpload = await uploadAttachment();
+        expect(repeatedUpload.status).toBe(202);
+        expect(repeatedUpload.body.data.id).toBe(firstUpload.body.data.id);
+        const firstVersion = await migrationPool.query(
+          'SELECT storage_key FROM document_versions WHERE tenant_id=$1 AND document_id=$2 AND version_number=1',
+          [TENANT_FFM_ID, firstUpload.body.data.id]
+        );
+        const repeatedVersion = await migrationPool.query(
+          'SELECT storage_key FROM document_versions WHERE tenant_id=$1 AND document_id=$2 AND version_number=1',
+          [TENANT_FFM_ID, repeatedUpload.body.data.id]
+        );
+        expect(repeatedVersion.rows).toEqual(firstVersion.rows);
+        expect(await migrationPool.query(
+          'SELECT id FROM documents WHERE tenant_id=$1 AND id=$2',
+          [TENANT_FFM_ID, firstUpload.body.data.id]
+        )).toMatchObject({ rowCount: 1 });
+
+        const changedPayload = await request(app)
+          .post(`/api/v1/logbook/${createdAttachmentEntryId}/attachments`)
+          .set(authHeaders(token))
+          .set('X-Idempotency-Key', attachmentKey)
+          .set('X-File-Name', encodeURIComponent('guardbook-evidence.jpg'))
+          .set('Content-Type', 'application/octet-stream')
+          .send(Buffer.from([0xff, 0xd8, 0xff, 0x02, 0x03]));
+        expect(changedPayload.status).toBe(409);
+
+        const foreignToken = await login(BAVARIA_USER_EMAIL);
+        const foreignTenantUpload = await request(app)
+          .post(`/api/v1/logbook/${createdAttachmentEntryId}/attachments`)
+          .set(authHeaders(foreignToken))
+          .set('X-Idempotency-Key', crypto.randomUUID())
+          .set('X-File-Name', encodeURIComponent('guardbook-evidence.jpg'))
+          .set('Content-Type', 'application/octet-stream')
+          .send(attachmentBytes);
+        expect(foreignTenantUpload.status).toBe(404);
+        const readOnlyToken = await login(DMS_RESTRICTED_USER_EMAIL);
+        const forbiddenUpload = await request(app)
+          .post(`/api/v1/logbook/${createdAttachmentEntryId}/attachments`)
+          .set(authHeaders(readOnlyToken))
+          .set('X-Idempotency-Key', crypto.randomUUID())
+          .set('X-File-Name', encodeURIComponent('guardbook-evidence.jpg'))
+          .set('Content-Type', 'application/octet-stream')
+          .send(attachmentBytes);
+        expect(forbiddenUpload.status).toBe(403);
+
+        const storageRetryKey = crypto.randomUUID();
+        apiIntegrationObjectStore.failPuts = true;
+        const failedStorageUpload = await request(app)
+          .post(`/api/v1/logbook/${createdAttachmentEntryId}/attachments`)
+          .set(authHeaders(token))
+          .set('X-Idempotency-Key', storageRetryKey)
+          .set('X-File-Name', encodeURIComponent('guardbook-retry.jpg'))
+          .set('Content-Type', 'application/octet-stream')
+          .send(attachmentBytes);
+        expect(failedStorageUpload.status).toBe(500);
+        apiIntegrationObjectStore.failPuts = false;
+        const recoveredStorageUpload = await request(app)
+          .post(`/api/v1/logbook/${createdAttachmentEntryId}/attachments`)
+          .set(authHeaders(token))
+          .set('X-Idempotency-Key', storageRetryKey)
+          .set('X-File-Name', encodeURIComponent('guardbook-retry.jpg'))
+          .set('Content-Type', 'application/octet-stream')
+          .send(attachmentBytes);
+        expect(recoveredStorageUpload.status).toBe(202);
+        createdAttachmentDocumentIds.push(recoveredStorageUpload.body.data.id);
+        const retryReceipt = await migrationPool.query(
+          `SELECT idempotency_key FROM guardbook_attachment_idempotency
+            WHERE tenant_id=$1 AND idempotency_key=$2`,
+          [TENANT_FFM_ID, storageRetryKey]
+        );
+        expect(retryReceipt.rowCount).toBe(1);
+        setDocumentScanner({ scan: async () => 'clean' });
       });
     expect(downloaded.status).toBe(200);
     expect(downloaded.body).toEqual(firstBytes);

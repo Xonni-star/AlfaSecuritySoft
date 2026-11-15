@@ -58,13 +58,15 @@ import {
   initialGdprPolicies
 } from './mockData';
 import { apiClient, ApiError } from './services/apiClient';
-import { offlineVault, OutboxMutation, StoredAlarmMutation } from './services/indexedDbService';
+import { offlineVault, OutboxMutation, StoredAlarmMutation, StoredAttachment } from './services/indexedDbService';
 import { reconcileShiftMutation } from './services/planningService';
 
 export type ThemeMode = 'dark' | 'light';
 
 // Mutex zur Verhinderung paralleler Synchronisationsläufe
 let isSyncRunningMutex = false;
+let syncRerunRequested = false;
+let attachmentRetryTimer: ReturnType<typeof setTimeout> | null = null;
 let isSOPSyncRunning = false;
 let isAlarmSyncRunning = false;
 let lastSOPSyncFailureNoticeAt = 0;
@@ -1602,7 +1604,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
     }
 
     if (isSyncRunningMutex) {
-      console.warn('[SYNC MUTEX] Synchronisation läuft bereits. Paralleler Aufruf abgewiesen.');
+      syncRerunRequested = true;
       return { success: 0, failed: 0, conflicts: 0 };
     }
 
@@ -1624,6 +1626,8 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       if (pendingItems.length === 0) {
         const allItems = await offlineVault.getOutbox(currentTenantId, undefined, currentUserId);
         if (!isCurrentSyncIdentity()) return { success: 0, failed: 0, conflicts: 0 };
+        const attachmentSync = await syncPendingGuardbookAttachments(currentTenantId, isCurrentSyncIdentity);
+        scheduleGuardbookAttachmentRetry(currentTenantId, currentUserId, attachmentSync.maxRetryCount);
         set({
           syncQueue: allItems.map(offlineOutboxToQueueItem),
           isSyncing: false,
@@ -1634,7 +1638,12 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         if (options.refreshWhenOutboxEmpty && allItems.length === 0 && isCurrentSyncIdentity()) {
           await get().loadTenantData({ preserveCurrentData: true });
         }
-        return { success: 0, failed: 0, conflicts: 0 };
+        if (attachmentSync.failed > 0) {
+          get().addNotification('Anhänge warten auf Synchronisierung',
+            `${attachmentSync.failed} Wachbuchanhang/Anhänge konnten nicht übertragen werden und bleiben lokal gespeichert.`,
+            'warning');
+        }
+        return { success: 0, failed: attachmentSync.failed, conflicts: 0 };
       }
 
       const makeSyncPayload = (items: typeof pendingItems) => ({
@@ -1688,6 +1697,11 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
             if (!mutation) continue;
             acknowledgedMutationIds.add(mutation.id);
             if (receipt.status === 'SYNCED') {
+              if (mutation.entityType === 'guardbook' && typeof mutation.payload.id === 'string' &&
+                  typeof receipt.serverId === 'string' &&
+                  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(receipt.serverId)) {
+                await offlineVault.relinkPendingAttachments(currentTenantId, mutation.payload.id, receipt.serverId);
+              }
               if (mutation?.entityType === 'patrol') {
                 if (mutation.payload?.recordType === 'round_start' && mutation.payload.roundId) {
                   await offlineVault.markPatrolRoundSynced(currentTenantId, mutation.userId, mutation.payload.roundId);
@@ -1771,6 +1785,9 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       const remainingOutbox = await offlineVault.getOutbox(currentTenantId, undefined, currentUserId);
       scheduleOutboxRetry(remainingOutbox);
       if (!isCurrentSyncIdentity()) return { success: successCount, failed: failedCount, conflicts: conflictCount };
+      const attachmentSync = await syncPendingGuardbookAttachments(currentTenantId, isCurrentSyncIdentity);
+      failedCount += attachmentSync.failed;
+      scheduleGuardbookAttachmentRetry(currentTenantId, currentUserId, attachmentSync.maxRetryCount);
       set({
         syncQueue: remainingOutbox.map(offlineOutboxToQueueItem),
         isSyncing: false,
@@ -1803,11 +1820,20 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
           'warning'
         );
       }
+      if (attachmentSync.failed > 0) {
+        get().addNotification('Anhänge warten auf Synchronisierung',
+          `${attachmentSync.failed} Wachbuchanhang/Anhänge konnten nicht übertragen werden und bleiben lokal gespeichert.`,
+          'warning');
+      }
     } catch (err: any) {
       console.error('[CRITICAL SYNC ERROR]', err);
     } finally {
       isSyncRunningMutex = false;
       set({ isSyncing: false });
+      if (syncRerunRequested) {
+        syncRerunRequested = false;
+        setTimeout(() => void get().triggerManualSync(), 0);
+      }
     }
 
     return { success: successCount, failed: failedCount, conflicts: conflictCount };
@@ -2738,7 +2764,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
 
   addGuardBookEntry: async (entry) => {
     const { currentTenantId, isOnline, enqueueOfflineAction, addTask, addNotification, addAuditLog } = get();
-    const entryId = `gb-${Date.now()}`;
+    const entryId = crypto.randomUUID();
     const newEntry: GuardBookEntry = {
       ...entry,
       id: entryId,
@@ -3189,6 +3215,99 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
 }));
 
 let outboxRetryTimer: ReturnType<typeof setTimeout> | null = null;
+
+function storedAttachmentToFile(attachment: StoredAttachment): File {
+  const separator = attachment.blobData.indexOf(',');
+  const dataUrlHeader = attachment.blobData.slice(0, separator);
+  if (separator < 0 || !/^data:[^;,]+;base64$/i.test(dataUrlHeader)) {
+    throw new Error('Der lokal gespeicherte Anhang ist kein gültiger Base64-Dateiinhalt.');
+  }
+  const mimeType = dataUrlHeader.slice(5, dataUrlHeader.indexOf(';')).toLowerCase();
+  const extensionByMime: Record<string, string> = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/gif': '.gif',
+    'image/webp': '.webp',
+    'image/bmp': '.bmp'
+  };
+  const extension = extensionByMime[mimeType];
+  if (!extension) throw new Error('Der lokal gespeicherte Anhang hat einen nicht freigegebenen Dateityp.');
+  const binary = atob(attachment.blobData.slice(separator + 1));
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  const isLegacyAttachment = !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(attachment.id);
+  if (!isLegacyAttachment && bytes.byteLength !== attachment.sizeBytes) {
+    throw new Error('Die lokal gespeicherte Dateigröße stimmt nicht mit den Anhangsdaten überein.');
+  }
+  const originalName = attachment.fileName.replace(/\.[^.]+$/, '');
+  return new File([bytes.buffer], `${originalName}${extension}`, { type: mimeType });
+}
+
+async function syncPendingGuardbookAttachments(
+  tenantId: string,
+  isCurrentIdentity: () => boolean
+): Promise<{ failed: number; maxRetryCount: number }> {
+  const attachments = await offlineVault.getPendingAttachments(tenantId);
+  let failed = 0;
+  let maxRetryCount = 0;
+  for (const attachment of attachments) {
+    if (!isCurrentIdentity() || !useSecurityStore.getState().isOnline) break;
+    try {
+      const file = storedAttachmentToFile(attachment);
+      const candidateIdempotencyKey = attachment.idempotencyKey ??
+        (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(attachment.id)
+          ? attachment.id
+          : crypto.randomUUID());
+      const idempotencyKey = await offlineVault.setAttachmentIdempotencyKey(
+        attachment.id,
+        tenantId,
+        candidateIdempotencyKey
+      );
+      const document = await apiClient.uploadFile<{
+        id: string;
+        tenant_id: string;
+        linked_entity_type: string;
+        linked_entity_id: string;
+      }>(
+        `/logbook/${encodeURIComponent(attachment.entityId)}/attachments`,
+        file,
+        undefined,
+        { idempotencyKey }
+      );
+      if (!document || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(document.id) ||
+          document.tenant_id !== tenantId || document.linked_entity_type !== 'incident' ||
+          document.linked_entity_id !== attachment.entityId) {
+        throw new Error('Der Server hat keine gültige, mandanten- und wachbucheintragsgebundene Uploadquittung geliefert.');
+      }
+      await offlineVault.markAttachmentSynced(attachment.id, tenantId, document.id);
+    } catch (error) {
+      failed += 1;
+      await offlineVault.markAttachmentUploadFailed(
+        attachment.id,
+        tenantId,
+        error instanceof Error ? error.message : String(error)
+      );
+      maxRetryCount = Math.max(maxRetryCount, (attachment.uploadRetryCount ?? 0) + 1);
+    }
+  }
+  return { failed, maxRetryCount };
+}
+
+function scheduleGuardbookAttachmentRetry(tenantId: string, userId: string, retryCount: number): void {
+  if (retryCount <= 0) {
+    if (attachmentRetryTimer) clearTimeout(attachmentRetryTimer);
+    attachmentRetryTimer = null;
+    return;
+  }
+  if (attachmentRetryTimer) return;
+  const delay = Math.min(30_000 * (2 ** Math.min(retryCount - 1, 4)), 300_000);
+  attachmentRetryTimer = setTimeout(() => {
+    attachmentRetryTimer = null;
+    const state = useSecurityStore.getState();
+    if (!state.isOnline || state.currentTenantId !== tenantId || currentSOPIdentity(state).userId !== userId) return;
+    void state.triggerManualSync();
+  }, delay);
+}
 
 function scheduleOutboxRetry(records: OutboxMutation[]): void {
   if (outboxRetryTimer) clearTimeout(outboxRetryTimer);

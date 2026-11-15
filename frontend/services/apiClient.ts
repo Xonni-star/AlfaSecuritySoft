@@ -152,7 +152,12 @@ class ApiClient {
     return this.request<T>(endpoint, { ...options, method: 'DELETE' });
   }
 
-  uploadFile<T>(endpoint: string, file: File, onProgress?: (percent: number) => void): Promise<T> {
+  uploadFile<T>(
+    endpoint: string,
+    file: File,
+    onProgress?: (percent: number) => void,
+    options: { idempotencyKey?: string } = {}
+  ): Promise<T> {
     const url = `${API_BASE}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
     return new Promise((resolve, reject) => {
       const request = new XMLHttpRequest();
@@ -160,11 +165,12 @@ class ApiClient {
       request.withCredentials = true;
       request.setRequestHeader('Content-Type', 'application/octet-stream');
       request.setRequestHeader('X-File-Name', encodeURIComponent(file.name));
+      if (options.idempotencyKey) request.setRequestHeader('X-Idempotency-Key', options.idempotencyKey);
       if (this.csrfToken) request.setRequestHeader('X-CSRF-Token', this.csrfToken);
       request.upload.onprogress = (event) => {
         if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
       };
-      request.onerror = () => reject(new ApiError(500, 'Verbindung zum Backend-Server fehlgeschlagen.'));
+      request.onerror = () => reject(new ApiError(500, 'Verbindung zum Backend-Server fehlgeschlagen.', undefined, true));
       request.onload = () => {
         const csrf = request.getResponseHeader('x-csrf-token');
         if (csrf) this.csrfToken = csrf;

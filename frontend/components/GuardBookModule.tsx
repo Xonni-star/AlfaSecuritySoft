@@ -26,6 +26,7 @@ export const GuardBookModule: React.FC = () => {
     getTenantSites,
     getTenantEmployees,
     currentTenantId,
+    currentUserId,
     addGuardBookEntry,
     updateGuardBookStage,
     resolveGuardBookEntry,
@@ -53,6 +54,8 @@ export const GuardBookModule: React.FC = () => {
   const [description, setDescription] = useState('');
   const [policeInvolved, setPoliceInvolved] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoAttachmentId, setPhotoAttachmentId] = useState<string | null>(null);
   const [, setAiAnalysis] = useState<string | null>(null);
 
 
@@ -74,10 +77,16 @@ export const GuardBookModule: React.FC = () => {
       alert('Foto ist zu groß! Maximal 5 MB erlaubt.');
       return;
     }
+    if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'].includes(file.type.toLowerCase())) {
+      alert('Nur JPEG-, PNG-, GIF-, WebP- und BMP-Dateien sind als Wachbuchanhang erlaubt.');
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (uploadEvent) => {
       setPhotoPreview(uploadEvent.target?.result as string);
+      setPhotoFile(file);
+      setPhotoAttachmentId(crypto.randomUUID());
     };
     reader.readAsDataURL(file);
   };
@@ -109,18 +118,20 @@ export const GuardBookModule: React.FC = () => {
         setSavedEntryId(entryId);
       }
 
-      if (photoPreview) {
+      if (photoPreview && photoFile) {
         await offlineVault.saveAttachment({
-          id: `att-${entryId}`,
+          id: photoAttachmentId!,
           tenantId: currentTenantId,
+          userId: currentUserId,
           entityId: entryId,
-          fileName: 'vorfall_fotodokumentation.jpg',
-          mimeType: 'image/jpeg',
-          sizeBytes: Math.round(photoPreview.length * 0.75),
+          fileName: photoFile.name,
+          mimeType: photoFile.type.toLowerCase(),
+          sizeBytes: photoFile.size,
           blobData: photoPreview,
           capturedAt: new Date().toISOString(),
           synced: false
         });
+        if (isOnline) void useSecurityStore.getState().triggerManualSync();
       }
 
       setIsModalOpen(false);
@@ -128,6 +139,8 @@ export const GuardBookModule: React.FC = () => {
       setTitle('');
       setDescription('');
       setPhotoPreview(null);
+      setPhotoFile(null);
+      setPhotoAttachmentId(null);
       setAiAnalysis(null);
     } catch (error) {
       setSubmissionError(error instanceof Error ? error.message : 'Eintrag konnte nicht lokal gespeichert werden.');
@@ -484,7 +497,7 @@ export const GuardBookModule: React.FC = () => {
                     <span>Foto auswählen</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/gif,image/webp,image/bmp"
                       onChange={handlePhotoCapture}
                       disabled={Boolean(savedEntryId)}
                       className="hidden"
@@ -497,7 +510,11 @@ export const GuardBookModule: React.FC = () => {
                     <img src={photoPreview} alt="Vorschau" className="w-24 h-24 object-cover rounded-lg border border-slate-700" />
                     <button
                       type="button"
-                      onClick={() => setPhotoPreview(null)}
+                      onClick={() => {
+                        setPhotoPreview(null);
+                        setPhotoFile(null);
+                        setPhotoAttachmentId(null);
+                      }}
                       disabled={Boolean(savedEntryId)}
                       className="absolute -top-1.5 -right-1.5 bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px]"
                     >
