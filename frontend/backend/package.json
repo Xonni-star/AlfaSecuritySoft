@@ -7,6 +7,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
+    "perf:baseline": "npm run build && node dist/perf/baseline.js",
     "migrate": "ts-node src/migrations/runner.ts",
     "seed": "ts-node src/seeds/seed.ts",
     "test": "jest --runInBand --detectOpenHandles",

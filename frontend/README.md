@@ -82,6 +82,10 @@ npm audit
 
 Audit snapshot (2026-11-14): frontend `npm audit` — 0 vulnerabilities. Backend `npm --prefix frontend/backend audit` — 7 LOW findings for `deepmerge@4.3.1` (GHSA-gcqx-w2h4) in Jest/`ts-jest` development dependencies; `npm --prefix frontend/backend audit --omit=dev` — 0 production findings. Upstream has no patched 4.x release; do not force npm's breaking downgrade. Exact current test evidence is in [NEXT_DEVELOPMENT_REPORT.md](../docs/development/NEXT_DEVELOPMENT_REPORT.md).
 
+### 2.3 Begrenzte lokale Performance-Baseline
+
+Für einen reproduzierbaren, ausschließlich lokalen Lauf siehe [Performance-Baseline](./backend/PERFORMANCE_BASELINE.md). Der Runner akzeptiert nur Loopback-URLs und benötigt eine eigens migrierte, kurzlebige Testdatenbank; niemals Produktion oder gemeinsam genutzte Umgebungen verwenden.
+
 ---
 
 ## 3. Architektur & Sicherheitsgarantien
