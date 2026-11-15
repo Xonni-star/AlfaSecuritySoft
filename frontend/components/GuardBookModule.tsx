@@ -119,7 +119,7 @@ export const GuardBookModule: React.FC = () => {
           sizeBytes: Math.round(photoPreview.length * 0.75),
           blobData: photoPreview,
           capturedAt: new Date().toISOString(),
-          synced: isOnline
+          synced: false
         });
       }
 

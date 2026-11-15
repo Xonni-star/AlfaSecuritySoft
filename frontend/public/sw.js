@@ -1,16 +1,22 @@
 // SecurityOps 2.0 - Service Worker (Offline App-Shell & Cache-First Asset Handler)
-const CACHE_NAME = 'secops-core-v2.0.4';
+const CACHE_NAME = 'secops-core-v2.0.5';
 const APP_SHELL_URLS = [
   './',
   './index.html',
-  './metadata.json',
-  './public/manifest.json'
+  './manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(APP_SHELL_URLS);
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await cache.addAll(APP_SHELL_URLS);
+      const indexResponse = await cache.match(new URL('./index.html', self.registration.scope));
+      const indexHtml = await indexResponse?.text();
+      const localAssets = [...(indexHtml || '').matchAll(/(?:src|href)="([^"]+\.(?:js|css))"/g)]
+        .map(([, asset]) => new URL(asset, self.registration.scope))
+        .filter((asset) => asset.origin === self.location.origin)
+        .map((asset) => asset.href);
+      await cache.addAll(localAssets);
     }).then(() => self.skipWaiting())
   );
 });
