@@ -1724,12 +1724,15 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
             : `HTTP ${networkErr.status}: ${networkErr.message}`
           : errorText(networkErr);
         const retryable = networkErr instanceof ApiError &&
-          (networkErr.isNetworkError || networkErr.status >= 500);
+          (networkErr.isNetworkError || networkErr.status === 408 || networkErr.status === 429 || networkErr.status >= 500);
         console.warn('[SYNC PUSH FAILED] Outbox bleibt erhalten:', networkErr);
         for (const item of failedItems) {
           await offlineVault.updateMutationStatus(item.id, 'FAILED', {
             errorMessage: message,
-            retryable
+            retryable,
+            ...(retryable && networkErr instanceof ApiError && networkErr.retryAfterMs !== undefined
+              ? { retryAfterMs: networkErr.retryAfterMs }
+              : {})
           });
         }
         const remainingOutbox = await offlineVault.getOutbox(currentTenantId, undefined, currentUserId);

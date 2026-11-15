@@ -75,6 +75,8 @@ jobs:
           name: securityops-release-${{ github.event.workflow_run.head_sha }}
           path: release
           if-no-files-found: error
+          # upload-artifact excludes dotfiles by default; the verified .env.example is required.
+          include-hidden-files: true
           retention-days: 30
 
   validate-release-artifact:

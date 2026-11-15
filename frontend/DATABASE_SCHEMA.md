@@ -1,6 +1,7 @@
 # SecurityOps 2.0 - PostgreSQL-Datenbankarchitektur
 
 > **Projektstatus: In Entwicklung; nicht für Produktion freigegeben.** Dieses Schema-Dokument beschreibt den TypeScript/PostgreSQL-Quellcode. Es ist keine DIN-/§ 34a-Konformitäts- oder Zertifizierungsaussage. Nicht jede Tabelle oder jedes Modul hat denselben RLS-/FK- oder Reifegrad.
+> **Verifizierter Main-Stand:** `ba9ab4ddc5d9ef03a3d147a023f002a0abb0e547` (15.11.2026). Die Migrationen im Repository bleiben die maßgebliche Schemaquelle.
 
 ## 1. Systemübersicht
 

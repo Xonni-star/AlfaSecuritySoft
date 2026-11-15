@@ -266,16 +266,16 @@ export RESTORE_RESUME_SERVICES=""
 
 echo "[TEST] Projekt: $PROJECT"
 if [ "$MODE" = full ]; then
-    echo "[TEST] Starte ausschließlich db, $S3_SERVICE und den Test-MC-Container; ClamAV bleibt ungestartet."
+    echo "[TEST] Starte ausschließlich db, $S3_SERVICE, den Resume-Marker und den Test-MC-Container; ClamAV bleibt ungestartet."
 else
-    echo "[TEST] Starte ausschließlich den PostgreSQL-Container; MinIO und ClamAV bleiben ungestartet."
+    echo "[TEST] Starte ausschließlich PostgreSQL und den Resume-Marker; MinIO und ClamAV bleiben ungestartet."
 fi
 STACK_STARTED=1
 if [ "$MODE" = full ]; then
-    compose up -d db "$S3_SERVICE" restore-test-mc
+    compose up -d db "$S3_SERVICE" restore-test-mc restore-test-marker
     assert_mc_bind_mount_isolation
 else
-    compose up -d db
+    compose up -d db restore-test-marker
 fi
 
 DB_CONTAINER="$(compose ps -q db)"
@@ -545,4 +545,26 @@ else
     echo "[TEST] PASS: Migrationen, Tenant-DMS-Datensätze, Versionen, Audit und RLS wurden wiederhergestellt."
     echo "[TEST] S3-Objekte und ClamAV wurden in diesem Modus nicht getestet."
 fi
+echo "[TEST] Simuliere einen Restore-Fehler nach dem Quiesce und prüfe das Wiederanlaufen der Dienste."
+if RESTORE_DB_USER=restore_test_missing \
+    RESTORE_QUIESCE_SERVICES=restore-test-marker \
+    RESTORE_RESUME_SERVICES=restore-test-marker \
+    "$SCRIPT_DIR/restore.sh" "$BACKUP_ARCHIVE" >"$TEMP_DIR/expected-restore-failure.log" 2>&1; then
+    echo "Fehler: Restore mit einem nicht existierenden Datenbankbenutzer war erfolgreich." >&2
+    exit 1
+fi
+if ! grep -q "Stoppe Schreibzugriffe: restore-test-marker" "$TEMP_DIR/expected-restore-failure.log" ||
+    ! grep -q "restore_test_missing" "$TEMP_DIR/expected-restore-failure.log"; then
+    echo "Fehler: Der Restore-Test hat den erwarteten pg_restore-Fehler nach dem Quiesce nicht erreicht." >&2
+    cat "$TEMP_DIR/expected-restore-failure.log" >&2
+    exit 1
+fi
+MARKER_CONTAINER="$(compose ps -q restore-test-marker)"
+MARKER_STATE="$(docker inspect --format '{{.State.Status}}' "$MARKER_CONTAINER")"
+if [ "$MARKER_STATE" != running ]; then
+    echo "Fehler: Der Restore-Marker wurde nach einem fehlgeschlagenen Restore nicht wieder gestartet (Status: $MARKER_STATE)." >&2
+    cat "$TEMP_DIR/expected-restore-failure.log" >&2
+    exit 1
+fi
+echo "[TEST] Fehlerpfad verifiziert: quiescierte Dienste wurden trotz fehlgeschlagenem pg_restore wieder gestartet."
 echo "[TEST] ClamAV: nicht gestartet und daher in diesem Restore-Test nicht verifiziert."

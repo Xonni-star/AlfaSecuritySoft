@@ -348,6 +348,7 @@ export class IndexedDbService {
       errorMessage?: string;
       conflictDetails?: OutboxMutation['conflictDetails'];
       retryable?: boolean;
+      retryAfterMs?: number;
     }
   ): Promise<void> {
     const db = await this.init();
@@ -372,12 +373,16 @@ export class IndexedDbService {
         if (status === 'FAILED') {
           record.retryCount += 1;
           const canRetry = details?.retryable === true && record.retryCount <= MAX_AUTOMATIC_RETRIES;
+          const backoffDelay = Math.min(
+            RETRY_BASE_DELAY_MS * (2 ** (record.retryCount - 1)),
+            RETRY_MAX_DELAY_MS
+          );
+          const serverDelay = typeof details?.retryAfterMs === 'number' && Number.isFinite(details.retryAfterMs)
+            ? Math.max(0, details.retryAfterMs)
+            : 0;
           record.retryable = canRetry;
           record.nextAttemptAt = canRetry
-            ? new Date(Date.now() + Math.min(
-                RETRY_BASE_DELAY_MS * (2 ** (record.retryCount - 1)),
-                RETRY_MAX_DELAY_MS
-              )).toISOString()
+            ? new Date(Date.now() + Math.max(backoffDelay, serverDelay)).toISOString()
             : undefined;
         } else {
           record.retryable = false;

@@ -58,6 +58,32 @@ describe('Offline outbox retry persistence', () => {
     });
   });
 
+  test('persists a server-requested retry delay longer than the local backoff cap', async () => {
+    const vault = createVault();
+    await vault.enqueueMutation({
+      id: 'rate-limited-mutation',
+      tenantId: 'tenant-retry-test',
+      userId: 'user-retry-test',
+      entityType: 'task',
+      action: 'CREATE',
+      payload: { title: 'Retry after rate limit' },
+      occurredAt: '2026-11-14T11:59:00.000Z',
+      baseVersion: 1
+    });
+
+    const failedAt = Date.now();
+    await vault.updateMutationStatus('rate-limited-mutation', 'FAILED', {
+      errorMessage: 'HTTP 429: Too many requests',
+      retryable: true,
+      retryAfterMs: 60_000
+    });
+
+    const [stored] = await vault.getOutbox('tenant-retry-test', undefined, 'user-retry-test');
+    expect(stored.retryable).toBe(true);
+    expect(Date.parse(stored.nextAttemptAt!) - failedAt).toBeGreaterThan(30_000);
+    expect(await vault.getPendingOutbox('tenant-retry-test', 'user-retry-test')).toEqual([]);
+  });
+
   test('rejects a mutation ID collision without replacing another tenant outbox entry', async () => {
     const vault = createVault();
     const original = {

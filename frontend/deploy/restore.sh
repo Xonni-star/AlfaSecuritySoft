@@ -60,7 +60,22 @@ else
 fi
 
 TEMP_RESTORE_DIR=$(mktemp -d)
-trap 'rm -rf "$TEMP_RESTORE_DIR"' EXIT
+RESTORE_SERVICES_QUIESCED=0
+
+restore_cleanup() {
+    local result=$?
+    trap - EXIT
+    if [ "$RESTORE_SERVICES_QUIESCED" -eq 1 ] && [ "${#RESUME_SERVICES[@]}" -gt 0 ]; then
+        echo "[RESTORE] Stelle Dienste nach dem Restore-Versuch wieder her: ${RESUME_SERVICES[*]}..."
+        if ! docker compose "${COMPOSE_ARGS[@]}" up -d "${RESUME_SERVICES[@]}"; then
+            echo "[RESTORE] FEHLER: Dienste konnten nach dem Restore-Versuch nicht gestartet werden." >&2
+            [ "$result" -ne 0 ] || result=1
+        fi
+    fi
+    rm -rf "$TEMP_RESTORE_DIR"
+    exit "$result"
+}
+trap restore_cleanup EXIT
 
 echo "[RESTORE] Entschlüssele Archiv..."
 openssl enc -d -aes-256-cbc -pbkdf2 \
@@ -76,6 +91,7 @@ fi
 
 if [ "${#QUIESCE_SERVICES[@]}" -gt 0 ]; then
     echo "[RESTORE] Stoppe Schreibzugriffe: ${QUIESCE_SERVICES[*]}..."
+    RESTORE_SERVICES_QUIESCED=1
     docker compose "${COMPOSE_ARGS[@]}" stop "${QUIESCE_SERVICES[@]}"
 fi
 
@@ -86,6 +102,7 @@ docker compose "${COMPOSE_ARGS[@]}" exec -T "$RESTORE_DB_SERVICE" \
 if [ "${#RESUME_SERVICES[@]}" -gt 0 ]; then
     echo "[RESTORE] Starte Dienste: ${RESUME_SERVICES[*]}..."
     docker compose "${COMPOSE_ARGS[@]}" up -d "${RESUME_SERVICES[@]}"
+    RESTORE_SERVICES_QUIESCED=0
 fi
 
 echo "[RESTORE] Datenbankwiederherstellung abgeschlossen. DMS-Objekte müssen separat über den S3-Anbieter wiederhergestellt werden."

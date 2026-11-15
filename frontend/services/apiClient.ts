@@ -9,6 +9,7 @@ export class ApiError extends Error {
   isNetworkError: boolean;
   code?: string;
   data?: unknown;
+  retryAfterMs?: number;
 
   constructor(
     status: number,
@@ -16,7 +17,8 @@ export class ApiError extends Error {
     errors?: string[],
     isNetworkError = false,
     code?: string,
-    data?: unknown
+    data?: unknown,
+    retryAfterMs?: number
   ) {
     super(message);
     this.status = status;
@@ -24,7 +26,18 @@ export class ApiError extends Error {
     this.isNetworkError = isNetworkError;
     this.code = code;
     this.data = data;
+    this.retryAfterMs = retryAfterMs;
   }
+}
+
+function parseRetryAfter(value: string | null): number | undefined {
+  if (!value) return undefined;
+
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? Math.max(0, timestamp - Date.now()) : undefined;
 }
 
 export interface RequestOptions extends RequestInit {
@@ -97,7 +110,8 @@ class ApiClient {
           envelope.errors,
           false,
           envelope.code,
-          envelope.data
+          envelope.data,
+          parseRetryAfter(response.headers.get('retry-after'))
         );
       }
 

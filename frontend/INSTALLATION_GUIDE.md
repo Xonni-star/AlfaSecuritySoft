@@ -27,6 +27,10 @@ Die PostgreSQL-API führt die Handover-Migrationen über den Backend-Migrationsr
 
 ## Benutzer- und Rechteverwaltung
 
-Die aktuelle Benutzer-/Rollenverwaltung im Entwicklungs-Branch wird durch Backend-Migration `033_tenant_user_role_administration.sql` ergänzt. Sie nutzt tenantgebundene Datensätze, PostgreSQL RLS/FORCE RLS und API-Prüfungen; aktuelle Einsatz-/Abnahmegrenzen stehen in [USER_ADMINISTRATION_API.md](./USER_ADMINISTRATION_API.md). Reset-Tokens werden nicht automatisch per E-Mail zugestellt.
+Die Benutzer-/Rollenverwaltung wird durch Backend-Migration `033_tenant_user_role_administration.sql` ergänzt. Sie nutzt tenantgebundene Datensätze, PostgreSQL RLS/FORCE RLS und API-Prüfungen; aktuelle Einsatz-/Abnahmegrenzen stehen in [USER_ADMINISTRATION_API.md](./USER_ADMINISTRATION_API.md). Reset-Tokens werden nicht automatisch per E-Mail zugestellt.
 
-Für Dokumente prüfen Migration `037_document_relationship_scope_enforcement.sql` und `038_document_responsible_user_scope.sql` zusätzlich den Site-Scope verknüpfter Dokumente und Änderungen am verantwortlichen Benutzer. PR #42 ist in `main` integriert. Diese Datenbankprüfungen ersetzen weder die serverseitige API-Autorisierung noch eine Produktionsabnahme.
+Für Dokumente prüfen Migration `037_document_relationship_scope_enforcement.sql` und `038_document_responsible_user_scope.sql` zusätzlich den Site-Scope verknüpfter Dokumente und Änderungen am verantwortlichen Benutzer. PRs #42 und #43 sind in `main` integriert. Diese Datenbankprüfungen ersetzen weder die serverseitige API-Autorisierung noch eine Produktionsabnahme.
+
+## Wiederherstellung
+
+`frontend/deploy/restore.sh` versucht, nach einem fehlgeschlagenen PostgreSQL-Restore zuvor quiescierte Dienste wieder zu starten. Das ist Fehlerbereinigung, kein Rollback: Ein fehlgeschlagener `pg_restore` kann bereits Daten verändert haben; deshalb den Restore nur in einer isolierten Zielumgebung durchführen und den Datenbestand danach prüfen. DMS-Objekte liegen separat im S3-kompatiblen Speicher und müssen unabhängig wiederhergestellt werden. Der isolierte PostgreSQL-/MinIO-Test deckt die getesteten Metadaten-, Hash- und Fehlerpfade ab, nicht den Produktionsanbieter oder ein gemessenes RPO/RTO.
