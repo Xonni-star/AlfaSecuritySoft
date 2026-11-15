@@ -18,6 +18,7 @@
 - Backend- und Frontend-Regressionstests sichern beide Verhaltensweisen gegen spätere Rückfälle ab.
 - Browserbasierte Berichte quotieren und maskieren CSV-Werte, escapen Anführungszeichen und neutralisieren Formeleingaben.
 - Der Offline-Speicher zeigt die lokale Wachbuch-ID für kontrolliert wiederherzustellende Anhänge ohne Benutzerzuordnung.
+- Der Chromium-Offline-Fixture-Test erwartet jetzt den tatsächlich ausgewählten Dateinamen.
 
 ## [2.0.0] – 2026-11-11
 

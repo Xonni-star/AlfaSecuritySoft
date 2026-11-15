@@ -3,7 +3,7 @@
 **Status:** **PARTIAL / BLOCKED — not approved for production.** This is an evidence index, not a release or compliance approval.
 
 **Current `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
-**Last checked:** 2026-11-15 23:09 CET
+**Last checked:** 2026-11-15 23:14 CET
 **Open PR:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66). PRs #50–#65 are merged, including [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62).
 
 The project’s broader history and evidence are summarized in [PROJECT_COMPLETION_REPORT.md](./PROJECT_COMPLETION_REPORT.md). Phase 9 operations evidence and remaining gates are in [PHASE_9_COMPLETION_REPORT.md](./PHASE_9_COMPLETION_REPORT.md). Dated phase reports are retained as historical snapshots; their old PR and mainline claims are not current status.
@@ -19,8 +19,8 @@ The project’s broader history and evidence are summarized in [PROJECT_COMPLETI
 
 ### In development
 
-- PR #66 adds controlled recovery of ownerless offline attachments, a CSV-export correction, DST tests, and evidence/status reports. Hosted CI run [43767322367](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43767322367) passed 7/7 on `ebc57a4`.
-- Current local revision passed all 157 frontend tests, frontend typecheck/build, backend build and 315 backend tests after applying migrations and seeds to isolated PostgreSQL 16. Docker Compose production configuration also validated.
+- PR #66 adds controlled recovery of ownerless offline attachments, a CSV-export correction, DST tests, and evidence/status reports. Hosted CI run [43767753872](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43767753872) passed 7/7 on `b02c164`; a subsequent test-only E2E fixture correction passed locally and awaits hosted validation.
+- Current local revision passed all 157 frontend tests, typecheck/build, the 1-test Chromium offline fixture, backend build and 315 backend tests after migrations and seeds on isolated PostgreSQL 16. Docker Compose production configuration also validated. The E2E fixture is not authenticated device acceptance.
 
 ### Open
 
@@ -49,5 +49,5 @@ The project’s broader history and evidence are summarized in [PROJECT_COMPLETI
 | Main CI | **7/7 passed** on `9df02aa` | Post-merge run [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) on exact current SHA. |
 | PR #62 hosted CI | **7/7 passed** | Run 43761213396 on head `6c8a52c`; PR since merged. |
 | Artifact validation | **2/2 passed** on `9df02aa` | Run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834). Not a release approval. |
-| Current PR #66 | **7/7 passed** | Run [43767322367](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43767322367) validates `ebc57a4`. |
+| Current PR #66 | **PARTIAL** | Run [43767753872](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43767753872) passed 7/7 on `b02c164`; hosted checks for the following test-only update are pending. |
 | Production acceptance | **Not performed / not established** | No deployment or production approval is claimed. |

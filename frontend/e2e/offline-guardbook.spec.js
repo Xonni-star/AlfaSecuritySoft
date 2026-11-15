@@ -66,7 +66,7 @@ test('captures offline, survives reload, and replays one mutation after reconnec
   expect(beforeReload.attachments[0]).toMatchObject({
     entityId: beforeReload.outbox[0].payload.id,
     synced: false,
-    fileName: 'vorfall_fotodokumentation.jpg'
+    fileName: 'incident.jpg'
   });
 
   await page.reload({ waitUntil: 'domcontentloaded' });
