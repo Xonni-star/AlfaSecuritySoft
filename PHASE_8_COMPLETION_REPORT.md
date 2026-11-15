@@ -1,5 +1,7 @@
 # Phase 8 validation report — PARTIAL / BLOCKED
 
+> **Historical snapshot:** This Phase 8 report records code, PR, and validation status as of **2026-11-15 20:30 CET**. Later merges superseded its live PR/main claims. Its reported worktree and test evidence is retained as historical evidence; current status is in [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md) and [PHASE_9_COMPLETION_REPORT.md](./PHASE_9_COMPLETION_REPORT.md).
+
 **Status:** PARTIAL / BLOCKED — this is an evidence summary, not a phase-completion declaration or production-readiness approval. Offline browser testing now passes against a loopback fixture in open PR #52, but authenticated application-backend/device acceptance is incomplete; the documents customer-scope finding is not fixed on `main`; several fixes and test results below are from separate, unmerged worktrees.
 
 **Current `main` verified:** `d06c2d835270b43bd36bb3585fc45d7da7d58a50`

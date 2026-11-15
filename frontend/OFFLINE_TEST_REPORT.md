@@ -1,6 +1,7 @@
 # SecurityOps 2.0 - Phase 6: Offline-Testbericht
 
 > **Historische Szenariomatrix:** Die 18 Einträge unten dokumentieren damalige lokale Prüfungen, keine aktuelle Browser-/Geräteabnahme. Insbesondere Szenario 2 prüft nur lokale IndexedDB-Validierung; es gibt keinen Foto-Upload-/Replay-Pfad, daher werden Fotos nicht synchronisiert.
+> **Aktueller Stand (15.11.2026):** PR [#64](https://github.com/Xonni-star/SecurityOps-2.0/pull/64) ist in `main` gemergt (`621874535ee480e56716ae8a7bd992272bc7a51a`). Migration 041 ergänzt tenant-scoped Idempotenzquittungen für den Wachbuchanhang-Upload. Anhänge mit gespeicherter `userId` können nach Wiederverbindung idempotent hochgeladen werden. Lokale Altanhänge ohne `userId` werden nicht automatisch hochgeladen oder einem Benutzer zugewiesen; die UI warnt davor, und der Benutzer muss sie erneut hinzufügen. Ein Altanhang mit bereits bestätigtem Eintrag und nicht-UUID lokaler ID kann nicht verknüpft werden. Main-CI-Lauf [43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) lief beim letzten Statuscheck noch.
 
 ## 1. Testergebnisse der 18 Szenarien
 | Nr | Szenario | Status | Verifikation |
@@ -37,13 +38,17 @@ Focused frontend tests cover startup replay while already online, exact tenant/u
 
 CI mapping for this verification snapshot: PR #16 head `a167379546d239ae7241974a3fbb4f9adb7e1868`, run `43498580680` (all four jobs passed); PR #19 head `811de4980835c16df03adc625dc76d55951d657a`, run `43499283441` (all four jobs passed). PR #19 is stacked on PR #16; both remain open and unmerged.
 
-## Current browser validation snapshot (PR #52, 2026-11-15; status checked 20:30 CET)
+## Historical browser validation snapshot (PR #52, 2026-11-15; status checked 20:30 CET)
+
+> PR #52 has since merged. The test results and fixture/device limitations below describe that snapshot and remain useful evidence, but the open-PR state is historical. See [current project status](../PROJECT_CURRENT_STATUS.md) and the [Phase 9 report](../PHASE_9_COMPLETION_REPORT.md).
 
 Open PR [#52](https://github.com/Xonni-star/SecurityOps-2.0/pull/52) adds a Playwright/Chromium loopback scenario covering offline guardbook capture, reload persistence of the outbox entry and photo, reconnect, and retry after a deliberately lost receipt. The retry uses the same mutation ID and produces one effect in the local fixture. The PR reports three focused Vitest files / 48 tests, typecheck, production build, and `npm run test:browser -- --workers=1` passing on head `9dddf9e5a4c4ca2cbd0cfee7e924a30d3d7eefd1`; hosted CI run [43750985353](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43750985353) passed 7/7 jobs. The PR remains open and unmerged.
 
 This browser test uses a loopback fixture, not the authenticated application backend or production services; backend/device acceptance remains incomplete. The DMS upload API has no idempotency key or retry lookup and generates a new document ID, so photo upload/replay is not implemented. Photos persist locally as **unsynced**. No UI or report should claim that a photo has synchronized.
 
-## Offline guardbook exercise (2026-11-15)
+## Offline guardbook exercise (2026-11-15; pre-PR-64)
+
+> **Historischer Teststand vor PR #64:** Die folgenden lokalen Tests und Aussagen zum fehlenden Foto-Replay beschreiben den Vor-Merge-Stand. Sie dürfen nicht als aktueller Mainline-Verhaltensstand gelesen werden; aktueller Stand und Grenzen stehen oben.
 
 Current local verification:
 
@@ -59,4 +64,4 @@ The browser test exercises Chromium's actual offline/online network transition w
 
 The first probe found that the app did not register its service worker and the service worker precache referenced paths not emitted by Vite. Production builds now register the worker and precache the built root/manifest files. The Playwright test now serves the built app and API fixture from a separate loopback-only Node server; it uses Chromium offline emulation rather than Playwright request interception. This validates browser persistence/reconnect behavior against a controlled local fixture, not a live backend or physical device.
 
-Full backend/device acceptance and photo replay remain **INCOMPLETE**. The guardbook form only writes photo data to IndexedDB. The existing DMS `POST /api/v1/documents` contract can upload raw bytes and link a persisted same-tenant guardbook entry with `relationshipType=incident` and `relationshipId`, but it generates a new server document ID per upload and defines no idempotency key or retry lookup. That is insufficient for safe replay after a lost response; no attachment upload/replay implementation was added without that API contract.
+At the time of this pre-PR-64 exercise, authenticated backend/device acceptance and photo replay were **INCOMPLETE**. The guardbook form wrote photo data only to IndexedDB; the then-existing DMS upload contract did not support safe idempotent retry after a lost response. PR #64 subsequently added that server-side idempotency support and a user-owned upload path, with the legacy-data limitations described above. Authenticated-backend/device acceptance remains incomplete.
