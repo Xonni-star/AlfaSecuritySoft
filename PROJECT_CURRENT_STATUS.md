@@ -8,10 +8,10 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
-**Fully hosted-verified baseline:** `3aeebc08e30b9d34bd0e42e95f79c18693e363be`
+**Fully hosted-verified code revision:** `31e63726d8b377abafe564da349c3aa622468291`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
-Later work, including the photo extension below, is outside this baseline identifier.
+Later documentation-only commits are outside this code-revision identifier.
 
 **Hosted CI history:** [Run 43906594339](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43906594339)
 on `6ead55c73885b1b5779501c50c55c08ee01c6184` completed **5/7**:
@@ -39,7 +39,7 @@ Two fresh isolated local cycles passed **3/3 each**, including cleanup.
 passed **7/7** on `3aeebc08e30b9d34bd0e42e95f79c18693e363be`;
 no application test was skipped or assertion removed.
 
-**Photo-replay extension — local verification:** The real suite now passes
+**Photo-replay extension — local and hosted verification:** The real suite now passes
 **4/4** with isolated PostgreSQL, private MinIO and actual ClamAV. A synthetic
 photo survives offline reload and another account's login without upload.
 After the owner returns, the first real successful upload response is lost;
@@ -53,8 +53,10 @@ The new photo case uses 120 seconds; existing budgets remain unchanged
 (GuardBook/identity 120 seconds, SOP 180 seconds). An earlier ungated test
 observed an already completed retry and failed; it was corrected with a real
 request gate, not sleeps, fake responses, skipped assertions or wider budgets.
-All three owned containers were removed. Hosted evidence for this extension
-is pending; physical devices, representative files and a real provider remain open.
+All three owned containers were removed. [CI 43916713656](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43916713656)
+passed **7/7** on `31e63726d8b377abafe564da349c3aa622468291`;
+the hosted root log explicitly confirms **4/4** journeys and cleanup on Node 24.
+Physical devices, representative files and a real provider remain open.
 
 **SOP functional package (`67a1185`):** The authenticated Chromium suite passes **3/3**.
 It includes account/tenant switches, owner-bound replay, session-restoring reload
@@ -119,18 +121,18 @@ This is the current evidence index. Phase reports and dated status sections rema
 | Mainline CI | **IMPLEMENTIERT UND GETESTET** | Post-merge [CI run 43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed **7/7 jobs** on the exact current-main SHA. |
 | Release package validation | **TEILWEISE IMPLEMENTIERT** | Artifact run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2 on current `main`; packaging/provenance/install validation is not a deployment or production release. |
 | Documentation PR validation | **IMPLEMENTIERT UND GETESTET** | PR #62 (head `6c8a52c`, hosted [CI run 43761213396](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43761213396) 7/7) is merged as `9df02aa`. |
-| Published Phase 11 CI baseline | **IMPLEMENTIERT UND GETESTET** | Cleanup correction `3aeebc08e30b9d34bd0e42e95f79c18693e363be` passed 7/7 in 43912398195; fixture/ownership correction `4524f12` passed 7/7 in 43908926864. Failed 5/7 and 6/7 runs remain recorded above. New work requires its own revision-bound evidence. |
+| Published Phase 11 CI | **IMPLEMENTIERT UND GETESTET** | Photo code `31e63726d8b377abafe564da349c3aa622468291` passed 7/7 in 43916713656, including all 4 real browser journeys. Cleanup `3aeebc0` and fixture/ownership `4524f12` each previously passed 7/7. Failed 5/7 and 6/7 runs remain recorded; later documentation-only commits are outside this code ID. |
 | Reporting UI | **IMPLEMENTIERT UND GETESTET** | PR #66's frontend uses approved actual hours, calendar ranges, and safe CSV export; its frontend checks passed for the identified revision. |
 | Report site-scope correction | **IMPLEMENTIERT UND GETESTET** | All four report handlers and work-hours CSV use authenticated site grants. Local scope-helper/integration tests and the hosted backend job on `6ead55c` passed. Production acceptance and the full role/object matrix remain outstanding. |
 | Prior backend validation | **IMPLEMENTIERT UND GETESTET** | On an earlier PR revision, migration and seed ran against isolated PostgreSQL 16; backend build and 34 Jest suites / 315 tests passed. These results do not cover the current report-scope change. |
 | Phase 11 backend and migrations | **IMPLEMENTIERT UND GETESTET** | Latest full local backend suite: 35/35 suites, 546/546 tests, no open-handle warning. API/sync integration budget is explicitly 30 s, Patrol 60 s; no assertions removed and no application/PostgreSQL defaults changed. Earlier 5-s/30-s timeout runs are documented above, not reclassified as passing. A real 041→042 upgrade preserves earlier checksums, rejects GuardBook DELETE/core-field UPDATE and becomes a no-op on rerun. Published 001/004 remain unchanged; text correction is additive in 042. |
 | Authenticated report authorization | **IMPLEMENTIERT UND GETESTET** | Extended boundary suite: 16/16, with two tenants/three sites, report-only and site grants, absent/removed permissions, CSV, exact aggregates, forged tenant hints and direct shift IDs. Existing sessions immediately lose removed report grants. No new runtime authorization defect found; other endpoint/object combinations remain open. |
-| Phase 11 frontend and browser | **IMPLEMENTIERT UND GETESTET** | Latest full local frontend suite: 29 files, 184/184 tests with `--maxWorkers=2` and unchanged default 5-s budgets; typecheck and production browser build passed. Previous 172/172 required 30-s budgets. Scoped hydration, actual Navbar role, Roster isolation and offline retry/teardown are covered. Chromium: historical 1/1 API-fixture and current 3/3 real Express/PostgreSQL scenarios covering authenticated replay/logout, session restoration, two-account/two-tenant ownership and the four-account SOP journey without unauthorized base-module GETs. No physical-device/photo/provider or complete identity-matrix acceptance is inferred. |
+| Phase 11 frontend and browser | **IMPLEMENTIERT UND GETESTET** | Local frontend 29 files/184 tests with two workers and unchanged default 5-s budgets; typecheck/build passed, and hosted frontend job passed on the photo code SHA. Separate fixture 1/1; real suite 4/4 locally and hosted covers session/replay/logout/identity/SOP and a synthetic photo through private S3/ClamAV. Exact photo assertions and unchanged case budgets are stated above. No physical-device/provider, representative-file or complete identity-matrix acceptance is inferred. |
 | API authentication boundary | **IMPLEMENTIERT UND GETESTET** | All 215 currently registered protected method/path pairs return 401 without a session in the local backend suite. Health, login and password-reset completion are explicit public exceptions. Full per-role/site/object matrix remains open. |
 | Module/architecture inventory | **IMPLEMENTIERT** | [13-module evidence matrix](./MODULE_IMPLEMENTATION_STATUS.md) identifies active UI/API/database/test paths and remaining limits. npm and production Docker use Node/TypeScript; historical Python/Alembic files were not validated by these runs. Not a complete product acceptance. |
 | Test-only Linux install | **IMPLEMENTIERT UND GETESTET** | PR #56 merged. The tar/deb installer and lifecycle guidance target isolated testing; they are not production installers. |
 | Backup/restore | **TEILWEISE IMPLEMENTIERT** | Full local PostgreSQL/MinIO drill through 042 passed again after matching backup UID/GID to the invoking restore user; archive ownership, readability and private mode 0600 are asserted. Mid-DDL rollback, stopped services on restore/resume failure and backup-health failure/recovery remain covered. Previous hosted Linux archive-access failure and correction CI are tracked above. Health is not an integrity/restore check or external alert; real-provider restore and measured RPO/RTO remain open. |
-| Offline and SOP workflows | **TEILWEISE IMPLEMENTIERT** | Ownerless-attachment disclosure UI is removed; legacy attachments stay local without a secure recovery flow. Real GuardBook/SOP replay passed locally 3/3 and in the hosted root job on `6ead55c`. The separate fixture passed locally 1/1 after its read-grant correction; its exact hosted status is tracked above. Complete photo/identity-matrix/physical-device acceptance remains open. |
+| Offline and SOP workflows | **TEILWEISE IMPLEMENTIERT** | Ownerless-attachment disclosure UI is removed; legacy attachments stay local without a secure recovery flow. Real suite including synthetic photo/S3/ClamAV passes 4/4 locally and hosted; separate fixture 1/1. This is not complete photo/file/identity-matrix or physical-device acceptance. |
 | Security and tenancy | **TEILWEISE IMPLEMENTIERT** | Bounded static reviews of authentication/session/web-security and tenant/RLS/report-scope paths found no confirmed bypass. Report and authorization negative tests passed on isolated PostgreSQL. Full route/migration/deployed-policy coverage, penetration testing, and production acceptance are not established. |
 | Performance | **TEILWEISE IMPLEMENTIERT** | PR #53 adds a bounded local baseline; its workload does not establish production capacity, an SLA, or resource headroom. |
 | Production/provider/device acceptance | **OFFEN** | No evidence establishes production deployment, real-provider behavior, customer acceptance, or physical-device acceptance. |

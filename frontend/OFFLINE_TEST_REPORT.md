@@ -1,6 +1,6 @@
 # SecurityOps 2.0 - Phase 6: Offline-Testbericht
 
-> **Aktueller Foto-Replay-Nachweis:** Die echte Suite besteht lokal **4/4** mit
+> **Aktueller Foto-Replay-Nachweis:** Die echte Suite besteht lokal und gehostet **4/4** mit
 > PostgreSQL, privatem MinIO und verpflichtendem ClamAV. Ein synthetisches Foto
 > überlebt Offline-Reload und fremdes Konto ohne Upload. Beim ursprünglichen
 > Besitzer geht die erste echte erfolgreiche Quittung verloren; erst nach
@@ -12,7 +12,9 @@
 > Testdefaults. Fotofall 120 s; bestehende Budgets unverändert (Wachbuch/
 > Identität 120 s, SOP 180 s); eigene Container entfernt.
 > Ein vorheriger ungesteuerter Zustandscheck war racy und bleibt als Fehlversuch
-> dokumentiert. Gehosteter Nachweis steht noch aus; keine Geräte-/Providerabnahme.
+> dokumentiert. [CI 43916713656](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43916713656)
+> bestand auf `31e63726d8b377abafe564da349c3aa622468291` 7/7;
+> Root-Protokoll: 4/4 und Cleanup. Keine Geräte-/Providerabnahme.
 
 > **Gehostete Phase-11-Evidenz:** Run [43906594339](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43906594339)
 > auf `6ead55c` bestand insgesamt nur 5/7, aber die drei echten Browserjourneys

@@ -9,7 +9,7 @@ Projektabschluss und keine Produktions-, Sicherheits- oder Rechtsfreigabe.
 - `main` wurde erneut über GitHub geprüft:
   `9df02aaa5ef01de78e0fe5d53be446b2037db24d`.
 - PR #66 ist weiterhin der einzige offene PR. Veröffentlichte Code-Revision:
-  `4524f121420dd66829feafe7b7aed07aece7a338`; nachfolgende reine
+  `31e63726d8b377abafe564da349c3aa622468291`; nachfolgende reine
   Dokumentationscommits sind in dieser Code-ID nicht enthalten.
 - [CI 43906594339](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43906594339)
   auf `6ead55c73885b1b5779501c50c55c08ee01c6184` bestand **5/7**:
@@ -48,11 +48,13 @@ Projektabschluss und keine Produktions-, Sicherheits- oder Rechtsfreigabe.
 | `18aca69` | Berechtigungsgerechtes Laden mit erhaltenen Tenant-/Site-/Own-Grants und sichtbaren echten API-Fehlern. Navbar zeigt tatsächliche Sitzungsrolle. Frontend 184/184, Store/Navbar 51/51 und reale Browsersuite 3/3 einschließlich null unberechtigter Basis-GETs des SOP-Mitarbeiters bestanden. |
 | Aktueller Backendabschluss | Vollständige 35 Suites / 546 Tests bestanden auf frischem Standard-PostgreSQL 16 mit expliziten API-/Sync-Integrationsbudgets 30 s und Patrol 60 s. Keine Assertions entfernt oder Anwendungs-/DB-Konfiguration geändert; frühere Fehlläufe bleiben dokumentiert. Keine Performancefreigabe. |
 | `4524f12` | Behebt die beiden gehosteten Testregressionen: Offline-Fixture erhält explizite Standort-/Mitarbeiter-Leserechte und prüft geladene IDs; isolierter Backup-Container läuft mit UID/GID des Restore-Benutzers. Besitzer, Lesbarkeit und unveränderte private `0600`-Rechte werden geprüft. Fixture 1/1 und vollständiger PostgreSQL-/MinIO-Drill einschließlich Fehlerpfaden/Cleanup erneut lokal bestanden. Keine produktiven Rechte oder Testbudgets aufgeweicht. |
-| Foto-Replay-Erweiterung | Lokal 4/4 echte Browserjourneys mit PostgreSQL, privatem MinIO und ClamAV. Teststarter wählt echten S3-Adapter statt des Test-In-Memory-Defaults. Foto bleibt über Offline-Reload/fremdes Konto erhalten; verlorene echte Quittung wird mit derselben ID wiederholt. Ein Dokument/eine Version/ein Upload-/Clean-Audit/ein S3-Objekt mit Originalbytes; anonymes S3 403 und Fremdtenant-Download 404 mit positivem Downloadgrant. Neuer Fotofall 120 s, bestehende Budgets unverändert (Wachbuch/Identität 120 s, SOP 180 s). Gehosteter Nachweis noch offen. |
+| `31e6372` Foto-Replay | Lokal und gehostet 4/4 echte Browserjourneys mit PostgreSQL, privatem MinIO und ClamAV; CI 43916713656 7/7. Teststarter wählt echten S3-Adapter statt Test-In-Memory. Foto bleibt über Offline-Reload/fremdes Konto erhalten; verlorene echte Quittung wird identisch wiederholt. Ein Dokument/eine Version/ein Upload-/Clean-Audit/ein S3-Objekt mit Originalbytes; anonymes S3 403 und Fremdtenant-Download 404 mit positivem Grant. Fotofall 120 s, bestehende Budgets unverändert (Wachbuch/Identität 120 s, SOP 180 s). Keine Geräte-/Providerabnahme. |
 
 Die Phase-11-Tabelle im Tracker enthält **23 abgegrenzte Pakete**:
-**19 im jeweils beschriebenen Umfang erledigt**, **1 in Arbeit** (Foto-Replay-CI)
-und **3 extern zu prüfen**.
+**20 im jeweils beschriebenen Umfang erledigt** und **3 extern zu prüfen**.
+Foto-Code `31e63726d8b377abafe564da349c3aa622468291` bestand
+[CI 43916713656](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43916713656)
+mit 7/7 Jobs; das Root-Protokoll bestätigt explizit 4/4 Browserjourneys und Cleanup.
 Das frühere gehostete Browser-CI-Gate ist auf `4524f12` bestanden.
 Diese Zahlen sind keine Fertigstellungsquote des Produkts.
 Die ältere breite Audit-/Anforderungsmatrix enthält weiterhin offene Arbeit.
@@ -197,9 +199,10 @@ wurde abgeschlossen.
 
 ## Verbleibende Grenzen und konkrete Fortsetzung
 
-1. **Aktuelles Gate:** Neue 4/4-Foto-Replay-Suite auf dem exakten veröffentlichten
-   Code-SHA gehostet verifizieren; MinIO/ClamAV bleiben isolierte Dienste, kein
-   Providernachweis. Danach Anhang-Fehler-/Identitätsfälle gezielt erweitern.
+1. **Nächster abgegrenzter lokaler Umfang:** Anhang-Fehler-/Identitätsfälle gezielt
+   erweitern. Die neue 4/4-Suite ist lokal und gehostet auf `31e6372` bestanden;
+   nicht erneut implementieren. MinIO/ClamAV bleiben isolierte Dienste, kein
+   Providernachweis.
    SOP-Offlinebestätigung, Reader-Ladefehler und bestehende Kontenwechsel nicht
    erneut implementieren.
 2. Authentifizierte Rollen-/Standort-/Objektmatrix auf weitere Module ausbauen.
