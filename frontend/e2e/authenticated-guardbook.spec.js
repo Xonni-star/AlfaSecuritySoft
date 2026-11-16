@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { createRequire } from 'node:module';
 import { expect, request, test } from '@playwright/test';
 
 const ownerEmail = 'a.schmidt@ffm-sec.de';
@@ -192,6 +193,119 @@ test('preserves an owner mutation across account and tenant switches until the o
     .filter(entry => entry.title === title);
   expect(rows).toHaveLength(1);
   expect(rows[0].client_mutation_id).toBe(pending.id);
+  await logout(page);
+});
+
+test('replays an owner-bound offline photo once through real S3 and ClamAV after a lost receipt', async ({ page, context }) => {
+  test.setTimeout(120_000);
+  const photo = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+  const title = `Photo-Replay-${randomUUID()}`;
+  await page.goto('/');
+  await login(page);
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  const identity = (await (await page.request.get('/api/v1/auth/me')).json()).data;
+  await page.getByRole('button', { name: 'Digitales Wachbuch', exact: true }).click();
+  await page.getByRole('button', { name: 'Ereignis erfassen' }).click();
+  await page.locator('input[placeholder^="z. B."]').fill(title);
+  await page.locator('textarea').fill('Synthetisches Bild: echter privater Speicher und verpflichtender Virenscan.');
+  await page.locator('input[type="file"]').setInputFiles({
+    name: 'proof.gif', mimeType: 'image/gif', buffer: photo
+  });
+  await expect(page.getByAltText('Vorschau')).toBeVisible();
+  await expect.poll(() => page.locator('form').evaluate(form => Array.from(form.elements)
+    .filter(field => field.willValidate && !field.validity.valid)
+    .map(field => field.name))).toEqual([]);
+  await context.setOffline(true);
+  await expect(page.getByText('Offline-Modus aktiv')).toBeVisible();
+  await page.getByRole('button', { name: 'Offline vormerken' }).click();
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
+  const [attachment] = await readOutbox(page, 'attachments');
+  expect(attachment).toMatchObject({ tenantId: tenantA, userId: identity.userId, synced: false });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.getByLabel('E-Mail')).toBeVisible();
+  expect(await readOutbox(page, 'attachments')).toEqual([attachment]);
+
+  const keys = [];
+  const receipts = [];
+  let releaseRetry;
+  const retryGate = new Promise(resolve => { releaseRetry = resolve; });
+  await page.route('**/api/v1/logbook/*/attachments', async route => {
+    keys.push(route.request().headers()['x-idempotency-key']);
+    if (keys.length > 1) await retryGate;
+    const response = await route.fetch();
+    expect(response.status()).toBe(201);
+    const document = (await response.json()).data;
+    expect(document).toMatchObject({
+      tenant_id: tenantA, version_created_by: identity.userId, scan_status: 'clean', file_released: true
+    });
+    receipts.push(document);
+    if (receipts.length === 1) await route.abort('failed');
+    else await route.fulfill({ response });
+  });
+  await context.setOffline(false);
+  await login(page, 'other@browser.test.invalid');
+  const otherIdentity = (await (await page.request.get('/api/v1/auth/me')).json()).data;
+  expect(otherIdentity).toMatchObject({ tenantId: tenantA });
+  expect(otherIdentity.userId).not.toBe(identity.userId);
+  await expect(page.getByText('Mandantendaten werden aus PostgreSQL geladen…')).toBeHidden();
+  await page.getByRole('button', { name: 'Digitales Wachbuch', exact: true }).click();
+  await expect(page.getByText(title, { exact: true })).toHaveCount(0);
+  expect(await readOutbox(page, 'attachments')).toEqual([attachment]);
+  expect(keys).toEqual([]);
+  await logout(page);
+  try {
+    await login(page);
+    await expect.poll(async () => (await readOutbox(page, 'attachments'))[0]?.uploadRetryCount,
+      { timeout: 30_000 }).toBe(1);
+    expect((await readOutbox(page, 'attachments'))[0]).toMatchObject({ id: attachment.id, synced: false });
+    expect(receipts).toHaveLength(1);
+  } finally {
+    releaseRetry();
+  }
+  await expect.poll(() => receipts.length, { timeout: 60_000 }).toBe(2);
+  await expect.poll(async () => (await readOutbox(page, 'attachments'))[0]?.synced).toBe(true);
+  expect(keys).toEqual([attachment.id, attachment.id]);
+  expect(receipts[1].id).toBe(receipts[0].id);
+  const documentId = receipts[0].id;
+  const download = await page.request.get(`/api/v1/documents/${documentId}/download`);
+  expect(download.status()).toBe(200);
+  expect(await download.body()).toEqual(photo);
+  const versions = await page.request.get(`/api/v1/documents/${documentId}/versions`);
+  expect(versions.status()).toBe(200);
+  expect((await versions.json()).data).toHaveLength(1);
+  const audit = await page.request.get(`/api/v1/documents/${documentId}/audit`);
+  expect(audit.status()).toBe(200);
+  const events = (await audit.json()).data;
+  expect(events.filter(event => event.action === 'uploaded')).toHaveLength(1);
+  expect(events.filter(event => event.action === 'scan_clean')).toHaveLength(1);
+
+  const requireBackend = createRequire(new URL('../backend/package.json', import.meta.url));
+  const { S3Client, ListObjectsV2Command, GetObjectCommand } = requireBackend('@aws-sdk/client-s3');
+  const storage = new S3Client({
+    endpoint: process.env.DMS_S3_ENDPOINT, region: process.env.DMS_S3_REGION, forcePathStyle: true,
+    credentials: {
+      accessKeyId: process.env.DMS_S3_ACCESS_KEY, secretAccessKey: process.env.DMS_S3_SECRET_KEY
+    }
+  });
+  try {
+    const { Contents } = await storage.send(new ListObjectsV2Command({ Bucket: process.env.DMS_S3_BUCKET }));
+    expect(Contents).toHaveLength(1);
+    const key = Contents[0].Key;
+    const object = await storage.send(new GetObjectCommand({ Bucket: process.env.DMS_S3_BUCKET, Key: key }));
+    expect(Buffer.from(await object.Body.transformToByteArray())).toEqual(photo);
+    const anonymous = await fetch(`${process.env.DMS_S3_ENDPOINT}/${process.env.DMS_S3_BUCKET}/${key}`, {
+      signal: AbortSignal.timeout(5000)
+    });
+    expect(anonymous.status).toBe(403);
+  } finally {
+    storage.destroy();
+  }
+  await logout(page);
+  await login(page, ownerEmail, tenantB);
+  const foreignIdentity = (await (await page.request.get('/api/v1/auth/me')).json()).data;
+  expect(foreignIdentity.permissions).toContain('documents:download');
+  expect((await page.request.get(`/api/v1/documents/${documentId}/download`)).status()).toBe(404);
   await logout(page);
 });
 

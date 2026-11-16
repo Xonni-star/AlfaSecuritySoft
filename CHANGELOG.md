@@ -4,6 +4,7 @@
 
 ### Hinzugefügt
 
+- Echte Browser-Fotojourney mit isoliertem privatem MinIO und ClamAV: Offline-Reload, fremdes Konto, verlorene echte Uploadquittung und identischer Retry; eine Version/ein Upload-/Clean-Audit, Originalbytes in S3/Download, anonymes S3 403 und Fremdtenant 404. Authentifizierte Suite lokal 4/4; neuer Fotofall 120 s, bestehende Budgets unverändert (Wachbuch/Identität 120 s, SOP 180 s). Kein Geräte-/Provider-Nachweis.
 - Echte SOP-Browserjourney: unabhängige Erstellung/Prüfung/Freigabe, reine Mitarbeiterrechte, bewusste Offline-Kenntnisnahme, Offline-Reload und idempotente Wiederholung nach verlorener echter Quittung. Authentifizierte Chromium-Suite lokal 3/3.
 - Erweiterte authentifizierte Report-/Berechtigungsmatrix: vier Berichte und CSV, Tenant-/Site-Grants, sofortiger Rechteentzug, manipulierte Mandantenhinweise, exakte Aggregate und direkte Schicht-IDs; PostgreSQL-Suite 16/16 bestanden.
 - Echte Chromium-/PostgreSQL-Prüfung mit zwei Konten und zwei Mandanten: fremde Offline-Mutationen bleiben unangetastet, erst die ursprüngliche Identität synchronisiert genau einmal.

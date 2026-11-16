@@ -28,7 +28,9 @@ Projektabschluss und keine Produktions-, Sicherheits- oder Rechtsfreigabe.
   traf aber die noch laufende asynchrone Docker-Entfernung. Der Runner wartet
   nun höchstens zehn positive Containerlisten-Prüfungen ab; Dockerfehler gelten
   nicht als erfolgreiche Entfernung. Zwei frische lokale Zyklen bestanden
-  jeweils 3/3 samt Cleanup. Neuer gehosteter Nachweis noch erforderlich.
+  jeweils 3/3 samt Cleanup. Korrektur `3aeebc08e30b9d34bd0e42e95f79c18693e363be`
+  bestand CI [43912398195](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43912398195)
+  mit 7/7 Jobs.
 
 ## Umgesetzte und lokal geprüfte Pakete
 
@@ -46,9 +48,11 @@ Projektabschluss und keine Produktions-, Sicherheits- oder Rechtsfreigabe.
 | `18aca69` | Berechtigungsgerechtes Laden mit erhaltenen Tenant-/Site-/Own-Grants und sichtbaren echten API-Fehlern. Navbar zeigt tatsächliche Sitzungsrolle. Frontend 184/184, Store/Navbar 51/51 und reale Browsersuite 3/3 einschließlich null unberechtigter Basis-GETs des SOP-Mitarbeiters bestanden. |
 | Aktueller Backendabschluss | Vollständige 35 Suites / 546 Tests bestanden auf frischem Standard-PostgreSQL 16 mit expliziten API-/Sync-Integrationsbudgets 30 s und Patrol 60 s. Keine Assertions entfernt oder Anwendungs-/DB-Konfiguration geändert; frühere Fehlläufe bleiben dokumentiert. Keine Performancefreigabe. |
 | `4524f12` | Behebt die beiden gehosteten Testregressionen: Offline-Fixture erhält explizite Standort-/Mitarbeiter-Leserechte und prüft geladene IDs; isolierter Backup-Container läuft mit UID/GID des Restore-Benutzers. Besitzer, Lesbarkeit und unveränderte private `0600`-Rechte werden geprüft. Fixture 1/1 und vollständiger PostgreSQL-/MinIO-Drill einschließlich Fehlerpfaden/Cleanup erneut lokal bestanden. Keine produktiven Rechte oder Testbudgets aufgeweicht. |
+| Foto-Replay-Erweiterung | Lokal 4/4 echte Browserjourneys mit PostgreSQL, privatem MinIO und ClamAV. Teststarter wählt echten S3-Adapter statt des Test-In-Memory-Defaults. Foto bleibt über Offline-Reload/fremdes Konto erhalten; verlorene echte Quittung wird mit derselben ID wiederholt. Ein Dokument/eine Version/ein Upload-/Clean-Audit/ein S3-Objekt mit Originalbytes; anonymes S3 403 und Fremdtenant-Download 404 mit positivem Downloadgrant. Neuer Fotofall 120 s, bestehende Budgets unverändert (Wachbuch/Identität 120 s, SOP 180 s). Gehosteter Nachweis noch offen. |
 
-Die Phase-11-Tabelle im Tracker enthält **22 abgegrenzte Pakete**:
-**19 im jeweils beschriebenen Umfang erledigt** und **3 extern zu prüfen**.
+Die Phase-11-Tabelle im Tracker enthält **23 abgegrenzte Pakete**:
+**19 im jeweils beschriebenen Umfang erledigt**, **1 in Arbeit** (Foto-Replay-CI)
+und **3 extern zu prüfen**.
 Das frühere gehostete Browser-CI-Gate ist auf `4524f12` bestanden.
 Diese Zahlen sind keine Fertigstellungsquote des Produkts.
 Die ältere breite Audit-/Anforderungsmatrix enthält weiterhin offene Arbeit.
@@ -72,8 +76,14 @@ Die ältere breite Audit-/Anforderungsmatrix enthält weiterhin offene Arbeit.
 | Ressourcenbereinigung | Bestanden | Restore-Projektressourcen entfernt; eigener Browser-PostgreSQL-Container entfernt |
 | Produktions-Compose und Workflow-YAML | Bestanden | Konfigurationsprüfung und gehosteter Produktions-Docker-Job auf `6ead55c`; keine Bereitstellung |
 | Gehostete Korrektur-CI 43908926864 | 7/7 Jobs bestanden auf `4524f121420dd66829feafe7b7aed07aece7a338` | Fixture, echte Browserjourneys, Linux-Restore, Backend, DMS, ClamAV, Produktions-Docker; isolierte Testdaten und keine Produktions-/Provider-/Geräteabnahme |
+| Neue echte Foto-Replay-Suite | Lokal 4/4, drei eigene Container entfernt | Originalbytes tatsächlich in privatem S3 und im authentifizierten Download; echter Scan und Audit; keine Geräte-/Providerabnahme. Ein ungesteuerter Zwischenzustandscheck scheiterte am bereits erfolgreichen Retry; Korrektur hält den echten Retry bis zur Beobachtung an, ohne Antworten zu erfinden oder Budgets zu erweitern |
 
 Reproduzierbare lokale Befehle nach vorhandener Abhängigkeits-/Chromium-Installation:
+
+Der echte Browserlauf benötigt zusätzlich Docker, OpenSSL und curl. Er startet
+eigene PostgreSQL-/MinIO-/ClamAV-Container mit zufälligen Zugangsdaten und
+dynamischen Loopbackports; verwendet den ursprünglichen Backend-Serverstarter
+mit testseitig ausgewähltem echtem S3-Adapter und entfernt nur seine Container.
 
 ```bash
 npm test --prefix frontend -- --maxWorkers=2
@@ -187,10 +197,11 @@ wurde abgeschlossen.
 
 ## Verbleibende Grenzen und konkrete Fortsetzung
 
-1. **Nächste lokal ausführbare Aufgabe:** Anhang-Replay mit echter isolierter
-   S3-/Scanneranbindung prüfen;
-   keine Fixture-Antworten als Providernachweis ausgeben. SOP-Offlinebestätigung,
-   Reader-Ladefehler und Konten-/Mandantenwechsel nicht erneut implementieren.
+1. **Aktuelles Gate:** Neue 4/4-Foto-Replay-Suite auf dem exakten veröffentlichten
+   Code-SHA gehostet verifizieren; MinIO/ClamAV bleiben isolierte Dienste, kein
+   Providernachweis. Danach Anhang-Fehler-/Identitätsfälle gezielt erweitern.
+   SOP-Offlinebestätigung, Reader-Ladefehler und bestehende Kontenwechsel nicht
+   erneut implementieren.
 2. Authentifizierte Rollen-/Standort-/Objektmatrix auf weitere Module ausbauen.
    Report-Lese-/Exportrechte und direkte Schicht-IDs sind unter AUTH-013 bestanden.
    Vorhandene 215 unauthentifizierte

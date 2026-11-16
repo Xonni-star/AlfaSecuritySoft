@@ -100,7 +100,7 @@ jobs:
       - name: Chromium für authentifizierten Backend-Browsertest installieren
         run: cd frontend && npx playwright install --with-deps chromium
 
-      - name: Offline-Wachbuch mit echter Sitzung und isoliertem PostgreSQL prüfen
+      - name: Offline-Wachbuch und Fotos mit PostgreSQL, privatem S3 und ClamAV prüfen
         run: npm run test:browser:backend --prefix frontend
 
       - name: Authentifizierte Browser-Fehlerdiagnose sichern

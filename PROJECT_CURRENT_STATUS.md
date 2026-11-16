@@ -8,10 +8,10 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
-**Fully hosted-verified code revision:** `4524f121420dd66829feafe7b7aed07aece7a338`
+**Fully hosted-verified baseline:** `3aeebc08e30b9d34bd0e42e95f79c18693e363be`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
-Later documentation-only commits are not included in this code-revision identifier.
+Later work, including the photo extension below, is outside this baseline identifier.
 
 **Hosted CI history:** [Run 43906594339](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43906594339)
 on `6ead55c73885b1b5779501c50c55c08ee01c6184` completed **5/7**:
@@ -35,8 +35,26 @@ checked too soon for Docker's asynchronous `--rm` removal. The runner now waits
 for up to ten successful container-list checks instead of treating an immediate
 inspect result as final; Docker command failures cannot count as removal.
 Two fresh isolated local cycles passed **3/3 each**, including cleanup.
-Hosted verification of this follow-up is still required; no application test
-was skipped or assertion removed.
+[Follow-up CI 43912398195](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43912398195)
+passed **7/7** on `3aeebc08e30b9d34bd0e42e95f79c18693e363be`;
+no application test was skipped or assertion removed.
+
+**Photo-replay extension — local verification:** The real suite now passes
+**4/4** with isolated PostgreSQL, private MinIO and actual ClamAV. A synthetic
+photo survives offline reload and another account's login without upload.
+After the owner returns, the first real successful upload response is lost;
+the real retry is held until IndexedDB's failed/unsynced state is observed.
+Retry preserves the key and returns the same author-bound document: one version,
+one upload/clean-scan audit event and one S3 object with exact original bytes.
+Anonymous S3 access returns 403; a download-capable foreign-tenant session gets
+404. The test-only launcher explicitly selects the existing S3 adapter because
+`NODE_ENV=test` otherwise intentionally selects an in-memory store.
+The new photo case uses 120 seconds; existing budgets remain unchanged
+(GuardBook/identity 120 seconds, SOP 180 seconds). An earlier ungated test
+observed an already completed retry and failed; it was corrected with a real
+request gate, not sleeps, fake responses, skipped assertions or wider budgets.
+All three owned containers were removed. Hosted evidence for this extension
+is pending; physical devices, representative files and a real provider remain open.
 
 **SOP functional package (`67a1185`):** The authenticated Chromium suite passes **3/3**.
 It includes account/tenant switches, owner-bound replay, session-restoring reload
@@ -101,7 +119,7 @@ This is the current evidence index. Phase reports and dated status sections rema
 | Mainline CI | **IMPLEMENTIERT UND GETESTET** | Post-merge [CI run 43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed **7/7 jobs** on the exact current-main SHA. |
 | Release package validation | **TEILWEISE IMPLEMENTIERT** | Artifact run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2 on current `main`; packaging/provenance/install validation is not a deployment or production release. |
 | Documentation PR validation | **IMPLEMENTIERT UND GETESTET** | PR #62 (head `6c8a52c`, hosted [CI run 43761213396](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43761213396) 7/7) is merged as `9df02aa`. |
-| Published Phase 11 CI | **IMPLEMENTIERT UND GETESTET** | Correction code SHA `4524f121420dd66829feafe7b7aed07aece7a338`, run 43908926864 passed 7/7. Previous published SHA `6ead55c` completed 5/7; failed jobs and correction evidence are preserved above. Subsequent documentation-only commits are outside this code-SHA identifier. |
+| Published Phase 11 CI baseline | **IMPLEMENTIERT UND GETESTET** | Cleanup correction `3aeebc08e30b9d34bd0e42e95f79c18693e363be` passed 7/7 in 43912398195; fixture/ownership correction `4524f12` passed 7/7 in 43908926864. Failed 5/7 and 6/7 runs remain recorded above. New work requires its own revision-bound evidence. |
 | Reporting UI | **IMPLEMENTIERT UND GETESTET** | PR #66's frontend uses approved actual hours, calendar ranges, and safe CSV export; its frontend checks passed for the identified revision. |
 | Report site-scope correction | **IMPLEMENTIERT UND GETESTET** | All four report handlers and work-hours CSV use authenticated site grants. Local scope-helper/integration tests and the hosted backend job on `6ead55c` passed. Production acceptance and the full role/object matrix remain outstanding. |
 | Prior backend validation | **IMPLEMENTIERT UND GETESTET** | On an earlier PR revision, migration and seed ran against isolated PostgreSQL 16; backend build and 34 Jest suites / 315 tests passed. These results do not cover the current report-scope change. |

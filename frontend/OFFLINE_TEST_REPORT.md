@@ -1,5 +1,19 @@
 # SecurityOps 2.0 - Phase 6: Offline-Testbericht
 
+> **Aktueller Foto-Replay-Nachweis:** Die echte Suite besteht lokal **4/4** mit
+> PostgreSQL, privatem MinIO und verpflichtendem ClamAV. Ein synthetisches Foto
+> überlebt Offline-Reload und fremdes Konto ohne Upload. Beim ursprünglichen
+> Besitzer geht die erste echte erfolgreiche Quittung verloren; erst nach
+> nachgewiesenem lokalem Fehlerzustand wird der echte Retry freigegeben.
+> Gleicher Schlüssel/Autor/Dokument, genau eine Version und ein Upload-/Clean-
+> Audit; Originalbytes im tatsächlichen S3-Objekt und autorisierten Download.
+> Anonymes S3 liefert 403, ein Fremdmandant mit Downloadrecht 404.
+> Der Teststarter wählt den echten S3-Adapter explizit statt des In-Memory-
+> Testdefaults. Fotofall 120 s; bestehende Budgets unverändert (Wachbuch/
+> Identität 120 s, SOP 180 s); eigene Container entfernt.
+> Ein vorheriger ungesteuerter Zustandscheck war racy und bleibt als Fehlversuch
+> dokumentiert. Gehosteter Nachweis steht noch aus; keine Geräte-/Providerabnahme.
+
 > **Gehostete Phase-11-Evidenz:** Run [43906594339](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43906594339)
 > auf `6ead55c` bestand insgesamt nur 5/7, aber die drei echten Browserjourneys
 > im Root-Job bestanden. Der separate Offline-Fixture scheiterte nach dem
@@ -10,8 +24,8 @@
 > einschließlich beider getrennter Browser-Suiten und des Linux-Restore-Drills.
 > Aktuelle Korrektur-CI und exakte SHAs: [Projektstatus](../PROJECT_CURRENT_STATUS.md).
 
-> **Aktueller Phase-11-Browsernachweis:** Die echte Chromium-/Express-/PostgreSQL-
-> Suite besteht lokal **3/3**. Zusätzlich zu den beiden Wachbuch-/Identitätsfällen
+> **Vorheriger Phase-11-Browsernachweis:** Die echte Chromium-/Express-/PostgreSQL-
+> Suite bestand lokal **3/3**. Zusätzlich zu den beiden Wachbuch-/Identitätsfällen
 > erfolgt eine SOP-Veröffentlichung mit getrennten Erstellungs-, Prüfungs- und
 > Freigabekonten. Ein reines Mitarbeiterkonto öffnet ohne automatische Bestätigung,
 > bestätigt bewusst offline, lädt offline neu und wiederholt nach verlorener echter

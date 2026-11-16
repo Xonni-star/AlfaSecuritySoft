@@ -6,7 +6,7 @@ export default defineConfig({
   testMatch: 'authenticated-guardbook.spec.js',
   webServer: [
     {
-      command: 'npm run dev --prefix backend',
+      command: 'node e2e/start-backend.cjs',
       url: 'http://127.0.0.1:4181/api/v1/health',
       reuseExistingServer: false,
       timeout: 120_000
