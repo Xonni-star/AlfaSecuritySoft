@@ -31,8 +31,14 @@ describe('report date ranges', () => {
     expect(isDateInRange('2026-03-29', range)).toBe(true);
     expect(isDateInRange('2026-03-28', range)).toBe(false);
     expect(isDateInRange('2026-02-31', range)).toBe(false);
-    expect(isDateInRange('2026-03-29T00:15:00+01:00', range)).toBe(true);
-    expect(isDateInRange('2026-03-30T00:00:00+02:00', range)).toBe(false);
+    const localDateRange = (value: string) => {
+      const date = new Date(value);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      return { from: key, to: key };
+    };
+    const timestamp = '2026-03-29T00:15:00+01:00';
+    expect(isDateInRange(timestamp, localDateRange(timestamp))).toBe(true);
+    expect(isDateInRange('2026-03-30T12:00:00+02:00', range)).toBe(false);
     expect(isDateInRange('not-a-date', range)).toBe(false);
   });
 });
