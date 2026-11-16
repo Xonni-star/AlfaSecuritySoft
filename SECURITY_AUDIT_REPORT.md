@@ -1,6 +1,17 @@
 # Focused security review — SecurityOps 2.0
 
 **Review date:** 2026-11-16
+
+**Latest bounded checks:** Static reviews at `0aec6191f30d75d5596c779d246e0b87997c8794`
+of FNL014–018 resource/sync changes and existing GuardBook access confirmed no
+remaining exploit in those scopes. No live endpoint/RLS checks or full SITE/OWN
+coverage were established. Exact CI 43945975019 on that SHA passed 7/7;
+downloaded logs confirm 320/546/9 and cleanup. Subsequent FNL-019 is functional
+work, not an additional confirmed vulnerability: real identity-bound local
+notifications, truthful disconnected-preference labels, late conflict/patrol
+guards and owner-filtered patrol lookup. Locally 331 frontend tests, typecheck/
+build and nine actual browser cases with cleanup passed; new hosted evidence
+remains separate. Session-local notifications are not a server delivery/audit log.
 **Scope:** PR #66 changes, browser-based report CSV export, local legacy-attachment recovery, backend authorization boundaries, PostgreSQL tenant/RLS context, authentication/session handling, and web security configuration. This is not a comprehensive security audit, penetration test, or certification.
 
 **Finalization evidence update, not a new comprehensive security review:**

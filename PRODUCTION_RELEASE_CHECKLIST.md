@@ -28,6 +28,11 @@ Test, ein Merge und ein erfolgreiches Containerimage ersetzen sie nicht.
       Lokal Frontend 320/320, Typprüfung/Build und reale Browser 9/9 mit Cleanup.
 - [x] Gefundene simulierte Audit-/Technik-/Abnahmeergebnisse entfernt;
       lokale Automationsentwürfe und fehlende Engine ausdrücklich gekennzeichnet.
+- [x] Echte lokale In-App-Meldungen in Center/Glockenzähler mit Lesen/Verwerfen,
+      Benutzer-/Mandantenbindung und ausdrücklich nicht angebundenen Zustellpräferenzen.
+      Elf zunächst rote Fälle, lokal Frontend 331/331, Typprüfung/Build und
+      Browser 9/9 mit tatsächlicher Offline-Meldung und Cleanup.
+      Kein serverseitiges Zustellprotokoll oder vollständiger Rollennachweis.
 - [x] Privaten lokalen S3-/ClamAV-Ablauf, Originalbytes und echte Dateiablehnung geprüft.
 - [x] Transaktionalen lokalen Restore, Fehler-/Resume-Pfade und Archivfrische geprüft.
 

@@ -90,6 +90,16 @@ historischen Kontext im [Sicherheitsbericht](./SECURITY_AUDIT_REPORT.md).
 
 ## Fachliche Fehler sind keine behaupteten Exploits
 
+FNL-018 ist nun gehostet belegt: `0aec6191f30d75d5596c779d246e0b87997c8794`,
+CI 43945975019 7/7; gelesene Logs 320/546/9 und Cleanup. Zwei zusätzliche
+begrenzte statische Prüfungen dieses SHA (FNL014–018 Ressourcen/Sync und
+bestehender Wachbuchzugriff) fanden keinen bestätigten verbleibenden Exploit.
+Sie ersetzen keine Live-Endpunkt-/RLS-Prüfung oder vollständige SITE-/OWN-Matrix.
+Nachfolgendes FNL-019 korrigiert reale lokale Benachrichtigungen, unangebundene
+Einstellungsversprechen und verspätete Konflikt-/Kontrollgang-Veröffentlichung.
+Elf zunächst rote Fälle, Frontend 331/331, Typprüfung/Build und echte Browser
+9/9 mit Cleanup; kein neuer Exploit oder serverseitiges Zustellprotokoll behauptet.
+
 Unberechtigte Reportanfragen wurden bereits vom Server abgewiesen; das
 Frontend vermeidet sie jetzt. Formularverlust, Zeitzonenvalidierung,
 falsche lokale Erfolgsmeldungen und simulierte Pentest-/MFA-Anzeigen wurden

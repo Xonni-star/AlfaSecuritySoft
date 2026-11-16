@@ -65,6 +65,15 @@ Spätere Hosted-Ergebnisse sind getrennt im
 
 ## Verbindliche offene Gates
 
+Aktueller Nachtrag: FNL-018 `0aec6191f30d75d5596c779d246e0b87997c8794`
+bestand CI 43945975019 7/7; heruntergeladene Logs bestätigen 320/546/9 und
+Cleanup. Nachfolgendes FNL-019 besteht lokal Frontend 331/331,
+Typprüfung/Build und echte Browser 9/9 mit Cleanup: tatsächliche lokale
+Benachrichtigungen, Lesen/Verwerfen/Zähler und identitätsgebundene späte
+Konflikt-/Kontrollgang-Ergebnisse. Keine serverseitige Zustellung/Persistenz,
+keine angebundenen E-Mail-/Push-Präferenzen. FNL-020 (dauerhafter
+Wachbuchabschluss) bleibt konkrete interne Arbeit, keine externe Blockade.
+
 Interne Arbeit bleibt offen: Konvergenz-/Berechtigungsabdeckung erweitern,
 vorhandene Teilmodule fachlich abnehmen und fehlende Produktfunktionen nur
 mit ihren tatsächlichen Grenzen führen. Die konkret gefundenen FNL-013-

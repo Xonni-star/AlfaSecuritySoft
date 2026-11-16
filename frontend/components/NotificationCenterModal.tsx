@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
 import {
   Bell,
-  CheckCircle2,
-  AlertTriangle,
   Mail,
-  Smartphone,
   Check,
   X,
   Sliders,
   Filter
 } from 'lucide-react';
 import { useSecurityStore } from '../store';
-import { NotificationDelivery } from '../types';
 
 interface NotificationCenterModalProps {
   isOpen: boolean;
@@ -21,14 +17,13 @@ interface NotificationCenterModalProps {
 export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({ isOpen, onClose }) => {
   const {
     getTenantNotificationDeliveries,
-    notificationPreferences,
     markNotificationAsRead,
-    updateNotificationPreferences,
-    getCurrentTenant
+    dismissNotification,
+    authUser,
+    currentTenantId
   } = useSecurityStore();
 
   const deliveries = getTenantNotificationDeliveries();
-  const tenant = getCurrentTenant();
 
   const [activeTab, setActiveTab] = useState<'feed' | 'preferences'>('feed');
   const [severityFilter, setSeverityFilter] = useState<string>('ALL');
@@ -42,7 +37,8 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
   const unreadCount = deliveries.filter((d) => !d.read).length;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" aria-label="Benachrichtigungscenter"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-[#0b1329] border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="p-4 border-b border-slate-800 bg-[#0f172a] flex items-center justify-between">
@@ -60,12 +56,12 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                 )}
               </h3>
               <p className="text-[11px] text-slate-400">
-                Mandant: {tenant.name} • Multi-Channel Übermittlungsprotokolle
+                Mandant: {authUser?.tenantName || currentTenantId} • Lokale In-App-Meldungen
               </p>
             </div>
           </div>
 
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white">
+          <button onClick={onClose} aria-label="Benachrichtigungscenter schließen" className="p-1 rounded-lg text-slate-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -97,6 +93,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
               <Filter className="w-3.5 h-3.5 text-slate-400" />
               <select
                 value={severityFilter}
+                aria-label="Meldungen nach Schweregrad filtern"
                 onChange={(e) => setSeverityFilter(e.target.value)}
                 className="bg-slate-800 text-slate-200 px-2 py-1 rounded-lg border border-slate-700 text-xs focus:outline-none"
               >
@@ -151,27 +148,36 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                           {item.severity}
                         </span>
                         <span className="text-[10px] text-slate-500 font-mono">
-                          Kanal: {item.channel} ({item.status})
+                          {item.channel === 'IN_APP' ? 'Lokale In-App-Meldung' : `Kanal: ${item.channel} (${item.status})`}
                         </span>
                       </div>
 
                       <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">{item.message}</p>
 
                       <div className="text-[10px] text-slate-500 font-mono mt-1">
-                        Erstellt: {item.createdAt} • Modul: {item.sourceModule}
+                        Erstellt: {new Date(item.createdAt).toLocaleString('de-DE')} • Modul: {item.sourceModule}
                       </div>
                     </div>
                   </div>
 
-                  {!item.read && (
+                  <div className="flex items-center gap-1">
+                    {!item.read && (
+                      <button
+                        onClick={() => markNotificationAsRead(item.id)}
+                        className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white shrink-0"
+                        aria-label={`Als gelesen markieren: ${item.title}`}
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     <button
-                      onClick={() => markNotificationAsRead(item.id)}
+                      onClick={() => dismissNotification(item.id)}
                       className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white shrink-0"
-                      title="Als gelesen markieren"
+                      aria-label={`Meldung verwerfen: ${item.title}`}
                     >
-                      <Check className="w-3.5 h-3.5" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
-                  )}
+                  </div>
                 </div>
               ))
             )}
@@ -179,54 +185,19 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
         ) : (
           /* Preferences Tab */
           <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
-            <span className="font-bold text-slate-200 block mb-2">Benutzer-Benachrichtigungspräferenzen:</span>
-
-            <div className="space-y-3">
-              <label className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between cursor-pointer">
-                <div>
-                  <div className="font-semibold text-slate-200">E-Mail Benachrichtigungen aktivieren</div>
-                  <div className="text-[11px] text-slate-400">Wichtige Ereignisse an hinterlegte Dienstadresse versenden</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={notificationPreferences.emailEnabled}
-                  onChange={(e) => updateNotificationPreferences({ emailEnabled: e.target.checked })}
-                  className="rounded bg-slate-800 border-slate-700 text-blue-600 focus:ring-0"
-                />
-              </label>
-
-              <label className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between cursor-pointer">
-                <div>
-                  <div className="font-semibold text-slate-200">Qualifikations-Ablaufwarnungen</div>
-                  <div className="text-[11px] text-slate-400">Warnung 30 Tage vor Ablauf von § 34a und Ersthelfer</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={notificationPreferences.qualificationWarnings}
-                  onChange={(e) => updateNotificationPreferences({ qualificationWarnings: e.target.checked })}
-                  className="rounded bg-slate-800 border-slate-700 text-blue-600 focus:ring-0"
-                />
-              </label>
-
-              <label className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between cursor-pointer">
-                <div>
-                  <div className="font-semibold text-slate-200">Schlüsselrückgabe-Verzug</div>
-                  <div className="text-[11px] text-slate-400">Sofortige Meldung bei überschrittenem Rückgabezeitpunkt</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={notificationPreferences.keyReturns}
-                  onChange={(e) => updateNotificationPreferences({ keyReturns: e.target.checked })}
-                  className="rounded bg-slate-800 border-slate-700 text-blue-600 focus:ring-0"
-                />
-              </label>
-            </div>
+            <span className="font-bold text-slate-200 block mb-2">Aktueller Funktionsumfang</span>
+            <p>Dieses Center zeigt lokale Laufzeitmeldungen der aktuellen Sitzung. Lesen und Verwerfen
+              werden nicht serverseitig gespeichert.</p>
+            <p>E-Mail-/Push-Zustellung und konfigurierbare automatische Nachweis- oder
+              Schlüsselrückgabe-Warnungen sind hier nicht angebunden. Deshalb können dafür
+              keine Einstellungen gespeichert werden.</p>
+            <p>Fachspezifische Alarm- und Planungsmeldungen bleiben in ihren jeweiligen Modulen.</p>
           </div>
         )}
 
         {/* Footer */}
         <div className="p-3 border-t border-slate-800 bg-[#0a0f1d] flex items-center justify-between text-xs text-slate-400">
-          <span>Status der protokollierten Zustellversuche</span>
+          <span>Lokale Meldungen nur für diese Sitzung; kein serverseitiges Zustellprotokoll.</span>
           <button onClick={onClose} className="px-4 py-1.5 rounded-lg bg-slate-800 text-slate-200">
             Schließen
           </button>

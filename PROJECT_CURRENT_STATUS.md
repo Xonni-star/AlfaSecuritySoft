@@ -8,15 +8,15 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
-**Fully hosted-verified code revision:** `c4fbb7a3e9c1d82c89611ba9281dfe627af77449`
+**Fully hosted-verified code revision:** `0aec6191f30d75d5596c779d246e0b87997c8794`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
-Its exact [CI 43943801543](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43943801543)
-passed **7/7 jobs**; downloaded logs confirm frontend **308/308**, backend
+Its exact [CI 43945975019](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43945975019)
+passed **7/7 jobs**; downloaded logs confirm frontend **320/320**, backend
 **546/546 in 35 suites**, real browser **9/9** and owned-container cleanup.
 This includes confirmed form writes, report grant/date/identity fixes, durable
 critical-incident follow-ups, truthful audit displays and delayed local-write
-identity isolation, plus FNL-013/014/015/016/017 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
+identity isolation, plus FNL-013/014/015/016/017/018 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
 and `5ef02b3ab0b9f711025405247e711f21d3ee9811` passed their own
 CI 43929519192 and 43928436875, 7/7 each.
 
@@ -25,7 +25,21 @@ read-only API console (`/auth/me`, `/customers`, `/logbook`), actual response/er
 display and identity-bound results replace fabricated API/Python/isolation checks.
 Acceptance is a read-only checklist, not a local role-switch or fake release.
 
-**Subsequent FNL-018 worktree — locally IMPLEMENTIERT UND GETESTET:** Sync
+**Subsequent FNL-019 — locally IMPLEMENTIERT UND GETESTET:** Actual runtime
+notices now populate the same owner-/tenant-bound feed used by the bell and
+center. Read/dismiss actions target one UUID, including simultaneous messages;
+other identities' notices cannot be displayed or changed through these actions.
+The center explicitly describes session-local storage, not server delivery.
+Unconnected email/push/automatic-warning preferences are no longer working-looking
+checkboxes. Late conflict failures are guarded. Active patrol capture checks only
+the current owner's outbox and guards both lookup and durable-write completion.
+Eleven original regressions failed; all **331/331 frontend tests in 36 files**,
+typecheck/build and **9/9 genuine browser journeys** with cleanup now pass.
+The contract journey reads/dismisses a genuine offline-customer notice and
+verifies the actual bell count. Backend sources are unchanged. New hosted
+verification remains separate.
+
+**Published FNL-018 — IMPLEMENTIERT UND GETESTET:** Sync
 now checks identity after awaited attachment inspection and post-sync snapshots
 before publishing outbox/time/notifications. Manual recovery shows explicit
 storage errors rather than an apparently successful zero-count result. The UI
@@ -34,8 +48,11 @@ conflict/ownerless-storage responses to the original identity/dialog opening.
 Twelve new regressions cover empty/nonempty outboxes, attachment/snapshot
 completion, explicit storage errors, conflict races and close/reopen.
 Full frontend **320/320 in 35 files**, typecheck/build and actual browser **9/9**
-with cleanup passed. Backend sources remain unchanged. Exact newer hosted
-verification remains separate; no additional comprehensive security review.
+with cleanup passed. Exact hosted verification is CI 43945975019 above.
+Separate bounded static reviews of FNL-014–018 resource/sync changes and existing
+GuardBook access found no confirmed remaining vulnerability. They did not run
+live endpoint/RLS checks or establish a complete SITE/OWN matrix, and do not
+constitute a comprehensive security review or review of subsequent FNL-019.
 
 **Published FNL-017 — IMPLEMENTIERT UND GETESTET:** Five
 customer/site/employee archive/restore actions now return explicit confirmation,
@@ -49,7 +66,7 @@ Full frontend **308/308 in 35 files**, typecheck/build and actual browser **9/9*
 with cleanup passed. The latter now checks actual site archive revisions 3→4→5,
 reload/restore and retained employee qualifications/absences after restore.
 Backend sources are unchanged from the fully hosted-verified revision above.
-Exact hosted evidence is CI 43943801543 above. This is functional verification,
+Exact historical hosted evidence is CI 43943801543. This is functional verification,
 not a new comprehensive security review.
 Generic automations are explicitly non-persistent local drafts without an engine;
 fake execution methods are removed. New tests: 60/60 focused, full frontend

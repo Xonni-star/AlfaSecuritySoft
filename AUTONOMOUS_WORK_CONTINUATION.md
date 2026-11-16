@@ -235,6 +235,37 @@ Logs: `finalization-sync-completion-red.log`,
 `finalization-sync-completion-red-verified.log`,
 `finalization-sync-completion-browser.log`.
 
+FNL-018 is published as `0aec6191f30d75d5596c779d246e0b87997c8794`.
+Exact CI 43945975019 passed 7/7; downloaded
+`finalization-sync-completion-hosted-ci.log` confirms frontend 320,
+backend 546 and genuine browser 9 plus cleanup.
+
+FNL-019 now locally passes **331/331 frontend tests in 36 files**, typecheck/build
+and genuine browser **9/9** with cleanup. Eleven original regressions failed.
+Runtime notices previously went to an array never displayed by the center/bell;
+now the existing delivery model receives genuine local IN_APP notices with
+UUID and original tenant/user. Read/dismiss/filter and simultaneous-message
+independence are covered. The header uses actual session tenant identity.
+No server persistence/delivery or functioning email/push/warning preferences
+are claimed; disconnected controls are removed. A late conflict catch no longer
+publishes old errors. Active patrol capture filters duplicate lookup by owner,
+rejects an identity change before enqueue and suppresses old durable completion.
+The first genuine browser journey now reads/dismisses the actual offline customer
+notice and verifies the bell. One subsequent unit run required selecting the
+notification severity combobox by its new accessible name rather than the
+unauthenticated Navbar's unrelated demo-role select; typed enqueue fixtures now
+return the real OutboxMutation contract. No assertions removed.
+Logs: `finalization-runtime-notifications-red.log` (11 original failures),
+`finalization-runtime-notifications-browser.log` (9/9 plus cleanup).
+Backend sources remain unchanged.
+
+The startup-alert candidate was checked: successful login/session restoration
+clears the initial notification arrays. It was not a confirmed authenticated
+fictional-alert defect. Do not reimplement that already checked trace.
+Two bounded static reviews at 0aec619 (FNL014–018 resource/sync; existing
+GuardBook access) found no confirmed remaining exploit; neither establishes
+live endpoint/RLS coverage or a complete role/site/own matrix.
+
 Required `FINAL_SECURITY_AUDIT.md`, `PRODUCTION_READINESS_REPORT.md` and
 `PRODUCTION_RELEASE_CHECKLIST.md` now exist and explicitly preserve open
 internal/external boundaries. README/current status, module matrix, changelog,
@@ -244,7 +275,7 @@ in development, not approved for production. Do not repeat this already done wor
 
 ## Remaining work
 
-1. Publish coherent FNL-018 and verify all hosted jobs
+1. Publish coherent FNL-019 and verify all hosted jobs
    on the exact new full SHA; inspect actual logs before updating evidence.
    The preceding 7/7 does not validate these newer changes.
 2. Repeat a bounded convergence audit for new concrete functional defects,
@@ -257,9 +288,13 @@ in development, not approved for production. Do not repeat this already done wor
    no remaining `throw new Error('offline')` or online-state-based catch fallback
    in the active store/controllers/components; this is not exhaustive coverage.
    Inspect remaining real workflow boundaries, not already corrected handlers.
-   One concrete next trace: startup notifications still contain a hard-coded
-   expired qualification alert before live evidence loads. Verify its actual
-   authenticated visibility and remove fictional operational alerts if reproduced.
+   Concrete next task FNL-020: the active GuardBook completion button calls
+   updateGuardBookStage/resolveGuardBookEntry, which only changes local state.
+   Reproduce lost completion after reload, persist completion/note through the
+   existing API/offline contracts, confirm resolved/stage consistency and guard
+   pending/error/identity boundaries. Existing revisions endpoint appends notes;
+   sync UPDATE currently changes stage but not resolved. Do not add a second
+   incompatible completion path or claim persistence before actual confirmation.
 3. Keep the requested final documents/tracker current; no ESLint configuration
    or script was found, so do not claim lint ran.
 4. Merge PR #66 only after

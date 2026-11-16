@@ -191,6 +191,7 @@ beforeEach(() => {
     keys: [],
     tasks: [],
     notifications: [],
+    notificationDeliveries: [],
     authUser: null,
     currentTenantId: 'tenant-frankfurt',
     currentUserId: 'user-regression',
@@ -214,6 +215,70 @@ afterEach(() => {
 });
 
 describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
+  test.each(['tenant', 'user'] as const)('does not publish an old conflict failure after a %s change', async change => {
+    let rejectRequest!: (error: Error) => void;
+    mockedApi.post.mockReturnValueOnce(new Promise((_, reject) => { rejectRequest = reject; }));
+    useSecurityStore.setState({
+      syncQueue: [{
+        id: 'late-conflict', tenantId: 'tenant-frankfurt', userId: 'user-regression',
+        entityType: 'task', action: 'UPDATE', payload: { id: syncedTaskId },
+        createdAt: '', retryCount: 0, status: 'conflict'
+      }]
+    });
+    const result = useSecurityStore.getState().resolveConflict('late-conflict', 'USE_SERVER');
+    const rejection = expect(result).rejects.toThrow('Old private failure');
+    useSecurityStore.setState(change === 'tenant'
+      ? { currentTenantId: 'tenant-berlin', notifications: [] }
+      : { currentUserId: 'different-user', notifications: [] });
+    rejectRequest(new Error('Old private failure'));
+    await rejection;
+    expect(useSecurityStore.getState().notifications).toEqual([]);
+  });
+
+  test.each(['lookup', 'write'] as const)('does not publish a patrol scan after identity changes during %s', async phase => {
+    const scan = {
+      siteId: siteRow.id, siteName: siteRow.name, checkpointId: 'checkpoint-a',
+      checkpointCode: 'A', checkpointName: 'Point A', guardId: 'user-regression',
+      guardName: 'Original guard', method: 'MANUELL' as const
+    };
+    let finish!: () => void;
+    const pause = new Promise<void>(resolve => { finish = resolve; });
+    const lookup = vi.spyOn(offlineVault, 'getOutbox')
+      .mockImplementation(async () => { if (phase === 'lookup') await pause; return []; });
+    const enqueue = vi.spyOn(offlineVault, 'enqueueMutation')
+      .mockImplementation(async mutation => {
+        if (phase === 'write') await pause;
+        return { ...mutation, deviceId: 'test-device', retryCount: 0, status: 'PENDING' };
+      });
+    const sync = vi.spyOn(useSecurityStore.getState(), 'triggerManualSync');
+    useSecurityStore.setState({ patrolScans: [] });
+    const result = useSecurityStore.getState().addPatrolScan(scan);
+    const rejection = phase === 'lookup' ? expect(result).rejects.toThrow('Sitzung') : null;
+    await vi.waitFor(() => expect(phase === 'lookup' ? lookup : enqueue).toHaveBeenCalledOnce());
+    useSecurityStore.setState({ currentUserId: 'different-user', patrolScans: [], syncQueue: [] });
+    finish();
+    if (rejection) await rejection;
+    else await result;
+    expect(useSecurityStore.getState().patrolScans).toEqual([]);
+    expect(useSecurityStore.getState().syncQueue).toEqual([]);
+    expect(sync).not.toHaveBeenCalled();
+    if (phase === 'lookup') expect(enqueue).not.toHaveBeenCalled();
+  });
+
+  test('checks patrol duplicates only in the current owner outbox', async () => {
+    const getOutbox = vi.spyOn(offlineVault, 'getOutbox').mockResolvedValue([]);
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => ({
+      ...mutation, deviceId: 'test-device', retryCount: 0, status: 'PENDING'
+    }));
+    useSecurityStore.setState({ isOnline: false, patrolScans: [] });
+    await useSecurityStore.getState().addPatrolScan({
+      siteId: siteRow.id, siteName: siteRow.name, checkpointId: 'checkpoint-a',
+      checkpointCode: 'A', checkpointName: 'Point A', guardId: 'user-regression',
+      guardName: 'Original guard', method: 'MANUELL'
+    });
+    expect(getOutbox).toHaveBeenCalledWith('tenant-frankfurt', 'patrol', 'user-regression');
+  });
+
   test('Wiederverbindung startet automatisch die Synchronisierung der Offline-Outbox', () => {
     const originalSync = useSecurityStore.getState().triggerManualSync;
     const syncPatrolOutbox = vi.fn();

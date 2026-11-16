@@ -95,6 +95,18 @@ Externe Geräte-, Provider-/Off-host-, RPO/RTO-, unabhängige Sicherheits- und
 Rechtsfreigaben bleiben offen. Keine erfolgreiche Prüfung wird daraus abgeleitet,
 dass ein Bildschirm grün wird.
 
+Aktualisierung: FNL-018 ist als `0aec6191f30d75d5596c779d246e0b87997c8794`
+mit CI 43945975019 7/7 und gelesenen Logs 320/546/9 plus Cleanup belegt.
+Nachfolgendes FNL-019 verbindet echte lokale Laufzeitmeldungen mit dem
+benutzer-/mandantengebundenen Center/Glockenzähler, ermöglicht Lesen/Verwerfen
+und entfernt bedienbare unangebundene Zustellpräferenzen. Späte Konfliktfehler
+und Kontrollgang-Abschlüsse bleiben kontextgebunden. Elf ursprüngliche rote
+Regressionen, Frontend 331/331, Typprüfung/Build und Browser 9/9 mit echter
+Offline-Meldung und Cleanup bestanden lokal. Kein serverseitiges
+Zustellprotokoll; exakte neue Hosted-Prüfung bleibt separat.
+Der nächste konkrete Funktionsfehler FNL-020 ist der nur lokal wirkende
+Wachbuchabschluss; noch keine dauerhafte Abschlussfunktion behauptet.
+
 Verbindliche Details:
 [Tracker](./PROJECT_COMPLETION_TRACKER.md),
 [Fortsetzung](./AUTONOMOUS_WORK_CONTINUATION.md),

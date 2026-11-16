@@ -36,7 +36,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   const {
     currentUserRole,
     setCurrentUserRole,
-    notifications,
     getTenantNotificationDeliveries,
     authUser,
     isOnline,
@@ -49,8 +48,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     logout
   } = useSecurityStore();
 
-  const deliveries = typeof getTenantNotificationDeliveries === 'function' ? getTenantNotificationDeliveries() : [];
-  const unreadDeliveries = Array.isArray(deliveries) ? deliveries.filter((d) => !d.read).length : (notifications || []).length;
+  const deliveries = getTenantNotificationDeliveries();
+  const unreadDeliveries = deliveries.filter((d) => !d.read).length;
   const pendingSyncs = (syncQueue || []).filter((q) => q.status === 'pending').length;
 
   return (

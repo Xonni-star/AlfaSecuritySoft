@@ -80,6 +80,19 @@ test('genuine customer contract terms and site requirements survive offline repl
     clientNumber: `CONTRACT-${suffix}`, contractAutoRenew: false, noticePeriodMonths: 6,
     contractStart: '2026-02-14', contractEnd: '2027-03-15'
   });
+  const notificationBell = page.getByRole('button', { name: /^Benachrichtigungscenter öffnen\. Ungelesen:/ });
+  const unreadBefore = Number((await notificationBell.getAttribute('aria-label')).match(/(\d+)$/)[1]);
+  expect(unreadBefore).toBeGreaterThan(0);
+  await notificationBell.click();
+  const notificationCenter = page.getByRole('dialog', { name: 'Benachrichtigungscenter', exact: true });
+  await expect(notificationCenter.getByText('Kunde vorgemerkt', { exact: true })).toBeVisible();
+  await expect(notificationCenter.getByText(`${customerName} wird bei Verbindung synchronisiert.`, { exact: true })).toBeVisible();
+  await notificationCenter.getByRole('button', { name: 'Als gelesen markieren: Kunde vorgemerkt', exact: true }).click();
+  await expect(notificationBell).toHaveAttribute('aria-label', `Benachrichtigungscenter öffnen. Ungelesen: ${unreadBefore - 1}`);
+  await expect(notificationCenter.getByText('Kunde vorgemerkt', { exact: true })).toBeVisible();
+  await notificationCenter.getByRole('button', { name: 'Meldung verwerfen: Kunde vorgemerkt', exact: true }).click();
+  await expect(notificationCenter.getByText('Kunde vorgemerkt', { exact: true })).toHaveCount(0);
+  await notificationCenter.getByRole('button', { name: 'Benachrichtigungscenter schließen', exact: true }).click();
   const replay = page.waitForResponse(response => response.url().endsWith('/customers/sync') && response.request().method() === 'POST');
   await context.setOffline(false);
   expect((await replay).status()).toBe(200);

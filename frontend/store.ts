@@ -2010,11 +2010,13 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       );
     } catch (err: any) {
       console.error('[CONFLICT RESOLUTION FAILED]', err);
-      get().addNotification(
-        'Fehler bei Konfliktauflösung',
-        `Server konnte Konflikt nicht auflösen: ${err?.message || 'Netzwerkfehler'}. Eintrag bleibt in Outbox erhalten.`,
-        'alert'
-      );
+      if (isCurrentSOPIdentity(identity.tenantId, identity.userId)) {
+        get().addNotification(
+          'Fehler bei Konfliktauflösung',
+          `Server konnte Konflikt nicht auflösen: ${err?.message || 'Netzwerkfehler'}. Eintrag bleibt in Outbox erhalten.`,
+          'alert'
+        );
+      }
       throw err;
     }
   },
@@ -2074,23 +2076,42 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   notificationPreferences: initialNotificationPreferences,
 
   dismissNotification: (id) =>
-    set((state) => ({ notifications: state.notifications.filter((n) => n.id !== id) })),
+    set((state) => {
+      const { tenantId, userId } = currentSOPIdentity(state);
+      if (!state.notificationDeliveries.some(item =>
+        item.id === id && item.tenantId === tenantId && item.userId === userId)) return state;
+      return {
+        notifications: state.notifications.filter(item => item.id !== id),
+        notificationDeliveries: state.notificationDeliveries.filter(item => item.id !== id)
+      };
+    }),
 
   addNotification: (title, message, type) => {
-    set((state) => ({
-      notifications: [
-        { id: `notif-${Date.now()}`, title, message, type, time: 'Gerade eben' },
-        ...state.notifications
-      ]
-    }));
+    const id = `notif-${crypto.randomUUID()}`;
+    set((state) => {
+      const { tenantId, userId } = currentSOPIdentity(state);
+      const delivery: NotificationDelivery = {
+        id, tenantId, userId, title, message, channel: 'IN_APP',
+        severity: type === 'alert' ? 'ALARM' : type === 'warning' ? 'WARNUNG' : 'INFO',
+        status: 'CREATED', createdAt: new Date().toISOString(), read: false,
+        sourceModule: 'Anwendung'
+      };
+      return {
+        notifications: [{ id, title, message, type, time: 'Gerade eben' }, ...state.notifications],
+        notificationDeliveries: [delivery, ...state.notificationDeliveries]
+      };
+    });
   },
 
   markNotificationAsRead: (deliveryId) => {
-    set((state) => ({
-      notificationDeliveries: state.notificationDeliveries.map((nd) =>
-        nd.id === deliveryId ? { ...nd, read: true } : nd
-      )
-    }));
+    set((state) => {
+      const { tenantId, userId } = currentSOPIdentity(state);
+      return {
+        notificationDeliveries: state.notificationDeliveries.map(item =>
+          item.id === deliveryId && item.tenantId === tenantId && item.userId === userId
+            ? { ...item, read: true } : item)
+      };
+    });
   },
 
   updateNotificationPreferences: (prefs) => {
@@ -2244,8 +2265,8 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
     return (executionLogs || []).filter((l) => l.tenantId === currentTenantId);
   },
   getTenantNotificationDeliveries: () => {
-    const { notificationDeliveries, currentTenantId } = get();
-    return (notificationDeliveries || []).filter((nd) => nd.tenantId === currentTenantId);
+    const { tenantId, userId } = currentSOPIdentity(get());
+    return get().notificationDeliveries.filter(item => item.tenantId === tenantId && item.userId === userId);
   },
 
   addShiftSwapRequest: (request) => {
@@ -2968,15 +2989,21 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
 
   addPatrolScan: async (scan) => {
-    const { currentTenantId, isOnline, patrolScans } = get();
+    const identity = currentSOPIdentity(get());
+    const currentTenantId = identity.tenantId;
+    const { isOnline, patrolScans } = get();
     const scannedAt = new Date().toISOString();
     const id = crypto.randomUUID();
     const { checkpointToken, ...displayScan } = scan;
     const record: PatrolScanEvent = { ...displayScan, id, tenantId: currentTenantId, scannedAt, offlineCaptured: !isOnline };
-    const queuedPatrol = await offlineVault.getOutbox(currentTenantId, 'patrol');
+    const queuedPatrol = await offlineVault.getOutbox(currentTenantId, 'patrol', identity.userId);
+    if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) {
+      throw new Error('Die Sitzung hat sich geändert. Der Kontrollpunkt wurde nicht gespeichert.');
+    }
     const recentQueued = queuedPatrol.some(item => item.payload.checkpointId === scan.checkpointId &&
       Math.abs(Date.parse(scannedAt) - Date.parse(item.payload.scannedAt || item.occurredAt)) < 2 * 60 * 1000);
-    const recentLocal = patrolScans.some(item => item.checkpointId === scan.checkpointId &&
+    const recentLocal = patrolScans.some(item => item.tenantId === currentTenantId &&
+      item.guardId === scan.guardId && item.checkpointId === scan.checkpointId &&
       Math.abs(Date.parse(scannedAt) - Date.parse(item.scannedAt)) < 2 * 60 * 1000);
     if (recentQueued || recentLocal) {
       throw new Error('Dieser Kontrollpunkt wurde innerhalb des Zwei-Minuten-Fensters bereits erfasst.');
@@ -2999,6 +3026,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         scannedAt
       }
     });
+    if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return;
     set((state) => ({ patrolScans: [record, ...state.patrolScans] }));
     if (isOnline) void get().triggerManualSync();
   },
