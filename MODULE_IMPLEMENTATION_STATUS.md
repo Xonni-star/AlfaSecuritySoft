@@ -10,7 +10,7 @@ Python files in `frontend/backend/*.py`, `frontend/alembic`, and `frontend/tests
 
 ## Module matrix
 
-All paths below are relative to `frontend/`. The routes are registered in `backend/src/app.ts`; controllers use the active PostgreSQL transaction layer. The full local backend run passed 534 tests in 35 suites; the frontend run passed 169 tests in 29 files. Test existence alone is not evidence that every scenario is covered.
+All paths below are relative to `frontend/`. The routes are registered in `backend/src/app.ts`; controllers use the active PostgreSQL transaction layer. The full local backend run passed 534 tests in 35 suites; the final frontend run passed 172 tests in 29 files with two workers and a 30-second test/hook budget (default five-second Roster runs timed out). Test existence alone is not evidence that every scenario is covered.
 
 | Module | Active implementation and persistence | Automated evidence | Status and remaining boundary |
 |---|---|---|---|
@@ -32,5 +32,6 @@ All paths below are relative to `frontend/`. The routes are registered in `backe
 
 - The 215-route unauthenticated regression checks all currently registered protected method/path pairs for HTTP 401. It does not substitute for the missing per-role, per-site, per-object authorization matrix.
 - Browser CI now includes the existing isolated Chromium fixture and failure traces/screenshots in source configuration. Only the local browser result is currently evidenced; hosted execution on this worktree is pending.
+- A separate real Express/PostgreSQL Chromium suite now verifies cookie-/CSRF-authenticated offline capture, offline reload, reauthentication, lost-receipt retry with one persisted GuardBook entry, rejection of an old cookie after UI logout, creation after session restoration and owner binding across two accounts/two tenants. It passed locally 2/2; CI source configures it in the root job. It does not cover photos, the full identity matrix, SOP acknowledgements or physical devices.
 - The production Compose validation is a configuration check, not a deployment. Existing local restore checks use synthetic tenants and local MinIO, not a production backup or external provider.
 - Open follow-up work remains in [PROJECT_COMPLETION_TRACKER.md](./PROJECT_COMPLETION_TRACKER.md). Current GitHub/CI revision boundaries are in [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md).

@@ -4,7 +4,7 @@ Mandantenfähige Verwaltungssoftware für Sicherheitsunternehmen mit Prozessbezu
 
 > **Projektstatus: In Entwicklung; nicht für Produktion freigegeben.**
 > Die Backend- und Frontend-Funktionen werden durch lokale Tests und CI geprüft. Das ist kein Nachweis eines Produktions-Rollouts, einer fachlichen Abnahme oder der Rechtskonformität im konkreten Einsatz.
-> Der aktuelle quellcodebasierte Stand, Befunde und Prüfgrenzen stehen im [Phase-1-Abschlussbericht](./PHASE_1_INTEGRATION_COMPLETION_REPORT.md). Frühere Umsetzungsberichte sind historische Snapshots.
+> Der aktuelle quellcodebasierte Stand und Prüfgrenzen stehen in [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md), der [Modul-Evidenzmatrix](./MODULE_IMPLEMENTATION_STATUS.md) und dem [Projekt-Tracker](./PROJECT_COMPLETION_TRACKER.md). Frühere Umsetzungsberichte einschließlich Phase 1 sind historische Snapshots.
 > Alarmmanagement (#12), Übergaben (#13) und Kontrollgänge (#14) sind in `main` integriert. Details: [Handovers-API](./frontend/HANDOVERS_API.md), [Alarm-API](./frontend/ALARM_EMERGENCY_API.md) und [Kontrollgang-Modul](./frontend/PATROL_MANAGEMENT.md).
 > **GitHub-Status (16.11.2026):** `main` steht auf `9df02aaa5ef01de78e0fe5d53be446b2037db24d`; PRs #50–#65 sind gemergt und PR [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66) ist der einzige offene PR. Main-CI [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) bestand 7/7 Jobs und die Release-Artefakt-Prüfung [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) 2/2 Jobs auf diesem SHA. Der Remote-Head von PR #66 ist `785e9eabc9e6ab5f1ce4e726fdff2cbfa49367e4`; CI [43843645961](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43843645961) bestand 7/7 Jobs. Die aktuellen Änderungen in diesem Worktree sind noch nicht in diesem CI-Lauf enthalten. **Projektstatus: TEILWEISE IMPLEMENTIERT / OFFEN; nicht für Produktion freigegeben.** Authentifizierte Backend-/Geräteabnahme, realer S3-Provider-Restore und gemessene RPO/RTO bleiben offen. Aktuelle Details: [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md), [Phase-9-Bericht](./PHASE_9_COMPLETION_REPORT.md), [Phase-10-Bericht](./FINAL_PHASE_10_COMPLETION_REPORT.md) und [Deployment-/Restore-Runbook](./frontend/deploy/PRODUCTION_DEPLOYMENT.md).
 > **Historischer GitHub-Status (15.11.2026, 20:59 CET):** `main` stand auf `879ae951d6cea52fd84d01dc699cf2ed08843300`; PRs #50–#59 waren gemergt und es waren keine PRs offen. Post-Merge-CI [43754217295](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43754217295) bestand 7/7 Jobs; Paketierung und Artefaktvalidierung [43754417115](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43754417115) bestanden 2/2. Diese Ergebnisse belegen keine Produktion. Frühere Phase- und PR-Statusangaben in diesem README sind historische Snapshots, keine Live-Statusquelle.
@@ -88,6 +88,21 @@ Das Backend verweigert den Start bei fehlenden, ungültigen oder offensichtlich 
 ---
 
 ## Module
+
+**Lokal nachgewiesene Phase-11-Pakete:** Backend 534/534, Frontend 172/172 Tests
+(Frontend-Abschlusslauf mit zwei Workern und 30-s-Test-/Hook-Budget);
+Chromium-API-Fixture 1/1 und echte Cookie-/CSRF-authentifizierte
+Express-/PostgreSQL-Browserjourneys 2/2. Ein dabei gefundener
+Wachbuchfehler bei nachgeladener Standort-/Mitarbeiterauswahl ist behoben.
+Die Navigation bietet Abmeldung; der echte Backend-Test prüft den Widerruf auch
+mit einer zurückbehaltenen Kopie des alten Cookies.
+Konten-/Mandantenwechsel erhalten die Besitzerbindung offener Mutationen;
+Session-Restore liest jetzt die tatsächliche `userId` der API.
+Migration 042 erhält bestehende Migrationsprüfsummen; der isolierte
+PostgreSQL-/MinIO-Drill prüft Rollback nach DDL-Fehler und Backup-Health
+(Frische/letzter Fehler, keine Restore-Garantie). Gehostete CI für diese lokalen
+Commits und breite Geräte-/Provider-/Produktionsabnahme bleiben offen.
+Details und konkrete Fortsetzung: [Phase-11-Bericht](./FINAL_PHASE_11_COMPLETION_REPORT.md).
 
 Die Statusangaben unterscheiden Implementierung und Nachweis: **IMPLEMENTIERT** bedeutet, dass die Funktion im Quellcode vorhanden ist; **IMPLEMENTIERT UND GETESTET** nur, wenn passende Tests für den bezeichneten Umfang nachweislich bestanden sind. **TEILWEISE IMPLEMENTIERT**, **IN ENTWICKLUNG**, **GEPLANT**, **NICHT VERIFIZIERT** und **OFFEN** kennzeichnen Teilumfang, laufende Arbeit, Planung oder ausstehende Evidenz/Abnahme. Kein Status bedeutet Produktionsfreigabe.
 

@@ -3,6 +3,15 @@
 **Review date:** 2026-11-16
 **Scope:** PR #66 changes, browser-based report CSV export, local legacy-attachment recovery, backend authorization boundaries, PostgreSQL tenant/RLS context, authentication/session handling, and web security configuration. This is not a comprehensive security audit, penetration test, or certification.
 
+**Phase 11 update:** A further bounded read-only review of remaining offline/file/production boundaries confirmed no new vulnerability. New local evidence includes 534 backend tests, the 215-route unauthenticated matrix, a 041→042 checksum-preserving upgrade, mid-DDL restore rollback, backup failure/freshness healthchecks and a real authenticated Chromium/PostgreSQL offline replay. These improve regression evidence, not the breadth of an independent security audit. The GuardBook empty-reference-ID defect found by the new browser test is recorded as a functional bug, not an unproven exploit.
+
+### New confirmed findings from the bounded Phase 11 review
+
+| # | Severity | File | Lines | Vulnerability | Confidence |
+|---|----------|------|-------|---------------|------------|
+
+No new confirmed findings in that review scope. Previously confirmed and fixed findings remain recorded below; this does not assert absence of vulnerabilities outside the reviewed paths.
+
 ## Findings
 
 | Finding | Risk | Disposition |
@@ -22,7 +31,9 @@
 - Frontend tests, typecheck, and production build passed for the identified PR revision. The current backend TypeScript build passed.
 - The current report-scope PostgreSQL integration suite ran against an isolated PostgreSQL 16 database and passed 33/33 tests. This local run does not replace hosted CI or production acceptance.
 - The current frontend typecheck and production build passed; the complete frontend Vitest suite passed 169/169 tests, including the ownerless-attachment privacy regression tests.
-- The standalone Chromium fixture passed locally but is not part of hosted CI.
+- Chromium passed locally: 1/1 API fixture and 2/2 real Express/PostgreSQL cookie-/CSRF-authenticated scenarios covering offline replay, session restoration/logout and owner binding across two accounts/two tenants. CI source configures the fixture in the frontend job and the authenticated suite in the root job; no hosted result yet covers these local commits.
+- Complete local backend suite passed 35/35 suites and 534/534 tests, including the 215 protected-route unauthenticated matrix and checksum-preserving upgrade. This is not the full authenticated role/object matrix.
+- The latest frontend suite passed 172/172 tests with two workers and a 30-second test/hook budget; default five-second Roster runs timed out. The real authenticated browser also verifies that a retained old session cookie is rejected after UI logout. Backup/restore passed the full isolated PostgreSQL/MinIO drill through 042, including real mid-DDL failure/rollback, partial-resume stop and backup-health failure/recovery.
 
 ## Remaining security gates
 
