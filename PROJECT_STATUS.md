@@ -55,7 +55,7 @@ Use the status labels **IMPLEMENTIERT**, **IMPLEMENTIERT UND GETESTET**, **TEILW
 | Main CI | **7/7 passed** on `9df02aa` | Post-merge run [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) on exact current SHA. |
 | PR #62 hosted CI | **7/7 passed** | Run 43761213396 on head `6c8a52c`; PR since merged. |
 | Artifact validation | **2/2 passed** on `9df02aa` | Run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834). Not a release approval. |
-| Published Phase 11 code in PR #66 | **7/7 passed** | Run [43916713656](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43916713656) on code SHA `31e63726d8b377abafe564da349c3aa622468291`, including 4/4 real browser journeys. Later documentation-only revisions are separate. |
+| Published Phase 11 code in PR #66 | **7/7 passed** | Run [43921057411](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43921057411) on code SHA `3617576a8408002a99e1ed4f66e5a94b17a13cf5`, including 5/5 real browser journeys and genuine attachment rejection/preservation. Later documentation-only revisions are separate. |
 | Reporting UI update | **IMPLEMENTIERT UND GETESTET** | Latest local frontend suite 184/184; TypeScript check/build and hosted frontend job passed. Exact code-SHA evidence is indexed in current status. |
 | Report site-scope changes | **IMPLEMENTIERT UND GETESTET** | Local and hosted PostgreSQL-backed backend regressions passed on the published code revision; this is not full role/object or production acceptance. |
 | Production acceptance | **Not performed / not established** | No deployment or production approval is claimed. |

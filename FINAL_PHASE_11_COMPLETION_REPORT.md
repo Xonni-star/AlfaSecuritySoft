@@ -9,7 +9,7 @@ Projektabschluss und keine Produktions-, Sicherheits- oder Rechtsfreigabe.
 - `main` wurde erneut über GitHub geprüft:
   `9df02aaa5ef01de78e0fe5d53be446b2037db24d`.
 - PR #66 ist weiterhin der einzige offene PR. Veröffentlichte Code-Revision:
-  `31e63726d8b377abafe564da349c3aa622468291`; nachfolgende reine
+  `3617576a8408002a99e1ed4f66e5a94b17a13cf5`; nachfolgende reine
   Dokumentationscommits sind in dieser Code-ID nicht enthalten.
 - [CI 43906594339](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43906594339)
   auf `6ead55c73885b1b5779501c50c55c08ee01c6184` bestand **5/7**:
@@ -49,12 +49,13 @@ Projektabschluss und keine Produktions-, Sicherheits- oder Rechtsfreigabe.
 | Aktueller Backendabschluss | Vollständige 35 Suites / 546 Tests bestanden auf frischem Standard-PostgreSQL 16 mit expliziten API-/Sync-Integrationsbudgets 30 s und Patrol 60 s. Keine Assertions entfernt oder Anwendungs-/DB-Konfiguration geändert; frühere Fehlläufe bleiben dokumentiert. Keine Performancefreigabe. |
 | `4524f12` | Behebt die beiden gehosteten Testregressionen: Offline-Fixture erhält explizite Standort-/Mitarbeiter-Leserechte und prüft geladene IDs; isolierter Backup-Container läuft mit UID/GID des Restore-Benutzers. Besitzer, Lesbarkeit und unveränderte private `0600`-Rechte werden geprüft. Fixture 1/1 und vollständiger PostgreSQL-/MinIO-Drill einschließlich Fehlerpfaden/Cleanup erneut lokal bestanden. Keine produktiven Rechte oder Testbudgets aufgeweicht. |
 | `31e6372` Foto-Replay | Lokal und gehostet 4/4 echte Browserjourneys mit PostgreSQL, privatem MinIO und ClamAV; CI 43916713656 7/7. Teststarter wählt echten S3-Adapter statt Test-In-Memory. Foto bleibt über Offline-Reload/fremdes Konto erhalten; verlorene echte Quittung wird identisch wiederholt. Ein Dokument/eine Version/ein Upload-/Clean-Audit/ein S3-Objekt mit Originalbytes; anonymes S3 403 und Fremdtenant-Download 404 mit positivem Grant. Fotofall 120 s, bestehende Budgets unverändert (Wachbuch/Identität 120 s, SOP 180 s). Keine Geräte-/Providerabnahme. |
+| `3617576` Anhang-Ablehnung | Vollständige Suite lokal und gehostet 5/5, CI 43921057411 7/7. Ungültige GIF-Inhalte werden tatsächlich mit HTTP 415 abgewiesen; lokale Originaldaten, Besitzer, Schlüssel und Fehler bleiben über Offline-Reload/Mandantenwechsel erhalten. Rückkehr zum ursprünglichen Tenant wiederholt die Ablehnung, ohne falsches synced, DMS-Dokument oder neues S3-Objekt. Der Wachbucheintrag bleibt einmalig. Neuer Fall 120 s; übrige Budgets unverändert. Kein neuer Laufzeitfehler oder neue Schwachstelle festgestellt. |
 
-Die Phase-11-Tabelle im Tracker enthält **23 abgegrenzte Pakete**:
-**20 im jeweils beschriebenen Umfang erledigt** und **3 extern zu prüfen**.
-Foto-Code `31e63726d8b377abafe564da349c3aa622468291` bestand
-[CI 43916713656](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43916713656)
-mit 7/7 Jobs; das Root-Protokoll bestätigt explizit 4/4 Browserjourneys und Cleanup.
+Die Phase-11-Tabelle im Tracker enthält **24 abgegrenzte Pakete**:
+**21 im jeweils beschriebenen Umfang erledigt** und **3 extern zu prüfen**.
+Anhang-Code `3617576a8408002a99e1ed4f66e5a94b17a13cf5` bestand
+[CI 43921057411](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43921057411)
+mit 7/7 Jobs; das Root-Protokoll bestätigt explizit 5/5 Browserjourneys und Cleanup.
 Das frühere gehostete Browser-CI-Gate ist auf `4524f12` bestanden.
 Diese Zahlen sind keine Fertigstellungsquote des Produkts.
 Die ältere breite Audit-/Anforderungsmatrix enthält weiterhin offene Arbeit.
@@ -71,14 +72,15 @@ Die ältere breite Audit-/Anforderungsmatrix enthält weiterhin offene Arbeit.
 | Frontend-Typprüfung | Bestanden | `npm run typecheck --prefix frontend` |
 | Frontend-Produktionsbuild | Bestanden | Durch Browser-Webserver; bestehende Vite-Konfigurations-/Chunkwarnungen sind keine behobenen Aufgaben |
 | Bestehende Chromium-API-Fixture | 1/1 bestanden | In-Memory-API, lokale Fotos bleiben unsynced |
-| Authentifizierte Chromium-/Backendtests | 3/3 bestanden | Echte Cookies, CSRF, Express und PostgreSQL; Konten-/Mandantenwechsel, Session-Restore und vierkontiger SOP-Ablauf samt Offline-/Lost-receipt-Retry; keine Fotos, Scanner, Provider oder physischen Geräte |
+| Historische authentifizierte Chromium-/Backendtests | 3/3 bestanden | Damaliger Umfang ohne Fotos: echte Cookies, CSRF, Express und PostgreSQL; Konten-/Mandantenwechsel, Session-Restore und vierkontiger SOP-Ablauf samt Offline-/Lost-receipt-Retry |
 | Vollständiger PostgreSQL-/MinIO-Drill bis 042 | Bestanden | Lokaler synthetischer Infrastrukturtest, kein externer Provider |
 | Backup-Health-Negativfälle | Bestanden | Fehlend, partiell, leer, veraltet, letzter Fehler und erfolgreicher Folgelauf |
 | Restorefehler und Teilstart | Bestanden | Mid-DDL-Rollback erhält abweichenden Vorzustand; Dienste bleiben gestoppt |
 | Ressourcenbereinigung | Bestanden | Restore-Projektressourcen entfernt; eigener Browser-PostgreSQL-Container entfernt |
 | Produktions-Compose und Workflow-YAML | Bestanden | Konfigurationsprüfung und gehosteter Produktions-Docker-Job auf `6ead55c`; keine Bereitstellung |
 | Gehostete Korrektur-CI 43908926864 | 7/7 Jobs bestanden auf `4524f121420dd66829feafe7b7aed07aece7a338` | Fixture, echte Browserjourneys, Linux-Restore, Backend, DMS, ClamAV, Produktions-Docker; isolierte Testdaten und keine Produktions-/Provider-/Geräteabnahme |
-| Neue echte Foto-Replay-Suite | Lokal 4/4, drei eigene Container entfernt | Originalbytes tatsächlich in privatem S3 und im authentifizierten Download; echter Scan und Audit; keine Geräte-/Providerabnahme. Ein ungesteuerter Zwischenzustandscheck scheiterte am bereits erfolgreichen Retry; Korrektur hält den echten Retry bis zur Beobachtung an, ohne Antworten zu erfinden oder Budgets zu erweitern |
+| Historische echte Foto-Replay-Suite auf `31e6372` | Lokal/gehostet 4/4, drei eigene Container entfernt | Originalbytes tatsächlich in privatem S3 und im authentifizierten Download; echter Scan und Audit; keine Geräte-/Providerabnahme. Ein ungesteuerter Zwischenzustandscheck scheiterte am bereits erfolgreichen Retry; Korrektur hält den echten Retry bis zur Beobachtung an, ohne Antworten zu erfinden oder Budgets zu erweitern |
+| Aktuelle echte Suite auf `3617576` | Lokal/gehostet 5/5, CI 43921057411 7/7 samt Cleanup | Zusätzlich echte HTTP-415-Ablehnung und erhaltene lokale Originaldaten über Reload/Mandantenwechsel, stabiler Schlüssel beim Besitzer-Retry, ein Wachbucheintrag, kein passendes DMS-Dokument und unveränderte tatsächliche S3-Schlüssel. Dateitypprüfung vor dem Scan, kein Malware-Quarantänenachweis |
 
 Reproduzierbare lokale Befehle nach vorhandener Abhängigkeits-/Chromium-Installation:
 
@@ -199,10 +201,14 @@ wurde abgeschlossen.
 
 ## Verbleibende Grenzen und konkrete Fortsetzung
 
-1. **Nächster abgegrenzter lokaler Umfang:** Anhang-Fehler-/Identitätsfälle gezielt
-   erweitern. Die neue 4/4-Suite ist lokal und gehostet auf `31e6372` bestanden;
-   nicht erneut implementieren. MinIO/ClamAV bleiben isolierte Dienste, kein
-   Providernachweis.
+1. **Anhang-Fortsetzung:** Die echte Dateityp-Ablehnung über Offline-Reload und
+   Mandantenwechsel ist unter E2E-015 ergänzt und lokal/gehostet auf `3617576`
+   bestanden (5/5, CI 7/7); nicht erneut implementieren. Der erste lokale Test
+   verlangte fälschlich genau zwei Versuche, beobachtete aber drei. Der finale
+   Test prüft wiederholte echte Ablehnung mit invariantem Schlüssel, nicht
+   eine genaue Anzahl automatischer Versuche. Weitere konkrete Fehlerfälle
+   sind weiterhin kein vollständiger Anhang-/Quarantäne-Audit.
+   MinIO/ClamAV bleiben isolierte Dienste, kein Providernachweis.
    SOP-Offlinebestätigung, Reader-Ladefehler und bestehende Kontenwechsel nicht
    erneut implementieren.
 2. Authentifizierte Rollen-/Standort-/Objektmatrix auf weitere Module ausbauen.

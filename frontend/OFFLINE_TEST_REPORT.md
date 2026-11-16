@@ -1,6 +1,20 @@
 # SecurityOps 2.0 - Phase 6: Offline-Testbericht
 
-> **Aktueller Foto-Replay-Nachweis:** Die echte Suite besteht lokal und gehostet **4/4** mit
+> **Aktueller Anhang-Fehlernachweis:** Die echte Suite besteht lokal und gehostet
+> **5/5** auf `3617576a8408002a99e1ed4f66e5a94b17a13cf5`;
+> [CI 43921057411](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43921057411)
+> besteht 7/7 Jobs, das Root-Protokoll bestätigt 5/5 und Cleanup.
+> Eine synthetische ungültige GIF-Datei erhält tatsächlich HTTP 415 vom Backend.
+> Originaldaten, Besitzer, Schlüssel und Uploadfehler überstehen Offline-Reload;
+> derselbe Benutzer unter anderem Mandanten lädt nicht hoch. Beim ursprünglichen
+> Mandanten erfolgen echte weitere Ablehnungen mit gleichem Schlüssel.
+> Der Wachbucheintrag existiert einmal, kein zugehöriges DMS-Dokument und kein
+> neues S3-Objekt. Ein erster Test erwartete fälschlich exakt zwei automatische
+> Versuche; der finale Test prüft stattdessen wiederholte Ablehnung und stabilen
+> Schlüssel. Neuer Fall 120 s, übrige Budgets unverändert. Dateitypprüfung vor
+> dem Scan; keine Malware-, Geräte- oder Providerabnahme.
+
+> **Vorheriger Foto-Replay-Nachweis:** Die echte Suite bestand lokal und gehostet **4/4** mit
 > PostgreSQL, privatem MinIO und verpflichtendem ClamAV. Ein synthetisches Foto
 > überlebt Offline-Reload und fremdes Konto ohne Upload. Beim ursprünglichen
 > Besitzer geht die erste echte erfolgreiche Quittung verloren; erst nach

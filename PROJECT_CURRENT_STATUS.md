@@ -8,10 +8,26 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
-**Fully hosted-verified code revision:** `31e63726d8b377abafe564da349c3aa622468291`
+**Fully hosted-verified code revision:** `3617576a8408002a99e1ed4f66e5a94b17a13cf5`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
 Later documentation-only commits are outside this code-revision identifier.
+
+**Rejected-attachment extension — IMPLEMENTIERT UND GETESTET:** The complete real
+browser suite passed **5/5** locally and in the hosted root job of
+[CI 43921057411](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43921057411),
+which passed **7/7 jobs** on the exact code revision above. A synthetic invalid
+GIF receives the real API's HTTP 415, not a fabricated error response. Original
+bytes, owner, stable idempotency key and explicit upload error survive offline
+reload. The same owner in another tenant does not upload it; returning to the
+original tenant repeats the genuine rejection without marking it synced.
+The underlying logbook entry persists exactly once, no matching DMS document
+exists and actual S3 keys remain unchanged. All three owned containers were
+removed. The first local test incorrectly required exactly two retries but
+observed three; the corrected test checks repeated rejection and the invariant
+key without assuming the automatic scheduler's exact attempt count.
+The new case uses 120 seconds; other budgets are unchanged. This tests file-type
+rejection before scanning, not malware quarantine, provider or device acceptance.
 
 **Hosted CI history:** [Run 43906594339](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43906594339)
 on `6ead55c73885b1b5779501c50c55c08ee01c6184` completed **5/7**:
@@ -39,7 +55,7 @@ Two fresh isolated local cycles passed **3/3 each**, including cleanup.
 passed **7/7** on `3aeebc08e30b9d34bd0e42e95f79c18693e363be`;
 no application test was skipped or assertion removed.
 
-**Photo-replay extension — local and hosted verification:** The real suite now passes
+**Photo-replay extension (`31e6372`) — historical local and hosted verification:** The real suite passed
 **4/4** with isolated PostgreSQL, private MinIO and actual ClamAV. A synthetic
 photo survives offline reload and another account's login without upload.
 After the owner returns, the first real successful upload response is lost;

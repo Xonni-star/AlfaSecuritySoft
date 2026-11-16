@@ -4,6 +4,7 @@
 
 ### Hinzugefügt
 
+- Echte Browserregression für HTTP-415-Anhangablehnung: Originalbytes, Besitzer, Idempotenzschlüssel und Uploadfehler bleiben nach Offline-Reload und Mandantenwechsel erhalten. Rückkehr zum Besitzer wiederholt die echte Ablehnung; kein DMS-Dokument und unveränderte tatsächliche S3-Objekte. Lokal/gehostet 5/5 Browserfälle; CI 43921057411 auf `3617576` 7/7. Neuer Fall 120 s, übrige Budgets unverändert; Dateitypprüfung vor dem Scan, kein Malware-/Geräte-/Providernachweis.
 - Echte Browser-Fotojourney mit isoliertem privatem MinIO und ClamAV: Offline-Reload, fremdes Konto, verlorene echte Uploadquittung und identischer Retry; eine Version/ein Upload-/Clean-Audit, Originalbytes in S3/Download, anonymes S3 403 und Fremdtenant 404. Authentifizierte Suite lokal 4/4; neuer Fotofall 120 s, bestehende Budgets unverändert (Wachbuch/Identität 120 s, SOP 180 s). Kein Geräte-/Provider-Nachweis.
 - Echte SOP-Browserjourney: unabhängige Erstellung/Prüfung/Freigabe, reine Mitarbeiterrechte, bewusste Offline-Kenntnisnahme, Offline-Reload und idempotente Wiederholung nach verlorener echter Quittung. Authentifizierte Chromium-Suite lokal 3/3.
 - Erweiterte authentifizierte Report-/Berechtigungsmatrix: vier Berichte und CSV, Tenant-/Site-Grants, sofortiger Rechteentzug, manipulierte Mandantenhinweise, exakte Aggregate und direkte Schicht-IDs; PostgreSQL-Suite 16/16 bestanden.
