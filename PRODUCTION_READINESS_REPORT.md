@@ -54,6 +54,12 @@ Offline-Erfolg und bindet verspätete Ergebnisse/Fehler an die Identität.
 Lokal Frontend 308/308, Typprüfung/Build und Browser 9/9 mit echten
 Archiv-/Reload-/Wiederherstellungsfällen. Backendquellen unverändert;
 neue exakte Hosted-Prüfung bleibt separat.
+FNL-017 ist nun als `c4fbb7a3e9c1d82c89611ba9281dfe627af77449`
+gehostet bestätigt: CI 43943801543 7/7, Logs 308/546/9 und Cleanup.
+Nachfolgendes FNL-018 bindet späte Sync-/Recovery-Ergebnisse an Identität und
+Dialogöffnung; lokale Speicherfehler werden ausdrücklich gemeldet.
+Frontend 320/320, Typprüfung/Build und echte Browser 9/9 mit Cleanup bestanden
+lokal; keine zusätzliche vollständige Sicherheits- oder Produktionsabnahme.
 Spätere Hosted-Ergebnisse sind getrennt im
 [Projektstatus](./PROJECT_CURRENT_STATUS.md) zu prüfen.
 

@@ -23,6 +23,9 @@ Test, ein Merge und ein erfolgreiches Containerimage ersetzen sie nicht.
       Speicherfehler und identitätsgebundene verzögerte Ergebnisse; 38 neue
       Frontendregressionen sowie echte Archiv-/Reload-/Wiederherstellungsfälle
       innerhalb der neun Browserjourneys. Kein vollständiger Rollen-/Objektnachweis.
+- [x] Zwölf weitere Regressionen für späte Sync-Anhang-/Snapshot-/Recovery-Ergebnisse,
+      Identitäts-/Dialogwechsel und ausdrücklich gemeldete Speicherfehler.
+      Lokal Frontend 320/320, Typprüfung/Build und reale Browser 9/9 mit Cleanup.
 - [x] Gefundene simulierte Audit-/Technik-/Abnahmeergebnisse entfernt;
       lokale Automationsentwürfe und fehlende Engine ausdrücklich gekennzeichnet.
 - [x] Privaten lokalen S3-/ClamAV-Ablauf, Originalbytes und echte Dateiablehnung geprüft.

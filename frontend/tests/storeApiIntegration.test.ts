@@ -37,7 +37,7 @@ vi.mock('../services/apiClient', () => {
 
 import { useSecurityStore, type AuthUser } from '../store';
 import { apiClient, ApiError } from '../services/apiClient';
-import { offlineVault, type StoredSOPAcknowledgement } from '../services/indexedDbService';
+import { offlineVault, type OutboxMutation, type StoredSOPAcknowledgement } from '../services/indexedDbService';
 import { QualificationType, UserRole, type SOPDocument } from '../types';
 
 const mockedApi = apiClient as unknown as {
@@ -210,6 +210,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
@@ -904,6 +905,62 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     await sync;
 
     expect(refresh).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    { hasMutations: false, phase: 'attachments' }, { hasMutations: true, phase: 'attachments' },
+    { hasMutations: false, phase: 'refresh' }, { hasMutations: true, phase: 'refresh' }
+  ])('does not publish an old outbox after delayed $phase (has mutations: $hasMutations)', async ({ hasMutations, phase }) => {
+    vi.stubGlobal('indexedDB', new IDBFactory());
+    const mutation: OutboxMutation = {
+      id: 'old-owner-mutation', tenantId: readUser.tenantId, userId: readUser.id,
+      entityType: 'key', action: 'UPDATE', payload: { label: 'Previous owner private payload' },
+      deviceId: 'old-owner-device', occurredAt: '2026-11-16T00:00:00Z',
+      baseVersion: 1, retryCount: 0, status: 'PENDING'
+    };
+    vi.spyOn(offlineVault, 'getPendingOutbox').mockResolvedValue(hasMutations ? [mutation] : []);
+    vi.spyOn(offlineVault, 'getOutbox').mockResolvedValue(phase === 'refresh' ? [] : [{ ...mutation, status: 'FAILED' }]);
+    vi.spyOn(offlineVault, 'markSynced').mockResolvedValue(undefined);
+    mockedApi.post.mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED', serverVersion: 2 }]);
+    let finishAttachments!: (attachments: []) => void;
+    const attachments = vi.spyOn(offlineVault, 'getPendingAttachments').mockReturnValueOnce(phase === 'attachments'
+      ? new Promise(resolve => { finishAttachments = resolve; })
+      : Promise.resolve([]));
+    let finishRefresh!: () => void;
+    const refresh = vi.spyOn(useSecurityStore.getState(), 'loadTenantData').mockReturnValueOnce(
+      new Promise<void>(resolve => { finishRefresh = resolve; })
+    );
+    vi.spyOn(offlineVault, 'hasOwnerlessPendingAttachments').mockResolvedValue(phase === 'refresh');
+    useSecurityStore.setState({
+      authUser: readUser, isAuthenticated: true, isOnline: true,
+      currentTenantId: readUser.tenantId, currentUserId: readUser.id, notifications: []
+    });
+    const sync = useSecurityStore.getState().triggerManualSync(phase === 'refresh'
+      ? { refreshAfterSync: true, refreshWhenOutboxEmpty: true } : undefined);
+    await vi.waitFor(() => expect(phase === 'attachments' ? attachments : refresh).toHaveBeenCalledOnce());
+    useSecurityStore.setState({
+      authUser: { ...readUser, id: 'new-owner' }, currentUserId: 'new-owner',
+      syncQueue: [], notifications: [], lastSyncTime: 'Current owner timestamp'
+    });
+    if (phase === 'attachments') finishAttachments([]);
+    else finishRefresh();
+    await sync;
+    expect(useSecurityStore.getState()).toMatchObject({
+      syncQueue: [], notifications: [], lastSyncTime: 'Current owner timestamp'
+    });
+  });
+
+  test('reports an outbox storage failure explicitly instead of silently returning zero results', async () => {
+    useSecurityStore.setState({
+      authUser: readUser, isAuthenticated: true, isOnline: true,
+      currentTenantId: readUser.tenantId, currentUserId: readUser.id, notifications: []
+    });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(offlineVault, 'getPendingOutbox').mockRejectedValueOnce(new Error('Outbox storage unavailable'));
+    expect(await useSecurityStore.getState().triggerManualSync()).toMatchObject({ error: 'Outbox storage unavailable' });
+    expect(useSecurityStore.getState().notifications[0]).toMatchObject({
+      type: 'alert', message: expect.stringContaining('Outbox storage unavailable')
+    });
   });
 
   test('preserves the current offline view when a post-sync snapshot endpoint fails', async () => {

@@ -52,6 +52,7 @@ describe('SyncManagerModal shift conflict snapshots', () => {
   let root: ReturnType<typeof createRoot>;
 
   beforeEach(() => {
+    vi.mocked(offlineVault.hasOwnerlessPendingAttachments).mockResolvedValue(false);
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -84,6 +85,101 @@ describe('SyncManagerModal shift conflict snapshots', () => {
     await act(async () => root.unmount());
     container.remove();
     vi.clearAllMocks();
+    vi.useRealTimers();
+  });
+
+  async function click(label: string) {
+    const button = Array.from(container.querySelectorAll('button'))
+      .find(button => button.textContent?.includes(label));
+    if (!button) throw new Error(`Missing sync action: ${label}`);
+    await act(async () => button.click());
+    return button;
+  }
+
+  test('starts actual manual synchronization immediately and waits for completion', async () => {
+    vi.useFakeTimers();
+    mocks.store.syncQueue = [{ ...shiftConflict(), status: 'pending' }];
+    let finish!: () => void;
+    mocks.store.triggerManualSync.mockReturnValueOnce(new Promise<void>(resolve => { finish = resolve; }));
+    await act(async () => root.render(<SyncManagerModal isOpen onClose={vi.fn()} />));
+    const button = await click('Jetzt Synchronisieren');
+    expect(mocks.store.triggerManualSync).toHaveBeenCalledWith({ retryFailed: true });
+    expect(button.disabled).toBe(true);
+    await act(async () => { finish(); });
+    expect(button.disabled).toBe(false);
+  });
+
+  test('reports rejected manual synchronization and releases the pending button', async () => {
+    vi.useFakeTimers();
+    mocks.store.syncQueue = [{ ...shiftConflict(), status: 'pending' }];
+    mocks.store.triggerManualSync.mockRejectedValueOnce(new Error('Manual outbox storage failure'));
+    await act(async () => root.render(<SyncManagerModal isOpen onClose={vi.fn()} />));
+    const button = await click('Jetzt Synchronisieren');
+    await act(async () => { await vi.advanceTimersByTimeAsync(650); });
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('Manual outbox storage failure');
+    expect(button.disabled).toBe(false);
+  });
+
+  test('surfaces an explicit storage error result instead of treating zero sync counts as success', async () => {
+    mocks.store.syncQueue = [{ ...shiftConflict(), status: 'pending' }];
+    mocks.store.triggerManualSync.mockResolvedValueOnce({
+      success: 0, failed: 0, conflicts: 0, error: 'Durable outbox unavailable'
+    });
+    await act(async () => root.render(<SyncManagerModal isOpen onClose={vi.fn()} />));
+    await click('Jetzt Synchronisieren');
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('Durable outbox unavailable');
+  });
+
+  test.each(['success', 'failure'])('does not apply an old conflict %s to a new identity selection', async outcome => {
+    let finish!: () => void;
+    let fail!: (error: Error) => void;
+    mocks.store.resolveConflict.mockReturnValueOnce(new Promise<void>((resolve, reject) => {
+      finish = resolve; fail = reject;
+    }));
+    await act(async () => root.render(<SyncManagerModal isOpen onClose={vi.fn()} />));
+    await click('Konflikt lösen');
+    await click('Lokale Version durchsetzen');
+    mocks.store.authUser = { id: 'user-b' };
+    mocks.store.currentUserId = 'user-b';
+    mocks.store.syncQueue = [{ ...mocks.store.syncQueue[0], id: 'new-conflict', userId: 'user-b' }];
+    await act(async () => root.render(<SyncManagerModal isOpen onClose={vi.fn()} />));
+    await click('Warteschlange');
+    await click('Konflikt lösen');
+    await act(async () => {
+      if (outcome === 'success') finish();
+      else fail(new Error('Previous owner private conflict error'));
+    });
+    expect(container.textContent).toContain('Lokale Version durchsetzen');
+    expect(container.textContent).not.toContain('Previous owner private conflict error');
+  });
+
+  test('ignores a previous tenant ownerless-attachment result after identity replacement', async () => {
+    let finish!: (exists: boolean) => void;
+    vi.mocked(offlineVault.hasOwnerlessPendingAttachments)
+      .mockReturnValueOnce(new Promise(resolve => { finish = resolve; }))
+      .mockResolvedValueOnce(false);
+    await act(async () => root.render(<SyncManagerModal isOpen onClose={vi.fn()} />));
+    await click('IndexedDB Speicher');
+    mocks.store.currentTenantId = 'tenant-b';
+    mocks.store.currentUserId = 'user-b';
+    mocks.store.authUser = { id: 'user-b' };
+    await act(async () => root.render(<SyncManagerModal isOpen onClose={vi.fn()} />));
+    await act(async () => { finish(true); });
+    expect(container.textContent).not.toContain('Ältere Wachbuchanhänge ohne sichere Zuordnung');
+  });
+
+  test('does not publish an old conflict error after closing and reopening the dialog', async () => {
+    let fail!: (error: Error) => void;
+    mocks.store.resolveConflict.mockReturnValueOnce(new Promise<void>((_resolve, reject) => { fail = reject; }));
+    await act(async () => root.render(<SyncManagerModal isOpen onClose={vi.fn()} />));
+    await click('Konflikt lösen');
+    await click('Lokale Version durchsetzen');
+    await act(async () => root.render(<SyncManagerModal isOpen={false} onClose={vi.fn()} />));
+    await act(async () => root.render(<SyncManagerModal isOpen onClose={vi.fn()} />));
+    await click('Warteschlange');
+    await click('Konflikt lösen');
+    await act(async () => { fail(new Error('Previous dialog conflict error')); });
+    expect(container.textContent).not.toContain('Previous dialog conflict error');
   });
 
   test('shows the server snapshot before enabling shift conflict decisions', async () => {

@@ -80,6 +80,13 @@ historischen Kontext im [Sicherheitsbericht](./SECURITY_AUDIT_REPORT.md).
   neun echte Browserfälle einschließlich Archiv/Reload/Wiederherstellung
   bestanden lokal; Backendquellen unverändert. Keine zusätzliche vollständige
   Sicherheitsprüfung oder neue bestätigte Schwachstelle wird behauptet.
+  FNL-017 ist nun als `c4fbb7a3e9c1d82c89611ba9281dfe627af77449` mit
+  CI 43943801543 7/7, Logs 308/546/9 und Cleanup bestätigt.
+- FNL-018 ergänzt zwölf Funktionsregressionen für verzögerte Anhang-/Snapshot-/
+  Konfliktergebnisse nach Identitäts-/Dialogwechsel und ausdrücklich gemeldete
+  Speicherfehler statt scheinbar erfolgreicher Nullzähler. Lokal Frontend 320/320,
+  Typprüfung/Build und Browser 9/9 mit Cleanup. Die früher begrenzte Prüfung wird
+  nicht als Sicherheitsreview dieser nachfolgenden Änderungen ausgegeben.
 
 ## Fachliche Fehler sind keine behaupteten Exploits
 

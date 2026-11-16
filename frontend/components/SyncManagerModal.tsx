@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   RefreshCw,
   Wifi,
@@ -39,6 +39,7 @@ export const SyncManagerModal: React.FC<SyncManagerModalProps> = ({ isOpen, onCl
   } = useSecurityStore();
 
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState('');
   const [activeTab, setActiveTab] = useState<'outbox' | 'conflicts' | 'storage'>('outbox');
   const [storageStats, setStorageStats] = useState<{ usageBytes: number; quotaBytes: number; percentage: number } | null>(null);
   const [storageError, setStorageError] = useState('');
@@ -50,13 +51,22 @@ export const SyncManagerModal: React.FC<SyncManagerModalProps> = ({ isOpen, onCl
   const [hasOwnerlessAttachments, setHasOwnerlessAttachments] = useState(false);
   const [ownerlessError, setOwnerlessError] = useState('');
   const identityKey = `${currentTenantId}:${authUser?.id || currentUserId}`;
+  const identityRef = useRef(identityKey);
+  identityRef.current = identityKey;
+  const contextRef = useRef(0);
+  const isCurrentContext = (context: number) => contextRef.current === context && identityRef.current === identityKey;
 
   const tenant = getCurrentTenant();
 
   useEffect(() => {
+    contextRef.current += 1;
     setSelectedConflict(null);
     setResolutionError('');
-  }, [identityKey]);
+    setSyncError('');
+    setIsSyncing(false);
+    setIsResolvingConflict(false);
+    return () => { contextRef.current += 1; };
+  }, [identityKey, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -72,20 +82,21 @@ export const SyncManagerModal: React.FC<SyncManagerModalProps> = ({ isOpen, onCl
       });
       return () => { isCurrent = false; };
     }
-  }, [isOpen]);
-
-  const refreshOwnerless = React.useCallback(async () => {
-    try {
-      setHasOwnerlessAttachments(await offlineVault.hasOwnerlessPendingAttachments(currentTenantId));
-      setOwnerlessError('');
-    } catch (error) {
-      setOwnerlessError(error instanceof Error ? error.message : 'Der Status älterer Anhänge konnte nicht gelesen werden.');
-    }
-  }, [currentTenantId]);
+  }, [isOpen, identityKey]);
 
   useEffect(() => {
-    if (isOpen && activeTab === 'storage') void refreshOwnerless();
-  }, [isOpen, activeTab, refreshOwnerless]);
+    let current = true;
+    setHasOwnerlessAttachments(false);
+    setOwnerlessError('');
+    if (isOpen && activeTab === 'storage') {
+      offlineVault.hasOwnerlessPendingAttachments(currentTenantId).then(exists => {
+        if (current) setHasOwnerlessAttachments(exists);
+      }).catch(error => {
+        if (current) setOwnerlessError(error instanceof Error ? error.message : 'Der Status älterer Anhänge konnte nicht gelesen werden.');
+      });
+    }
+    return () => { current = false; };
+  }, [isOpen, activeTab, currentTenantId, identityKey]);
 
   if (!isOpen) return null;
 
@@ -103,23 +114,32 @@ export const SyncManagerModal: React.FC<SyncManagerModalProps> = ({ isOpen, onCl
       selectedConflict.conflictDetails.serverPayload.id);
 
   const handleRunSync = async () => {
+    if (isSyncing) return;
+    const context = contextRef.current;
+    setSyncError('');
     setIsSyncing(true);
-    await new Promise((r) => setTimeout(r, 650));
-    await triggerManualSync({ retryFailed: true });
-    setIsSyncing(false);
+    try {
+      const result = await triggerManualSync({ retryFailed: true });
+      if (isCurrentContext(context) && result?.error) setSyncError(result.error);
+    } catch (error) {
+      if (isCurrentContext(context)) setSyncError(error instanceof Error ? error.message : 'Synchronisierung nicht abgeschlossen.');
+    } finally {
+      if (isCurrentContext(context)) setIsSyncing(false);
+    }
   };
 
   const handleResolveDecision = async (decision: 'USE_LOCAL' | 'USE_SERVER' | 'RECORD_AS_EXCEPTION') => {
-    if (!selectedConflict) return;
+    if (!selectedConflict || isResolvingConflict) return;
+    const context = contextRef.current;
     setIsResolvingConflict(true);
     setResolutionError('');
     try {
       await resolveConflict(selectedConflict.id, decision);
-      setSelectedConflict(null);
+      if (isCurrentContext(context)) setSelectedConflict(null);
     } catch (error) {
-      setResolutionError(error instanceof Error ? error.message : 'Konflikt konnte nicht aufgelöst werden.');
+      if (isCurrentContext(context)) setResolutionError(error instanceof Error ? error.message : 'Konflikt konnte nicht aufgelöst werden.');
     } finally {
-      setIsResolvingConflict(false);
+      if (isCurrentContext(context)) setIsResolvingConflict(false);
     }
   };
 
@@ -208,6 +228,7 @@ export const SyncManagerModal: React.FC<SyncManagerModalProps> = ({ isOpen, onCl
           </div>
         </div>
 
+        {syncError && <p role="alert" className="px-4 pt-3 text-xs text-red-300">{syncError}</p>}
         {/* Tab 1: Outbox List */}
         {activeTab === 'outbox' && (
           <div className="flex-1 overflow-y-auto p-4 space-y-2.5 text-xs">

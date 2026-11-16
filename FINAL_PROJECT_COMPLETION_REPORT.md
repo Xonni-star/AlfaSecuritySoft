@@ -81,6 +81,13 @@ bei API-Fehlern, Identitätsgrenzen und sichtbare lokale Speicherfehler.
 32 Store- und sechs UI-Regressionen, Frontend 308/308, Typprüfung/Build und
 Browser 9/9 mit echtem Archiv/Reload/Wiederherstellung bestanden lokal.
 Neue exakte Hosted-Prüfung ist nicht durch den vorigen Lauf ersetzt.
+FNL-017 ist nun als `c4fbb7a3e9c1d82c89611ba9281dfe627af77449`
+mit CI 43943801543 7/7 und gelesenen Logs 308/546/9 plus Cleanup belegt.
+Nachfolgendes FNL-018 ergänzt zwölf Regressionen und bindet späte Anhang-/
+Snapshot-/Konflikt-/Speicherergebnisse an Identität und Dialogöffnung.
+Explizite Fehler statt scheinbar erfolgreicher Nullzähler, kein künstlicher
+Sync-Delay; lokal Frontend 320/320, Typprüfung/Build und Browser 9/9 mit Cleanup.
+Die neue exakte Hosted-Prüfung bleibt separat.
 
 Noch interne Arbeit: vollständige Rollen-/Objektmatrix und offene Teilmodule
 abnehmen; erforderliche Prüfung vor autorisierter PR-Integration abschließen.

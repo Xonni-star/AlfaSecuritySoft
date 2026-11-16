@@ -17,6 +17,12 @@ reinterpret an API denial as offline success, report local-storage failures and
 suppress old-context completions/errors. Backend sources remain unchanged.
 These are functional/data-integrity corrections, not additional security findings
 or complete role coverage. Exact newer hosted verification remains separate.
+FNL-017 is now hosted-verified as `c4fbb7a3e9c1d82c89611ba9281dfe627af77449`,
+CI 43943801543 7/7, logs 308/546/9 with cleanup. Subsequent FNL-018 locally passes
+frontend 320, typecheck/build and browser 9: delayed attachment/snapshot and
+conflict/storage responses remain identity/dialog-bound, and storage failure
+returns an explicit error. These are additional functional regression results,
+not an extension of the earlier bounded security review's coverage.
 The bounded review reported no confirmed new vulnerability and supplied no
 complete coverage matrix. Current revision boundaries and remaining internal/
 external gates are in [current status](./PROJECT_CURRENT_STATUS.md) and

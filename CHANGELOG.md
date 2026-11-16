@@ -4,6 +4,7 @@
 
 ### Hinzugefügt
 
+- Zwölf Regressionen für verspätete Sync-Anhang-/Snapshot-Ergebnisse, Kontextwechsel im Konfliktdialog und sichtbare IndexedDB-Fehler. Alte Kontexte überschreiben keine aktuelle Outbox/Sync-Zeit/Benachrichtigung; Speicherfehler liefern einen ausdrücklichen Fehler, manuelle Synchronisierung startet ohne künstliche Wartezeit und beendet Pending auch bei Fehlern. Lokal Frontend 320/320, Typprüfung/Build und echte Browser 9/9 mit Cleanup.
 - 38 Frontendregressionen für fünf Archiv-/Wiederherstellaktionen: API-/dauerhafte Queuebestätigung, feste Online-/Offlineentscheidung, Speicherfehler, verzögerter Identitätswechsel und geordnete Offline-Revisionen. UI wartet, blockiert Doppelaktionen und meldet unbestätigte Änderungen. Echte Browserfälle um Archiv/Reload/Wiederherstellung erweitert, inklusive Objektversionen 3→4→5 und erhaltenen Mitarbeiterdaten. Lokal Frontend 308/308, Typprüfung/Build und Browser 9/9 mit Cleanup; kein neuer Exploit behauptet.
 - Neunte echte Browserjourney für dauerhafte Offline-Kundenanlage, tatsächliche Vertragswerte nach Reload/Änderung und persistierte Objektanforderungen nach Bearbeitung/Reload; Testdaten werden über reale Archivierungsaktionen entfernt. Lokal komplette Suite 9/9 mit Containerbereinigung.
 - Achte echte Browserjourney für Mitarbeiteranlage, Nachweise ohne Ablaufdatum, tatsächliche Abwesenheit und HTTP-409-Konflikt mit erhaltenem Entwurf. Reload belegt Kalendertage und abgelaufenen Nachweisstatus; vollständige echte Suite 8/8 mit Containerbereinigung.

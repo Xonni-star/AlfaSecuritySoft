@@ -214,6 +214,27 @@ Backend sources are unchanged from the fully verified FNL-016 above.
 Logs: `finalization-resource-lifecycle-red.log`,
 `finalization-resource-lifecycle-browser.log`.
 
+FNL-017 is published as `c4fbb7a3e9c1d82c89611ba9281dfe627af77449`;
+exact [CI 43943801543](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43943801543)
+passed 7/7. Downloaded logs verify frontend 308, backend 546 and browser 9 plus
+cleanup; `finalization-resource-lifecycle-hosted-ci.log`.
+
+FNL-018 locally passes frontend **320/320 in 35 files**, typecheck/build and
+real browser **9/9** with cleanup. Guards after awaited attachment inspection
+and snapshot refresh stop old-context outbox/time/notification publication.
+Storage failure returns explicit `error` and notification, rather than only
+zero counters. Manual sync starts immediately, handles errors/finally and keeps
+conflict/storage results bound to identity/dialog opening. Twelve new cases cover
+these boundaries, including close/reopen and delayed attachment/refresh paths.
+Initial test setup needed an actual IndexedDB factory (otherwise the production
+attachment helper correctly skips unavailable IndexedDB) and navigation back to
+the real outbox tab before selecting a new conflict. These fixture corrections
+are not product defects; final tests pass without unhandled rejections.
+Backend sources remain unchanged from preceding verified code.
+Logs: `finalization-sync-completion-red.log`,
+`finalization-sync-completion-red-verified.log`,
+`finalization-sync-completion-browser.log`.
+
 Required `FINAL_SECURITY_AUDIT.md`, `PRODUCTION_READINESS_REPORT.md` and
 `PRODUCTION_RELEASE_CHECKLIST.md` now exist and explicitly preserve open
 internal/external boundaries. README/current status, module matrix, changelog,
@@ -223,7 +244,7 @@ in development, not approved for production. Do not repeat this already done wor
 
 ## Remaining work
 
-1. Publish coherent FNL-017 and verify all hosted jobs
+1. Publish coherent FNL-018 and verify all hosted jobs
    on the exact new full SHA; inspect actual logs before updating evidence.
    The preceding 7/7 does not validate these newer changes.
 2. Repeat a bounded convergence audit for new concrete functional defects,
@@ -236,6 +257,9 @@ in development, not approved for production. Do not repeat this already done wor
    no remaining `throw new Error('offline')` or online-state-based catch fallback
    in the active store/controllers/components; this is not exhaustive coverage.
    Inspect remaining real workflow boundaries, not already corrected handlers.
+   One concrete next trace: startup notifications still contain a hard-coded
+   expired qualification alert before live evidence loads. Verify its actual
+   authenticated visibility and remove fictional operational alerts if reproduced.
 3. Keep the requested final documents/tracker current; no ESLint configuration
    or script was found, so do not claim lint ran.
 4. Merge PR #66 only after

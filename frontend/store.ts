@@ -623,7 +623,7 @@ interface SecurityOpsStore {
   toggleNetworkSimulation: () => void;
   syncQueue: OfflineQueueItem[];
   enqueueOfflineAction: (item: Omit<OfflineQueueItem, 'id' | 'createdAt' | 'status' | 'retryCount'> & { id?: string }) => Promise<void>;
-  triggerManualSync: (options?: { retryFailed?: boolean; refreshAfterSync?: boolean; refreshWhenOutboxEmpty?: boolean }) => Promise<{ success: number; failed: number; conflicts: number }>;
+  triggerManualSync: (options?: { retryFailed?: boolean; refreshAfterSync?: boolean; refreshWhenOutboxEmpty?: boolean }) => Promise<{ success: number; failed: number; conflicts: number; error?: string }>;
   resolveConflict: (queueId: string, resolution: 'USE_LOCAL' | 'USE_SERVER' | 'RECORD_AS_EXCEPTION') => Promise<void>;
   clearCompletedSyncs: () => void;
 
@@ -1640,6 +1640,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         const allItems = await offlineVault.getOutbox(currentTenantId, undefined, currentUserId);
         if (!isCurrentSyncIdentity()) return { success: 0, failed: 0, conflicts: 0 };
         const attachmentSync = await syncPendingGuardbookAttachments(currentTenantId, currentUserId, isCurrentSyncIdentity);
+        if (!isCurrentSyncIdentity()) return { success: 0, failed: 0, conflicts: 0 };
         scheduleGuardbookAttachmentRetry(currentTenantId, currentUserId, attachmentSync.maxRetryCount);
         set({
           syncQueue: allItems.map(offlineOutboxToQueueItem),
@@ -1651,6 +1652,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         if (options.refreshWhenOutboxEmpty && allItems.length === 0 && isCurrentSyncIdentity()) {
           await get().loadTenantData({ preserveCurrentData: true });
         }
+        if (!isCurrentSyncIdentity()) return { success: 0, failed: 0, conflicts: 0 };
         if (attachmentSync.failed > 0) {
           get().addNotification('Anhänge warten auf Synchronisierung',
             `${attachmentSync.failed} Wachbuchanhang/Anhänge konnten nicht übertragen werden und bleiben lokal gespeichert.`,
@@ -1830,6 +1832,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       scheduleOutboxRetry(remainingOutbox);
       if (!isCurrentSyncIdentity()) return { success: successCount, failed: failedCount, conflicts: conflictCount };
       const attachmentSync = await syncPendingGuardbookAttachments(currentTenantId, currentUserId, isCurrentSyncIdentity);
+      if (!isCurrentSyncIdentity()) return { success: successCount, failed: failedCount, conflicts: conflictCount };
       failedCount += attachmentSync.failed;
       scheduleGuardbookAttachmentRetry(currentTenantId, currentUserId, attachmentSync.maxRetryCount);
       set({
@@ -1848,6 +1851,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       ) {
         await get().loadTenantData({ preserveCurrentData: true });
       }
+      if (!isCurrentSyncIdentity()) return { success: successCount, failed: failedCount, conflicts: conflictCount };
 
       if (successCount > 0) {
         get().addNotification(
@@ -1870,11 +1874,14 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
           'warning');
       }
       notifyOwnerlessGuardbookAttachments(attachmentSync.hasOwnerlessAttachments);
-    } catch (err: any) {
+    } catch (err) {
       console.error('[CRITICAL SYNC ERROR]', err);
+      const message = errorText(err);
+      if (isCurrentSyncIdentity()) get().addNotification('Synchronisierung nicht abgeschlossen', message, 'alert');
+      return { success: successCount, failed: failedCount, conflicts: conflictCount, error: message };
     } finally {
       isSyncRunningMutex = false;
-      set({ isSyncing: false });
+      if (isCurrentSyncIdentity()) set({ isSyncing: false });
       if (syncRerunRequested) {
         syncRerunRequested = false;
         setTimeout(() => void get().triggerManualSync(), 0);
