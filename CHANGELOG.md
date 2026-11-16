@@ -4,6 +4,7 @@
 
 ### Hinzugefügt
 
+- Echte Chromium-/PostgreSQL-Prüfung mit zwei Konten und zwei Mandanten: fremde Offline-Mutationen bleiben unangetastet, erst die ursprüngliche Identität synchronisiert genau einmal.
 - Erreichbare Abmeldung in der Navigation mit sichtbarem Hinweis bei nicht bestätigtem serverseitigem Widerruf; echter Browser-Test weist auch eine zurückbehaltene Kopie des alten Cookies nach erfolgreicher Abmeldung zurück.
 - Authentifizierter Chromium-Offline-Test mit echter Express-/PostgreSQL-Anbindung, isolierter Datenbank und kontrolliert verlorener erster Sync-Quittung; eigener Root-CI-Schritt und Fehlerartefakte.
 - Backup-Healthcheck für Archivfrische und letzten Sicherungsfehler; atomare Archivveröffentlichung, private Dateirechte und Regressionen für Fehler/Erholung im isolierten Restore-Drill. Dies ist kein Restore- oder externer Alarmierungsnachweis.
@@ -21,6 +22,7 @@
 
 ### Fehlerkorrekturen
 
+- Session-Wiederherstellung liest das tatsächliche `userId`-Feld von `/auth/me`, damit nach Reload keine leere Benutzeridentität und blockierte Synchronisation entstehen.
 - Wachbuchformulare verwenden nachgeladene Standort-/Mitarbeiter-Standardwerte konsistent bei Anzeige und Speicherung, statt leere IDs in die Offline-Outbox zu schreiben.
 - Patrol-Integrationstests schließen beide PostgreSQL-Pools nach der Bereinigung; der lange API-Test verwendet ein begrenztes 30-Sekunden-Zeitbudget.
 - Sync-Quittungen weisen die Wiederverwendung einer Mutations-ID mit geändertem Entitätstyp oder Vorgang zurück.

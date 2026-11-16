@@ -42,4 +42,5 @@ unset RATE_LIMIT_REDIS_URL
 
 npm run migrate --prefix backend
 npm run seed --prefix backend
+node e2e/seed-browser-accounts.cjs
 npx playwright test --config playwright.backend.config.js

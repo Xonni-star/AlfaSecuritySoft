@@ -998,7 +998,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       const me = await apiClient.get<any>('/auth/me');
       set({
         authUser: {
-          id: me.sub ?? me.id ?? '',
+          id: me.userId ?? me.sub ?? me.id ?? '',
           email: me.email ?? '',
           fullName: me.email ?? '',
           role: me.role ?? '',
@@ -1009,7 +1009,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         },
         isAuthenticated: true,
         currentTenantId: me.tenantId ?? me.tenant_id ?? '',
-        currentUserId: me.sub ?? me.id ?? '',
+        currentUserId: me.userId ?? me.sub ?? me.id ?? '',
         syncQueue: [],
         pendingSOPAcknowledgements: [],
         sops: [],

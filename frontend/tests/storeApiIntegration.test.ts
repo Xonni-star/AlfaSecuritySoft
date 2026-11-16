@@ -244,7 +244,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     mockReadEndpoints();
     mockedApi.get.mockImplementation((endpoint: string) => endpoint === '/auth/me'
       ? Promise.resolve({
-        id: 'restored-user',
+        userId: 'restored-user',
         tenantId: 'tenant-frankfurt',
         permissions: ['shifts:manage']
       })
