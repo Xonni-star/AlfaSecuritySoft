@@ -5,6 +5,17 @@ import { expect, request, test } from '@playwright/test';
 const ownerEmail = 'a.schmidt@ffm-sec.de';
 const tenantA = '11111111-1111-1111-1111-111111111111';
 const tenantB = '22222222-2222-2222-2222-222222222222';
+const requireBackend = createRequire(new URL('../backend/package.json', import.meta.url));
+const { S3Client, ListObjectsV2Command, GetObjectCommand } = requireBackend('@aws-sdk/client-s3');
+
+function createStorageClient() {
+  return new S3Client({
+    endpoint: process.env.DMS_S3_ENDPOINT, region: process.env.DMS_S3_REGION, forcePathStyle: true,
+    credentials: {
+      accessKeyId: process.env.DMS_S3_ACCESS_KEY, secretAccessKey: process.env.DMS_S3_SECRET_KEY
+    }
+  });
+}
 
 async function login(page, email = ownerEmail, tenantId = tenantA) {
   await page.getByLabel('E-Mail').fill(email);
@@ -280,14 +291,7 @@ test('replays an owner-bound offline photo once through real S3 and ClamAV after
   expect(events.filter(event => event.action === 'uploaded')).toHaveLength(1);
   expect(events.filter(event => event.action === 'scan_clean')).toHaveLength(1);
 
-  const requireBackend = createRequire(new URL('../backend/package.json', import.meta.url));
-  const { S3Client, ListObjectsV2Command, GetObjectCommand } = requireBackend('@aws-sdk/client-s3');
-  const storage = new S3Client({
-    endpoint: process.env.DMS_S3_ENDPOINT, region: process.env.DMS_S3_REGION, forcePathStyle: true,
-    credentials: {
-      accessKeyId: process.env.DMS_S3_ACCESS_KEY, secretAccessKey: process.env.DMS_S3_SECRET_KEY
-    }
-  });
+  const storage = createStorageClient();
   try {
     const { Contents } = await storage.send(new ListObjectsV2Command({ Bucket: process.env.DMS_S3_BUCKET }));
     expect(Contents).toHaveLength(1);
@@ -307,6 +311,98 @@ test('replays an owner-bound offline photo once through real S3 and ClamAV after
   expect(foreignIdentity.permissions).toContain('documents:download');
   expect((await page.request.get(`/api/v1/documents/${documentId}/download`)).status()).toBe(404);
   await logout(page);
+});
+
+test('retains a genuinely rejected attachment across reload and tenant switch without storing a document', async ({ page, context }) => {
+  test.setTimeout(120_000);
+  const invalidPhoto = Buffer.from('Synthetic invalid image: intentionally missing the GIF signature.');
+  const filename = `invalid-${randomUUID()}.gif`;
+  const title = `Rejected-Photo-${randomUUID()}`;
+  const storage = createStorageClient();
+  const listKeys = async () => {
+    const result = await storage.send(new ListObjectsV2Command({ Bucket: process.env.DMS_S3_BUCKET }));
+    expect(result.IsTruncated).toBe(false);
+    return (result.Contents ?? []).map(object => object.Key).sort();
+  };
+  try {
+    const originalKeys = await listKeys();
+    await page.goto('/');
+    await login(page);
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+    const identity = (await (await page.request.get('/api/v1/auth/me')).json()).data;
+    await page.getByRole('button', { name: 'Digitales Wachbuch', exact: true }).click();
+    await page.getByRole('button', { name: 'Ereignis erfassen' }).click();
+    await page.locator('input[placeholder^="z. B."]').fill(title);
+    await page.locator('textarea').fill('Echte Dateiprüfung muss ablehnen; lokale Originaldaten bleiben erhalten.');
+    await page.locator('input[type="file"]').setInputFiles({
+      name: filename, mimeType: 'image/gif', buffer: invalidPhoto
+    });
+    await expect(page.getByAltText('Vorschau')).toBeVisible();
+    await expect.poll(() => page.locator('form').evaluate(form => form.checkValidity())).toBe(true);
+    await context.setOffline(true);
+    await expect(page.getByText('Offline-Modus aktiv')).toBeVisible();
+    await page.getByRole('button', { name: 'Offline vormerken' }).click();
+    await expect(page.getByText(title, { exact: true })).toBeVisible();
+    const [attachment] = await readOutbox(page, 'attachments');
+    expect(attachment).toMatchObject({
+      tenantId: tenantA, userId: identity.userId, synced: false,
+      blobData: `data:image/gif;base64,${invalidPhoto.toString('base64')}`
+    });
+
+    const keys = [];
+    await page.route('**/api/v1/logbook/*/attachments', async route => {
+      keys.push(route.request().headers()['x-idempotency-key']);
+      const response = await route.fetch();
+      expect(response.status()).toBe(415);
+      expect(await response.json()).toMatchObject({
+        success: false, message: 'Dateiinhalte stimmen nicht mit dem freigegebenen Dateityp überein.'
+      });
+      await route.fulfill({ response });
+    });
+    await context.setOffline(false);
+    await expect.poll(async () => (await readOutbox(page, 'attachments'))[0]?.uploadRetryCount,
+      { timeout: 30_000 }).toBe(1);
+    await context.setOffline(true);
+    const [failed] = await readOutbox(page, 'attachments');
+    expect(failed).toMatchObject({
+      id: attachment.id, blobData: attachment.blobData, synced: false,
+      idempotencyKey: attachment.id,
+      lastUploadError: 'Dateiinhalte stimmen nicht mit dem freigegebenen Dateityp überein.'
+    });
+    expect(await readOutbox(page)).toEqual([]);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(page.getByLabel('E-Mail')).toBeVisible();
+    expect(await readOutbox(page, 'attachments')).toEqual([failed]);
+
+    await context.setOffline(false);
+    await login(page, ownerEmail, tenantB);
+    const foreign = (await (await page.request.get('/api/v1/auth/me')).json()).data;
+    expect(foreign).toMatchObject({ tenantId: tenantB, userId: identity.userId });
+    await expect(page.getByText('Mandantendaten werden aus PostgreSQL geladen…')).toBeHidden();
+    expect(await readOutbox(page, 'attachments')).toEqual([failed]);
+    expect(keys).toEqual([attachment.id]);
+    await logout(page);
+    await login(page);
+    await expect.poll(async () => (await readOutbox(page, 'attachments'))[0]?.uploadRetryCount,
+      { timeout: 30_000 }).toBeGreaterThanOrEqual(2);
+    expect(keys.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(keys)).toEqual(new Set([attachment.id]));
+    expect((await readOutbox(page, 'attachments'))[0]).toMatchObject({
+      id: attachment.id, blobData: attachment.blobData, synced: false,
+      entityId: failed.entityId, idempotencyKey: attachment.id, lastUploadError: failed.lastUploadError
+    });
+    const entries = await page.request.get('/api/v1/logbook');
+    expect(entries.status()).toBe(200);
+    expect((await entries.json()).data.filter(entry => entry.title === title)).toHaveLength(1);
+    const documents = await page.request.get(`/api/v1/documents?search=${encodeURIComponent(filename)}`);
+    expect(documents.status()).toBe(200);
+    expect((await documents.json()).data).toEqual([]);
+    expect(await listKeys()).toEqual(originalKeys);
+    await logout(page);
+  } finally {
+    storage.destroy();
+  }
 });
 
 test('publishes an independently reviewed SOP and retries one employee acknowledgement after offline reload', async ({ page, context }) => {
