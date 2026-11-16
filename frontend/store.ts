@@ -33,7 +33,6 @@ import {
   UserSessionDevice,
   GdprRetentionPolicy,
   ReportDefinition,
-  ControllingKPIs,
   ShiftSwapRequest,
   ConflictResolutionResult
 } from './types';
@@ -695,7 +694,6 @@ interface SecurityOpsStore {
   getTenantShiftHandovers: () => ShiftHandoverProtocol[];
   getTenantShiftSwaps: () => ShiftSwapRequest[];
   getTenantReportDefinitions: () => ReportDefinition[];
-  calculateTenantKPIs: () => ControllingKPIs;
   getTenantAutomations: () => AutomationRule[];
   getTenantAuditLogs: () => SecurityAuditEntry[];
   getTenantExecutionLogs: () => AutomationExecutionLog[];
@@ -2195,77 +2193,6 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   getTenantReportDefinitions: () => {
     const { reportDefinitions, currentTenantId } = get();
     return reportDefinitions.filter((definition) => definition.tenantId === currentTenantId);
-  },
-  calculateTenantKPIs: () => {
-    const state = get();
-    const clients = state.getTenantClients();
-    const sites = state.getTenantSites();
-    const employees = state.getTenantEmployees();
-    const shifts = state.getTenantShifts();
-    const guardBook = state.getTenantGuardBook();
-    const alarmIncidents = state.getTenantAlarmIncidents();
-    const keys = state.getTenantKeys();
-    const tasks = state.getTenantTasks();
-    const today = Date.now();
-    const daysUntil = (date: string) => {
-      const timestamp = Date.parse(date);
-      return Number.isFinite(timestamp) ? (timestamp - today) / 86_400_000 : Number.POSITIVE_INFINITY;
-    };
-    const shiftHours = (start: string, end: string) => {
-      const toMinutes = (value: string) => {
-        const [hours, minutes] = value.split(':').map(Number);
-        return Number.isFinite(hours) && Number.isFinite(minutes) ? hours * 60 + minutes : null;
-      };
-      const startMinutes = toMinutes(start);
-      const endMinutes = toMinutes(end);
-      if (startMinutes === null || endMinutes === null) return 0;
-      return ((endMinutes - startMinutes + 1_440) % 1_440) / 60;
-    };
-    const totalPlannedHours = shifts.reduce((total, shift) =>
-      total + shiftHours(shift.startTime, shift.endTime), 0);
-    const totalActualHours = shifts.reduce((total, shift) => {
-      if (shift.actualStart && shift.actualEnd) {
-        const start = Date.parse(shift.actualStart);
-        const end = Date.parse(shift.actualEnd);
-        if (Number.isFinite(start) && Number.isFinite(end) && end >= start) {
-          return total + (end - start) / 3_600_000;
-        }
-      }
-      return total + (shift.status === 'Besetzt' || shift.status === 'Abgeschlossen'
-        ? shiftHours(shift.startTime, shift.endTime)
-        : 0);
-    }, 0);
-    const overdueTasksCount = tasks.filter(task =>
-      task.status !== 'Erledigt' && daysUntil(task.dueDate) < 0
-    ).length;
-    const expiringQualificationsCount = employees.reduce((total, employee) =>
-      total + employee.qualifications.filter(qualification =>
-        qualification.expiryDate !== null &&
-        daysUntil(qualification.expiryDate) >= 0 &&
-        daysUntil(qualification.expiryDate) <= 30
-      ).length, 0);
-    const expiringContractsCount = clients.filter(client =>
-      daysUntil(client.contractEnd) >= 0 && daysUntil(client.contractEnd) <= 90
-    ).length;
-    return {
-      activeClientsCount: clients.length,
-      activeSitesCount: sites.filter(site => !site.archivedAt).length,
-      activeEmployeesCount: employees.filter(employee => employee.status === 'Aktiv').length,
-      totalPlannedHours,
-      totalActualHours,
-      planFulfillmentRate: totalPlannedHours > 0 ? Math.round(totalActualHours / totalPlannedHours * 100) : 0,
-      openCriticalIncidentsCount: guardBook.filter(entry =>
-        entry.priority === 'Kritisch' && !entry.resolved
-      ).length + alarmIncidents.filter(incident =>
-        incident.severity === 'Kritisch' && incident.status !== 'abgeschlossen' && incident.status !== 'archiviert'
-      ).length,
-      overdueTasksCount,
-      expiringContractsCount,
-      expiringQualificationsCount,
-      activeAlarmsCount: sites.reduce((total, site) => total + site.activeAlarms, 0),
-      overdueKeysCount: keys.filter(key => key.isOverdue).length,
-      din77200ComplianceScore: state.getCurrentTenant().din77200Certified ? 100 : 0
-    };
   },
   getTenantAutomations: () => {
     const { automations, currentTenantId } = get();

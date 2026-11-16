@@ -226,7 +226,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
 
         {/* Footer */}
         <div className="p-3 border-t border-slate-800 bg-[#0a0f1d] flex items-center justify-between text-xs text-slate-400">
-          <span>DIN 77200: Revisionsprotokoll aller Zustellversuche</span>
+          <span>Status der protokollierten Zustellversuche</span>
           <button onClick={onClose} className="px-4 py-1.5 rounded-lg bg-slate-800 text-slate-200">
             Schließen
           </button>

@@ -227,7 +227,7 @@ export const AutomationCenter: React.FC = () => {
         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
           <span className="text-slate-400 block text-[11px]">Regel-Vorlagen</span>
           <span className="text-xl font-bold text-slate-100 mt-1 block">{automationTemplates.length} Vorlagen</span>
-          <span className="text-[10px] text-slate-400">DIN 77200 & BSI Best Practices</span>
+          <span className="text-[10px] text-slate-400">Vorlagen für Aufgabenautomatisierung</span>
         </div>
       </div>
 
@@ -531,7 +531,7 @@ export const AutomationCenter: React.FC = () => {
       {activeTab === 'templates' && (
         <div className="space-y-4">
           <p className="text-xs text-slate-400">
-            Vorkonfigurierte Best-Practice Automatisierungen nach DIN 77200: Kopieren Sie eine Vorlage in den aktiven Mandantenbestand.
+            Vorkonfigurierte Automatisierungsvorlagen: Kopieren Sie eine Vorlage in den aktiven Mandantenbestand und prüfen Sie sie vor dem Einsatz.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">

@@ -3,7 +3,7 @@
 **Status:** **PARTIAL / BLOCKED — not approved for production.** This is an evidence index, not a release or compliance approval.
 
 **Current `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
-**Last checked:** 2026-11-15 23:18 CET
+**Last checked:** 2026-11-16
 **Open PR:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66). PRs #50–#65 are merged, including [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62).
 
 The project’s broader history and evidence are summarized in [PROJECT_COMPLETION_REPORT.md](./PROJECT_COMPLETION_REPORT.md). Phase 9 operations evidence and remaining gates are in [PHASE_9_COMPLETION_REPORT.md](./PHASE_9_COMPLETION_REPORT.md). Dated phase reports are retained as historical snapshots; their old PR and mainline claims are not current status.
@@ -19,8 +19,8 @@ The project’s broader history and evidence are summarized in [PROJECT_COMPLETI
 
 ### In development
 
-- PR #66 adds controlled recovery of ownerless offline attachments, a CSV-export correction, DST tests, and evidence/status reports. Hosted CI run [43768237786](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43768237786) passed 7/7 on `7f9bdfc`; the Chromium fixture passed locally but is not part of hosted CI.
-- Current local revision passed all 157 frontend tests, typecheck/build, the 1-test Chromium offline fixture, backend build and 315 backend tests after migrations and seeds on isolated PostgreSQL 16. Docker Compose production configuration also validated. The E2E fixture is not authenticated device acceptance.
+- PR #66 remains open. Its current hosted revision `4214824` passed 7/7 in CI run [43768608510](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43768608510). The separate Chromium fixture passed locally but is not part of hosted CI.
+- The current worktree adds tenant-authorized work-hour reporting, functional calendar filters, and removes unsupported shift-hour and certification/audit-readiness claims. Frontend typecheck, production build, and all 169 tests across 29 files passed locally; these new changes are not included in the hosted CI run yet. Backend build/tests and production Compose validation belong to the earlier revision and were not repeated for this frontend-only work.
 
 ### Open
 
@@ -49,5 +49,6 @@ The project’s broader history and evidence are summarized in [PROJECT_COMPLETI
 | Main CI | **7/7 passed** on `9df02aa` | Post-merge run [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) on exact current SHA. |
 | PR #62 hosted CI | **7/7 passed** | Run 43761213396 on head `6c8a52c`; PR since merged. |
 | Artifact validation | **2/2 passed** on `9df02aa` | Run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834). Not a release approval. |
-| Current PR #66 | **7/7 passed** | Run [43768237786](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43768237786) validates `7f9bdfc`; the standalone Chromium fixture was executed locally. |
+| Current PR #66 | **7/7 passed** | Run [43768608510](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43768608510) validates `4214824`; the standalone Chromium fixture was executed locally. |
+| New reporting worktree changes | **Local checks passed** | 169 frontend tests, TypeScript check, and production build. Not yet covered by hosted CI. |
 | Production acceptance | **Not performed / not established** | No deployment or production approval is claimed. |

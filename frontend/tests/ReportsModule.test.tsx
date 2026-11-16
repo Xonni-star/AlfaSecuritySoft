@@ -4,15 +4,6 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   state: {
-    calculateTenantKPIs: () => ({
-      totalActualHours: 0,
-      totalPlannedHours: 0,
-      planFulfillmentRate: 0,
-      openCriticalIncidentsCount: 0,
-      activeEmployeesCount: 0,
-      expiringQualificationsCount: 0,
-      din77200ComplianceScore: 0
-    }),
     getTenantReportDefinitions: vi.fn(),
     addReportDefinition: vi.fn(),
     deleteReportDefinition: vi.fn(),
@@ -27,8 +18,14 @@ const mocks = vi.hoisted(() => ({
     currentUserRole: 'Systemadministrator'
   }
 }));
+const planningMocks = vi.hoisted(() => ({
+  workHoursReport: vi.fn()
+}));
 
 vi.mock('../store', () => ({ useSecurityStore: () => mocks.state }));
+vi.mock('../services/planningService', () => ({
+  planningApi: { workHoursReport: planningMocks.workHoursReport }
+}));
 vi.mock('recharts', async (importOriginal) => ({
   ...await importOriginal<typeof import('recharts')>(),
   ResponsiveContainer: () => null
@@ -54,6 +51,9 @@ describe('ReportsModule browser CSV export', () => {
   let downloads: HTMLAnchorElement[];
 
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-01-15T12:00:00.000Z'));
+    planningMocks.workHoursReport.mockReset().mockResolvedValue([]);
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -72,6 +72,7 @@ describe('ReportsModule browser CSV export', () => {
     await act(async () => root.unmount());
     container.remove();
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   async function clickButton(label: string): Promise<void> {
@@ -117,7 +118,7 @@ describe('ReportsModule browser CSV export', () => {
     }]);
 
     expect(await exportCsv()).toBe(
-      '\uFEFF' + guardHeaders + '\n' +
+      '\uFEFF' + guardHeaders + '\r\n' +
       'entry-a;2026-01-01T10:00:00Z;"Objekt; Süd";"Kontrolle ""außen""";"Normal\rdringend";' +
       '"Zeile 1\nZeile 2\r\nZeile 3; ""Ende""";Erika #1 & 50% ?;Offen'
     );
@@ -133,14 +134,13 @@ describe('ReportsModule browser CSV export', () => {
       const title = formula.includes('\n') ? `"${neutralized}"` : neutralized;
       return `entry-a;2026-01-01T10:00:00Z;Objekt A;Kontrolle;Normal;${title};Erika Muster;Offen`;
     });
-    expect(await exportCsv()).toBe('\uFEFF' + [guardHeaders, ...expectedRows].join('\n'));
+    expect(await exportCsv()).toBe('\uFEFF' + [guardHeaders, ...expectedRows].join('\r\n'));
   });
 
   test('escapes embedded CSV syntax after neutralizing formulas in any exported text column', async () => {
     mocks.state.getTenantGuardBook.mockReturnValue([{
       ...guardEntry,
       id: '=1+1',
-      timestamp: '+1+1',
       siteName: '-1+1',
       category: '@SUM(A1)',
       priority: '\t=1+1',
@@ -150,8 +150,8 @@ describe('ReportsModule browser CSV export', () => {
     }]);
 
     expect(await exportCsv()).toBe(
-      '\uFEFF' + guardHeaders + '\n' +
-      '\'=1+1;\'+1+1;\'-1+1;\'@SUM(A1);\'\t=1+1;' +
+      '\uFEFF' + guardHeaders + '\r\n' +
+      '\'=1+1;2026-01-01T10:00:00Z;\'-1+1;\'@SUM(A1);\'\t=1+1;' +
       '"\'=HYPERLINK(""https://example.test/#item"";""Open"")";\'\uFEFF+1+1;"\' \r\n-1+1"'
     );
   });
@@ -164,13 +164,14 @@ describe('ReportsModule browser CSV export', () => {
       role: 'Wachkraft',
       status: 'Aktiv',
       weeklyHours,
+      qualifications: [],
       dateOfJoining: null
     })));
 
     expect(await exportCsv('employees')).toBe(
-      '\uFEFFPersonalnr;Name;Rolle;Status;Stunden;Eintritt\n' +
-      '\'-123;Anna-Maria Müller;Wachkraft;Aktiv;-12.5;\n' +
-      '\'-123;Anna-Maria Müller;Wachkraft;Aktiv;0;\n' +
+      '\uFEFFPersonalnr;Name;Rolle;Status;Stunden;Eintritt\r\n' +
+      '\'-123;Anna-Maria Müller;Wachkraft;Aktiv;-12.5;\r\n' +
+      '\'-123;Anna-Maria Müller;Wachkraft;Aktiv;0;\r\n' +
       '\'-123;Anna-Maria Müller;Wachkraft;Aktiv;40;'
     );
   });
@@ -187,7 +188,7 @@ describe('ReportsModule browser CSV export', () => {
     }]);
 
     expect(await exportCsv('shifts')).toBe(
-      '\uFEFFID;Objekt;Datum;Uhrzeit;Typ;Status;Mitarbeiter\n' +
+      '\uFEFFID;Objekt;Datum;Uhrzeit;Typ;Status;Mitarbeiter\r\n' +
       'shift-a;Objekt A;2026-01-01;08:00-16:00;Tagdienst;Offen;Unbesetzt'
     );
   });
@@ -200,5 +201,10 @@ describe('ReportsModule browser CSV export', () => {
 
     expect(alert).toHaveBeenCalledWith('Keine Datensätze für diesen Export vorhanden.');
     expect(downloads).toHaveLength(0);
+  });
+
+  test('requests the current calendar-month range from the work-hours report', async () => {
+    await act(async () => root.render(<ReportsModule />));
+    expect(planningMocks.workHoursReport).toHaveBeenLastCalledWith('2026-01-01', '2026-01-31');
   });
 });

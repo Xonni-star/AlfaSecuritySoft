@@ -635,22 +635,6 @@ export interface ReportDefinition {
   createdAt: string;
 }
 
-export interface ControllingKPIs {
-  activeClientsCount: number;
-  activeSitesCount: number;
-  activeEmployeesCount: number;
-  totalPlannedHours: number;
-  totalActualHours: number;
-  planFulfillmentRate: number;
-  openCriticalIncidentsCount: number;
-  overdueTasksCount: number;
-  expiringContractsCount: number;
-  expiringQualificationsCount: number;
-  activeAlarmsCount: number;
-  overdueKeysCount: number;
-  din77200ComplianceScore: number;
-}
-
 export interface ShiftSwapRequest {
   id: string;
   tenantId: string;

@@ -188,7 +188,7 @@ export const TenantAdministration: React.FC<{ authUser: AuthUser }> = ({ authUse
           </label>
           <label className="flex items-center gap-2 self-end pb-2 text-xs text-slate-300">
             <input type="checkbox" checked={form.din77200Certified} onChange={event => setForm({ ...form, din77200Certified: event.target.checked })} />
-            DIN-77200-Zertifizierung angegeben
+            DIN-77200-Zertifizierung als Selbstauskunft angegeben (nicht verifiziert)
           </label>
           <div className="flex gap-2 sm:col-span-2">
             <button type="submit" className={`${button} border-blue-500/40 bg-blue-600/20`} disabled={saving}>

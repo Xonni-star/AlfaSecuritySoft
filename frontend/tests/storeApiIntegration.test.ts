@@ -1455,7 +1455,6 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     expect(useSecurityStore.getState().getTenantReportDefinitions()).toHaveLength(1);
     useSecurityStore.getState().deleteReportDefinition(frankfurtReport.id);
     expect(useSecurityStore.getState().getTenantReportDefinitions()).toHaveLength(0);
-    expect(useSecurityStore.getState().calculateTenantKPIs().planFulfillmentRate).toBe(0);
   });
 
   test('2. addClient persistiert über POST /customers und übernimmt die Server-ID', async () => {

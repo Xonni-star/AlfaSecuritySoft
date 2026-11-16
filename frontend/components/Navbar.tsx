@@ -84,7 +84,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </span>
             <span className="text-[9px] text-slate-400 tracking-tight hidden lg:block">
-              DIN 77200 & § 34a GewO Enterprise Core
+              Software für Sicherheitsdienstprozesse
             </span>
           </span>
         </button>

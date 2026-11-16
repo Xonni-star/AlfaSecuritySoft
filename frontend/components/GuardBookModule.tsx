@@ -164,7 +164,7 @@ export const GuardBookModule: React.FC = () => {
             )}
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Revisionssichere Dokumentation nach DIN 77200 mit Offline-First Zwischenspeicherung.
+            Wachbucheinträge werden versioniert gespeichert; offline erfasste Änderungen werden bei verfügbarer Verbindung synchronisiert.
           </p>
         </div>
 

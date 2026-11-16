@@ -90,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobileMenu }) => {
         { id: 'documents', label: 'Dokumentenmanagement (DMS)', icon: FileText, badge: documents.length, badgeColor: 'bg-slate-700', visible: true },
         { id: 'tasks', label: 'Aufgaben & Maßnahmen', icon: CheckSquare, badge: openTasksCount, badgeColor: 'bg-slate-600', visible: true },
         { id: 'automations', label: 'Automatisierung & Watchdog', icon: Zap, visible: true },
-        { id: 'reports', label: 'Berichte & DIN 77200', icon: FileSpreadsheet, visible: true }
+        { id: 'reports', label: 'Berichte & Auswertungen', icon: FileSpreadsheet, visible: true }
       ]
     },
     {

@@ -61,7 +61,7 @@ export const SecurityAuditCenter: React.FC = () => {
             <h1 className="text-xl font-bold text-white">Sicherheits-Audit, Datenschutz & Systemhärtung</h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            BSI & DIN 77200 Zertifizierungskontrolle: Revisionssicheres Audit-Log, Sitzungsverwaltung, DSGVO-Fristen und IDOR-Schutz.
+            Übersicht vorhandener Sicherheits- und Datenschutzfunktionen. Diese Ansicht ist keine BSI-/DIN-Zertifizierungsprüfung oder externe Sicherheitsfreigabe.
           </p>
         </div>
 

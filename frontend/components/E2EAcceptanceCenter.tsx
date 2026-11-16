@@ -264,7 +264,7 @@ export const E2EAcceptanceCenter: React.FC = () => {
       const updatedLogs = getTenantGuardBook();
       const target = updatedLogs[0];
       passed = updatedLogs.length > initialLogs && target.revisions !== undefined;
-      details = `Eintrag revisionssicher gespeichert. Revisionsvektor v1 initialisiert (Append-Only bestätigt).`;
+      details = `Eintrag wurde erfasst. Der verfügbare Revisionsverlauf wurde initialisiert.`;
       addLog(`Test 4: Wachbucheintrag & Revisionsvektor validiert.`);
     } else if (testId === 'e2e-05') {
       const initialTasksCount = getTenantTasks().length;
@@ -292,7 +292,7 @@ export const E2EAcceptanceCenter: React.FC = () => {
         acknowledgeSOP(sops[0].id);
       }
       passed = sops.length > 0;
-      details = `Dienstanweisungen verifiziert. Lesebestätigung digital signiert nach DIN 77200.`;
+      details = `Dienstanweisungen vorhanden; Kenntnisnahme wurde erfasst.`;
       addLog(`Test 6: QM-Dienstanweisungen & Kenntnisnahme erfolgreich.`);
     } else if (testId === 'e2e-07') {
       const keys = getTenantKeys();
@@ -385,10 +385,10 @@ export const E2EAcceptanceCenter: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-6 h-6 text-emerald-400" />
-            <h1 className="text-xl font-bold text-white">Gesamtsystemintegration & Release 1.0 Abnahme</h1>
+            <h1 className="text-xl font-bold text-white">Systemintegration & Testszenarien</h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            End-to-End Testsuite (Szenarien 1 bis 10): Validierung aller Module, RLS-Mandantentrennung, Offline-Sync und Go-Live Zertifizierung.
+            Interaktive Szenarien zur Prüfung ausgewählter Module, Mandantentrennung und Offline-Synchronisierung. Ergebnisse ersetzen keine vollständige Abnahme oder Produktionsfreigabe.
           </p>
         </div>
 
@@ -563,9 +563,9 @@ export const E2EAcceptanceCenter: React.FC = () => {
       {activeTab === 'rbac_matrix' && (
         <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-sm text-xs">
           <div className="p-4 border-b border-slate-800">
-            <h2 className="text-sm font-bold text-white">Rollen- & Berechtigungsmatrix nach DIN 77200</h2>
+            <h2 className="text-sm font-bold text-white">Rollen- & Berechtigungsmatrix</h2>
             <p className="text-slate-400 text-xs mt-0.5">
-              Granulare serverseitige Berechtigungen je Modul. Kein Frontend-Bypass möglich.
+              Dokumentierte API-Berechtigungen je Modul; diese Übersicht ist keine externe Prüfung oder Zertifizierung.
             </p>
           </div>
 

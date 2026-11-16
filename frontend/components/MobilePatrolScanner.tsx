@@ -844,7 +844,7 @@ export const MobilePatrolScanner: React.FC = () => {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="font-bold text-slate-100">Fotos und Anlagen</h3>
-              <p className="text-[11px] text-slate-400">Dateien werden im Dokumentenmanagement gespeichert und revisionssicher mit dem Rundgang verknüpft.</p>
+              <p className="text-[11px] text-slate-400">Dateien werden im Dokumentenmanagement gespeichert und mit dem Rundgang verknüpft.</p>
             </div>
             {isOnline && canUploadAttachment && (
               <div className="flex flex-col gap-2 sm:flex-row">
