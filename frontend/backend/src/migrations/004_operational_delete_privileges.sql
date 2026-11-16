@@ -11,7 +11,7 @@
 --   enden diese Sync-Pfade mit "permission denied for table shifts/tasks".
 --
 --   Es werden ausschließlich die veränderbaren operativen Tabellen freigegeben.
---   Die technisch append-only geschützten Tabellen bleiben unverändert unlöschbar; RLS-Policies
+--   Die revisionssicheren Tabellen bleiben unverändert unlöschbar; RLS-Policies
 --   und Trigger gelten weiterhin unverändert.
 
 GRANT DELETE ON shifts, tasks TO secops_app_user;

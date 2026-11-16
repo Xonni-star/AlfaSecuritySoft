@@ -4,6 +4,9 @@
 
 ### Hinzugefügt
 
+- Migration 042 aktualisiert die technische Wachbuch-Fehlermeldung additiv; veröffentlichte Migrationen 001/004 behalten ihre ursprünglichen SHA-256-Prüfsummen.
+- Automatische unauthentifizierte Negativtests für alle 215 registrierten geschützten API-Routen.
+- Restore-Regression mit injiziertem DDL-Fehler nach der Clean-Phase und abweichendem Vor-Restore-Datenstand als Rollback-Nachweis.
 - Regressionstest für Nachtschichten über Zeitumstellungen (7 h/9 h reale Dauer).
 - Standortbezogene Zugriffsbeschränkung für alle vier Planungsberichte sowie Aggregate und Arbeitszeit-CSV; Regressionstest für Standort-A/Standort-B und fehlende Berechtigungen.
 
@@ -14,6 +17,7 @@
 
 ### Fehlerkorrekturen
 
+- Patrol-Integrationstests schließen beide PostgreSQL-Pools nach der Bereinigung; der lange API-Test verwendet ein begrenztes 30-Sekunden-Zeitbudget.
 - Sync-Quittungen weisen die Wiederverwendung einer Mutations-ID mit geändertem Entitätstyp oder Vorgang zurück.
 - Kontrollpunkte sind nach Ablauf des zweiminütigen Duplikatfensters erneut scannbar; Scans innerhalb des Fensters werden abgewiesen.
 - Backend- und Frontend-Regressionstests sichern beide Verhaltensweisen gegen spätere Rückfälle ab.

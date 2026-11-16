@@ -422,7 +422,7 @@ CREATE OR REPLACE FUNCTION prevent_guardbook_tampering()
 RETURNS TRIGGER AS $$
 BEGIN
     IF TG_OP = 'DELETE' THEN
-        RAISE EXCEPTION 'Löschen von Einträgen in guardbook_entries wird durch die technische Append-Only-Regel verhindert.';
+        RAISE EXCEPTION 'Löschen von Einträgen in guardbook_entries ist nach DIN 77200 unzulässig (Append-Only Integrität).';
     ELSIF TG_OP = 'UPDATE' THEN
         IF OLD.entry_timestamp != NEW.entry_timestamp OR
            OLD.category != NEW.category OR

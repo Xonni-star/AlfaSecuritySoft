@@ -2,6 +2,25 @@
 
 This tracker is the working source of truth for the current audit. Statuses apply only to the stated scope; completion requires its acceptance criteria and evidence. Historical reports and CI results do not prove current-worktree behavior.
 
+## Phase 11 work packages (2026-11-16)
+
+The Phase 10 items below remain valid unless superseded by the precise scope here. A completed local work package is not production acceptance.
+
+| ID | Bereich | Aufgabe | Priorität | Status | Dateien / Umsetzung | Abnahmekriterien und Nachweis |
+|---|---|---|---|---|---|---|
+| MIG-011 | Datenbank | Veröffentlichte Migrationsprüfsummen erhalten | P0 | ERLEDIGT | `001_initial_schema.sql`, `004_operational_delete_privileges.sql`, neue `042_guardbook_technical_integrity_message.sql`, `migrations.test.ts` | 001/004 entsprechen wieder dem veröffentlichten PR-Head; Textkorrektur erfolgt additiv in 042. Echter Upgrade-Test 041→042 erhält bisherige History/Checksums, prüft erneuten No-op sowie verweigertes DELETE/Kernfeld-UPDATE. Vollständige Backend-Suite: 35/35 Suites, 534/534 Tests bestanden. |
+| DR-011 | Recovery | Fehler während laufendem Restore nach DDL erzwingen | P0 | ERLEDIGT | `deploy/test_backup_restore.sh` | Ein temporärer Event-Trigger erzwingt nach der Clean-Phase einen CREATE-TABLE-Fehler. Abweichender Vor-Restore-Titel muss erhalten bleiben und Dienste müssen gestoppt sein. Vollständiger PostgreSQL-/MinIO-Drill bis Migration 042 samt Teilstart-Fehler und Cleanup bestanden. Kein Provider-Restore. |
+| AUTH-011 | Tests | Alle registrierten geschützten API-Routen ohne Sitzung prüfen | P0 | ERLEDIGT | `src/tests/auth_boundary.test.ts` | Dynamische Matrix aus Express-Routen: 215 geschützte Method/Pfad-Paare liefern ohne Sitzung 401; nur Health/Login/Reset-Abschluss sind explizite öffentliche Ausnahmen. Vollständige Backend-Suite bestanden. Keine vollständige Rollen-/Objektzugriffsmatrix. |
+| QA-011 | Tests | Offene PostgreSQL-Pools im Patrol-Test schließen | P1 | ERLEDIGT | `src/tests/patrol.integration.test.ts` | App-/Migrationspool nach Datenbereinigung schließen; begrenztes 30-s-Zeitbudget für langen API-Integrationstest. Abschließender vollständiger Jest-Lauf 534/534 ohne Open-Handle-Warnung. |
+| OFF-011 | CI | Offline-Chromium-Fixture in CI ausführen | P1 | IN ARBEIT | `.github/workflows/ci.yml`, `frontend/playwright.config.js` | Chromium-Installation, vorhandener Browser-Test und Fehlerartefakte sind konfiguriert; lokaler Lauf 1/1 bestanden. Ausführung auf gehostetem CI für diesen Commit noch offen. Fixture testet keinen echten Backend-/Gerätebetrieb. |
+| SEC-011 | Security | Verbleibende Offline-/Datei-/Produktionsgrenzen fokussiert prüfen | P0 | ERLEDIGT | Offline-/Dateipfade und Produktionskonfiguration, `SECURITY_AUDIT_REPORT.md` | Read-only-Review meldete keinen bestätigten neuen Befund in seinem begrenzten Umfang. Kein vollständiges Audit, kein Penetrationstest oder Nachweis bereitgestellter Konfiguration. |
+| MOD-011 | Inventar | Module und aktive Backend-Architektur abgleichen | P1 | IN ARBEIT | `MODULE_IMPLEMENTATION_STATUS.md`, `frontend/BACKEND_ARCHITECTURE.md` | Quellcode-/Testmatrix und reale Grenzen dokumentieren; keine vollständige Einzelanforderungsabnahme aus bloßer Routen-/Testexistenz ableiten. |
+| EXT-011 | Abnahme | Reale Geräte und authentifizierter Browser-End-to-End-Betrieb | P0 | EXTERN ZU PRÜFEN | Offline-/SOP-/Anhangprozesse | Keine Android-/iOS-Geräte verfügbar; Fixture ist kein Ersatz. Wiederanmeldung, Konten-/Tenantwechsel und Anhänge mit freigegebenem Backend auf Geräten abnehmen. |
+| EXT-012 | Abnahme | Provider-Restore, Off-host-Sicherung und RPO/RTO | P0 | EXTERN ZU PRÜFEN | Provider-/Betriebsumgebung | Kein freigegebener Provider-Testbucket mit Zugang oder betrieblich genehmigten RPO/RTO-Zielen vorgegeben. Produktionsgleiche Übung und Messung für DB und Objekte ausstehend. |
+| EXT-013 | Abnahme | Produktions-, Rechts- und unabhängige Sicherheitsabnahme | P0 | EXTERN ZU PRÜFEN | Deployment, Datenschutz, Penetrationstest | Kein produktives Deployment; keine juristische Konformitäts- oder Zertifizierungsfreigabe. Vollständige Rollen-/Endpoint-/Deploymentprüfung bleibt separat offen. |
+
+## Earlier work and remaining broad audit scope
+
 | ID | Bereich | Aufgabe | Priorität | Status | Betroffene Komponenten | Umsetzung und überprüfbare Abnahmekriterien | Nachweis |
 |---|---|---|---|---|---|---|---|
 | SEC-001 | Security | Standortbezogene Zugriffsbeschränkung für Planungsberichte | P0 | ERLEDIGT | `planningController.ts`, `authorizationScopes.ts`, Report-Integrationstests | Site-grants begrenzen Arbeitsstunden/CSV, Abdeckung, Qualifikationsangebot/-bedarf und Abwesenheiten samt Aggregaten; Tenant-grants bleiben tenantweit; fehlende Grants erhalten 403; PostgreSQL-Integrationstest besteht. | Backend-Build, drei Scope-Unit-Tests und `sync_and_roles.test.ts` bestanden; PostgreSQL-16-Integrationstest: 33/33 Tests auf isolierter Testdatenbank. Hosted CI für diesen Worktree noch ausstehend. |

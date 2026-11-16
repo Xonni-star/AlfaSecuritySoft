@@ -297,7 +297,7 @@ if [ "$DB_HEALTH" != healthy ]; then
     exit 1
 fi
 
-EXPECTED_MIGRATIONS="001,002,003,004,005,006,007,009,011,012,013,014,015,016,017,018,019,020,021,022,023,024,025,026,027,028,029,030,031,032,033,034,035,036,037,038,039,040,041"
+EXPECTED_MIGRATIONS="001,002,003,004,005,006,007,009,011,012,013,014,015,016,017,018,019,020,021,022,023,024,025,026,027,028,029,030,031,032,033,034,035,036,037,038,039,040,041,042"
 echo "[TEST] Führe die Repository-Migrationen in der isolierten Testdatenbank aus."
 bounded_run 600 docker compose --env-file "$ENV_FILE" --project-name "$PROJECT" \
     -f "$SCRIPT_DIR/docker-compose.minio.yml" \
@@ -593,16 +593,27 @@ else
     echo "[TEST] PASS: Migrationen, Tenant-DMS-Datensätze, Versionen, Audit und RLS wurden wiederhergestellt."
     echo "[TEST] S3-Objekte und ClamAV wurden in diesem Modus nicht getestet."
 fi
-echo "[TEST] Simuliere einen Restore-Fehler nach dem Quiesce und prüfe, dass die Dienste gestoppt bleiben."
-if RESTORE_DB_USER=restore_test_missing \
+echo "[TEST] Erzwinge einen Restore-Fehler nach Schemaänderungen und prüfe transaktionales Rollback."
+compose exec -T db psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<SQL
+UPDATE documents SET title = 'Pre-failure state must survive' WHERE id = '$DOCUMENT_ID' AND tenant_id = '$TENANT_A_ID';
+CREATE SCHEMA restore_failure_test;
+CREATE FUNCTION restore_failure_test.reject_table_creation() RETURNS event_trigger LANGUAGE plpgsql AS \$\$
+BEGIN
+    RAISE EXCEPTION 'Injected restore failure after clean phase';
+END;
+\$\$;
+CREATE EVENT TRIGGER restore_failure_test ON ddl_command_end WHEN TAG IN ('CREATE TABLE')
+    EXECUTE FUNCTION restore_failure_test.reject_table_creation();
+SQL
+if RESTORE_DB_USER="$POSTGRES_USER" \
     RESTORE_QUIESCE_SERVICES=restore-test-marker \
     RESTORE_RESUME_SERVICES=restore-test-marker \
     "$SCRIPT_DIR/restore.sh" "$BACKUP_ARCHIVE" >"$TEMP_DIR/expected-restore-failure.log" 2>&1; then
-    echo "Fehler: Restore mit einem nicht existierenden Datenbankbenutzer war erfolgreich." >&2
+    echo "Fehler: Restore trotz injiziertem DDL-Fehler war erfolgreich." >&2
     exit 1
 fi
 if ! grep -q "Stoppe Schreibzugriffe: restore-test-marker" "$TEMP_DIR/expected-restore-failure.log" ||
-    ! grep -q "restore_test_missing" "$TEMP_DIR/expected-restore-failure.log"; then
+    ! grep -q "Injected restore failure after clean phase" "$TEMP_DIR/expected-restore-failure.log"; then
     echo "Fehler: Der Restore-Test hat den erwarteten pg_restore-Fehler nach dem Quiesce nicht erreicht." >&2
     cat "$TEMP_DIR/expected-restore-failure.log" >&2
     exit 1
@@ -621,12 +632,17 @@ if [ "$MARKER_STATE" != exited ]; then
 fi
 FAILED_RESTORE_TITLE="$(compose exec -T db psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
     -At -c "SELECT title FROM documents WHERE id = '$DOCUMENT_ID' AND tenant_id = '$TENANT_A_ID';")"
-if [ "$FAILED_RESTORE_TITLE" != "Restore baseline A" ]; then
+if [ "$FAILED_RESTORE_TITLE" != "Pre-failure state must survive" ]; then
     echo "Fehler: Der fehlgeschlagene Restore hat den zuvor bestätigten Datenbankstand verändert." >&2
     echo "Erhalten: $FAILED_RESTORE_TITLE" >&2
     exit 1
 fi
 echo "[TEST] Fehlerpfad verifiziert: Dienste bleiben gestoppt und der bestätigte Datenbankstand bleibt erhalten."
+compose exec -T db psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
+DROP EVENT TRIGGER restore_failure_test;
+DROP FUNCTION restore_failure_test.reject_table_creation();
+DROP SCHEMA restore_failure_test;
+SQL
 
 echo "[TEST] Simuliere einen Fehler beim Wiederanlaufen nach erfolgreichem Restore und prüfe das Stoppen teilweise gestarteter Dienste."
 compose up -d restore-test-marker

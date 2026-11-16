@@ -16,7 +16,9 @@ Mit `frontend/deploy/restore.sh <archiv.tar.gz.enc>` wird der Backend-Schreibzug
 
 Die Verschlüsselung ruhender S3-Objekte und die Aufbewahrung müssen beim Anbieter konfiguriert werden. Das DMS bietet für archivierte Dokumente einen expliziten API-Löschvorgang für alle Dateiobjekte; Metadaten und unveränderliche Auditereignisse bleiben erhalten. Automatische tenant-spezifische Aufbewahrungsregeln sind nicht implementiert.
 
-## 4. Verifizierungsstand (15.11.2026)
+## 4. Verifizierungsstand
+
+**Phase 11 (16.11.2026, lokal):** Der vollständige isolierte PostgreSQL-/MinIO-Drill bestand mit Migrationen bis 042. Der Fehlerfall verwendet jetzt einen Event-Trigger, der nach den anfänglichen DROP-/Clean-Anweisungen bei `CREATE TABLE` fehlschlägt. Ein bewusst vom Backup abweichender Dokumenttitel bleibt unverändert erhalten; der Test prüft so echtes transaktionales Rollback nach bereits begonnenen Schemaänderungen statt nur einen Verbindungsfehler vor Beginn des Restore. Der Teilstart-/Resume-Fehlerfall und die gezielte Ressourcenbereinigung bestanden ebenfalls. Diese Evidenz ist weiterhin kein externer Provider-Restore oder Produktions-RPO/RTO.
 
 Der frühere CI-Lauf auf `main` (`77fdb0955e3bbbef01690edc93dc630e443bfbe8`) führte den isolierten vollständigen Schema- und DMS-Objektsnapshot-Restore erfolgreich aus: [Run 43702382063](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702382063). Das prüfte synthetische Daten in einer Testumgebung und ist kein Restore eines Produktionssystems oder eines Produktions-S3-Anbieters. Der aktuelle Post-Merge-Lauf ist oben verlinkt.
 
