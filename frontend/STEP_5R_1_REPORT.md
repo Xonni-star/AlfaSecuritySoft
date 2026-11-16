@@ -4,7 +4,7 @@
 ### 1. Behobene Probleme & Implementierte Funktionen
 
 1. **Vollständige Offline-Synchronisation aller 6 Mutationstypen**:
-   - `guardbook`: Idempotente Neuanlage mit atomarem `ON CONFLICT (tenant_id, client_mutation_id) DO NOTHING` und revisionssichere Korrekturen als unlöschbare Revisionen (`guardbook_revisions`). Löschversuche werden explizit mit `REJECTED` abgewiesen.
+   - `guardbook`: Idempotente Neuanlage mit atomarem `ON CONFLICT (tenant_id, client_mutation_id) DO NOTHING` und Korrekturen als Append-Only-Revisionen (`guardbook_revisions`). Löschversuche werden explizit mit `REJECTED` abgewiesen; daraus folgt keine rechtliche Revisionssicherheit.
    - `shift`: Idempotente Schichterstellung und konfliktgeprüfte Schichtzuweisung mit Mandantenbindung.
    - `task`: Idempotente Anlage und serverseitige Versionskonflikterkennung (`revision_version > baseVersion` erzeugt `CONFLICT`).
    - `key`: Schlüsselübergabe und Rücknahme ins Depot.

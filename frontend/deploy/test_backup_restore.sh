@@ -16,6 +16,7 @@ if [ "$MODE" = full ] && [ "$S3_BACKEND" != minio ] && [ "$S3_BACKEND" != seawee
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+bash "$SCRIPT_DIR/test_backup_healthcheck.sh"
 PROJECT="secops-restore-test-$(date +%Y%m%d%H%M%S)-$$"
 TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/${PROJECT}.XXXXXX")"
 ENV_FILE="$TEMP_DIR/.env.restore-test"
@@ -117,6 +118,7 @@ for command_name in docker openssl python3 shasum; do
         exit 1
     fi
 done
+REAL_DOCKER_BIN="$(command -v docker)"
 docker info >/dev/null
 
 if project_resources_exist; then
@@ -144,6 +146,8 @@ DMS_S3_FORCE_PATH_STYLE=true
 MINIO_API_PORT="$(free_port)"
 MINIO_CONSOLE_PORT="$(free_port)"
 RESTORE_TEST_TMPDIR="$TEMP_DIR"
+RESTORE_TEST_UID="$(id -u)"
+RESTORE_TEST_GID="$(id -g)"
 RESTORE_TEST_BACKUP_IMAGE="${RESTORE_TEST_BACKUP_IMAGE:-postgres:16-bookworm}"
 RESTORE_TEST_MINIO_IMAGE="${RESTORE_TEST_MINIO_IMAGE:-quay.io/minio/minio:RELEASE.2025-02-07T23-21-09Z}"
 RESTORE_TEST_MC_IMAGE="${RESTORE_TEST_MC_IMAGE:-quay.io/minio/mc:RELEASE.2025-02-08T19-14-21Z}"
@@ -206,6 +210,8 @@ RESTORE_TEST_S3_IMAGE=$RESTORE_TEST_S3_IMAGE
 MINIO_API_PORT=$MINIO_API_PORT
 MINIO_CONSOLE_PORT=$MINIO_CONSOLE_PORT
 RESTORE_TEST_TMPDIR="$RESTORE_TEST_TMPDIR"
+RESTORE_TEST_UID=$RESTORE_TEST_UID
+RESTORE_TEST_GID=$RESTORE_TEST_GID
 RESTORE_TEST_DATA_DIR="$TEST_DATA_DIR"
 RESTORE_TEST_BACKUP_IMAGE=$RESTORE_TEST_BACKUP_IMAGE
 RESTORE_TEST_MINIO_IMAGE=$RESTORE_TEST_MINIO_IMAGE
@@ -296,7 +302,7 @@ if [ "$DB_HEALTH" != healthy ]; then
     exit 1
 fi
 
-EXPECTED_MIGRATIONS="001,002,003,004,005,006,007,009,011,012,013,014,015,016,017,018,019,020,021,022,023,024,025,026,027,028,029,030,031,032,033,034,035,036,037,038,039,040,041"
+EXPECTED_MIGRATIONS="001,002,003,004,005,006,007,009,011,012,013,014,015,016,017,018,019,020,021,022,023,024,025,026,027,028,029,030,031,032,033,034,035,036,037,038,039,040,041,042"
 echo "[TEST] Führe die Repository-Migrationen in der isolierten Testdatenbank aus."
 bounded_run 600 docker compose --env-file "$ENV_FILE" --project-name "$PROJECT" \
     -f "$SCRIPT_DIR/docker-compose.minio.yml" \
@@ -417,6 +423,33 @@ if [ "$ARCHIVE_COUNT" != 1 ]; then
     exit 1
 fi
 BACKUP_ARCHIVE="$(find "$BACKUP_DIR" -type f -name 'secops_backup_*.tar.gz.enc' -print)"
+python3 - "$BACKUP_ARCHIVE" <<'PY'
+import os
+import stat
+import sys
+
+archive = sys.argv[1]
+metadata = os.stat(archive)
+if metadata.st_uid != os.getuid() or stat.S_IMODE(metadata.st_mode) != 0o600:
+    raise SystemExit("Fehler: Testarchiv muss dem aufrufenden Benutzer gehören und Modus 0600 behalten.")
+with open(archive, "rb") as stream:
+    if not stream.read(1):
+        raise SystemExit("Fehler: Testarchiv ist leer.")
+print("[TEST] Privates Archiv (0600) gehört dem Restore-Benutzer und ist lesbar.")
+PY
+compose run --rm --no-deps --entrypoint /bin/bash backup /usr/local/bin/backup_healthcheck.sh
+echo "[TEST] Prüfe, dass ein fehlgeschlagenes Backup trotz vorhandenem Archiv ungesund ist."
+if compose run --rm --no-deps -e POSTGRES_USER=restore_test_missing backup; then
+    echo "Fehler: Backup mit unbekanntem DB-Benutzer war erfolgreich." >&2
+    exit 1
+fi
+if compose run --rm --no-deps --entrypoint /bin/bash backup /usr/local/bin/backup_healthcheck.sh; then
+    echo "Fehler: Backup-Health übersieht den letzten fehlgeschlagenen Versuch." >&2
+    exit 1
+fi
+compose run --rm --no-deps backup
+compose run --rm --no-deps --entrypoint /bin/bash backup /usr/local/bin/backup_healthcheck.sh
+echo "[TEST] Backup-Health meldet Fehler und erholt sich erst nach erfolgreichem Backup."
 
 if [ "$MODE" = full ]; then
     echo "[TEST] Erstelle getrennten $S3_BACKEND-Snapshot und entferne das Quellobjekt."
@@ -592,26 +625,111 @@ else
     echo "[TEST] PASS: Migrationen, Tenant-DMS-Datensätze, Versionen, Audit und RLS wurden wiederhergestellt."
     echo "[TEST] S3-Objekte und ClamAV wurden in diesem Modus nicht getestet."
 fi
-echo "[TEST] Simuliere einen Restore-Fehler nach dem Quiesce und prüfe das Wiederanlaufen der Dienste."
-if RESTORE_DB_USER=restore_test_missing \
+echo "[TEST] Erzwinge einen Restore-Fehler nach Schemaänderungen und prüfe transaktionales Rollback."
+compose exec -T db psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<SQL
+UPDATE documents SET title = 'Pre-failure state must survive' WHERE id = '$DOCUMENT_ID' AND tenant_id = '$TENANT_A_ID';
+CREATE SCHEMA restore_failure_test;
+CREATE FUNCTION restore_failure_test.reject_table_creation() RETURNS event_trigger LANGUAGE plpgsql AS \$\$
+BEGIN
+    RAISE EXCEPTION 'Injected restore failure after clean phase';
+END;
+\$\$;
+CREATE EVENT TRIGGER restore_failure_test ON ddl_command_end WHEN TAG IN ('CREATE TABLE')
+    EXECUTE FUNCTION restore_failure_test.reject_table_creation();
+SQL
+if RESTORE_DB_USER="$POSTGRES_USER" \
     RESTORE_QUIESCE_SERVICES=restore-test-marker \
     RESTORE_RESUME_SERVICES=restore-test-marker \
     "$SCRIPT_DIR/restore.sh" "$BACKUP_ARCHIVE" >"$TEMP_DIR/expected-restore-failure.log" 2>&1; then
-    echo "Fehler: Restore mit einem nicht existierenden Datenbankbenutzer war erfolgreich." >&2
+    echo "Fehler: Restore trotz injiziertem DDL-Fehler war erfolgreich." >&2
     exit 1
 fi
 if ! grep -q "Stoppe Schreibzugriffe: restore-test-marker" "$TEMP_DIR/expected-restore-failure.log" ||
-    ! grep -q "restore_test_missing" "$TEMP_DIR/expected-restore-failure.log"; then
+    ! grep -q "Injected restore failure after clean phase" "$TEMP_DIR/expected-restore-failure.log"; then
     echo "Fehler: Der Restore-Test hat den erwarteten pg_restore-Fehler nach dem Quiesce nicht erreicht." >&2
     cat "$TEMP_DIR/expected-restore-failure.log" >&2
     exit 1
 fi
-MARKER_CONTAINER="$(compose ps -q restore-test-marker)"
-MARKER_STATE="$(docker inspect --format '{{.State.Status}}' "$MARKER_CONTAINER")"
-if [ "$MARKER_STATE" != running ]; then
-    echo "Fehler: Der Restore-Marker wurde nach einem fehlgeschlagenen Restore nicht wieder gestartet (Status: $MARKER_STATE)." >&2
+MARKER_CONTAINER="$(compose ps -a -q restore-test-marker)"
+if [ -z "$MARKER_CONTAINER" ]; then
+    echo "Fehler: Der Restore-Marker-Container wurde nach dem fehlgeschlagenen Restore nicht gefunden." >&2
     cat "$TEMP_DIR/expected-restore-failure.log" >&2
     exit 1
 fi
-echo "[TEST] Fehlerpfad verifiziert: quiescierte Dienste wurden trotz fehlgeschlagenem pg_restore wieder gestartet."
+MARKER_STATE="$(docker inspect --format '{{.State.Status}}' "$MARKER_CONTAINER")"
+if [ "$MARKER_STATE" != exited ]; then
+    echo "Fehler: Der Restore-Marker wurde nach einem fehlgeschlagenen Restore unerwartet gestartet (Status: $MARKER_STATE)." >&2
+    cat "$TEMP_DIR/expected-restore-failure.log" >&2
+    exit 1
+fi
+FAILED_RESTORE_TITLE="$(compose exec -T db psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+    -At -c "SELECT title FROM documents WHERE id = '$DOCUMENT_ID' AND tenant_id = '$TENANT_A_ID';")"
+if [ "$FAILED_RESTORE_TITLE" != "Pre-failure state must survive" ]; then
+    echo "Fehler: Der fehlgeschlagene Restore hat den zuvor bestätigten Datenbankstand verändert." >&2
+    echo "Erhalten: $FAILED_RESTORE_TITLE" >&2
+    exit 1
+fi
+echo "[TEST] Fehlerpfad verifiziert: Dienste bleiben gestoppt und der bestätigte Datenbankstand bleibt erhalten."
+compose exec -T db psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
+DROP EVENT TRIGGER restore_failure_test;
+DROP FUNCTION restore_failure_test.reject_table_creation();
+DROP SCHEMA restore_failure_test;
+SQL
+
+echo "[TEST] Simuliere einen Fehler beim Wiederanlaufen nach erfolgreichem Restore und prüfe das Stoppen teilweise gestarteter Dienste."
+compose up -d restore-test-marker
+FAIL_RESUME_BIN_DIR="$TEMP_DIR/fail-resume-bin"
+mkdir -p "$FAIL_RESUME_BIN_DIR"
+cat > "$FAIL_RESUME_BIN_DIR/docker" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+REAL_DOCKER_BIN="${RESTORE_TEST_REAL_DOCKER_BIN:?}"
+if [ "${RESTORE_TEST_FAIL_RESUME:-0}" = "1" ] && [ "${1:-}" = "compose" ]; then
+    shift
+    if [[ " $* " == *" up -d restore-test-marker "* ]]; then
+        "$REAL_DOCKER_BIN" compose "$@"
+        echo "[TEST] Simulierter Fehler nach erfolgreichem Start der Resume-Dienste." >&2
+        exit 1
+    fi
+    exec "$REAL_DOCKER_BIN" compose "$@"
+fi
+exec "$REAL_DOCKER_BIN" "$@"
+EOF
+chmod +x "$FAIL_RESUME_BIN_DIR/docker"
+if RESTORE_TEST_REAL_DOCKER_BIN="$REAL_DOCKER_BIN" \
+    RESTORE_TEST_FAIL_RESUME=1 \
+    PATH="$FAIL_RESUME_BIN_DIR:$PATH" \
+    RESTORE_DB_USER="$POSTGRES_USER" \
+    RESTORE_QUIESCE_SERVICES=restore-test-marker \
+    RESTORE_RESUME_SERVICES=restore-test-marker \
+    "$SCRIPT_DIR/restore.sh" "$BACKUP_ARCHIVE" >"$TEMP_DIR/expected-resume-failure.log" 2>&1; then
+    echo "Fehler: Der Restore mit absichtlich fehlgeschlagenem Wiederanlaufen war erfolgreich." >&2
+    exit 1
+fi
+if ! grep -q "Simulierter Fehler nach erfolgreichem Start" "$TEMP_DIR/expected-resume-failure.log" ||
+    ! grep -q "Dienste konnten nach dem Restore nicht gestartet werden" "$TEMP_DIR/expected-resume-failure.log"; then
+    echo "Fehler: Der Test hat den erwarteten Fehler beim Wiederanlaufen nicht erreicht." >&2
+    cat "$TEMP_DIR/expected-resume-failure.log" >&2
+    exit 1
+fi
+MARKER_CONTAINER="$(compose ps -a -q restore-test-marker)"
+if [ -z "$MARKER_CONTAINER" ]; then
+    echo "Fehler: Der Restore-Marker-Container wurde nach dem Resume-Fehler nicht gefunden." >&2
+    cat "$TEMP_DIR/expected-resume-failure.log" >&2
+    exit 1
+fi
+MARKER_STATE="$(docker inspect --format '{{.State.Status}}' "$MARKER_CONTAINER")"
+if [ "$MARKER_STATE" != exited ]; then
+    echo "Fehler: Ein teilweise gestarteter Restore-Marker läuft nach dem Resume-Fehler weiter (Status: $MARKER_STATE)." >&2
+    cat "$TEMP_DIR/expected-resume-failure.log" >&2
+    exit 1
+fi
+FAILED_RESUME_TITLE="$(compose exec -T db psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+    -At -c "SELECT title FROM documents WHERE id = '$DOCUMENT_ID' AND tenant_id = '$TENANT_A_ID';")"
+if [ "$FAILED_RESUME_TITLE" != "Restore baseline A" ]; then
+    echo "Fehler: Der Resume-Fehler hat den wiederhergestellten Datenbankstand verändert." >&2
+    echo "Erhalten: $FAILED_RESUME_TITLE" >&2
+    exit 1
+fi
+echo "[TEST] Fehlerpfad verifiziert: teilweise gestartete Dienste bleiben gestoppt; wiederhergestellte Daten bleiben intakt."
 echo "[TEST] ClamAV: nicht gestartet und daher in diesem Restore-Test nicht verifiziert."

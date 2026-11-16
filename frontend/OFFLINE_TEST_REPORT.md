@@ -1,7 +1,84 @@
 # SecurityOps 2.0 - Phase 6: Offline-Testbericht
 
-> **Historische Szenariomatrix:** Die 18 Einträge unten dokumentieren damalige lokale Prüfungen, keine aktuelle Browser-/Geräteabnahme. Insbesondere Szenario 2 prüft nur lokale IndexedDB-Validierung; es gibt keinen Foto-Upload-/Replay-Pfad, daher werden Fotos nicht synchronisiert.
+> **Aktueller verifizierter Code:** `5ee9f36665616178c331e9c53526b1e35396b7bd`,
+> [CI43972242288](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43972242288)
+> **7/7**, gelesene Logs **378 Frontend/553 Backend/10 echte Browserjourneys**
+> und Containerbereinigung. Das umfasst echte Quittungsverluste und erneute
+> Übertragung, Dokumentantworten, Entwurfs-/Besitzeraktivierungen und
+> serialisierte Sync-Refreshs im jeweils getesteten Umfang.
+> Die älteren Nachweise unten sind historische Teilstände. Gerätewiderruf und
+> sequenzbasierter Delta-Pull sind im aktiven Express-Pfad nicht implementiert.
+
+> **Aktueller Anhang-Fehlernachweis:** Die echte Suite besteht lokal und gehostet
+> **5/5** auf `3617576a8408002a99e1ed4f66e5a94b17a13cf5`;
+> [CI 43921057411](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43921057411)
+> besteht 7/7 Jobs, das Root-Protokoll bestätigt 5/5 und Cleanup.
+> Eine synthetische ungültige GIF-Datei erhält tatsächlich HTTP 415 vom Backend.
+> Originaldaten, Besitzer, Schlüssel und Uploadfehler überstehen Offline-Reload;
+> derselbe Benutzer unter anderem Mandanten lädt nicht hoch. Beim ursprünglichen
+> Mandanten erfolgen echte weitere Ablehnungen mit gleichem Schlüssel.
+> Der Wachbucheintrag existiert einmal, kein zugehöriges DMS-Dokument und kein
+> neues S3-Objekt. Ein erster Test erwartete fälschlich exakt zwei automatische
+> Versuche; der finale Test prüft stattdessen wiederholte Ablehnung und stabilen
+> Schlüssel. Neuer Fall 120 s, übrige Budgets unverändert. Dateitypprüfung vor
+> dem Scan; keine Malware-, Geräte- oder Providerabnahme.
+
+> **Vorheriger Foto-Replay-Nachweis:** Die echte Suite bestand lokal und gehostet **4/4** mit
+> PostgreSQL, privatem MinIO und verpflichtendem ClamAV. Ein synthetisches Foto
+> überlebt Offline-Reload und fremdes Konto ohne Upload. Beim ursprünglichen
+> Besitzer geht die erste echte erfolgreiche Quittung verloren; erst nach
+> nachgewiesenem lokalem Fehlerzustand wird der echte Retry freigegeben.
+> Gleicher Schlüssel/Autor/Dokument, genau eine Version und ein Upload-/Clean-
+> Audit; Originalbytes im tatsächlichen S3-Objekt und autorisierten Download.
+> Anonymes S3 liefert 403, ein Fremdmandant mit Downloadrecht 404.
+> Der Teststarter wählt den echten S3-Adapter explizit statt des In-Memory-
+> Testdefaults. Fotofall 120 s; bestehende Budgets unverändert (Wachbuch/
+> Identität 120 s, SOP 180 s); eigene Container entfernt.
+> Ein vorheriger ungesteuerter Zustandscheck war racy und bleibt als Fehlversuch
+> dokumentiert. [CI 43916713656](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43916713656)
+> bestand auf `31e63726d8b377abafe564da349c3aa622468291` 7/7;
+> Root-Protokoll: 4/4 und Cleanup. Keine Geräte-/Providerabnahme.
+
+> **Gehostete Phase-11-Evidenz:** Run [43906594339](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43906594339)
+> auf `6ead55c` bestand insgesamt nur 5/7, aber die drei echten Browserjourneys
+> im Root-Job bestanden. Der separate Offline-Fixture scheiterte nach dem
+> Rechte-Gating an fehlenden Standort-/Mitarbeiter-Leserechten. `4524f12` ergänzt
+> genau diese Fixture-Grants und prüft geladene Referenz-IDs; lokal wieder 1/1.
+> Korrekturlauf [43908926864](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43908926864)
+> bestand auf `4524f121420dd66829feafe7b7aed07aece7a338` **7/7 Jobs**,
+> einschließlich beider getrennter Browser-Suiten und des Linux-Restore-Drills.
+> Aktuelle Korrektur-CI und exakte SHAs: [Projektstatus](../PROJECT_CURRENT_STATUS.md).
+
+> **Vorheriger Phase-11-Browsernachweis:** Die echte Chromium-/Express-/PostgreSQL-
+> Suite bestand lokal **3/3**. Zusätzlich zu den beiden Wachbuch-/Identitätsfällen
+> erfolgt eine SOP-Veröffentlichung mit getrennten Erstellungs-, Prüfungs- und
+> Freigabekonten. Ein reines Mitarbeiterkonto öffnet ohne automatische Bestätigung,
+> bestätigt bewusst offline, lädt offline neu und wiederholt nach verlorener echter
+> Serverquittung exakt dieselbe Mutations-/Versions-/Zuweisungsbindung. Die Queue
+> verschwindet erst nach erfolgreicher Wiederholung; ein weiterer Reload zeigt
+> „Serverbestätigt“. Dabei wurden ungültige leere optionale SOP-Formularwerte und
+> fehlende `version_id`-Werte der Mitarbeiterantwort korrigiert. Der Wachbuchtest
+> wartet nach Reload auf tatsächlich valide geladene Formularfelder; ersetzte
+> Referenzdaten verwenden dieselben gültigen Defaults für Anzeige und Submit.
+> Der SOP-only-Mitarbeiter erzeugt über Login und Reloads keine unberechtigten
+> Basis-GETs mehr; die Navbar zeigt durchgehend seine tatsächliche Sitzungsrolle.
+> Storetests erhalten Tenant-/Site-/Own-Grants getrennt und zeigen echte
+> Serverablehnungen weiterhin an. Voller Frontendlauf 184/184 mit unverändertem
+> Standard-5-s-Budget; keine Performance- oder vollständige Rollenabnahme.
+> Keine Browser-Foto-/Scanner-/Provider-/physische Geräteabnahme; gehostete
+> Ergebnisse der getrennten Suiten siehe Evidenzblock oben.
+
+> **Vorheriger Phase-11-Nachweis:** Die authentifizierte Chromium-/Express-/PostgreSQL-Suite bestand damals **2/2**. Zusätzlich zum Replay-/Abmeldetest bleibt eine offene Mutation bei Wechsel zu einem anderen Konto desselben Mandanten und zum ursprünglichen Konto in einem anderen Mandanten unangetastet und unsichtbar; erst nach Rückkehr zur ursprünglichen Identität wird sie genau einmal übertragen und persistiert. Der Test fand außerdem, dass `restoreSession` das reale `userId`-Feld von `/auth/me` nicht las; die Korrektur ist durch Unit- und echte Browser-Erfassung nach Reload belegt. Keine Foto-/SOP-/Geräteabnahme in diesem damaligen Umfang.
+
+> **Historischer erster Phase-11-Browsertest (16.11.2026):** `npm run test:browser:backend` bestand damals lokal **1/1** mit echtem Express-Backend, Cookie-/CSRF-Sitzung, frischer PostgreSQL-16-Datenbank und Migrationen bis 042. Chromium erfasst offline, lädt offline neu und meldet sich nach Wiederverbindung erneut an. Der Test lässt den echten Server die erste Mutation speichern, verwirft ausschließlich die Antwort im Browser und prüft beim Retry dieselbe Mutation-ID, dieselbe Server-ID, eine geleerte Outbox und genau einen über die authentifizierte API nach Reload lesbaren Wachbucheintrag. Keine API-Antworten werden hierfür erfunden. Gehostete Ausführung stand zu diesem Zeitpunkt noch aus; spätere Ergebnisse stehen oben. Foto-/Scanner-/Providerbetrieb, Konten-/Tenantwechsel und physische Geräte waren nicht Teil dieses ersten Tests.
+>
+> Der erste reale Durchlauf deckte leere Standort-/Mitarbeiter-IDs auf, wenn das Wachbuch vor Abschluss der Stammdatenladung montiert wurde. Die Form verwendet nun dieselben nachgeladenen Standardwerte für Anzeige und Speicherung und weist fehlende Referenzen sichtbar zurück. Ein zusätzlicher Vitest-Regressionstest und der echte Backend-Browsertest bestanden nach der Korrektur.
+
+> **Historische Phase-11-CI-Konfiguration (16.11.2026):** Der vorhandene isolierte Chromium-Test wurde im Frontend-CI-Job eingerichtet (Chromium-Installation, Fehler-Trace und Screenshot). Lokal bestand er damals 1/1; gehostete Ausführung stand noch aus. Der Test bleibt eine Loopback-Fixture und keine authentifizierte Backend-/Geräteabnahme. Der aktuelle Ausführungsstand steht oben.
+
+> **Historische Szenariomatrix:** Die 18 Einträge unten dokumentieren damalige lokale Prüfungen, keine aktuelle Browser-/Geräteabnahme. Insbesondere Szenario 2 prüft nur lokale IndexedDB-Validierung und ist kein Nachweis für Upload-/Replay-Verhalten; dieses Verhalten wird in aktuellen Offline-Sync-Tests separat geprüft.
 > **Aktueller Stand (15.11.2026):** PR [#64](https://github.com/Xonni-star/SecurityOps-2.0/pull/64) ist in `main` gemergt (`621874535ee480e56716ae8a7bd992272bc7a51a`). Migration 041 ergänzt tenant-scoped Idempotenzquittungen für den Wachbuchanhang-Upload. Anhänge mit gespeicherter `userId` können nach Wiederverbindung idempotent hochgeladen werden. Lokale Altanhänge ohne `userId` werden nicht automatisch hochgeladen oder einem Benutzer zugewiesen; die UI warnt davor, und der Benutzer muss sie erneut hinzufügen. Ein Altanhang mit bereits bestätigtem Eintrag und nicht-UUID lokaler ID kann nicht verknüpft werden. Main-CI-Lauf [43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) lief beim letzten Statuscheck noch.
+> **Veröffentlichte Korrektur (16.11.2026):** Ein bestätigtes MEDIUM-Finding zur tenantweiten Sichtbarkeit und zum Export ownerloser lokaler Anhänge wurde behoben. Die Oberfläche zeigt weder Dateimetadaten noch Inhalte; die Daten bleiben lokal. Frontend-Regressionstests, Typcheck und Produktionsbuild bestanden. Die Revision ist veröffentlicht; exakte CI-Prüfgrenzen stehen im aktuellen Projektstatus. Ein sicherer Recovery-Pfad bleibt offen.
 
 ## 1. Testergebnisse der 18 Szenarien
 | Nr | Szenario | Status | Verifikation |
@@ -16,11 +93,11 @@
 | 8 | Wachbuch nicht still überschreibbar | **BESTANDEN** | Append-Only `LogbookRevisionEntry` greift |
 | 9 | Revisionshistorie nachvollziehbar | **BESTANDEN** | Dialog zeigt vollständigen Audit-Trail |
 | 10 | Mandantentrennung bei Sync | **BESTANDEN** | Tenant A kann keine Mutationen für Tenant B pushen/pullen |
-| 11 | Widerruf eines Gerätes | **BESTANDEN** | `DeviceStatus.REVOKED` blockiert Sync sofort |
+| 11 | Widerruf eines Gerätes | **OFFEN (aktiver Stack)** | Historisch als BESTANDEN bezeichnet; aktiver Push-Controller prüft keinen Gerätewiderruf. Kein aktueller Nachweis. |
 | 12 | Große Anhänge (>5 MB) | **BESTANDEN** | Validierung wirft verständliche Fehlermeldung |
-| 13 | Veraltete Sync-Cursor | **BESTANDEN** | Incremental Pull liefert alle Änderungen ab `since_sequence` |
+| 13 | Veraltete Sync-Cursor | **OFFEN (aktiver Stack)** | Historisch als BESTANDEN bezeichnet; kein registrierter Delta-Pull-Endpunkt im aktiven Express-Backend. |
 | 14 | Teilweise fehlgeschlagene Batches | **BESTANDEN** | Erfolgreiche Einträge quittiert, fehlerhafte bleiben in Outbox |
-| 15 | Falsche Gerätezeit | **BESTANDEN** | `received_at` und Sequenznummer steuern Reihenfolge |
+| 15 | Falsche Gerätezeit | **NICHT VERIFIZIERT für alle Module** | Historische Sequenzzusage nicht auf den aktiven Stack übertragbar; Zeitprüfungen sind modulabhängig. |
 | 16 | IndexedDB Migrationen | **BESTANDEN** | Schema-Upgrade auf DB_VERSION 2 erfolgreich |
 | 17 | Wiederherstellung nach Absturz | **BESTANDEN** | Outbox bleibt persistent erhalten |
 | 18 | Background Sync & Fallback | **BESTANDEN** | Service Worker sync Event + manueller Fallback |

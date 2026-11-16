@@ -51,7 +51,7 @@ export interface Qualification {
 
 export interface AbsenceRecord {
   id: string;
-  type: 'Urlaub' | 'Krankheit' | 'Fortbildung' | 'Sonderurlaub';
+  type: 'Urlaub' | 'Krankheit' | 'Sonstige';
   startDate: string;
   endDate: string;
   approved: boolean;
@@ -139,6 +139,7 @@ export interface Site {
   name: string;
   address: string;
   securityLevel: 'Niedrig' | 'Mittel' | 'Hoch (KRITIS / BSI)' | 'Höchste Sicherheitsstufe';
+  timeZone?: string;
   siteManagerId: string;
   siteManagerName: string;
   requiredGuardsDay: number;
@@ -218,6 +219,7 @@ export interface GuardBookEntry {
   resolutionNote?: string;
   revisions?: GuardBookRevision[];
   offlineCreated?: boolean;
+  pendingUpdate?: boolean;
 }
 
 export interface SOPDocument {
@@ -633,22 +635,6 @@ export interface ReportDefinition {
   scheduleInterval?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'NONE';
   lastGeneratedAt?: string;
   createdAt: string;
-}
-
-export interface ControllingKPIs {
-  activeClientsCount: number;
-  activeSitesCount: number;
-  activeEmployeesCount: number;
-  totalPlannedHours: number;
-  totalActualHours: number;
-  planFulfillmentRate: number;
-  openCriticalIncidentsCount: number;
-  overdueTasksCount: number;
-  expiringContractsCount: number;
-  expiringQualificationsCount: number;
-  activeAlarmsCount: number;
-  overdueKeysCount: number;
-  din77200ComplianceScore: number;
 }
 
 export interface ShiftSwapRequest {

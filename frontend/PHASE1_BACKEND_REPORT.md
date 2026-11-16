@@ -8,7 +8,7 @@
 - **Frontend-Applikation**: Vollständige React 18+/19 SPA mit Tailwind CSS, Zustand Store, dynamischer Navigation und responsivem Design.
 - **Fachmodule**: Kunden- und Vertragsverwaltung, Objektverwaltung (mit Kontrollpunkten, Alarmen, Schlüsseln), Personalverwaltung mit § 34a GewO und BWR-Prüfung, Dienstplanung, digitales Wachbuch mit Append-Only Revisionshistorie, Schlüsselverwaltung, QM-Dienstanweisungen und DMS.
 - **Offline-Vault**: Native IndexedDB-Struktur (`SecurityOps2_OfflineVault`) mit Outbox-, Inbox- und Attachments-Stores.
-- **KI-Assistent**: Google Gemini 2.5 Flash SDK Integration zur behördensicheren Formulierung von Vorfällen nach DIN 77200.
+- **KI-Assistent (historisch, später entfernt)**: frühere Textassistenz für Vorfälle; „behördensicher“ und Konformität wurden damit nicht nachgewiesen.
 
 ### 1.2 Fehlende Backend-Funktionen (vor Phase 1)
 - Vorherige Backend-Dateien waren teilweise konzeptionelle Python/FastAPI-Dateien ohne vollständige Node.js/TypeScript Laufzeitumgebung.

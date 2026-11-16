@@ -65,12 +65,10 @@ RESTORE_SERVICES_QUIESCED=0
 restore_cleanup() {
     local result=$?
     trap - EXIT
-    if [ "$RESTORE_SERVICES_QUIESCED" -eq 1 ] && [ "${#RESUME_SERVICES[@]}" -gt 0 ]; then
-        echo "[RESTORE] Stelle Dienste nach dem Restore-Versuch wieder her: ${RESUME_SERVICES[*]}..."
-        if ! docker compose "${COMPOSE_ARGS[@]}" up -d "${RESUME_SERVICES[@]}"; then
-            echo "[RESTORE] FEHLER: Dienste konnten nach dem Restore-Versuch nicht gestartet werden." >&2
-            [ "$result" -ne 0 ] || result=1
-        fi
+    if [ "$RESTORE_SERVICES_QUIESCED" -eq 1 ] &&
+        [ "${#RESUME_SERVICES[@]}" -gt 0 ] &&
+        [ "$result" -ne 0 ]; then
+        echo "[RESTORE] FEHLER: Restore fehlgeschlagen; Dienste bleiben zur Vermeidung von Zugriffen auf einen inkonsistenten Datenbestand gestoppt: ${RESUME_SERVICES[*]}." >&2
     fi
     rm -rf "$TEMP_RESTORE_DIR"
     exit "$result"
@@ -97,11 +95,18 @@ fi
 
 echo "[RESTORE] Spiele PostgreSQL-Dump ein (${POSTGRES_DB})..."
 docker compose "${COMPOSE_ARGS[@]}" exec -T "$RESTORE_DB_SERVICE" \
-  pg_restore -U "$RESTORE_DB_USER" -d "$POSTGRES_DB" --clean --if-exists < "$DB_DUMP_FILE"
+  pg_restore -U "$RESTORE_DB_USER" -d "$POSTGRES_DB" --clean --if-exists \
+    --single-transaction --exit-on-error < "$DB_DUMP_FILE"
 
 if [ "${#RESUME_SERVICES[@]}" -gt 0 ]; then
     echo "[RESTORE] Starte Dienste: ${RESUME_SERVICES[*]}..."
-    docker compose "${COMPOSE_ARGS[@]}" up -d "${RESUME_SERVICES[@]}"
+    if ! docker compose "${COMPOSE_ARGS[@]}" up -d "${RESUME_SERVICES[@]}"; then
+        echo "[RESTORE] FEHLER: Dienste konnten nach dem Restore nicht gestartet werden." >&2
+        if ! docker compose "${COMPOSE_ARGS[@]}" stop "${RESUME_SERVICES[@]}"; then
+            echo "[RESTORE] KRITISCH: Teilweise gestartete Dienste konnten nicht gestoppt werden." >&2
+        fi
+        exit 1
+    fi
     RESTORE_SERVICES_QUIESCED=0
 fi
 

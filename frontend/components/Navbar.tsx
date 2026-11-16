@@ -12,7 +12,8 @@ import {
   Moon,
   Menu,
   Smartphone,
-  Monitor
+  Monitor,
+  LogOut
 } from 'lucide-react';
 import { useSecurityStore } from '../store';
 import { UserRole } from '../types';
@@ -35,7 +36,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   const {
     currentUserRole,
     setCurrentUserRole,
-    notifications,
     getTenantNotificationDeliveries,
     authUser,
     isOnline,
@@ -44,11 +44,12 @@ export const Navbar: React.FC<NavbarProps> = ({
     theme,
     toggleTheme,
     activeTab,
-    setActiveTab
+    setActiveTab,
+    logout
   } = useSecurityStore();
 
-  const deliveries = typeof getTenantNotificationDeliveries === 'function' ? getTenantNotificationDeliveries() : [];
-  const unreadDeliveries = Array.isArray(deliveries) ? deliveries.filter((d) => !d.read).length : (notifications || []).length;
+  const deliveries = getTenantNotificationDeliveries();
+  const unreadDeliveries = deliveries.filter((d) => !d.read).length;
   const pendingSyncs = (syncQueue || []).filter((q) => q.status === 'pending').length;
 
   return (
@@ -84,7 +85,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </span>
             <span className="text-[9px] text-slate-400 tracking-tight hidden lg:block">
-              DIN 77200 & § 34a GewO Enterprise Core
+              Software für Sicherheitsdienstprozesse
             </span>
           </span>
         </button>
@@ -202,16 +203,26 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </button>
 
+        <button
+          type="button"
+          onClick={() => void logout()}
+          aria-label="Abmelden"
+          title="Abmelden; nicht synchronisierte Einträge bleiben lokal gespeichert"
+          className="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 transition"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
+
         <div className="hidden sm:flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 rounded-lg px-2 py-1">
           <div className="text-right">
             <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400 block leading-tight">
               Rolle
             </span>
-            <span className="text-xs font-semibold text-blue-300 truncate max-w-[100px] block">
-              {currentUserRole}
+            <span aria-label="Sitzungsrolle" className="text-xs font-semibold text-blue-300 truncate max-w-[100px] block">
+              {authUser ? authUser.role || 'Keine Rolle zugewiesen' : currentUserRole}
             </span>
           </div>
-          <select
+          {!authUser && <select
             value={currentUserRole}
             onChange={(e) => setCurrentUserRole(e.target.value as UserRole)}
             className="bg-transparent text-xs text-slate-200 font-medium focus:outline-none cursor-pointer"
@@ -221,7 +232,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {role}
               </option>
             ))}
-          </select>
+          </select>}
         </div>
       </div>
     </header>

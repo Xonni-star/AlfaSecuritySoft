@@ -29,6 +29,18 @@ export const SITE_SCOPED_PERMISSION_CODES = new Set([
   'patrol:audit'
 ]);
 
+export function getPermissionSiteScope(
+  user: { permissions: readonly string[]; sitePermissions?: ReadonlyArray<{ code: string; siteId: string }> },
+  permissionCode: string
+): string[] | null {
+  if (user.permissions.includes(permissionCode)) return null;
+  return [...new Set(
+    (user.sitePermissions ?? [])
+      .filter(grant => grant.code === permissionCode)
+      .map(grant => grant.siteId)
+  )];
+}
+
 export const OWN_SCOPED_PERMISSION_CODES = new Set([
   'employees:read', 'logbook:read', 'keys:read',
   'documents:read', 'documents:download', 'patrol:round:read'

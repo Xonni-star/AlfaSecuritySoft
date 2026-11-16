@@ -3,6 +3,8 @@ import { withTenantTransaction } from '../config/database';
 import {
   confirmHandover,
   createHandoverEndpoint,
+  getHandover,
+  listHandovers,
   updateHandoverTaskEndpoint
 } from '../controllers/handoverController';
 import { hasMutationPermission } from '../controllers/syncController';
@@ -51,6 +53,24 @@ beforeEach(() => {
 });
 
 describe('handover API invariants', () => {
+  test.each(['list', 'detail'])('%s exposes authenticated participant linkage without relying on contact email', async kind => {
+    const row = {
+      id: handoverId, tenant_id: tenantId, site_id: siteId,
+      outgoing_account_user_id: userId, incoming_account_user_id: incomingEmployeeId,
+      revision_version: 1
+    };
+    if (kind === 'list') {
+      transaction.query.mockResolvedValueOnce({ rows: [{ total: 1 }] }).mockResolvedValueOnce({ rows: [row] });
+    } else {
+      transaction.query.mockResolvedValueOnce({ rows: [row] }).mockResolvedValueOnce({ rows: [] });
+    }
+    const res = response();
+    await (kind === 'list' ? listHandovers : getHandover)(request(), res, next);
+    expect(next).not.toHaveBeenCalled();
+    const result = kind === 'list' ? res.body.data.items[0] : res.body.data;
+    expect(result).toMatchObject({ isOutgoingAccount: true, isIncomingAccount: false });
+  });
+
   test('allows canonical and legacy handover creation permissions for queued sync', () => {
     expect(hasMutationPermission('handover', ['handovers:create'])).toBe(true);
     expect(hasMutationPermission('handover', ['handover:create'])).toBe(true);

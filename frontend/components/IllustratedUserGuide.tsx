@@ -54,7 +54,7 @@ export const IllustratedUserGuide: React.FC = () => {
       title: '1. Einsatz-Dashboard & Leitstellen-Lagebild',
       badge: 'Leitstelle / GF',
       category: 'Grundlagen',
-      summary: 'Echtzeit-Überwachung von Schichtbesetzungen, offenen Alarmen, RFID-Kontrollgangsquoten und DIN 77200 Zertifizierungsgrad.',
+      summary: 'Übersicht über Schichtbesetzungen, offene Alarme und den Status von Kontrollgängen.',
       svgDiagramType: 'dashboard',
       steps: [
         {
@@ -113,7 +113,7 @@ export const IllustratedUserGuide: React.FC = () => {
     },
     {
       id: 'chap-guardbook',
-      title: '3. Digitales Wachbuch & Vorfallsmanagement (DIN 77200)',
+      title: '3. Digitales Wachbuch & Vorfallsmanagement',
       badge: 'Operativ / Wachdienst',
       category: 'Einsatz & Mobil',
       summary: 'Manuelle Erfassung von Kontrollgängen, Schichtübergaben und Vorkommnissen mit Append-Only Historie.',
@@ -304,7 +304,7 @@ export const IllustratedUserGuide: React.FC = () => {
             </span>
           </div>
           <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20">
-            DIN 77200 LIVE
+            Beispielansicht
           </span>
         </div>
 

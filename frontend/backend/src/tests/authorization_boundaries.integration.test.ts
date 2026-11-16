@@ -18,6 +18,27 @@ describe('tenant, site, and role authorization API boundaries', () => {
   let adminSession: string;
   let unprivilegedSession: string;
   let siteScopedSession: string;
+  let reportUserA: string;
+  let reportSession: string;
+  let reportRoleId: string;
+  let siteRoleId: string;
+  const reportDate = '2027-06-11';
+  const reportCases = [
+    { path: 'work-hours', csv: false },
+    { path: 'work-hours', csv: true },
+    { path: 'coverage', csv: false },
+    { path: 'qualifications', csv: false },
+    { path: 'absences', csv: false }
+  ];
+  const reportFixtures: Array<{
+    tenantId: string; siteId: string; employeeId: string; shiftId: string; marker: string;
+  }> = [];
+
+  function getReport(session: string, report: typeof reportCases[number]) {
+    return request(app).get(`/api/v1/planning/reports/${report.path}`)
+      .set(authHeaders(session))
+      .query({ from: reportDate, to: reportDate, ...(report.csv ? { format: 'csv' } : {}) });
+  }
 
   async function createSession(userId: string, tenantId: string): Promise<string> {
     const sessionId = crypto.randomBytes(32).toString('base64url');
@@ -78,6 +99,7 @@ describe('tenant, site, and role authorization API boundaries', () => {
     unprivilegedUserA = await createUser('auth-boundary-unprivileged', tenantA);
     foreignUserB = await createUser('auth-boundary-foreign', tenantB);
     siteScopedUserA = await createUser('auth-boundary-site', tenantA);
+    reportUserA = await createUser('auth-boundary-reports', tenantA);
 
     const adminRole = await migrationPool.query(
       `INSERT INTO tenant_roles (tenant_id,name,description)
@@ -102,6 +124,7 @@ describe('tenant, site, and role authorization API boundaries', () => {
        VALUES ($1,$2,'Isolated site-scope boundary fixture') RETURNING id`,
       [tenantA, `BoundarySite_${Date.now()}`]
     );
+    siteRoleId = siteRole.rows[0].id as string;
     const clientA = await createClient(tenantA, 'Authorization Boundary A');
     const clientB = await createClient(tenantB, 'Authorization Boundary B');
     siteA = await createSite(tenantA, clientA, 'Authorized site');
@@ -112,7 +135,7 @@ describe('tenant, site, and role authorization API boundaries', () => {
        SELECT $1,$2,p.id,$3,'SITE'
          FROM permissions p
         WHERE p.code=ANY($4::text[])`,
-      [tenantA, siteRole.rows[0].id, siteA, ['sites:read', 'sites:update']]
+      [tenantA, siteRoleId, siteA, ['sites:read', 'sites:update', 'planning:read', 'planning:reports:read']]
     );
     await migrationPool.query(
       `INSERT INTO tenant_user_roles (tenant_id,user_id,role_id,site_id)
@@ -127,13 +150,66 @@ describe('tenant, site, and role authorization API boundaries', () => {
     );
     foreignRoleB = foreignRole.rows[0].id as string;
 
+    reportRoleId = (await migrationPool.query(
+      `INSERT INTO tenant_roles (tenant_id,name) VALUES ($1,$2) RETURNING id`,
+      [tenantA, `BoundaryReports_${Date.now()}`]
+    )).rows[0].id as string;
+    await migrationPool.query(
+      `INSERT INTO tenant_role_permissions (tenant_id,role_id,permission_id,data_scope)
+       SELECT $1,$2,id,'TENANT' FROM permissions WHERE code='planning:reports:read'`,
+      [tenantA, reportRoleId]
+    );
+    await migrationPool.query(
+      'INSERT INTO tenant_user_roles (tenant_id,user_id,role_id) VALUES ($1,$2,$3)',
+      [tenantA, reportUserA, reportRoleId]
+    );
+    for (const [tenantId, siteId, marker] of [
+      [tenantA, siteA, 'REPORT-A'],
+      [tenantA, siteAOutsideScope, 'REPORT-OUTSIDE'],
+      [tenantB, siteB, 'REPORT-FOREIGN']
+    ]) {
+      const employeeId = (await migrationPool.query(
+        `INSERT INTO employees
+          (tenant_id,personnel_number,first_name,last_name,email,phone,role,date_of_joining)
+         VALUES ($1,$2,'Boundary',$2,$3,'000','Wache','2026-01-01') RETURNING id`,
+        [tenantId, marker, `${marker.toLowerCase()}@boundary.test.invalid`]
+      )).rows[0].id as string;
+      await migrationPool.query(
+        'INSERT INTO employee_site_assignments (tenant_id,employee_id,site_id) VALUES ($1,$2,$3)',
+        [tenantId, employeeId, siteId]
+      );
+      await migrationPool.query(
+        `INSERT INTO employee_qualifications
+          (tenant_id,employee_id,qualification_type,certificate_number,issue_date,verified,status)
+         VALUES ($1,$2,$3,$3,'2026-01-01',true,'VALID')`,
+        [tenantId, employeeId, marker]
+      );
+      const shiftId = (await migrationPool.query(
+        `INSERT INTO shifts
+          (tenant_id,site_id,employee_id,shift_date,start_time,end_time,required_qualification)
+         VALUES ($1,$2,$3,$4,'08:00','16:00',$5) RETURNING id`,
+        [tenantId, siteId, employeeId, reportDate, marker]
+      )).rows[0].id as string;
+      await migrationPool.query(
+        'INSERT INTO shift_staffing_assignments (tenant_id,shift_id,employee_id) VALUES ($1,$2,$3)',
+        [tenantId, shiftId, employeeId]
+      );
+      await migrationPool.query(
+        `INSERT INTO employee_absences (tenant_id,employee_id,absence_type,date_from,date_to,status)
+         VALUES ($1,$2,'SICKNESS',$3,$3,'APPROVED')`,
+        [tenantId, employeeId, reportDate]
+      );
+      reportFixtures.push({ tenantId, siteId, employeeId, shiftId, marker });
+    }
+
     adminSession = await createSession(adminUserA, tenantA);
     unprivilegedSession = await createSession(unprivilegedUserA, tenantA);
     siteScopedSession = await createSession(siteScopedUserA, tenantA);
+    reportSession = await createSession(reportUserA, tenantA);
   });
 
   afterAll(async () => {
-    await cleanupTestData([tenantA, tenantB], [adminUserA, unprivilegedUserA, foreignUserB, siteScopedUserA]);
+    await cleanupTestData([tenantA, tenantB], [adminUserA, unprivilegedUserA, foreignUserB, siteScopedUserA, reportUserA]);
     await pool.end();
     await migrationPool.end();
   });
@@ -213,5 +289,106 @@ describe('tenant, site, and role authorization API boundaries', () => {
       [tenantA, siteAOutsideScope]
     );
     expect(unchanged.rows[0].name).toBe('Out-of-scope site');
+  });
+
+  test.each(reportCases)('denies $path (csv=$csv) without an explicit report grant, including tenant admins', async report => {
+    for (const session of [unprivilegedSession, adminSession]) {
+      const denied = await getReport(session, report);
+      expect(denied.status).toBe(403);
+      expect(denied.body.success).toBe(false);
+      expect(denied.body.data).toBeUndefined();
+    }
+  });
+
+  test.each(reportCases)('isolates $path (csv=$csv) rows and aggregates by authenticated grants despite forged hints', async report => {
+    for (const [session, expected] of [
+      [reportSession, reportFixtures.filter(fixture => fixture.tenantId === tenantA)],
+      [siteScopedSession, reportFixtures.filter(fixture => fixture.siteId === siteA)]
+    ] as const) {
+      const response = await getReport(session, report)
+        .set('X-Tenant-ID', tenantB)
+        .query({ tenantId: tenantB, tenant_id: tenantB, requestedTenantId: tenantB, siteId: siteB });
+      expect(response.status).toBe(200);
+      if (report.csv) {
+        expect(response.headers['content-type']).toContain('text/csv');
+        for (const fixture of reportFixtures) {
+          if (expected.includes(fixture)) expect(response.text).toContain(fixture.marker);
+          else expect(response.text).not.toContain(fixture.marker);
+        }
+      } else if (report.path === 'work-hours') {
+        expect(response.body.data.map((row: { employee_id: string }) => row.employee_id).sort())
+          .toEqual(expected.map(fixture => fixture.employeeId).sort());
+        expect(response.body.data.every((row: { planned_hours: number }) => Number(row.planned_hours) === 8)).toBe(true);
+      } else if (report.path === 'coverage') {
+        expect(response.body.data.map((row: { shift_id: string }) => row.shift_id).sort())
+          .toEqual(expected.map(fixture => fixture.shiftId).sort());
+        expect(response.body.summary).toMatchObject({
+          shifts: expected.length, requiredCount: expected.length,
+          assignedQualifiedCount: expected.length, shortfall: 0
+        });
+        expect(response.body.summary.byQualification.map((row: { qualificationType: string }) => row.qualificationType).sort())
+          .toEqual(expected.map(fixture => fixture.marker).sort());
+      } else if (report.path === 'qualifications') {
+        expect(response.body.data.map((row: { qualification_type: string }) => row.qualification_type).sort())
+          .toEqual(expected.map(fixture => fixture.marker).sort());
+        for (const row of response.body.data) {
+          expect(row).toMatchObject({
+            active_qualified_employees: 1, employees_with_record: 1,
+            required_slots: 1, assigned_qualified_slots: 1, shortfall: 0
+          });
+        }
+      } else {
+        expect(response.body.data).toEqual([{
+          absence_type: 'SICKNESS', status: 'APPROVED', absence_records: expected.length,
+          affected_employees: expected.length, overlapping_calendar_days: expected.length
+        }]);
+        expect(response.body.summary).toEqual({ absenceRecords: expected.length, affectedEmployees: expected.length });
+      }
+    }
+  });
+
+  test('applies report permission removal immediately to existing sessions and restores only the authorized scope', async () => {
+    await migrationPool.query(
+      `DELETE FROM tenant_role_permissions
+       WHERE tenant_id=$1 AND role_id=ANY($2::uuid[])
+         AND permission_id=(SELECT id FROM permissions WHERE code='planning:reports:read')`,
+      [tenantA, [reportRoleId, siteRoleId]]
+    );
+    try {
+      for (const report of reportCases) {
+        expect((await getReport(reportSession, report)).status).toBe(403);
+        expect((await getReport(siteScopedSession, report)).status).toBe(403);
+      }
+    } finally {
+      await migrationPool.query(
+        `INSERT INTO tenant_role_permissions (tenant_id,role_id,permission_id,site_id,data_scope)
+         SELECT $1::uuid,$2::uuid,id,NULL::uuid,'TENANT' FROM permissions WHERE code='planning:reports:read'
+         UNION ALL
+         SELECT $1::uuid,$3::uuid,id,$4::uuid,'SITE' FROM permissions WHERE code='planning:reports:read'`,
+        [tenantA, reportRoleId, siteRoleId, siteA]
+      );
+    }
+    const restored = await getReport(siteScopedSession, { path: 'coverage', csv: false });
+    expect(restored.status).toBe(200);
+    expect(restored.body.data.map((row: { site_id: string }) => row.site_id)).toEqual([siteA]);
+  });
+
+  test('report-only grants do not authorize underlying object APIs and site reads cannot resolve foreign shift IDs', async () => {
+    expect((await request(app).get('/api/v1/planning/shifts').set(authHeaders(reportSession))).status).toBe(403);
+    const ownShift = reportFixtures.find(fixture => fixture.siteId === siteA)!;
+    const authorized = await request(app)
+      .get(`/api/v1/planning/shifts/${ownShift.shiftId}/assignments`).set(authHeaders(siteScopedSession));
+    expect(authorized.status).toBe(200);
+    expect(authorized.body.data.map((row: { employee_id: string }) => row.employee_id)).toEqual([ownShift.employeeId]);
+    for (const fixture of reportFixtures.filter(fixture => fixture.siteId !== siteA)) {
+      const denied = await request(app).get(`/api/v1/planning/shifts/${fixture.shiftId}/assignments`)
+        .set(authHeaders(siteScopedSession));
+      expect(denied.status).toBe(200);
+      expect(denied.body.data).toEqual([]);
+      const suggestions = await request(app).get(`/api/v1/planning/shifts/${fixture.shiftId}/staffing-suggestions`)
+        .set(authHeaders(siteScopedSession));
+      expect(suggestions.status).toBe(404);
+      expect(suggestions.body.data).toBeUndefined();
+    }
   });
 });

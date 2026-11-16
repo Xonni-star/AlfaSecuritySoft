@@ -175,6 +175,29 @@ Ist der passende Provider-Snapshot, die Schema-Kompatibilität oder die Wiederhe
 
 Backups laufen automatisch alle 24 Stunden (`backup`-Dienst). Das verschlüsselte Archiv enthält den PostgreSQL-Dump (`secops_backups`, 30 Tage Retention). DMS-Objekte liegen außerhalb von Compose; für sie müssen Versionierung, Replikation/Backup und Retention beim gewählten S3-kompatiblen Anbieter separat aktiviert und getestet werden. Ein Datenbank-Restore stellt keine Objekte wieder her.
 
+Der Compose-Healthcheck des Backupdienstes läuft alle fünf Minuten (30 Minuten
+Starttoleranz). Er verlangt mindestens ein nicht leeres, abgeschlossenes Archiv
+der letzten 25 Stunden und keinen Fehler beim letzten Sicherungsversuch.
+Verschlüsselung schreibt zunächst eine `.partial`-Datei und benennt sie erst bei
+Erfolg atomar um; partielle Archive zählen nicht. Ein Fehler erzeugt
+`.backup_failed`, erst ein erfolgreicher Folgelauf entfernt diesen Marker.
+Temporäre Dumps und Archive werden mit `umask 077` angelegt.
+
+```bash
+docker compose -f docker-compose.production.yml ps backup
+docker compose -f docker-compose.production.yml exec backup \
+  bash /usr/local/bin/backup_healthcheck.sh
+docker compose -f docker-compose.production.yml logs --tail=100 backup
+```
+
+**Prüfgrenze:** `healthy` bestätigt ausschließlich aktuelle Archiverzeugung,
+nicht Entschlüsselbarkeit, Wiederherstellbarkeit, Objektvollständigkeit oder
+RPO/RTO. Die 25-Stunden-Schwelle ist eine technische Frischekontrolle des
+24-Stunden-Daemons, kein vereinbartes Wiederherstellungsziel. Docker startet
+unhealthy Container nicht automatisch neu und versendet keine Alarmmeldung;
+Statusabfrage, externe Alarmierung und regelmäßige Restore-Drills muss der
+Betrieb separat einrichten.
+
 Manuell:
 
 ```bash
@@ -187,6 +210,10 @@ docker compose -f docker-compose.production.yml exec -T db \
 Der manuelle Befehl erzeugt nur einen unverschlüsselten PostgreSQL-Dump auf dem Host; speichere ihn ausschließlich an einem zugriffsgeschützten Ort und verschlüssele ihn vor Übertragung oder Langzeitspeicherung. DMS-Objekte müssen unabhängig über den konfigurierten S3-Anbieter gesichert und wiederhergestellt werden. Nach einem erfolgreichen manuellen Backup die Datei gemäß lokaler Aufbewahrungsrichtlinie entfernen.
 
 Die folgende Anleitung stellt Datenbank und Dienste über `restore.sh` wieder her:
+
+Das private Archiv bleibt im Modus `0600`. Den Restore als Archivbesitzer oder
+entsprechend berechtigten Betriebsbenutzer ausführen; Leserechte nicht pauschal
+für andere Benutzer erweitern.
 
 ```bash
 ./restore.sh /pfad/zu/secops_backup_YYYYMMDD_HHMMSS.tar.gz.enc
@@ -202,16 +229,22 @@ Mit Docker, OpenSSL und Python 3 lässt sich der verschlüsselte PostgreSQL-Back
 npm run test:backup-restore --prefix frontend/backend
 ```
 
-Der Test verwendet ein zufällig benanntes, isoliertes Compose-Projekt, zufällige Testzugangsdaten, zwei synthetische Mandanten, Benutzer, DMS-Dokumente, Versionen und Auditereignisse. Er baut den Backend-Migrationsrunner aus dem Repository und prüft den vollständigen angewendeten Migrationssatz `001`–`007`, `009`, `011`–`040`, dessen Historie sowie `ENABLE`/`FORCE ROW LEVEL SECURITY` für neun DMS-Tabellen. Danach erstellt er mit `backup_cron.sh` ein verschlüsseltes Backup, mutiert DMS-Metadaten, entfernt beide synthetischen Objekte, stellt DB und Objektsnapshot wieder her und verifiziert Versions-/Auditdaten, SHA-256, benutzerdefinierte Objektmetadaten und Tenant-RLS einschließlich eines abgewiesenen Fremdtenant-Schreibversuchs. Der Lauf hat begrenzte Wartezeiten und räumt ausschließlich Ressourcen seines eindeutigen Testprojekts auf.
+Der Test verwendet ein zufällig benanntes, isoliertes Compose-Projekt, zufällige Testzugangsdaten, zwei synthetische Mandanten, Benutzer, DMS-Dokumente, Versionen und Auditereignisse. Er baut den Backend-Migrationsrunner aus dem Repository und prüft den vollständigen angewendeten Migrationssatz `001`–`007`, `009`, `011`–`042`, dessen Historie sowie `ENABLE`/`FORCE ROW LEVEL SECURITY` für neun DMS-Tabellen. Danach erstellt er mit `backup_cron.sh` ein verschlüsseltes Backup, prüft den Healthcheck einschließlich fehlgeschlagenem Sicherungsversuch und erfolgreichem Folgelauf, mutiert DMS-Metadaten, entfernt beide synthetischen Objekte, stellt DB und Objektsnapshot wieder her und verifiziert Versions-/Auditdaten, SHA-256, benutzerdefinierte Objektmetadaten und Tenant-RLS einschließlich eines abgewiesenen Fremdtenant-Schreibversuchs. Ein injizierter DDL-Fehler nach der Clean-Phase muss einen abweichenden Vor-Restore-Datenstand unverändert erhalten; Restore-/Resume-Fehler lassen Dienste gestoppt. Der Lauf hat begrenzte Wartezeiten und räumt ausschließlich Ressourcen seines eindeutigen Testprojekts auf.
 
 Die Testzugangsdaten liegen in einer lokalen temporären Datei. Der MC-Container erhält ausschließlich das Fixture-Verzeichnis schreibgeschützt. Produktions-Compose, Produktionsdaten, Produktionszugangsdaten und externe Anbieterendpunkte werden nicht verwendet. `--database-only` überspringt den S3-Objektschritt; der Standardlauf testet MinIO lokal, optional kann `RESTORE_TEST_S3_BACKEND=seaweedfs` einen lokalen SeaweedFS-Dienst verwenden.
+
+Nur im Test läuft der Backup-Container mit UID/GID des aufrufenden
+Restore-Benutzers. Der Drill prüft Dateibesitz, Modus `0600` und tatsächliche
+Lesbarkeit vor dem Restore. Damit bleibt das private Bindmount-Archiv auch auf
+Linux ohne Rechteaufweitung lesbar; das Produktions-Benutzermodell wird nicht
+verändert.
 
 ### Einordnung der Restore-Nachweise
 
 | Nachweisstufe | Was geprüft wird | Status dieses Tests |
 |---|---|---|
 | Automatisierte Tests | Jest-, Migrations- und CI-Tests auf synthetischen Daten | CI führt den isolierten Restore-Regressionstest als eigenen Job aus. |
-| Lokaler Integrationstest | Backup-/Restore-Skripte, vollständige Migrationen und DMS-Daten in einer lokalen Testdatenbank | Durch `test:backup-restore` abgedeckt. |
+| Lokaler Integrationstest | Backup-/Restore-Skripte, vollständige Migrationen und DMS-Daten in einer lokalen Testdatenbank | Durch `test:backup-restore` abgedeckt; der aktuelle Worktree prüft zusätzlich, dass ein fehlgeschlagener transaktionaler Restore Dienste gestoppt lässt und teilweise gestartete Dienste bei einem Resume-Fehler gestoppt werden. |
 | Isolierter Infrastrukturtest | Test-Compose-Projekt, lokales PostgreSQL und lokaler MinIO-/SeaweedFS-kompatibler Objektspeicher | Abgedeckt; Ressourcen und Zugangsdaten sind testisoliert. |
 | Realer Provider-Test | Versionierung, Replikation, Berechtigungen und Wiederherstellung beim tatsächlich konfigurierten S3-Anbieter | Nicht abgedeckt; dazu ist ein separater Test mit einem dedizierten, nicht-produktiven Provider-Bucket nötig. |
 | Vollständige Produktionsabnahme | Wiederherstellung eines repräsentativen Produktionsbackups in einer freigegebenen, produktionsgleichen Umgebung einschließlich Anwendung, Provider und fachlicher Abnahme | Nicht abgedeckt und nicht durch diesen Regressionstest ersetzbar. |

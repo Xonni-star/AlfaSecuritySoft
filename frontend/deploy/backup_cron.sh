@@ -3,18 +3,20 @@
 # S3 object retention/backup is managed by the configured object-storage provider.
 
 set -u -o pipefail
+umask 077
 
 BACKUP_DIR="${BACKUP_DIR:-/var/backups}"
 BACKUP_HOST="${BACKUP_HOST:-db}"
 BACKUP_ONCE="${BACKUP_ONCE:-false}"
 RETENTION_DAYS=30
 
-mkdir -p "$BACKUP_DIR"
+mkdir -p "$BACKUP_DIR" || exit 1
 
 while true; do
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)
     DB_DUMP="$BACKUP_DIR/db_${POSTGRES_DB}_${TIMESTAMP}.dump"
     ENC_ARCHIVE="$BACKUP_DIR/secops_backup_${TIMESTAMP}.tar.gz.enc"
+    PARTIAL_ARCHIVE="${ENC_ARCHIVE}.partial"
 
     echo "[BACKUP $(date)] Starte PostgreSQL pg_dump..."
 
@@ -22,11 +24,12 @@ while true; do
     if pg_dump -h "$BACKUP_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -F c -b -f "$DB_DUMP"; then
         if tar -czf - -C "$BACKUP_DIR" "$(basename "$DB_DUMP")" | \
             openssl enc -aes-256-cbc -salt -pbkdf2 \
-              -pass env:BACKUP_ENCRYPTION_KEY -out "$ENC_ARCHIVE"; then
+              -pass env:BACKUP_ENCRYPTION_KEY -out "$PARTIAL_ARCHIVE" &&
+            mv "$PARTIAL_ARCHIVE" "$ENC_ARCHIVE"; then
             rm -f "$DB_DUMP"
             echo "[BACKUP $(date)] Backup erfolgreich: $ENC_ARCHIVE"
         else
-            rm -f "$ENC_ARCHIVE"
+            rm -f "$PARTIAL_ARCHIVE"
             rm -f "$DB_DUMP"
             echo "[BACKUP $(date)] FEHLER: Verschlüsselung fehlgeschlagen."
             BACKUP_STATUS=1
@@ -35,6 +38,15 @@ while true; do
         rm -f "$DB_DUMP"
         echo "[BACKUP $(date)] FEHLER: pg_dump fehlgeschlagen."
         BACKUP_STATUS=1
+    fi
+
+    if [ "$BACKUP_STATUS" -eq 0 ]; then
+        if ! rm -f "$BACKUP_DIR/.backup_failed"; then
+            echo "[BACKUP $(date)] FEHLER: Fehlerstatus konnte nicht zurückgesetzt werden." >&2
+            BACKUP_STATUS=1
+        fi
+    elif ! touch "$BACKUP_DIR/.backup_failed"; then
+        echo "[BACKUP $(date)] FEHLER: Fehlgeschlagener Sicherungsversuch konnte nicht markiert werden." >&2
     fi
 
     find "$BACKUP_DIR" -type f -name "secops_backup_*.enc" -mtime +"$RETENTION_DAYS" -exec rm -f {} \;

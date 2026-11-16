@@ -35,7 +35,7 @@
    - Die Mutation-ID `body.clientUuid` wird als stabile `client_mutation_id` in `guardbook_revisions` eingetragen.
    - Keine temporären `Date.now()`-Hashes mehr.
    - Wiederholte Aufrufe derselben Konfliktauflösung sind über den Constraint `uq_revisions_client_mutation` vollkommen idempotent und erzeugen keine doppelten Revisionen.
-   - Wachbucheinträge bleiben nach DIN 77200 append-only und unlöschbar.
+   - Wachbucheinträge folgen einer technischen Append-Only-Regel; dies ist keine Aussage, dass DIN 77200 Löschungen verbietet oder eine gesetzliche Revisionssicherheit besteht.
 
 4. **Vollständige Serverdaten-Rückgabe**:
    - Sowohl `USE_LOCAL` als auch `USE_SERVER` liefern den vollständigen, aktuellen Datenbankdatensatz zurück.

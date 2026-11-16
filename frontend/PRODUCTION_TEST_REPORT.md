@@ -12,7 +12,7 @@
 | **Migration** | Alembic Schema 0001 Upgrade | **BESTANDEN** | RLS-Policies und Tabellenstrukturen fehlerfrei angelegt |
 | **Backup** | Automatischer verschlüsselter Dump | **BESTANDEN** | AES-256 Verschlüsselung & 30-Tage Rotation getestet |
 | **Disaster Recovery** | Wiederherstellungstest via `restore.sh` | **BESTANDEN** | PostgreSQL Dump und Speicherverzeichnis restaurierbar |
-| **Reverse Proxy** | Caddy HSTS, CSP und TLS Konfiguration | **BESTANDEN** | A+ Security Header Rating nach BSI Vorgaben |
+| **Reverse Proxy** | Caddy HSTS, CSP und TLS Konfiguration | **BESTANDEN (historische Eigenprüfung)** | Früherer Bericht nennt eine A+-Bewertung; kein unabhängiger BSI-Testbericht oder Nachweis für den aktuellen Stack liegt hier vor. |
 
 ---
 

@@ -35,10 +35,10 @@ vi.mock('../services/apiClient', () => {
   return { apiClient, ApiError };
 });
 
-import { useSecurityStore } from '../store';
+import { useSecurityStore, type AuthUser } from '../store';
 import { apiClient, ApiError } from '../services/apiClient';
-import { offlineVault, type StoredSOPAcknowledgement } from '../services/indexedDbService';
-import { UserRole, type SOPDocument } from '../types';
+import { offlineVault, type OutboxMutation, type StoredSOPAcknowledgement } from '../services/indexedDbService';
+import { QualificationType, UserRole, type SOPDocument } from '../types';
 
 const mockedApi = apiClient as unknown as {
   get: ReturnType<typeof vi.fn>;
@@ -48,6 +48,12 @@ const mockedApi = apiClient as unknown as {
   setTenantId: ReturnType<typeof vi.fn>;
 };
 const durableSOPQueue = new Map<string, StoredSOPAcknowledgement>();
+const syncedTaskId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const readUser: AuthUser = {
+  id: 'user-regression', email: 'reader@example.test', fullName: 'Reader', role: '',
+  tenantId: 'tenant-frankfurt', tenantName: '',
+  permissions: ['customers:read', 'sites:read', 'employees:read', 'logbook:read', 'shifts:read', 'keys:read', 'tasks:read']
+};
 
 function acknowledgementKey(ack: StoredSOPAcknowledgement): string {
   return [ack.tenantId, ack.userId, ack.assignmentId, ack.versionId].join(':');
@@ -185,6 +191,7 @@ beforeEach(() => {
     keys: [],
     tasks: [],
     notifications: [],
+    notificationDeliveries: [],
     authUser: null,
     currentTenantId: 'tenant-frankfurt',
     currentUserId: 'user-regression',
@@ -204,9 +211,143 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
+  test('durably queues GuardBook completion without claiming server resolution or inventing a revision', async () => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser, isOnline: false });
+    await useSecurityStore.getState().loadTenantData();
+    const enqueue = vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => ({
+      ...mutation, deviceId: 'test-device', status: 'PENDING', retryCount: 0
+    }));
+    expect(await useSecurityStore.getState().resolveGuardBookEntry(logbookRow.id, '  Tatsächlich geprüft.  ')).toBe(true);
+    expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({
+      tenantId: readUser.tenantId, userId: readUser.id, entityType: 'guardbook', action: 'UPDATE',
+      payload: { entryId: logbookRow.id, stage: 'Abgeschlossen', correctionNote: 'Tatsächlich geprüft.' }
+    }));
+    expect(useSecurityStore.getState().getTenantGuardBook()[0]).toMatchObject({
+      resolved: false, stage: 'Erfasst', revisions: [], pendingUpdate: true
+    });
+    expect(await useSecurityStore.getState().resolveGuardBookEntry(logbookRow.id, 'Doppelter Abschluss')).toBe(false);
+    expect(enqueue).toHaveBeenCalledOnce();
+  });
+
+  test('does not close a GuardBook entry when durable completion storage fails', async () => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser, isOnline: false });
+    await useSecurityStore.getState().loadTenantData();
+    vi.spyOn(offlineVault, 'enqueueMutation').mockRejectedValue(new Error('Completion quota exceeded'));
+    expect(await useSecurityStore.getState().resolveGuardBookEntry(logbookRow.id, 'Abschluss nach Prüfung')).toBe(false);
+    expect(useSecurityStore.getState().guardBook[0]).toMatchObject({ stage: 'Erfasst', resolved: false, revisions: [] });
+    expect(useSecurityStore.getState().syncQueue).toEqual([]);
+    expect(useSecurityStore.getState().notifications[0].message).toContain('Completion quota exceeded');
+  });
+
+  test.each(['tenant', 'user'] as const)('does not publish GuardBook completion after a %s change during durable storage', async change => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser, isOnline: false });
+    await useSecurityStore.getState().loadTenantData();
+    let finish!: () => void;
+    const pause = new Promise<void>(resolve => { finish = resolve; });
+    const enqueue = vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => {
+      await pause;
+      return { ...mutation, deviceId: 'test-device', status: 'PENDING', retryCount: 0 };
+    });
+    const result = useSecurityStore.getState().resolveGuardBookEntry(logbookRow.id, 'Private Abschlussnotiz');
+    await Promise.resolve();
+    expect(enqueue).toHaveBeenCalledOnce();
+    useSecurityStore.setState({
+      authUser: null, currentTenantId: change === 'tenant' ? 'tenant-other' : readUser.tenantId,
+      currentUserId: change === 'user' ? 'different-user' : readUser.id,
+      guardBook: [], syncQueue: [], notifications: []
+    });
+    finish();
+    expect(await result).toBe(false);
+    expect(useSecurityStore.getState().guardBook).toEqual([]);
+    expect(useSecurityStore.getState().syncQueue).toEqual([]);
+    expect(useSecurityStore.getState().notifications).toEqual([]);
+    expect(enqueue.mock.calls[0][0]).toMatchObject({ tenantId: readUser.tenantId, userId: readUser.id });
+  });
+
+  test.each(['invalid note', 'foreign entry'] as const)('rejects GuardBook completion with %s before enqueue', async reason => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser, isOnline: false });
+    await useSecurityStore.getState().loadTenantData();
+    if (reason === 'foreign entry') {
+      useSecurityStore.setState({ guardBook: useSecurityStore.getState().guardBook.map(entry => ({ ...entry, tenantId: 'tenant-other' })) });
+    }
+    const enqueue = vi.spyOn(offlineVault, 'enqueueMutation');
+    expect(await useSecurityStore.getState().resolveGuardBookEntry(logbookRow.id, reason === 'invalid note' ? '  x  ' : 'Echter Abschluss')).toBe(false);
+    expect(enqueue).not.toHaveBeenCalled();
+    expect(useSecurityStore.getState().guardBook[0].resolved).toBe(false);
+  });
+
+  test.each(['tenant', 'user'] as const)('does not publish an old conflict failure after a %s change', async change => {
+    let rejectRequest!: (error: Error) => void;
+    mockedApi.post.mockReturnValueOnce(new Promise((_, reject) => { rejectRequest = reject; }));
+    useSecurityStore.setState({
+      syncQueue: [{
+        id: 'late-conflict', tenantId: 'tenant-frankfurt', userId: 'user-regression',
+        entityType: 'task', action: 'UPDATE', payload: { id: syncedTaskId },
+        createdAt: '', retryCount: 0, status: 'conflict'
+      }]
+    });
+    const result = useSecurityStore.getState().resolveConflict('late-conflict', 'USE_SERVER');
+    const rejection = expect(result).rejects.toThrow('Old private failure');
+    useSecurityStore.setState(change === 'tenant'
+      ? { currentTenantId: 'tenant-berlin', notifications: [] }
+      : { currentUserId: 'different-user', notifications: [] });
+    rejectRequest(new Error('Old private failure'));
+    await rejection;
+    expect(useSecurityStore.getState().notifications).toEqual([]);
+  });
+
+  test.each(['lookup', 'write'] as const)('does not publish a patrol scan after identity changes during %s', async phase => {
+    const scan = {
+      siteId: siteRow.id, siteName: siteRow.name, checkpointId: 'checkpoint-a',
+      checkpointCode: 'A', checkpointName: 'Point A', guardId: 'user-regression',
+      guardName: 'Original guard', method: 'MANUELL' as const
+    };
+    let finish!: () => void;
+    const pause = new Promise<void>(resolve => { finish = resolve; });
+    const lookup = vi.spyOn(offlineVault, 'getOutbox')
+      .mockImplementation(async () => { if (phase === 'lookup') await pause; return []; });
+    const enqueue = vi.spyOn(offlineVault, 'enqueueMutation')
+      .mockImplementation(async mutation => {
+        if (phase === 'write') await pause;
+        return { ...mutation, deviceId: 'test-device', retryCount: 0, status: 'PENDING' };
+      });
+    const sync = vi.spyOn(useSecurityStore.getState(), 'triggerManualSync');
+    useSecurityStore.setState({ patrolScans: [] });
+    const result = useSecurityStore.getState().addPatrolScan(scan);
+    const rejection = phase === 'lookup' ? expect(result).rejects.toThrow('Sitzung') : null;
+    await vi.waitFor(() => expect(phase === 'lookup' ? lookup : enqueue).toHaveBeenCalledOnce());
+    useSecurityStore.setState({ currentUserId: 'different-user', patrolScans: [], syncQueue: [] });
+    finish();
+    if (rejection) await rejection;
+    else await result;
+    expect(useSecurityStore.getState().patrolScans).toEqual([]);
+    expect(useSecurityStore.getState().syncQueue).toEqual([]);
+    expect(sync).not.toHaveBeenCalled();
+    if (phase === 'lookup') expect(enqueue).not.toHaveBeenCalled();
+  });
+
+  test('checks patrol duplicates only in the current owner outbox', async () => {
+    const getOutbox = vi.spyOn(offlineVault, 'getOutbox').mockResolvedValue([]);
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => ({
+      ...mutation, deviceId: 'test-device', retryCount: 0, status: 'PENDING'
+    }));
+    useSecurityStore.setState({ isOnline: false, patrolScans: [] });
+    await useSecurityStore.getState().addPatrolScan({
+      siteId: siteRow.id, siteName: siteRow.name, checkpointId: 'checkpoint-a',
+      checkpointCode: 'A', checkpointName: 'Point A', guardId: 'user-regression',
+      guardName: 'Original guard', method: 'MANUELL'
+    });
+    expect(getOutbox).toHaveBeenCalledWith('tenant-frankfurt', 'patrol', 'user-regression');
+  });
+
   test('Wiederverbindung startet automatisch die Synchronisierung der Offline-Outbox', () => {
     const originalSync = useSecurityStore.getState().triggerManualSync;
     const syncPatrolOutbox = vi.fn();
@@ -220,6 +361,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
 
   test('1. loadTenantData hydratisiert Kunden, Objekte, Mitarbeiter und Wachbuch aus der API', async () => {
     mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
 
     await useSecurityStore.getState().loadTenantData();
 
@@ -240,11 +382,372 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     expect(state.dataLoadError).toBeNull();
   });
 
+  const resourceWrites = [
+    { name: 'create customer', write: () => useSecurityStore.getState().addClient(useSecurityStore.getState().clients[0]) },
+    { name: 'update customer', write: () => useSecurityStore.getState().updateClient(customerRow.id, { companyName: 'Updated customer' }) },
+    { name: 'create site', write: () => useSecurityStore.getState().addSite(useSecurityStore.getState().sites[0]) },
+    { name: 'update site', write: () => useSecurityStore.getState().updateSite(siteRow.id, { name: 'Updated site' }) },
+    { name: 'create employee', write: () => useSecurityStore.getState().addEmployee(useSecurityStore.getState().employees[0]) },
+    { name: 'update employee', write: () => useSecurityStore.getState().updateEmployee(employeeRow.id, { firstName: 'Updated employee' }) }
+  ];
+
+  const lifecycleWrites = [
+    { name: 'archive customer', entityType: 'client', action: 'DELETE', id: customerRow.id, write: () => useSecurityStore.getState().archiveClient(customerRow.id) },
+    { name: 'archive site', entityType: 'site', action: 'DELETE', id: siteRow.id, write: () => useSecurityStore.getState().archiveSite(siteRow.id) },
+    { name: 'restore site', entityType: 'site', action: 'RESTORE', id: siteRow.id, write: () => useSecurityStore.getState().restoreSite(siteRow.id) },
+    { name: 'archive employee', entityType: 'employee', action: 'DELETE', id: employeeRow.id, write: () => useSecurityStore.getState().archiveEmployee(employeeRow.id) },
+    { name: 'restore employee', entityType: 'employee', action: 'RESTORE', id: employeeRow.id, write: () => useSecurityStore.getState().restoreEmployee(employeeRow.id) }
+  ];
+  async function prepareLifecycle(restore: boolean) {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    if (restore) useSecurityStore.setState(state => ({
+      sites: state.sites.map(site => ({ ...site, archivedAt: '2026-01-01T00:00:00Z' })),
+      employees: state.employees.map(employee => ({ ...employee, archivedAt: '2026-01-01T00:00:00Z' }))
+    }));
+    const { clients, sites, employees } = useSecurityStore.getState();
+    return { clients, sites, employees };
+  }
+  test.each(lifecycleWrites)('$name rejects an old identity completion without publishing resource or notification changes', async ({ write, action }) => {
+    const original = await prepareLifecycle(action === 'RESTORE');
+    let resolve!: (value: unknown) => void;
+    mockedApi.post.mockReturnValueOnce(new Promise(done => { resolve = done; }));
+    const pending = write();
+    useSecurityStore.setState({ authUser: { ...readUser, id: 'different-lifecycle-owner' }, notifications: [] });
+    resolve({ archived_at: '2026-11-16T00:00:00Z', revision_version: 2 });
+    const result = await pending;
+    expect(useSecurityStore.getState()).toMatchObject({ ...original, notifications: [], syncQueue: [] });
+    expect(result).toBe(false);
+  });
+  test.each(lifecycleWrites)('$name never reinterprets an API denial as offline success after a network change', async ({ write, action }) => {
+    const original = await prepareLifecycle(action === 'RESTORE');
+    const enqueue = vi.spyOn(offlineVault, 'enqueueMutation');
+    let reject!: (error: Error) => void;
+    mockedApi.post.mockReturnValueOnce(new Promise((_resolve, fail) => { reject = fail; }));
+    const pending = write();
+    useSecurityStore.setState({ isOnline: false });
+    reject(new ApiError(403, 'Lifecycle permission denied'));
+    const result = await pending;
+    expect(enqueue).not.toHaveBeenCalled();
+    expect(useSecurityStore.getState()).toMatchObject({ ...original, syncQueue: [] });
+    expect(result).toBe(false);
+    expect(useSecurityStore.getState().notifications[0]).toMatchObject({
+      type: 'alert', message: expect.stringContaining('Lifecycle permission denied')
+    });
+  });
+  test.each(lifecycleWrites)('$name reports local persistence rejection without mutating resources or leaking a rejection', async ({ write, action }) => {
+    const original = await prepareLifecycle(action === 'RESTORE');
+    useSecurityStore.setState({ isOnline: false });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(offlineVault, 'enqueueMutation').mockRejectedValueOnce(new Error('Lifecycle storage unavailable'));
+    expect(await write()).toBe(false);
+    expect(useSecurityStore.getState()).toMatchObject({ ...original, syncQueue: [] });
+    expect(useSecurityStore.getState().notifications[0]).toMatchObject({
+      type: 'alert', message: expect.stringContaining('Lifecycle storage unavailable')
+    });
+  });
+  test.each(lifecycleWrites)('$name suppresses delayed API errors after identity replacement', async ({ write, action }) => {
+    const original = await prepareLifecycle(action === 'RESTORE');
+    let reject!: (error: Error) => void;
+    mockedApi.post.mockReturnValueOnce(new Promise((_resolve, fail) => { reject = fail; }));
+    const pending = write();
+    useSecurityStore.setState({ authUser: { ...readUser, id: 'different-lifecycle-owner' }, notifications: [] });
+    reject(new ApiError(403, 'Previous owner private lifecycle error'));
+    expect(await pending).toBe(false);
+    expect(useSecurityStore.getState()).toMatchObject({ ...original, notifications: [], syncQueue: [] });
+  });
+  test.each(lifecycleWrites)('$name suppresses delayed local completion after identity replacement', async ({ write, action }) => {
+    const original = await prepareLifecycle(action === 'RESTORE');
+    useSecurityStore.setState({ isOnline: false });
+    let persist!: () => void;
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementationOnce(mutation => new Promise(resolve => {
+      persist = () => resolve({ ...mutation, deviceId: 'lifecycle-device', retryCount: 0, status: 'PENDING' });
+    }));
+    const pending = write();
+    useSecurityStore.setState({ authUser: { ...readUser, id: 'different-lifecycle-owner' }, notifications: [] });
+    persist();
+    expect(await pending).toBe(false);
+    expect(useSecurityStore.getState()).toMatchObject({ ...original, notifications: [], syncQueue: [] });
+  });
+  test.each(lifecycleWrites)('$name waits for durable local storage and then confirms only a queued operation', async ({ write, action, entityType, id }) => {
+    const original = await prepareLifecycle(action === 'RESTORE');
+    useSecurityStore.setState({ isOnline: false });
+    let persist!: () => void;
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementationOnce(mutation => new Promise(resolve => {
+      persist = () => resolve({ ...mutation, deviceId: 'lifecycle-device', retryCount: 0, status: 'PENDING' });
+    }));
+    const pending = write();
+    expect(useSecurityStore.getState()).toMatchObject(original);
+    persist();
+    expect(await pending).toBe(true);
+    expect(useSecurityStore.getState().syncQueue[0]).toMatchObject({
+      entityType, action, payload: { id }, baseVersion: 1
+    });
+    expect(useSecurityStore.getState().notifications[0]).toMatchObject({
+      type: 'info', title: expect.stringContaining('vorgemerkt')
+    });
+    expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+  test.each(['site', 'employee'] as const)('offline %s archive then restore advances durable base versions in order', async entityType => {
+    await prepareLifecycle(false);
+    useSecurityStore.setState({ isOnline: false });
+    const enqueue = vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => ({
+      ...mutation, deviceId: 'lifecycle-device', retryCount: 0, status: 'PENDING'
+    }));
+    const id = entityType === 'site' ? siteRow.id : employeeRow.id;
+    const state = useSecurityStore.getState();
+    expect(await (entityType === 'site' ? state.archiveSite(id) : state.archiveEmployee(id))).toBe(true);
+    expect(await (entityType === 'site' ? state.restoreSite(id) : state.restoreEmployee(id))).toBe(true);
+    expect(enqueue.mock.calls.map(([mutation]) => mutation.baseVersion)).toEqual([1, 2]);
+    const records = entityType === 'site' ? useSecurityStore.getState().sites : useSecurityStore.getState().employees;
+    expect(records.find(record => record.id === id)).toMatchObject({ archivedAt: null, revisionVersion: 3 });
+  });
+
+  const actualSiteMetadata = {
+    requiredGuardsDay: 4, requiredGuardsNight: 3, alarmSystem: 'Actual equipment',
+    accessRules: 'Actual access rules', timeZone: 'Europe/Berlin'
+  };
+  test('successive offline customer edits retain the next actual revision for ordered replay', async () => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    useSecurityStore.setState({ isOnline: false });
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => ({
+      ...mutation, deviceId: 'actual-customer-device', retryCount: 0, status: 'PENDING'
+    }));
+    expect(await useSecurityStore.getState().updateClient(customerRow.id, { noticePeriodMonths: 6 })).toBe(true);
+    expect(await useSecurityStore.getState().updateClient(customerRow.id, { noticePeriodMonths: 9 })).toBe(true);
+    expect(vi.mocked(offlineVault.enqueueMutation).mock.calls.map(([mutation]) => mutation.baseVersion)).toEqual([1, 2]);
+    expect(useSecurityStore.getState().clients[0]).toMatchObject({ noticePeriodMonths: 9, revisionVersion: 3 });
+  });
+  test.each([true, false])('site edits preserve explicit operational metadata in requests and visible state (online=%s)', async online => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    useSecurityStore.setState({ isOnline: online });
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => ({
+      ...mutation, deviceId: 'actual-site-device', retryCount: 0, status: 'PENDING'
+    }));
+    mockedApi.patch.mockResolvedValueOnce({
+      ...siteRow, required_guards_day: 4, required_guards_night: 3, alarm_system: 'Actual equipment',
+      access_rules: 'Actual access rules', time_zone: 'Europe/Berlin', revision_version: 2
+    });
+    expect(await useSecurityStore.getState().updateSite(siteRow.id, actualSiteMetadata)).toBe(true);
+    if (online) expect(mockedApi.patch).toHaveBeenCalledWith(`/sites/${siteRow.id}`, expect.objectContaining(actualSiteMetadata));
+    else expect(useSecurityStore.getState().syncQueue[0].payload).toMatchObject(actualSiteMetadata);
+    expect(useSecurityStore.getState().sites[0]).toMatchObject(actualSiteMetadata);
+  });
+
+  test('offline site creation displays the same genuine requirements and equipment as the durably queued request', async () => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    useSecurityStore.setState({ isOnline: false });
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => ({
+      ...mutation, deviceId: 'actual-site-device', retryCount: 0, status: 'PENDING'
+    }));
+    expect(await useSecurityStore.getState().addSite({
+      ...useSecurityStore.getState().sites[0], ...actualSiteMetadata
+    })).toBe(true);
+    expect(useSecurityStore.getState().sites[0]).toMatchObject(actualSiteMetadata);
+  });
+
+  test.each(resourceWrites)('$name reports a real rejected write instead of a success-shaped void result', async ({ write }) => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    mockedApi.post.mockRejectedValueOnce(new ApiError(403, 'Write denied'));
+    mockedApi.patch.mockRejectedValueOnce(new ApiError(403, 'Write denied'));
+    expect(await write()).toBe(false);
+    expect(useSecurityStore.getState().notifications.at(-1)?.message).toContain('Write denied');
+  });
+
+  test.each(resourceWrites)('$name does not publish an old identity response into current resources', async ({ write }) => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    let resolve!: (value: unknown) => void;
+    const response = new Promise(done => { resolve = done; });
+    mockedApi.post.mockReturnValueOnce(response);
+    mockedApi.patch.mockReturnValueOnce(response);
+    const pending = write();
+    useSecurityStore.setState({
+      authUser: { ...readUser, id: 'other-user' }, currentUserId: 'other-user',
+      clients: [], sites: [], employees: [], notifications: []
+    });
+    resolve({ id: '55555555-5555-4555-8555-555555555555', revision_version: 2 });
+    expect(await pending).toBe(false);
+    expect(useSecurityStore.getState()).toMatchObject({
+      clients: [], sites: [], employees: [], notifications: []
+    });
+  });
+
+  test.each(resourceWrites)('$name waits for durable local storage before confirming an offline write', async ({ write }) => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    useSecurityStore.setState({ isOnline: false });
+    let release!: () => void;
+    const stored = new Promise<void>(resolve => { release = resolve; });
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => {
+      await stored;
+      return { ...mutation, deviceId: 'resource-test-device', retryCount: 0, status: 'PENDING' };
+    });
+    let settled = false;
+    const pending = write().then(result => { settled = true; return result; });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    expect(useSecurityStore.getState().syncQueue).toEqual([]);
+    release();
+    expect(await pending).toBe(true);
+    expect(useSecurityStore.getState().syncQueue).toEqual([
+      expect.objectContaining({ tenantId: readUser.tenantId, userId: readUser.id, status: 'pending' })
+    ]);
+    expect(mockedApi.post).not.toHaveBeenCalled();
+    expect(mockedApi.patch).not.toHaveBeenCalled();
+  });
+
+  test.each(resourceWrites)('$name does not confirm an offline storage failure', async ({ write }) => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    const { clients, sites, employees } = useSecurityStore.getState();
+    useSecurityStore.setState({ isOnline: false });
+    vi.spyOn(offlineVault, 'enqueueMutation').mockRejectedValueOnce(new Error('Local quota exceeded'));
+    expect(await write()).toBe(false);
+    expect(useSecurityStore.getState()).toMatchObject({ clients, sites, employees, syncQueue: [] });
+    expect(useSecurityStore.getState().notifications.at(-1)?.message).toContain('Local quota exceeded');
+  });
+
+  const qualificationInput = {
+    type: QualificationType.GEWO_34A_SACHKUNDE, certificateNumber: 'Certificate-1',
+    issueDate: '2026-01-01', expiryDate: null, verified: false
+  };
+  const absenceInput = { type: 'Urlaub' as const, startDate: '2026-12-01', endDate: '2026-12-02' };
+  const employeeDetailWrites = [
+    { name: 'create qualification', action: 'QUALIFICATION_CREATE', write: () => useSecurityStore.getState().addQualification(employeeRow.id, qualificationInput) },
+    { name: 'update qualification', action: 'QUALIFICATION_UPDATE', write: () => useSecurityStore.getState().updateQualification(employeeRow.id, 'qualification-1', { certificateNumber: 'Updated certificate' }) },
+    { name: 'create absence', action: 'ABSENCE_CREATE', write: () => useSecurityStore.getState().addAbsence(employeeRow.id, absenceInput) },
+    { name: 'review absence', action: 'ABSENCE_REVIEW', write: () => useSecurityStore.getState().reviewAbsence(employeeRow.id, 'absence-1', 'APPROVED') }
+  ];
+
+  async function prepareEmployeeDetails() {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    useSecurityStore.setState({
+      employees: useSecurityStore.getState().employees.map(employee => ({
+        ...employee,
+        qualifications: [{ ...qualificationInput, id: 'qualification-1', revisionVersion: 1 }],
+        absences: [{ ...absenceInput, id: 'absence-1', approved: false, status: 'PENDING', revisionVersion: 1 }]
+      }))
+    });
+  }
+
+  test.each(employeeDetailWrites)('$name explicitly reports API failure without changing employee details', async ({ write }) => {
+    await prepareEmployeeDetails();
+    const employees = useSecurityStore.getState().employees;
+    mockedApi.post.mockRejectedValueOnce(new ApiError(403, 'Detail write denied'));
+    mockedApi.patch.mockRejectedValueOnce(new ApiError(403, 'Detail write denied'));
+    expect(await write()).toBe(false);
+    expect(useSecurityStore.getState().employees).toEqual(employees);
+    expect(useSecurityStore.getState().notifications.at(-1)?.message).toContain('Detail write denied');
+  });
+
+  test.each(employeeDetailWrites)('$name isolates a delayed old-identity completion', async ({ write }) => {
+    await prepareEmployeeDetails();
+    let resolve!: (value: unknown) => void;
+    const response = new Promise(done => { resolve = done; });
+    mockedApi.post.mockReturnValueOnce(response);
+    mockedApi.patch.mockReturnValueOnce(response);
+    const pending = write();
+    useSecurityStore.setState({ authUser: { ...readUser, id: 'other-user' }, employees: [], notifications: [] });
+    resolve({ id: 'new-detail', status: 'PENDING', revision_version: 2 });
+    expect(await pending).toBe(false);
+    expect(useSecurityStore.getState()).toMatchObject({ employees: [], notifications: [] });
+  });
+
+  test.each(employeeDetailWrites)('$name retains offline failure and confirms only a durably stored retry', async ({ write, action }) => {
+    await prepareEmployeeDetails();
+    const employees = useSecurityStore.getState().employees;
+    useSecurityStore.setState({ isOnline: false });
+    const enqueue = vi.spyOn(offlineVault, 'enqueueMutation').mockRejectedValueOnce(new Error('Detail storage unavailable'));
+    expect(await write()).toBe(false);
+    expect(useSecurityStore.getState()).toMatchObject({ employees, syncQueue: [] });
+    let release!: () => void;
+    const stored = new Promise<void>(resolve => { release = resolve; });
+    enqueue.mockImplementation(async mutation => {
+      await stored;
+      return { ...mutation, deviceId: 'detail-test-device', retryCount: 0, status: 'PENDING' };
+    });
+    let settled = false;
+    const pending = write().then(result => { settled = true; return result; });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    expect(useSecurityStore.getState().syncQueue).toEqual([]);
+    release();
+    expect(await pending).toBe(true);
+    expect(useSecurityStore.getState().syncQueue).toEqual([
+      expect.objectContaining({ action, tenantId: readUser.tenantId, userId: readUser.id, status: 'pending' })
+    ]);
+    expect(mockedApi.post).not.toHaveBeenCalled();
+    expect(mockedApi.patch).not.toHaveBeenCalled();
+  });
+
+  test.each([true, false])('employee creation keeps a confirmed core record but explicitly reports missing qualification details (online=%s)', async online => {
+    await prepareEmployeeDetails();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    useSecurityStore.setState({ isOnline: online });
+    mockedApi.post.mockResolvedValueOnce({ id: '55555555-5555-4555-8555-555555555555' })
+      .mockRejectedValueOnce(new ApiError(403, 'Qualification denied'));
+    vi.spyOn(offlineVault, 'enqueueMutation')
+      .mockImplementationOnce(async mutation => ({ ...mutation, deviceId: 'partial-employee-device', retryCount: 0, status: 'PENDING' }))
+      .mockRejectedValueOnce(new Error('Qualification storage failed'));
+    const input = {
+      ...useSecurityStore.getState().employees[0], personnelNumber: 'NEW-DETAIL',
+      qualifications: [{ ...qualificationInput, id: 'draft-qualification' }]
+    };
+    expect(await useSecurityStore.getState().addEmployee(input)).toBe(true);
+    const created = useSecurityStore.getState().employees.filter(employee => employee.personnelNumber === 'NEW-DETAIL');
+    expect(created).toHaveLength(1);
+    expect(created[0].qualifications).toEqual([]);
+    expect(useSecurityStore.getState().notifications.find(notification =>
+      notification.title === (online ? 'Mitarbeiter gespeichert' : 'Mitarbeiter vorgemerkt')
+    )).toMatchObject({
+      type: 'alert', message: expect.stringContaining('Nachweis wurde nicht übernommen')
+    });
+    if (!online) expect(useSecurityStore.getState().syncQueue).toHaveLength(1);
+  });
+
+  test.each(['create', 'update'])('offline qualification %s remains pending until genuine server confirmation', async action => {
+    await prepareEmployeeDetails();
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => ({
+      ...mutation, deviceId: 'qualification-device', retryCount: 0, status: 'PENDING'
+    }));
+    const employee = useSecurityStore.getState().employees[0];
+    useSecurityStore.setState({
+      isOnline: false,
+      employees: [{
+        ...employee,
+        qualifications: employee.qualifications.map(qualification => ({ ...qualification, verified: true, status: 'GÜLTIG' }))
+      }]
+    });
+    const saved = action === 'create'
+      ? await useSecurityStore.getState().addQualification(employee.id, { ...qualificationInput, verified: true })
+      : await useSecurityStore.getState().updateQualification(employee.id, employee.qualifications[0].id, { verified: false });
+    expect(saved).toBe(true);
+    expect(useSecurityStore.getState().employees[0].qualifications[0].status).toBe('AUSSTEHEND');
+    expect(useSecurityStore.getState().syncQueue).toHaveLength(1);
+    expect(mockedApi.post).not.toHaveBeenCalled();
+    expect(mockedApi.patch).not.toHaveBeenCalled();
+  });
+
   test('replays the authenticated outbox after restoring a session while already online', async () => {
     mockReadEndpoints();
     mockedApi.get.mockImplementation((endpoint: string) => endpoint === '/auth/me'
       ? Promise.resolve({
-        id: 'restored-user',
+        userId: 'restored-user',
         tenantId: 'tenant-frankfurt',
         permissions: ['shifts:manage']
       })
@@ -348,6 +851,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
       mockedApi.post.mockResolvedValueOnce([{
         clientUuid: mutation.id,
         status: 'SYNCED',
+        serverId: syncedTaskId,
         serverVersion: 1
       }]);
       useSecurityStore.setState({
@@ -407,7 +911,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
       currentUserId: mutation.userId,
       authUser: {
         id: mutation.userId, email: '', fullName: '', role: '',
-        tenantId: mutation.tenantId, tenantName: '', permissions: []
+        tenantId: mutation.tenantId, tenantName: '', permissions: ['logbook:read']
       },
       guardBook: [{
         id: 'local-stale-entry',
@@ -448,6 +952,51 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
 
     expect(refresh).toHaveBeenCalledOnce();
     expect(refresh).toHaveBeenCalledWith({ preserveCurrentData: true });
+  });
+
+  test.each(['success', 'failure'] as const)('serializes a newly queued mutation until an empty-cycle refresh finishes with %s', async outcome => {
+    const mutation: OutboxMutation = {
+      id: 'queued-during-empty-refresh', tenantId: readUser.tenantId, userId: readUser.id,
+      deviceId: 'serial-device', entityType: 'key', action: 'UPDATE', payload: { id: 'key-1' },
+      occurredAt: '2026-11-16T00:00:00Z', baseVersion: 1, retryCount: 0, status: 'PENDING'
+    };
+    let queued = false;
+    vi.spyOn(offlineVault, 'getPendingOutbox').mockImplementation(async () => queued ? [mutation] : []);
+    vi.spyOn(offlineVault, 'getOutbox').mockImplementation(async () => queued ? [mutation] : []);
+    vi.spyOn(offlineVault, 'getPendingAttachments').mockResolvedValue([]);
+    vi.spyOn(offlineVault, 'hasOwnerlessPendingAttachments').mockResolvedValue(false);
+    const synced = vi.spyOn(offlineVault, 'markSynced').mockImplementation(async () => { queued = false; });
+    let finishRefresh!: () => void;
+    let failRefresh!: (error: Error) => void;
+    const refresh = vi.spyOn(useSecurityStore.getState(), 'loadTenantData').mockReturnValueOnce(
+      new Promise<void>((resolve, reject) => { finishRefresh = resolve; failRefresh = reject; })
+    );
+    let finishPush!: (receipts: object[]) => void;
+    mockedApi.post.mockReturnValueOnce(new Promise<object[]>(resolve => { finishPush = resolve; }));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    useSecurityStore.setState({
+      authUser: readUser, isAuthenticated: true, isOnline: true,
+      currentTenantId: readUser.tenantId, currentUserId: readUser.id
+    });
+    const initial = useSecurityStore.getState().triggerManualSync({ refreshWhenOutboxEmpty: true });
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+    const busyDuringRefresh = useSecurityStore.getState().isSyncing;
+    queued = true;
+    let secondFinished = false;
+    const next = useSecurityStore.getState().triggerManualSync().then(result => {
+      secondFinished = true;
+      return result;
+    });
+    await vi.waitFor(() => expect(secondFinished || mockedApi.post.mock.calls.length > 0).toBe(true));
+    const observed = { pushes: mockedApi.post.mock.calls.length, busy: busyDuringRefresh };
+    if (outcome === 'success') finishRefresh();
+    else failRefresh(new Error('Refresh failed while new work was queued'));
+    finishPush([{ clientUuid: mutation.id, status: 'SYNCED', serverVersion: 2 }]);
+    const [initialResult] = await Promise.all([initial, next]);
+    await vi.waitFor(() => expect(synced).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(useSecurityStore.getState().isSyncing).toBe(false));
+    expect(observed).toEqual({ pushes: 0, busy: true });
+    if (outcome === 'failure') expect(initialResult.error).toBe('Refresh failed while new work was queued');
   });
 
   test('does not refresh an empty pending queue while failed or conflicted outbox rows remain', async () => {
@@ -537,8 +1086,65 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     expect(refresh).not.toHaveBeenCalled();
   });
 
+  test.each([
+    { hasMutations: false, phase: 'attachments' }, { hasMutations: true, phase: 'attachments' },
+    { hasMutations: false, phase: 'refresh' }, { hasMutations: true, phase: 'refresh' }
+  ])('does not publish an old outbox after delayed $phase (has mutations: $hasMutations)', async ({ hasMutations, phase }) => {
+    vi.stubGlobal('indexedDB', new IDBFactory());
+    const mutation: OutboxMutation = {
+      id: 'old-owner-mutation', tenantId: readUser.tenantId, userId: readUser.id,
+      entityType: 'key', action: 'UPDATE', payload: { label: 'Previous owner private payload' },
+      deviceId: 'old-owner-device', occurredAt: '2026-11-16T00:00:00Z',
+      baseVersion: 1, retryCount: 0, status: 'PENDING'
+    };
+    vi.spyOn(offlineVault, 'getPendingOutbox').mockResolvedValue(hasMutations ? [mutation] : []);
+    vi.spyOn(offlineVault, 'getOutbox').mockResolvedValue(phase === 'refresh' ? [] : [{ ...mutation, status: 'FAILED' }]);
+    vi.spyOn(offlineVault, 'markSynced').mockResolvedValue(undefined);
+    mockedApi.post.mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED', serverVersion: 2 }]);
+    let finishAttachments!: (attachments: []) => void;
+    const attachments = vi.spyOn(offlineVault, 'getPendingAttachments').mockReturnValueOnce(phase === 'attachments'
+      ? new Promise(resolve => { finishAttachments = resolve; })
+      : Promise.resolve([]));
+    let finishRefresh!: () => void;
+    const refresh = vi.spyOn(useSecurityStore.getState(), 'loadTenantData').mockReturnValueOnce(
+      new Promise<void>(resolve => { finishRefresh = resolve; })
+    );
+    vi.spyOn(offlineVault, 'hasOwnerlessPendingAttachments').mockResolvedValue(phase === 'refresh');
+    useSecurityStore.setState({
+      authUser: readUser, isAuthenticated: true, isOnline: true,
+      currentTenantId: readUser.tenantId, currentUserId: readUser.id, notifications: []
+    });
+    const sync = useSecurityStore.getState().triggerManualSync(phase === 'refresh'
+      ? { refreshAfterSync: true, refreshWhenOutboxEmpty: true } : undefined);
+    await vi.waitFor(() => expect(phase === 'attachments' ? attachments : refresh).toHaveBeenCalledOnce());
+    useSecurityStore.setState({
+      authUser: { ...readUser, id: 'new-owner' }, currentUserId: 'new-owner',
+      syncQueue: [], notifications: [], lastSyncTime: 'Current owner timestamp'
+    });
+    if (phase === 'attachments') finishAttachments([]);
+    else finishRefresh();
+    await sync;
+    expect(useSecurityStore.getState()).toMatchObject({
+      syncQueue: [], notifications: [], lastSyncTime: 'Current owner timestamp'
+    });
+  });
+
+  test('reports an outbox storage failure explicitly instead of silently returning zero results', async () => {
+    useSecurityStore.setState({
+      authUser: readUser, isAuthenticated: true, isOnline: true,
+      currentTenantId: readUser.tenantId, currentUserId: readUser.id, notifications: []
+    });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(offlineVault, 'getPendingOutbox').mockRejectedValueOnce(new Error('Outbox storage unavailable'));
+    expect(await useSecurityStore.getState().triggerManualSync()).toMatchObject({ error: 'Outbox storage unavailable' });
+    expect(useSecurityStore.getState().notifications[0]).toMatchObject({
+      type: 'alert', message: expect.stringContaining('Outbox storage unavailable')
+    });
+  });
+
   test('preserves the current offline view when a post-sync snapshot endpoint fails', async () => {
     mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
     mockedApi.get.mockImplementation((endpoint: string) => endpoint === '/logbook'
       ? Promise.reject(new Error('Snapshot temporarily unavailable'))
       : readEndpoint(endpoint));
@@ -589,7 +1195,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
         receipt = {
           clientUuid: submitted.clientUuid,
           status: 'SYNCED',
-          serverId: 'server-task-committed-once',
+          serverId: syncedTaskId,
           serverVersion: 1
         };
         storedReceipts.set(idempotencyKey, receipt);
@@ -665,7 +1271,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
       expect(storedReceipts.get(idempotencyKey)).toMatchObject({
         clientUuid: mutation.id,
         status: 'SYNCED',
-        serverId: 'server-task-committed-once'
+        serverId: syncedTaskId
       });
       expect(await offlineVault.getOutbox(mutation.tenantId, undefined, mutation.userId)).toEqual([]);
     } finally {
@@ -744,7 +1350,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     const markSynced = vi.spyOn(offlineVault, 'markSynced').mockResolvedValue(undefined);
     mockedApi.post
       .mockRejectedValueOnce(new ApiError(503, 'Temporarily unavailable'))
-      .mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED' }]);
+      .mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED', serverId: syncedTaskId }]);
     useSecurityStore.setState({
       isOnline: true,
       isAuthenticated: true,
@@ -792,7 +1398,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     const markSynced = vi.spyOn(offlineVault, 'markSynced').mockResolvedValue(undefined);
     mockedApi.post
       .mockRejectedValueOnce(new ApiError(429, 'Too many requests', undefined, false, 'RATE_LIMIT_EXCEEDED', undefined, 60_000))
-      .mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED' }]);
+      .mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED', serverId: syncedTaskId }]);
     useSecurityStore.setState({
       isOnline: true,
       isAuthenticated: true,
@@ -907,8 +1513,8 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
       }] as any)
       .mockResolvedValueOnce([]);
     mockedApi.post
-      .mockResolvedValueOnce([{ clientUuid: acknowledgedMutation.id, status: 'SYNCED' }])
-      .mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED' }]);
+      .mockResolvedValueOnce([{ clientUuid: acknowledgedMutation.id, status: 'SYNCED', serverId: syncedTaskId }])
+      .mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED', serverId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' }]);
     useSecurityStore.setState({
       isOnline: true,
       isAuthenticated: true,
@@ -1023,6 +1629,28 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     expect(state.syncQueue).toHaveLength(0);
   });
 
+  test('failed server logout still clears local identity and reports unconfirmed revocation', async () => {
+    mockedApi.post.mockRejectedValueOnce(new ApiError(500, 'Network unavailable', undefined, true));
+    useSecurityStore.setState({
+      isAuthenticated: true,
+      currentUserId: 'user-regression',
+      clients: [{ id: 'private-client' }] as any
+    });
+    await useSecurityStore.getState().logout();
+    const state = useSecurityStore.getState();
+    expect(state.isAuthenticated).toBe(false);
+    expect(state.currentUserId).toBe('');
+    expect(state.clients).toHaveLength(0);
+    expect(state.authError).toContain('Sitzungswiderruf konnte nicht bestätigt werden');
+  });
+
+  test('already expired server session does not show an unconfirmed logout warning', async () => {
+    mockedApi.post.mockRejectedValueOnce(new ApiError(401, 'Session expired'));
+    await useSecurityStore.getState().logout();
+    expect(useSecurityStore.getState().isAuthenticated).toBe(false);
+    expect(useSecurityStore.getState().authError).toBeNull();
+  });
+
   test('failed session restoration removes tenant data from memory', async () => {
     mockedApi.get.mockRejectedValueOnce(new Error('Unauthorized'));
     useSecurityStore.setState({
@@ -1066,7 +1694,50 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
 
     await useSecurityStore.getState().loadTenantData();
 
-    expect(mockedApi.get).toHaveBeenCalledWith('/sops');
+    expect(mockedApi.get.mock.calls.map(([endpoint]) => endpoint)).toEqual(['/sops']);
+    expect(useSecurityStore.getState().dataLoadError).toBeNull();
+  });
+
+  test.each([
+    { permissions: ['logbook:read'] },
+    { permissions: [], sitePermissions: [{ code: 'logbook:read', siteId: siteRow.id }] },
+    { permissions: [], ownPermissions: ['logbook:read'] }
+  ])('restores scoped read grants without broadening tenant permissions: %j', async grants => {
+    const identity = { ...readUser, ...grants, userId: readUser.id };
+    mockedApi.get.mockImplementation((endpoint: string) => endpoint === '/auth/me'
+      ? Promise.resolve(identity)
+      : readEndpoint(endpoint));
+    const originalSync = useSecurityStore.getState().triggerManualSync;
+    useSecurityStore.setState({ triggerManualSync: vi.fn().mockResolvedValue(undefined) });
+    try {
+      await useSecurityStore.getState().restoreSession();
+      const state = useSecurityStore.getState();
+      expect(mockedApi.get.mock.calls.map(([endpoint]) => endpoint)).toEqual(['/auth/me', '/logbook']);
+      expect(state.authUser?.permissions).toEqual(grants.permissions);
+      expect(state.authUser?.sitePermissions).toEqual('sitePermissions' in grants ? grants.sitePermissions : []);
+      expect(state.authUser?.ownPermissions).toEqual('ownPermissions' in grants ? grants.ownPermissions : []);
+      expect(state.guardBook.map(entry => entry.id)).toEqual([logbookRow.id]);
+      expect(state.dataLoadError).toBeNull();
+    } finally {
+      useSecurityStore.setState({ triggerManualSync: originalSync });
+    }
+  });
+
+  test('does not request module data for an ungranted administrator', async () => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: { ...readUser, permissions: [], isSuperAdmin: true } });
+    await useSecurityStore.getState().loadTenantData();
+    expect(mockedApi.get).not.toHaveBeenCalled();
+    expect(useSecurityStore.getState().dataLoadError).toBeNull();
+  });
+
+  test('keeps an actual server denial visible when a previously granted read is revoked', async () => {
+    mockedApi.get.mockRejectedValue(new ApiError(403, 'Leserecht wurde entzogen'));
+    useSecurityStore.setState({ authUser: { ...readUser, permissions: ['logbook:read'] } });
+    await useSecurityStore.getState().loadTenantData();
+    expect(mockedApi.get.mock.calls.map(([endpoint]) => endpoint)).toEqual(['/logbook']);
+    expect(useSecurityStore.getState().guardBook).toEqual([]);
+    expect(useSecurityStore.getState().dataLoadError).toContain('Leserecht wurde entzogen');
   });
 
   test('offline capture is durably bound to user, tenant, assignment and exact version before showing pending', async () => {
@@ -1257,6 +1928,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     expect(mutationWrite).toHaveBeenCalledWith(expect.objectContaining({
       payload: expect.objectContaining({ id: persistedEntryId })
     }));
+    expect(state.guardBook.find(entry => entry.id === persistedEntryId)?.revisions).toEqual([]);
     expect(state.syncQueue[0]).toMatchObject({
       tenantId: 'tenant-frankfurt',
       entityType: 'guardbook',
@@ -1383,7 +2055,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     expect(markSynced).toHaveBeenCalledTimes(2);
   });
 
-  test('Regelbasierte Automatisierungsregeln bleiben tenantbezogen steuerbar', () => {
+  test('Lokale Automatisierungsentwürfe bleiben tenantbezogen steuerbar, ohne eine Ausführung zu behaupten', () => {
     useSecurityStore.setState({ currentTenantId: 'tenant-frankfurt', automations: [] });
     useSecurityStore.getState().addAutomationRule({
       name: 'Wachbuch-Regression',
@@ -1396,7 +2068,13 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     });
     const rule = useSecurityStore.getState().getTenantAutomations()[0];
     expect(rule.tenantId).toBe('tenant-frankfurt');
-    expect(useSecurityStore.getState().testRunRule(rule.id)).toMatchObject({ matched: true, actions: ['NOTIFY_MANAGER'] });
+    expect(rule).toMatchObject({
+      conditions: [{ field: 'priority', operator: 'equals', value: 'Kritisch' }],
+      actions: [{ type: 'NOTIFY_MANAGER' }]
+    });
+    useSecurityStore.setState({ currentTenantId: 'tenant-bavaria' });
+    expect(useSecurityStore.getState().getTenantAutomations()).toEqual([]);
+    useSecurityStore.setState({ currentTenantId: 'tenant-frankfurt' });
 
     useSecurityStore.getState().toggleAutomationRule(rule.id);
     expect(useSecurityStore.getState().getTenantAutomations()[0].active).toBe(false);
@@ -1455,7 +2133,6 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     expect(useSecurityStore.getState().getTenantReportDefinitions()).toHaveLength(1);
     useSecurityStore.getState().deleteReportDefinition(frankfurtReport.id);
     expect(useSecurityStore.getState().getTenantReportDefinitions()).toHaveLength(0);
-    expect(useSecurityStore.getState().calculateTenantKPIs().planFulfillmentRate).toBe(0);
   });
 
   test('2. addClient persistiert über POST /customers und übernimmt die Server-ID', async () => {
@@ -1523,6 +2200,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
 
   test('Kundenbearbeitung und Archivierung verwenden die persistente API mit Revisionsstand', async () => {
     mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
     await useSecurityStore.getState().loadTenantData();
     expect(useSecurityStore.getState().clients).toHaveLength(1);
     expect(useSecurityStore.getState().isOnline).toBe(true);
@@ -1791,6 +2469,40 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
       expect.objectContaining({ status: 'Besetzt' })
     );
     expect(useSecurityStore.getState().shifts[0].status).toBe('Besetzt');
+  });
+
+  test('reports rejected task persistence to its caller without inserting local success', async () => {
+    mockedApi.post.mockRejectedValueOnce(new ApiError(403, 'Keine Berechtigung.'));
+    const result = await useSecurityStore.getState().addTask({
+      title: 'Nicht gespeichert', assignedToName: 'Einsatzleitung', dueDate: '2027-01-10',
+      priority: 'Mittel', status: 'Offen', category: 'Audit'
+    });
+    expect(result).toBeNull();
+    expect(useSecurityStore.getState().tasks).toEqual([]);
+    expect(useSecurityStore.getState().notifications[0].title).toBe('Aufgabe nicht gespeichert');
+  });
+
+  test.each(['tenant', 'user'])('does not insert a delayed task into the next %s context', async changed => {
+    let resolve!: (value: { id: string }) => void;
+    mockedApi.post.mockReturnValueOnce(new Promise<{ id: string }>(done => { resolve = done; }));
+    const pending = useSecurityStore.getState().addTask({
+      title: 'Alter Kontext', assignedToName: 'Einsatzleitung', dueDate: '2027-01-10',
+      priority: 'Mittel', status: 'Offen', category: 'Audit'
+    });
+    useSecurityStore.setState(changed === 'tenant'
+      ? { currentTenantId: 'tenant-next' } : { currentUserId: 'user-next' });
+    resolve({ id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' });
+    expect(await pending).toBeNull();
+    expect(useSecurityStore.getState().tasks).toEqual([]);
+    expect(useSecurityStore.getState().notifications).toEqual([]);
+  });
+
+  test('returns a failed key result instead of an indistinguishable fulfilled promise', async () => {
+    mockedApi.patch.mockRejectedValueOnce(new ApiError(409, 'Schlüssel bereits ausgegeben.'));
+    const result = await useSecurityStore.getState().issueKey('key-a', 'Ada Guard', 'employee-a', '2027-01-10T18:00');
+    expect(result).toBe(false);
+    expect(useSecurityStore.getState().keys).toEqual([]);
+    expect(useSecurityStore.getState().notifications[0].title).toBe('Schlüssel nicht ausgegeben');
   });
 
   test('8. addTask, toggleTaskStatus, issueKey und returnKey persistieren', async () => {

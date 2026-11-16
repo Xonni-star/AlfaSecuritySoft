@@ -90,14 +90,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobileMenu }) => {
         { id: 'documents', label: 'Dokumentenmanagement (DMS)', icon: FileText, badge: documents.length, badgeColor: 'bg-slate-700', visible: true },
         { id: 'tasks', label: 'Aufgaben & Maßnahmen', icon: CheckSquare, badge: openTasksCount, badgeColor: 'bg-slate-600', visible: true },
         { id: 'automations', label: 'Automatisierung & Watchdog', icon: Zap, visible: true },
-        { id: 'reports', label: 'Berichte & DIN 77200', icon: FileSpreadsheet, visible: true }
+        { id: 'reports', label: 'Berichte & Auswertungen', icon: FileSpreadsheet, visible: true }
       ]
     },
     {
       title: 'DOKUMENTATION & SCHULUNG',
       items: [
         { id: 'user_guide', label: 'Bebildertes Handbuch', icon: BookOpen, visible: true },
-        { id: 'e2e_acceptance', label: 'E2E-Abnahme & Release 1.0', icon: Award, visible: canAccessAdmin },
+        { id: 'e2e_acceptance', label: 'Abnahme-Prüfplan', icon: Award, visible: canAccessAdmin },
         { id: 'security_audit', label: 'Sicherheits-Audit & DSGVO', icon: ShieldCheck, visible: canAccessAdmin },
         { id: 'architecture', label: 'Backend & DB Blueprint', icon: Code2, visible: canAccessAdmin }
       ]

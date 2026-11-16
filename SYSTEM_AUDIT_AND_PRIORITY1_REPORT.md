@@ -229,7 +229,7 @@
 1. CRUD für Schichten, Schlüssel und Aufgaben (Tabellen vorhanden).
 2. Migrationen und Endpunkte für Dokumente, SOPs, Alarme und Notfallpläne.
 3. Offline-Outbox auf alle schreibenden Module ausweiten; Reconnect-Hydration.
-4. Revisionssichere Wachbuchkorrekturen und PDF-Export.
+4. Wachbuchkorrekturen nach einer technischen Append-Only-Regel und PDF-Export. Dieser Punkt ist ein historischer Arbeitsstand; rechtliche Revisionssicherheit und heutige PDF-Funktionalität sind damit nicht belegt.
 5. Rollen-/Benutzerverwaltung und serverseitige Berechtigungstests für alle Module.
 6. Auth-Härtung (HttpOnly-Cookies, CSRF, Rate-Limiting).
 7. Serverseitige KI-Schnittstelle statt Browser-API-Key.
@@ -319,7 +319,7 @@
 2. Übergaben und Streifenkontrollen an API/DB anbinden.
 3. Offline-Outbox für Schichten, Schlüssel, Aufgaben und Stammdaten erweitern.
 4. Reconnect-Hydration und Konfliktauflösung für alle Module.
-5. Wachbuch-Revisionen/Stage serverseitig abschließen; PDF/CSV-Export.
+5. In diesem historischen Snapshot offene Arbeiten: Wachbuch-Revisionen/Stage serverseitig abschließen; PDF/CSV-Export. Nicht als aktuelle Aufgabenliste verwenden.
 6. Benutzer-/Rechteverwaltung und serverseitige Berechtigungstests.
 7. Auth-Härtung: HttpOnly-Cookies, CSRF, Login-Rate-Limit.
 8. Serverseitige Gemini-Integration; API-Key aus dem Browser entfernen.

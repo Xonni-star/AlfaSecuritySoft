@@ -33,7 +33,6 @@ import {
   UserSessionDevice,
   GdprRetentionPolicy,
   ReportDefinition,
-  ControllingKPIs,
   ShiftSwapRequest,
   ConflictResolutionResult
 } from './types';
@@ -80,6 +79,8 @@ export interface AuthUser {
   tenantId: string;
   tenantName: string;
   permissions: string[];
+  sitePermissions?: Array<{ code: string; siteId: string }>;
+  ownPermissions?: string[];
   isSuperAdmin?: boolean;
 }
 
@@ -299,15 +300,16 @@ function mapSiteRow(row: any, tenantId: string): Site {
     name: asString(row.name),
     address: asString(row.address),
     securityLevel: (row.security_level ?? row.securityLevel ?? 'Hoch (KRITIS / BSI)') as unknown as Site['securityLevel'],
+    timeZone: asString(row.time_zone ?? row.timeZone, 'UTC'),
     siteManagerId: '',
     siteManagerName: asString(row.site_manager_name, 'Nicht zugewiesen'),
-    requiredGuardsDay: asNumber(row.required_guards_day, 1),
-    requiredGuardsNight: asNumber(row.required_guards_night, 1),
+    requiredGuardsDay: asNumber(row.required_guards_day ?? row.requiredGuardsDay, 1),
+    requiredGuardsNight: asNumber(row.required_guards_night ?? row.requiredGuardsNight, 1),
     checkpoints: [],
     assessments: [],
-    alarmSystem: asString(row.alarm_system),
+    alarmSystem: asString(row.alarm_system ?? row.alarmSystem),
     instructionsCount: 0,
-    accessRules: asString(row.access_rules),
+    accessRules: asString(row.access_rules ?? row.accessRules),
     activeAlarms: 0,
     revisionVersion: asNumber(row.revision_version ?? row.revisionVersion, 1),
     archivedAt: row.archived_at ?? row.archivedAt ?? null
@@ -375,7 +377,7 @@ function mapGuardBookRow(row: any, tenantId: string): GuardBookEntry {
     description: asString(row.description),
     policeInvolved: Boolean(row.police_involved ?? row.policeInvolved),
     resolved: Boolean(row.resolved),
-    revisions: [],
+    revisions: Array.isArray(row.revisions) ? row.revisions : [],
     offlineCreated: false
   };
 }
@@ -621,7 +623,7 @@ interface SecurityOpsStore {
   toggleNetworkSimulation: () => void;
   syncQueue: OfflineQueueItem[];
   enqueueOfflineAction: (item: Omit<OfflineQueueItem, 'id' | 'createdAt' | 'status' | 'retryCount'> & { id?: string }) => Promise<void>;
-  triggerManualSync: (options?: { retryFailed?: boolean; refreshAfterSync?: boolean; refreshWhenOutboxEmpty?: boolean }) => Promise<{ success: number; failed: number; conflicts: number }>;
+  triggerManualSync: (options?: { retryFailed?: boolean; refreshAfterSync?: boolean; refreshWhenOutboxEmpty?: boolean }) => Promise<{ success: number; failed: number; conflicts: number; error?: string }>;
   resolveConflict: (queueId: string, resolution: 'USE_LOCAL' | 'USE_SERVER' | 'RECORD_AS_EXCEPTION') => Promise<void>;
   clearCompletedSyncs: () => void;
 
@@ -655,8 +657,6 @@ interface SecurityOpsStore {
   deleteAutomationRule: (id: string) => void;
   duplicateAutomationRule: (id: string) => void;
   toggleAutomationRule: (id: string) => void;
-  testRunRule: (id: string) => { matched: boolean; actions: string[]; durationMs: number };
-  runAutomationsNow: () => number;
 
   // Datasets
   clients: Client[];
@@ -695,36 +695,35 @@ interface SecurityOpsStore {
   getTenantShiftHandovers: () => ShiftHandoverProtocol[];
   getTenantShiftSwaps: () => ShiftSwapRequest[];
   getTenantReportDefinitions: () => ReportDefinition[];
-  calculateTenantKPIs: () => ControllingKPIs;
   getTenantAutomations: () => AutomationRule[];
   getTenantAuditLogs: () => SecurityAuditEntry[];
   getTenantExecutionLogs: () => AutomationExecutionLog[];
   getTenantNotificationDeliveries: () => NotificationDelivery[];
 
   // Actions
-  addClient: (client: Omit<Client, 'id' | 'tenantId'>) => Promise<void>;
-  updateClient: (id: string, updates: Partial<Client>) => Promise<void>;
-  archiveClient: (id: string) => Promise<void>;
-  addSite: (site: Omit<Site, 'id' | 'tenantId'>) => Promise<void>;
-  updateSite: (id: string, updates: Partial<Site>) => Promise<void>;
-  archiveSite: (id: string) => Promise<void>;
-  restoreSite: (id: string) => Promise<void>;
-  addEmployee: (emp: Omit<Employee, 'id' | 'tenantId'>) => Promise<void>;
-  updateEmployee: (id: string, updates: Partial<Employee>) => Promise<void>;
-  archiveEmployee: (id: string) => Promise<void>;
-  restoreEmployee: (id: string) => Promise<void>;
-  addQualification: (employeeId: string, qualification: Omit<Qualification, 'id'>) => Promise<void>;
-  updateQualification: (employeeId: string, qualificationId: string, changes: Partial<Qualification>) => Promise<void>;
-  addAbsence: (employeeId: string, absence: Omit<AbsenceRecord, 'id' | 'approved' | 'status' | 'revisionVersion'>) => Promise<void>;
-  reviewAbsence: (employeeId: string, absenceId: string, decision: 'APPROVED' | 'REJECTED') => Promise<void>;
+  addClient: (client: Omit<Client, 'id' | 'tenantId'>) => Promise<boolean>;
+  updateClient: (id: string, updates: Partial<Client>) => Promise<boolean>;
+  archiveClient: (id: string) => Promise<boolean>;
+  addSite: (site: Omit<Site, 'id' | 'tenantId'>) => Promise<boolean>;
+  updateSite: (id: string, updates: Partial<Site>) => Promise<boolean>;
+  archiveSite: (id: string) => Promise<boolean>;
+  restoreSite: (id: string) => Promise<boolean>;
+  addEmployee: (emp: Omit<Employee, 'id' | 'tenantId'>) => Promise<boolean>;
+  updateEmployee: (id: string, updates: Partial<Employee>) => Promise<boolean>;
+  archiveEmployee: (id: string) => Promise<boolean>;
+  restoreEmployee: (id: string) => Promise<boolean>;
+  addQualification: (employeeId: string, qualification: Omit<Qualification, 'id'>) => Promise<boolean>;
+  updateQualification: (employeeId: string, qualificationId: string, changes: Partial<Qualification>) => Promise<boolean>;
+  addAbsence: (employeeId: string, absence: Omit<AbsenceRecord, 'id' | 'approved' | 'status' | 'revisionVersion'>) => Promise<boolean>;
+  reviewAbsence: (employeeId: string, absenceId: string, decision: 'APPROVED' | 'REJECTED') => Promise<boolean>;
   addShift: (shift: Omit<Shift, 'id' | 'tenantId'>) => Promise<void>;
   assignShiftEmployee: (shiftId: string, employeeId: string, employeeName: string) => Promise<void>;
   addShiftSwapRequest: (request: Omit<ShiftSwapRequest, 'id' | 'tenantId' | 'status' | 'requestedAt'>) => void;
   addReportDefinition: (definition: Omit<ReportDefinition, 'id' | 'createdAt'>) => void;
   deleteReportDefinition: (id: string) => void;
   addGuardBookEntry: (entry: Omit<GuardBookEntry, 'id' | 'timestamp' | 'tenantId'>) => Promise<string>;
-  updateGuardBookStage: (id: string, stage: GuardBookEntry['stage'], note?: string) => void;
-  resolveGuardBookEntry: (id: string, note: string) => void;
+  updateGuardBookStage: (id: string, stage: GuardBookEntry['stage'], note?: string) => Promise<boolean>;
+  resolveGuardBookEntry: (id: string, note: string) => Promise<boolean>;
   pendingSOPAcknowledgements: SOPPendingAcknowledgement[];
   acknowledgeSOP: (sopId: string) => Promise<boolean>;
   syncPendingSOPAcknowledgements: () => Promise<void>;
@@ -732,12 +731,12 @@ interface SecurityOpsStore {
   addAlarmAction: (incidentId: string, payload: Record<string, unknown>) => Promise<{ state: 'confirmed' | 'pending'; data?: unknown }>;
   changeAlarmStatus: (incidentId: string, payload: Record<string, unknown>) => Promise<{ state: 'confirmed' | 'pending'; data?: unknown }>;
   syncPendingAlarmMutations: () => Promise<void>;
-  issueKey: (keyId: string, holderName: string, holderId: string, returnDate: string) => Promise<void>;
-  returnKey: (keyId: string) => Promise<void>;
-  addTask: (task: Omit<TaskItem, 'id' | 'tenantId'>) => Promise<void>;
+  issueKey: (keyId: string, holderName: string, holderId: string, returnDate: string) => Promise<boolean>;
+  returnKey: (keyId: string) => Promise<boolean>;
+  addTask: (task: Omit<TaskItem, 'id' | 'tenantId'>) => Promise<TaskItem | null>;
   addPatrolScan: (scan: Omit<PatrolScanEvent, 'id' | 'tenantId' | 'scannedAt' | 'offlineCaptured'>) => Promise<void>;
   submitShiftHandover: (handover: Omit<ShiftHandoverProtocol, 'id' | 'tenantId' | 'handoverTime' | 'offlineCaptured'>) => Promise<void>;
-  toggleTaskStatus: (taskId: string) => Promise<void>;
+  toggleTaskStatus: (taskId: string) => Promise<boolean>;
   addEmergencyPlan: (plan: Omit<EmergencyPlan, 'id' | 'tenantId'>) => void;
   resolveAlarm: (siteId: string) => void;
 }
@@ -975,16 +974,19 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
 
   logout: async () => {
+    let logoutError: string | null = null;
     try {
       await apiClient.post('/auth/logout', {});
-    } catch {
-      // Die lokale Sitzung wird in jedem Fall beendet.
+    } catch (error) {
+      if (!(error instanceof ApiError && error.status === 401)) {
+        logoutError = 'Lokal abgemeldet. Der serverseitige Sitzungswiderruf konnte nicht bestätigt werden; die Sitzung kann weiterhin gültig sein. Bei verfügbarer Verbindung die Seite neu laden und erneut abmelden. Browserprofil bis zur Bestätigung nicht weitergeben.';
+      }
     }
     apiClient.setCsrfToken(null);
     set({
       authUser: null,
       isAuthenticated: false,
-      authError: null,
+      authError: logoutError,
       currentUserId: '',
       isLoadingData: false,
       dataLoadError: null,
@@ -997,18 +999,20 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       const me = await apiClient.get<any>('/auth/me');
       set({
         authUser: {
-          id: me.sub ?? me.id ?? '',
+          id: me.userId ?? me.sub ?? me.id ?? '',
           email: me.email ?? '',
           fullName: me.email ?? '',
           role: me.role ?? '',
           tenantId: me.tenantId ?? '',
           tenantName: me.tenantName ?? '',
           permissions: Array.isArray(me.permissions) ? me.permissions : [],
+          sitePermissions: Array.isArray(me.sitePermissions) ? me.sitePermissions : [],
+          ownPermissions: Array.isArray(me.ownPermissions) ? me.ownPermissions : [],
           isSuperAdmin: me.isSuperAdmin === true
         },
         isAuthenticated: true,
         currentTenantId: me.tenantId ?? me.tenant_id ?? '',
-        currentUserId: me.sub ?? me.id ?? '',
+        currentUserId: me.userId ?? me.sub ?? me.id ?? '',
         syncQueue: [],
         pendingSOPAcknowledgements: [],
         sops: [],
@@ -1077,7 +1081,12 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       });
     }
 
-    const permissions = get().authUser?.permissions || [];
+    const user = get().authUser;
+    const permissions = [
+      ...(user?.permissions ?? []),
+      ...(user?.sitePermissions ?? []).map(grant => grant.code),
+      ...(user?.ownPermissions ?? [])
+    ];
     const canReadDocuments = permissions.includes('documents:read');
     const canReadSOPs = permissions.includes('sop:read') || permissions.includes('sop:manage');
     const canReadAlarms = permissions.includes('alarm:read');
@@ -1096,13 +1105,13 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       emergencyPlansResult,
       alarmIncidentsResult
     ] = await Promise.allSettled([
-      apiClient.get<any[]>('/customers'),
-      apiClient.get<any[]>('/sites'),
-      apiClient.get<any[]>('/employees'),
-      apiClient.get<any[]>('/logbook'),
-      apiClient.get<any[]>('/shifts'),
-      apiClient.get<any[]>('/keys'),
-      apiClient.get<any[]>('/tasks'),
+      permissions.includes('customers:read') ? apiClient.get<any[]>('/customers') : Promise.resolve([]),
+      permissions.includes('sites:read') ? apiClient.get<any[]>('/sites') : Promise.resolve([]),
+      permissions.includes('employees:read') ? apiClient.get<any[]>('/employees') : Promise.resolve([]),
+      permissions.includes('logbook:read') ? apiClient.get<any[]>('/logbook') : Promise.resolve([]),
+      permissions.includes('shifts:read') ? apiClient.get<any[]>('/shifts') : Promise.resolve([]),
+      permissions.includes('keys:read') ? apiClient.get<any[]>('/keys') : Promise.resolve([]),
+      permissions.includes('tasks:read') ? apiClient.get<any[]>('/tasks') : Promise.resolve([]),
       canReadDocuments ? apiClient.get<any[]>('/documents') : Promise.resolve([]),
       canReadSOPs ? apiClient.get<any[]>('/sops') : Promise.resolve([]),
       canReadAlarms ? apiClient.get<any[]>('/alarm-types') : Promise.resolve([]),
@@ -1551,7 +1560,8 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   syncQueue: [],
 
   enqueueOfflineAction: async (item) => {
-    const userId = currentSOPIdentity(get()).userId;
+    const identity = currentSOPIdentity(get());
+    const userId = identity.userId;
     const queueEntry: OfflineQueueItem = {
       ...item,
       id: item.id ?? `queue-${crypto.randomUUID()}`,
@@ -1572,6 +1582,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         occurredAt: new Date().toISOString(),
         baseVersion: queueEntry.baseVersion ?? 1
       });
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return;
 
       set((state) => ({
         syncQueue: [{
@@ -1579,13 +1590,15 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
           payload: offlineQueuePreviewPayload(queueEntry.entityType, queueEntry.payload)
         }, ...state.syncQueue]
       }));
-    } catch (err: any) {
+    } catch (err) {
       console.error('[OUTBOX WRITE FAILED]', err);
-      get().addNotification(
-        'Lokaler Speicherfehler',
-        `Konnte Eintrag nicht lokal sichern: ${err?.message || 'Unbekannter IndexedDB Fehler'}`,
-        'alert'
-      );
+      if (isCurrentSOPIdentity(identity.tenantId, identity.userId)) {
+        get().addNotification(
+          'Lokaler Speicherfehler',
+          `Konnte Eintrag nicht lokal sichern: ${errorText(err)}`,
+          'alert'
+        );
+      }
       throw err;
     }
   },
@@ -1627,23 +1640,23 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         const allItems = await offlineVault.getOutbox(currentTenantId, undefined, currentUserId);
         if (!isCurrentSyncIdentity()) return { success: 0, failed: 0, conflicts: 0 };
         const attachmentSync = await syncPendingGuardbookAttachments(currentTenantId, currentUserId, isCurrentSyncIdentity);
+        if (!isCurrentSyncIdentity()) return { success: 0, failed: 0, conflicts: 0 };
         scheduleGuardbookAttachmentRetry(currentTenantId, currentUserId, attachmentSync.maxRetryCount);
         set({
           syncQueue: allItems.map(offlineOutboxToQueueItem),
-          isSyncing: false,
           lastSyncTime: new Date().toLocaleTimeString()
         });
         scheduleOutboxRetry(allItems);
-        isSyncRunningMutex = false;
         if (options.refreshWhenOutboxEmpty && allItems.length === 0 && isCurrentSyncIdentity()) {
           await get().loadTenantData({ preserveCurrentData: true });
         }
+        if (!isCurrentSyncIdentity()) return { success: 0, failed: 0, conflicts: 0 };
         if (attachmentSync.failed > 0) {
           get().addNotification('Anhänge warten auf Synchronisierung',
             `${attachmentSync.failed} Wachbuchanhang/Anhänge konnten nicht übertragen werden und bleiben lokal gespeichert.`,
             'warning');
         }
-        notifyOwnerlessGuardbookAttachments(attachmentSync.ownerlessCount);
+        notifyOwnerlessGuardbookAttachments(attachmentSync.hasOwnerlessAttachments);
         return { success: 0, failed: attachmentSync.failed, conflicts: 0 };
       }
 
@@ -1698,6 +1711,31 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
             if (!mutation) continue;
             acknowledgedMutationIds.add(mutation.id);
             if (receipt.status === 'SYNCED') {
+              if (mutation.entityType === 'task' && mutation.action === 'CREATE') {
+                if (typeof receipt.serverId !== 'string' ||
+                    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(receipt.serverId)) {
+                  failedCount++;
+                  await offlineVault.updateMutationStatus(mutation.id, 'FAILED', {
+                    errorMessage: 'Die Aufgabenquittung enthält keine gültige Server-ID.',
+                    retryable: false
+                  });
+                  continue;
+                }
+                if (isCurrentSyncIdentity()) {
+                  const task = mapTaskRow({
+                    ...mutation.payload,
+                    id: receipt.serverId,
+                    assigned_to_name: mutation.payload.assignedToName,
+                    site_name: mutation.payload.siteName,
+                    due_date: mutation.payload.dueDate,
+                    revision_version: receipt.serverVersion
+                  }, currentTenantId);
+                  set(state => ({
+                    tasks: [task, ...state.tasks.filter(item =>
+                      item.id !== mutation.payload.id && item.id !== task.id)]
+                  }));
+                }
+              }
               if (mutation.entityType === 'guardbook' && typeof mutation.payload.id === 'string' &&
                   typeof receipt.serverId === 'string' &&
                   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(receipt.serverId)) {
@@ -1775,8 +1813,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         scheduleOutboxRetry(remainingOutbox);
         if (isCurrentSyncIdentity()) {
           set({
-            syncQueue: remainingOutbox.map(offlineOutboxToQueueItem),
-            isSyncing: false
+            syncQueue: remainingOutbox.map(offlineOutboxToQueueItem)
           });
           get().addNotification(
             'Synchronisierung fehlgeschlagen',
@@ -1784,7 +1821,6 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
             'alert'
           );
         }
-        isSyncRunningMutex = false;
         return { success: successCount, failed: failedCount + failedItems.length, conflicts: conflictCount };
       }
 
@@ -1792,11 +1828,11 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       scheduleOutboxRetry(remainingOutbox);
       if (!isCurrentSyncIdentity()) return { success: successCount, failed: failedCount, conflicts: conflictCount };
       const attachmentSync = await syncPendingGuardbookAttachments(currentTenantId, currentUserId, isCurrentSyncIdentity);
+      if (!isCurrentSyncIdentity()) return { success: successCount, failed: failedCount, conflicts: conflictCount };
       failedCount += attachmentSync.failed;
       scheduleGuardbookAttachmentRetry(currentTenantId, currentUserId, attachmentSync.maxRetryCount);
       set({
         syncQueue: remainingOutbox.map(offlineOutboxToQueueItem),
-        isSyncing: false,
         lastSyncTime: new Date().toLocaleTimeString()
       });
 
@@ -1810,6 +1846,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       ) {
         await get().loadTenantData({ preserveCurrentData: true });
       }
+      if (!isCurrentSyncIdentity()) return { success: successCount, failed: failedCount, conflicts: conflictCount };
 
       if (successCount > 0) {
         get().addNotification(
@@ -1831,12 +1868,15 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
           `${attachmentSync.failed} Wachbuchanhang/Anhänge konnten nicht übertragen werden und bleiben lokal gespeichert.`,
           'warning');
       }
-      notifyOwnerlessGuardbookAttachments(attachmentSync.ownerlessCount);
-    } catch (err: any) {
+      notifyOwnerlessGuardbookAttachments(attachmentSync.hasOwnerlessAttachments);
+    } catch (err) {
       console.error('[CRITICAL SYNC ERROR]', err);
+      const message = errorText(err);
+      if (isCurrentSyncIdentity()) get().addNotification('Synchronisierung nicht abgeschlossen', message, 'alert');
+      return { success: successCount, failed: failedCount, conflicts: conflictCount, error: message };
     } finally {
       isSyncRunningMutex = false;
-      set({ isSyncing: false });
+      if (isCurrentSyncIdentity()) set({ isSyncing: false });
       if (syncRerunRequested) {
         syncRerunRequested = false;
         setTimeout(() => void get().triggerManualSync(), 0);
@@ -1965,11 +2005,13 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       );
     } catch (err: any) {
       console.error('[CONFLICT RESOLUTION FAILED]', err);
-      get().addNotification(
-        'Fehler bei Konfliktauflösung',
-        `Server konnte Konflikt nicht auflösen: ${err?.message || 'Netzwerkfehler'}. Eintrag bleibt in Outbox erhalten.`,
-        'alert'
-      );
+      if (isCurrentSOPIdentity(identity.tenantId, identity.userId)) {
+        get().addNotification(
+          'Fehler bei Konfliktauflösung',
+          `Server konnte Konflikt nicht auflösen: ${err?.message || 'Netzwerkfehler'}. Eintrag bleibt in Outbox erhalten.`,
+          'alert'
+        );
+      }
       throw err;
     }
   },
@@ -2029,23 +2071,42 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   notificationPreferences: initialNotificationPreferences,
 
   dismissNotification: (id) =>
-    set((state) => ({ notifications: state.notifications.filter((n) => n.id !== id) })),
+    set((state) => {
+      const { tenantId, userId } = currentSOPIdentity(state);
+      if (!state.notificationDeliveries.some(item =>
+        item.id === id && item.tenantId === tenantId && item.userId === userId)) return state;
+      return {
+        notifications: state.notifications.filter(item => item.id !== id),
+        notificationDeliveries: state.notificationDeliveries.filter(item => item.id !== id)
+      };
+    }),
 
   addNotification: (title, message, type) => {
-    set((state) => ({
-      notifications: [
-        { id: `notif-${Date.now()}`, title, message, type, time: 'Gerade eben' },
-        ...state.notifications
-      ]
-    }));
+    const id = `notif-${crypto.randomUUID()}`;
+    set((state) => {
+      const { tenantId, userId } = currentSOPIdentity(state);
+      const delivery: NotificationDelivery = {
+        id, tenantId, userId, title, message, channel: 'IN_APP',
+        severity: type === 'alert' ? 'ALARM' : type === 'warning' ? 'WARNUNG' : 'INFO',
+        status: 'CREATED', createdAt: new Date().toISOString(), read: false,
+        sourceModule: 'Anwendung'
+      };
+      return {
+        notifications: [{ id, title, message, type, time: 'Gerade eben' }, ...state.notifications],
+        notificationDeliveries: [delivery, ...state.notificationDeliveries]
+      };
+    });
   },
 
   markNotificationAsRead: (deliveryId) => {
-    set((state) => ({
-      notificationDeliveries: state.notificationDeliveries.map((nd) =>
-        nd.id === deliveryId ? { ...nd, read: true } : nd
-      )
-    }));
+    set((state) => {
+      const { tenantId, userId } = currentSOPIdentity(state);
+      return {
+        notificationDeliveries: state.notificationDeliveries.map(item =>
+          item.id === deliveryId && item.tenantId === tenantId && item.userId === userId
+            ? { ...item, read: true } : item)
+      };
+    });
   },
 
   updateNotificationPreferences: (prefs) => {
@@ -2100,16 +2161,6 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
     }));
   },
 
-  testRunRule: (id) => {
-    const rule = get().automations.find((a) => a.id === id);
-    if (!rule) return { matched: false, actions: [], durationMs: 0 };
-    return { matched: true, actions: rule.actions.map((a: any) => a.type), durationMs: 25 };
-  },
-
-  runAutomationsNow: () => {
-    return 2;
-  },
-
   clients: initialClients,
   sites: initialSites,
   employees: initialEmployees,
@@ -2153,7 +2204,14 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
   getTenantGuardBook: () => {
     const { guardBook, currentTenantId } = get();
-    return guardBook.filter((gb) => gb.tenantId === currentTenantId);
+    const identity = currentSOPIdentity(get());
+    return guardBook.filter((gb) => gb.tenantId === currentTenantId).map(entry => ({
+      ...entry,
+      pendingUpdate: get().syncQueue.some(item =>
+        item.tenantId === identity.tenantId && item.userId === identity.userId &&
+        item.entityType === 'guardbook' && item.action === 'UPDATE' &&
+        item.payload.entryId === entry.id && item.status !== 'synced')
+    }));
   },
   getTenantSOPs: () => {
     const { sops, currentTenantId } = get();
@@ -2196,77 +2254,6 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
     const { reportDefinitions, currentTenantId } = get();
     return reportDefinitions.filter((definition) => definition.tenantId === currentTenantId);
   },
-  calculateTenantKPIs: () => {
-    const state = get();
-    const clients = state.getTenantClients();
-    const sites = state.getTenantSites();
-    const employees = state.getTenantEmployees();
-    const shifts = state.getTenantShifts();
-    const guardBook = state.getTenantGuardBook();
-    const alarmIncidents = state.getTenantAlarmIncidents();
-    const keys = state.getTenantKeys();
-    const tasks = state.getTenantTasks();
-    const today = Date.now();
-    const daysUntil = (date: string) => {
-      const timestamp = Date.parse(date);
-      return Number.isFinite(timestamp) ? (timestamp - today) / 86_400_000 : Number.POSITIVE_INFINITY;
-    };
-    const shiftHours = (start: string, end: string) => {
-      const toMinutes = (value: string) => {
-        const [hours, minutes] = value.split(':').map(Number);
-        return Number.isFinite(hours) && Number.isFinite(minutes) ? hours * 60 + minutes : null;
-      };
-      const startMinutes = toMinutes(start);
-      const endMinutes = toMinutes(end);
-      if (startMinutes === null || endMinutes === null) return 0;
-      return ((endMinutes - startMinutes + 1_440) % 1_440) / 60;
-    };
-    const totalPlannedHours = shifts.reduce((total, shift) =>
-      total + shiftHours(shift.startTime, shift.endTime), 0);
-    const totalActualHours = shifts.reduce((total, shift) => {
-      if (shift.actualStart && shift.actualEnd) {
-        const start = Date.parse(shift.actualStart);
-        const end = Date.parse(shift.actualEnd);
-        if (Number.isFinite(start) && Number.isFinite(end) && end >= start) {
-          return total + (end - start) / 3_600_000;
-        }
-      }
-      return total + (shift.status === 'Besetzt' || shift.status === 'Abgeschlossen'
-        ? shiftHours(shift.startTime, shift.endTime)
-        : 0);
-    }, 0);
-    const overdueTasksCount = tasks.filter(task =>
-      task.status !== 'Erledigt' && daysUntil(task.dueDate) < 0
-    ).length;
-    const expiringQualificationsCount = employees.reduce((total, employee) =>
-      total + employee.qualifications.filter(qualification =>
-        qualification.expiryDate !== null &&
-        daysUntil(qualification.expiryDate) >= 0 &&
-        daysUntil(qualification.expiryDate) <= 30
-      ).length, 0);
-    const expiringContractsCount = clients.filter(client =>
-      daysUntil(client.contractEnd) >= 0 && daysUntil(client.contractEnd) <= 90
-    ).length;
-    return {
-      activeClientsCount: clients.length,
-      activeSitesCount: sites.filter(site => !site.archivedAt).length,
-      activeEmployeesCount: employees.filter(employee => employee.status === 'Aktiv').length,
-      totalPlannedHours,
-      totalActualHours,
-      planFulfillmentRate: totalPlannedHours > 0 ? Math.round(totalActualHours / totalPlannedHours * 100) : 0,
-      openCriticalIncidentsCount: guardBook.filter(entry =>
-        entry.priority === 'Kritisch' && !entry.resolved
-      ).length + alarmIncidents.filter(incident =>
-        incident.severity === 'Kritisch' && incident.status !== 'abgeschlossen' && incident.status !== 'archiviert'
-      ).length,
-      overdueTasksCount,
-      expiringContractsCount,
-      expiringQualificationsCount,
-      activeAlarmsCount: sites.reduce((total, site) => total + site.activeAlarms, 0),
-      overdueKeysCount: keys.filter(key => key.isOverdue).length,
-      din77200ComplianceScore: state.getCurrentTenant().din77200Certified ? 100 : 0
-    };
-  },
   getTenantAutomations: () => {
     const { automations, currentTenantId } = get();
     return automations.filter((a) => !a.tenantId || a.tenantId === currentTenantId);
@@ -2280,8 +2267,8 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
     return (executionLogs || []).filter((l) => l.tenantId === currentTenantId);
   },
   getTenantNotificationDeliveries: () => {
-    const { notificationDeliveries, currentTenantId } = get();
-    return (notificationDeliveries || []).filter((nd) => nd.tenantId === currentTenantId);
+    const { tenantId, userId } = currentSOPIdentity(get());
+    return get().notificationDeliveries.filter(item => item.tenantId === tenantId && item.userId === userId);
   },
 
   addShiftSwapRequest: (request) => {
@@ -2320,16 +2307,16 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
 
   addClient: async (c) => {
-    const { currentTenantId } = get();
-
-    if (!get().isOnline) {
-      const id = crypto.randomUUID();
-      await get().enqueueOfflineAction({ tenantId: currentTenantId, entityType: 'client' as any, action: 'CREATE', payload: { id, ...c }, baseVersion: 1 });
-      set((state) => ({ clients: [mapClientRow({ id, ...c, revision_version: 1 }, currentTenantId), ...state.clients] }));
-      return;
-    }
-
+    const { tenantId: currentTenantId, userId } = currentSOPIdentity(get());
     try {
+      if (!get().isOnline) {
+        const id = newMutationEntityId();
+        await get().enqueueOfflineAction({ tenantId: currentTenantId, entityType: 'client', action: 'CREATE', payload: { ...c, id }, baseVersion: 1 });
+        if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
+        set((state) => ({ clients: [mapClientRow({ ...c, id, revision_version: 1 }, currentTenantId), ...state.clients] }));
+        get().addNotification('Kunde vorgemerkt', `${c.companyName} wird bei Verbindung synchronisiert.`, 'info');
+        return true;
+      }
       const created = await apiClient.post<any>('/customers', {
         clientNumber: c.clientNumber,
         companyName: c.companyName,
@@ -2343,6 +2330,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         noticePeriodMonths: c.noticePeriodMonths,
         slaLevel: c.slaLevel
       });
+      if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
 
       const newClient = mapClientRow(
         {
@@ -2369,47 +2357,69 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         `${c.companyName} wurde in PostgreSQL gespeichert.`,
         'info'
       );
+      return true;
     } catch (error: any) {
+      if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
       get().addNotification(
         'Kunde nicht gespeichert',
         error?.message || 'Die API-Anfrage ist fehlgeschlagen. Es wurde nichts gespeichert.',
         'alert'
       );
+      return false;
     }
   },
 
   updateClient: async (id, updates) => {
-    const client = get().clients.find((c) => c.id === id);
-    if (!client) return;
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const client = get().clients.find((c) => c.id === id && c.tenantId === tenantId);
+    if (!client) {
+      get().addNotification('Kunde nicht gespeichert', 'Der Kunde ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
     const revisionVersion = client.revisionVersion || 1;
     try {
-      if (!get().isOnline) throw new Error('offline');
-      const saved = await apiClient.patch<any>(`/customers/${id}`, { ...updates, revisionVersion });
-      set((s) => ({ clients: s.clients.map((c) => c.id === id ? mapClientRow(saved, c.tenantId) : c) }));
+      if (!get().isOnline) {
+        await get().enqueueOfflineAction({ tenantId, entityType: 'client', action: 'UPDATE', payload: { id, ...updates }, baseVersion: revisionVersion });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        set((s) => ({ clients: s.clients.map((c) => c.id === id ? { ...c, ...updates, revisionVersion: revisionVersion + 1 } : c) }));
+      } else {
+        const saved = await apiClient.patch<any>(`/customers/${id}`, { ...updates, revisionVersion });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        set((s) => ({ clients: s.clients.map((c) => c.id === id ? mapClientRow(saved, c.tenantId) : c) }));
+      }
+      return true;
     } catch (error: any) {
-      if (get().isOnline) { get().addNotification('Kunde nicht gespeichert', error?.message || 'Änderung fehlgeschlagen.', 'alert'); return; }
-      await get().enqueueOfflineAction({ tenantId: client.tenantId, entityType: 'client' as any, action: 'UPDATE', payload: { id, ...updates }, baseVersion: revisionVersion });
-      set((s) => ({ clients: s.clients.map((c) => c.id === id ? { ...c, ...updates } : c) }));
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification('Kunde nicht gespeichert', error?.message || 'Änderung fehlgeschlagen.', 'alert');
+      return false;
     }
   },
 
   archiveClient: async (id) => {
-    const client = get().clients.find((c) => c.id === id);
-    if (!client) return;
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const client = get().clients.find(c => c.id === id && c.tenantId === tenantId);
+    if (!client) {
+      get().addNotification('Kunde nicht archiviert', 'Der Kunde ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
     const revisionVersion = client.revisionVersion || 1;
+    const online = get().isOnline;
     try {
-      if (!get().isOnline) throw new Error('offline');
-      await apiClient.post(`/customers/${id}/archive`, { revisionVersion });
+      if (online) await apiClient.post(`/customers/${id}/archive`, { revisionVersion });
+      else await get().enqueueOfflineAction({ tenantId, entityType: 'client', action: 'DELETE', payload: { id }, baseVersion: revisionVersion });
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
       set((s) => ({ clients: s.clients.filter((c) => c.id !== id) }));
-    } catch (error: any) {
-      if (get().isOnline) { get().addNotification('Kunde nicht archiviert', error?.message || 'Archivierung fehlgeschlagen.', 'alert'); return; }
-      await get().enqueueOfflineAction({ tenantId: client.tenantId, entityType: 'client' as any, action: 'DELETE', payload: { id }, baseVersion: revisionVersion });
-      set((s) => ({ clients: s.clients.filter((c) => c.id !== id) }));
+      get().addNotification(online ? 'Kunde archiviert' : 'Archivierung vorgemerkt', online ? `${client.companyName} wurde archiviert.` : 'Dauerhaft lokal gespeichert; Serverbestätigung steht aus.', 'info');
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification('Kunde nicht archiviert', error instanceof Error ? error.message : 'Archivierung fehlgeschlagen.', 'alert');
+      return false;
     }
   },
 
   addSite: async (s) => {
-    const { currentTenantId } = get();
+    const { tenantId: currentTenantId, userId } = currentSOPIdentity(get());
 
     try {
       const payload = {
@@ -2421,15 +2431,18 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         requiredGuardsDay: s.requiredGuardsDay,
         requiredGuardsNight: s.requiredGuardsNight,
         alarmSystem: s.alarmSystem,
-        accessRules: s.accessRules
+        accessRules: s.accessRules,
+        timeZone: s.timeZone ?? 'UTC'
       };
       if (!get().isOnline) {
-        const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `site-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const id = newMutationEntityId();
         await get().enqueueOfflineAction({ tenantId: currentTenantId, entityType: 'site', action: 'CREATE', payload: { id, ...payload }, baseVersion: 1 });
+        if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
         set(state => ({ sites: [mapSiteRow({ id, ...payload, client_name: s.clientName }, currentTenantId), ...state.sites] }));
-        get().addNotification('Objekt vorgemerkt', `${s.name} wird bei Verbindung synchronisiert.`, 'info'); return;
+        get().addNotification('Objekt vorgemerkt', `${s.name} wird bei Verbindung synchronisiert.`, 'info'); return true;
       }
       const created = await apiClient.post<any>('/sites', payload);
+      if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
 
       const newSite = mapSiteRow(
         {
@@ -2439,6 +2452,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
           name: s.name,
           address: s.address,
           security_level: s.securityLevel,
+          time_zone: s.timeZone ?? 'UTC',
           required_guards_day: s.requiredGuardsDay,
           required_guards_night: s.requiredGuardsNight,
           alarm_system: s.alarmSystem,
@@ -2449,60 +2463,113 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
 
       set((state) => ({ sites: [newSite, ...state.sites] }));
       get().addNotification('Objekt gespeichert', `${s.name} wurde in PostgreSQL gespeichert.`, 'info');
+      return true;
     } catch (error: any) {
+      if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
       get().addNotification(
         'Objekt nicht gespeichert',
         error?.message || 'Die API-Anfrage ist fehlgeschlagen. Es wurde nichts gespeichert.',
         'alert'
       );
+      return false;
     }
   },
 
   updateSite: async (id, updates) => {
-    const site = get().sites.find(s => s.id === id); if (!site) return;
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const site = get().sites.find(s => s.id === id && s.tenantId === tenantId);
+    if (!site) {
+      get().addNotification('Objekt nicht gespeichert', 'Das Objekt ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
     const revisionVersion = site.revisionVersion || 1;
-    const changes = { clientId: updates.clientId ?? site.clientId, siteCode: updates.siteCode ?? site.siteCode, name: updates.name ?? site.name, address: updates.address ?? site.address, securityLevel: updates.securityLevel ?? site.securityLevel };
+    const changes = {
+      clientId: updates.clientId ?? site.clientId, siteCode: updates.siteCode ?? site.siteCode,
+      name: updates.name ?? site.name, address: updates.address ?? site.address,
+      securityLevel: updates.securityLevel ?? site.securityLevel,
+      requiredGuardsDay: updates.requiredGuardsDay ?? site.requiredGuardsDay,
+      requiredGuardsNight: updates.requiredGuardsNight ?? site.requiredGuardsNight,
+      alarmSystem: updates.alarmSystem ?? site.alarmSystem,
+      accessRules: updates.accessRules ?? site.accessRules,
+      timeZone: updates.timeZone ?? site.timeZone ?? 'UTC'
+    };
     try {
-      if (!get().isOnline) throw new Error('offline');
-      const result = await apiClient.patch<any>(`/sites/${id}`, { ...changes, revisionVersion });
-      const updated = mapSiteRow({ ...result, client_name: get().clients.find(c=>c.id===changes.clientId)?.companyName, ...changes, revision_version: result.revision_version }, site.tenantId);
-      set(state => ({ sites: state.sites.map(s => s.id === id ? updated : s) }));
-      get().addNotification('Objekt aktualisiert', `${site.name} wurde gespeichert.`, 'info');
+      if (!get().isOnline) {
+        await get().enqueueOfflineAction({ tenantId, entityType: 'site', action: 'UPDATE', payload: { id, ...changes }, baseVersion: revisionVersion });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        set(state => ({ sites: state.sites.map(s => s.id === id ? { ...s, ...changes, revisionVersion: revisionVersion + 1 } : s) }));
+      } else {
+        const result = await apiClient.patch<any>(`/sites/${id}`, { ...changes, revisionVersion });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        const updated = mapSiteRow({ ...result, client_name: get().clients.find(c=>c.id===changes.clientId)?.companyName, ...changes, revision_version: result.revision_version }, site.tenantId);
+        set(state => ({ sites: state.sites.map(s => s.id === id ? updated : s) }));
+        get().addNotification('Objekt aktualisiert', `${site.name} wurde gespeichert.`, 'info');
+      }
+      return true;
     } catch (error: any) {
-      if (get().isOnline) { get().addNotification(error?.status === 409 ? 'Versionskonflikt' : 'Objekt nicht gespeichert', error?.message || 'Änderung fehlgeschlagen.', 'alert'); return; }
-      await get().enqueueOfflineAction({ tenantId: site.tenantId, entityType: 'site', action: 'UPDATE', payload: { id, ...changes }, baseVersion: revisionVersion });
-      set(state => ({ sites: state.sites.map(s => s.id === id ? { ...s, ...changes, revisionVersion: revisionVersion + 1 } : s) }));
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification(error?.status === 409 ? 'Versionskonflikt' : 'Objekt nicht gespeichert', error?.message || 'Änderung fehlgeschlagen.', 'alert');
+      return false;
     }
   },
 
   archiveSite: async (id) => {
-    const site = get().sites.find(s=>s.id===id); if (!site) return;
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const site = get().sites.find(s => s.id === id && s.tenantId === tenantId);
+    if (!site) {
+      get().addNotification('Objekt nicht archiviert', 'Das Objekt ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
     const revisionVersion = site.revisionVersion || 1;
-    try { if (!get().isOnline) throw new Error('offline');
-      const result = await apiClient.post<any>(`/sites/${id}/archive`, { revisionVersion });
+    const online = get().isOnline;
+    try {
+      let result: { archived_at: string; revision_version: number };
+      if (online) result = await apiClient.post<typeof result>(`/sites/${id}/archive`, { revisionVersion });
+      else {
+        await get().enqueueOfflineAction({ tenantId, entityType: 'site', action: 'DELETE', payload: { id }, baseVersion: revisionVersion });
+        result = { archived_at: new Date().toISOString(), revision_version: revisionVersion + 1 };
+      }
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
       set(state => ({ sites: state.sites.map(s => s.id === id ? { ...s, archivedAt: result.archived_at, revisionVersion: result.revision_version } : s) }));
-      get().addNotification('Standort archiviert', `${site.name} wurde archiviert. Verknüpfte Einsatzdaten bleiben erhalten.`, 'info');
-    } catch (error: any) { if (get().isOnline) { get().addNotification(error?.status === 409 ? 'Versionskonflikt' : 'Archivierung fehlgeschlagen', error?.message || 'Objekt nicht archiviert.', 'alert'); return; }
-      await get().enqueueOfflineAction({ tenantId: site.tenantId, entityType: 'site', action: 'DELETE', payload: { id }, baseVersion: revisionVersion });
-      set(state => ({ sites: state.sites.map(s => s.id === id ? { ...s, archivedAt: new Date().toISOString(), revisionVersion: revisionVersion + 1 } : s) }));
+      get().addNotification(online ? 'Standort archiviert' : 'Archivierung vorgemerkt', online ? `${site.name} wurde archiviert. Verknüpfte Einsatzdaten bleiben erhalten.` : 'Dauerhaft lokal gespeichert; Serverbestätigung steht aus.', 'info');
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification(error instanceof ApiError && error.status === 409 ? 'Versionskonflikt' : 'Archivierung fehlgeschlagen', error instanceof Error ? error.message : 'Objekt nicht archiviert.', 'alert');
+      return false;
     }
   },
 
   restoreSite: async (id) => {
-    const site = get().sites.find(s=>s.id===id); if (!site) return;
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const site = get().sites.find(s => s.id === id && s.tenantId === tenantId);
+    if (!site) {
+      get().addNotification('Objekt nicht wiederhergestellt', 'Das Objekt ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
     const revisionVersion = site.revisionVersion || 1;
-    try { if (!get().isOnline) throw new Error('offline');
-      const result = await apiClient.post<any>(`/sites/${id}/restore`, { revisionVersion });
+    const online = get().isOnline;
+    try {
+      let result: { revision_version: number };
+      if (online) result = await apiClient.post<typeof result>(`/sites/${id}/restore`, { revisionVersion });
+      else {
+        await get().enqueueOfflineAction({ tenantId, entityType: 'site', action: 'RESTORE', payload: { id }, baseVersion: revisionVersion });
+        result = { revision_version: revisionVersion + 1 };
+      }
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
       set(state => ({ sites: state.sites.map(s => s.id === id ? { ...s, archivedAt: null, revisionVersion: result.revision_version } : s) }));
-      get().addNotification('Standort wiederhergestellt', `${site.name} ist wieder aktiv.`, 'info');
-    } catch (error: any) { if (get().isOnline) { get().addNotification(error?.status === 409 ? 'Versionskonflikt' : 'Wiederherstellung fehlgeschlagen', error?.message || 'Objekt nicht wiederhergestellt.', 'alert'); return; }
-      await get().enqueueOfflineAction({ tenantId: site.tenantId, entityType: 'site', action: 'RESTORE', payload: { id }, baseVersion: revisionVersion });
-      set(state => ({ sites: state.sites.map(s => s.id === id ? { ...s, archivedAt: null, revisionVersion: revisionVersion + 1 } : s) }));
+      get().addNotification(online ? 'Standort wiederhergestellt' : 'Wiederherstellung vorgemerkt', online ? `${site.name} ist wieder aktiv.` : 'Dauerhaft lokal gespeichert; Serverbestätigung steht aus.', 'info');
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification(error instanceof ApiError && error.status === 409 ? 'Versionskonflikt' : 'Wiederherstellung fehlgeschlagen', error instanceof Error ? error.message : 'Objekt nicht wiederhergestellt.', 'alert');
+      return false;
     }
   },
 
   addEmployee: async (e) => {
-    const { currentTenantId } = get();
+    const { tenantId: currentTenantId, userId } = currentSOPIdentity(get());
+    let incompleteQualifications = false;
 
     try {
       const id = newMutationEntityId();
@@ -2521,11 +2588,24 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       };
       if (!get().isOnline) {
         await get().enqueueOfflineAction({ tenantId: currentTenantId, entityType: 'employee', action: 'CREATE', payload: { id, ...payload }, baseVersion: 1 });
-        set(state => ({ employees: [{ ...e, id, tenantId: currentTenantId, revisionVersion: 1, archivedAt: null, synced: false }, ...state.employees] }));
-        for (const q of e.qualifications || []) await get().addQualification(id, q);
-        get().addNotification('Mitarbeiter vorgemerkt', `${e.firstName} ${e.lastName} wird nach der Verbindung synchronisiert.`, 'info'); return;
+        if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
+        set(state => ({ employees: [{ ...e, qualifications: [], id, tenantId: currentTenantId, revisionVersion: 1, archivedAt: null, synced: false }, ...state.employees] }));
+        for (const q of e.qualifications || []) {
+          if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
+          if (!await get().addQualification(id, q)) incompleteQualifications = true;
+        }
+        if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
+        get().addNotification(
+          'Mitarbeiter vorgemerkt',
+          incompleteQualifications
+            ? 'Die Stammdaten sind lokal vorgemerkt; mindestens ein Nachweis wurde nicht übernommen und muss erneut erfasst werden.'
+            : `${e.firstName} ${e.lastName} wird nach der Verbindung synchronisiert.`,
+          incompleteQualifications ? 'alert' : 'info'
+        );
+        return true;
       }
       const created = await apiClient.post<any>('/employees', payload);
+      if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
 
       const newEmp = mapEmployeeRow(
         {
@@ -2545,23 +2625,37 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       );
 
       set((state) => ({ employees: [newEmp, ...state.employees] }));
-      for (const q of e.qualifications || []) await get().addQualification(newEmp.id, q);
+      for (const q of e.qualifications || []) {
+        if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
+        if (!await get().addQualification(newEmp.id, q)) incompleteQualifications = true;
+      }
+      if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
       get().addNotification(
         'Mitarbeiter gespeichert',
-        `${e.firstName} ${e.lastName} wurde in PostgreSQL gespeichert.`,
-        'info'
+        incompleteQualifications
+          ? 'Die Stammdaten wurden gespeichert; mindestens ein Nachweis wurde nicht übernommen und muss erneut erfasst werden.'
+          : `${e.firstName} ${e.lastName} wurde in PostgreSQL gespeichert.`,
+        incompleteQualifications ? 'alert' : 'info'
       );
+      return true;
     } catch (error: any) {
+      if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
       get().addNotification(
         'Mitarbeiter nicht gespeichert',
         error?.message || 'Die API-Anfrage ist fehlgeschlagen. Es wurde nichts gespeichert.',
         'alert'
       );
+      return false;
     }
   },
 
   updateEmployee: async (id, updates) => {
-    const employee = get().employees.find(e => e.id === id); if (!employee) return;
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const employee = get().employees.find(e => e.id === id && e.tenantId === tenantId);
+    if (!employee) {
+      get().addNotification('Mitarbeiter nicht aktualisiert', 'Der Mitarbeiter ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
     const payload: Record<string, unknown> = {};
     const allowed: Array<keyof Employee> = [
       'personnelNumber',
@@ -2586,56 +2680,229 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
 
     const revisionVersion = employee.revisionVersion || 1;
     try {
-      if (!get().isOnline) throw new Error('offline');
-      const updated = await apiClient.patch<any>(`/employees/${id}`, { ...payload, revisionVersion });
-      set((state) => ({
-        employees: state.employees.map((emp) =>
-          emp.id === id ? { ...emp, ...updates, revisionVersion: updated.revision_version, synced: true } : emp
-        )
-      }));
-      get().addNotification('Mitarbeiter aktualisiert', 'Die Änderung wurde in PostgreSQL gespeichert.', 'info');
-    } catch (error: any) {
       if (!get().isOnline) {
         await get().enqueueOfflineAction({ tenantId: employee.tenantId, entityType: 'employee', action: 'UPDATE', payload: { id, ...payload }, baseVersion: revisionVersion });
-        set(state => ({ employees: state.employees.map(emp => emp.id === id ? { ...emp, ...updates, revisionVersion: revisionVersion + 1, synced: false } : emp) })); return;
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        set(state => ({ employees: state.employees.map(emp => emp.id === id ? { ...emp, ...updates, revisionVersion: revisionVersion + 1, synced: false } : emp) }));
+      } else {
+        const updated = await apiClient.patch<any>(`/employees/${id}`, { ...payload, revisionVersion });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        set((state) => ({
+          employees: state.employees.map((emp) =>
+            emp.id === id ? { ...emp, ...updates, revisionVersion: updated.revision_version, synced: true } : emp
+          )
+        }));
+        get().addNotification('Mitarbeiter aktualisiert', 'Die Änderung wurde in PostgreSQL gespeichert.', 'info');
       }
+      return true;
+    } catch (error: any) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
       get().addNotification(
         error?.status === 409 ? 'Versionskonflikt beim Mitarbeiter' : 'Mitarbeiter nicht aktualisiert',
         error?.message || 'Die API-Anfrage ist fehlgeschlagen. Es wurde nichts gespeichert.',
         'alert'
       );
+      return false;
     }
   },
 
   archiveEmployee: async (id) => {
-    const employee=get().employees.find(e=>e.id===id);if(!employee)return;const revisionVersion=employee.revisionVersion||1;
-    try{if(!get().isOnline)throw new Error('offline');const result=await apiClient.post<any>(`/employees/${id}/archive`,{revisionVersion});set(s=>({employees:s.employees.map(e=>e.id===id?{...e,archivedAt:result.archived_at,revisionVersion:result.revision_version}:e)}));get().addNotification('Mitarbeiter archiviert','Stammdaten und Einsatzbezüge bleiben erhalten.','info');}
-    catch(error:any){if(!get().isOnline){await get().enqueueOfflineAction({tenantId:employee.tenantId,entityType:'employee',action:'DELETE',payload:{id},baseVersion:revisionVersion});set(s=>({employees:s.employees.map(e=>e.id===id?{...e,archivedAt:new Date().toISOString(),revisionVersion:revisionVersion+1}:e)}));return;}get().addNotification(error?.status===409?'Versionskonflikt':'Archivierung fehlgeschlagen',error?.message||'Mitarbeiter nicht archiviert.','alert');}
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const employee = get().employees.find(e => e.id === id && e.tenantId === tenantId);
+    if (!employee) {
+      get().addNotification('Mitarbeiter nicht archiviert', 'Der Mitarbeiter ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
+    const revisionVersion = employee.revisionVersion || 1;
+    const online = get().isOnline;
+    try {
+      let result: { archived_at: string; revision_version: number };
+      if (online) result = await apiClient.post<typeof result>(`/employees/${id}/archive`, { revisionVersion });
+      else {
+        await get().enqueueOfflineAction({ tenantId, entityType: 'employee', action: 'DELETE', payload: { id }, baseVersion: revisionVersion });
+        result = { archived_at: new Date().toISOString(), revision_version: revisionVersion + 1 };
+      }
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      set(state => ({ employees: state.employees.map(e => e.id === id ? { ...e, archivedAt: result.archived_at, revisionVersion: result.revision_version } : e) }));
+      get().addNotification(online ? 'Mitarbeiter archiviert' : 'Archivierung vorgemerkt', online ? 'Stammdaten und Einsatzbezüge bleiben erhalten.' : 'Dauerhaft lokal gespeichert; Serverbestätigung steht aus.', 'info');
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification(error instanceof ApiError && error.status === 409 ? 'Versionskonflikt' : 'Archivierung fehlgeschlagen', error instanceof Error ? error.message : 'Mitarbeiter nicht archiviert.', 'alert');
+      return false;
+    }
   },
   restoreEmployee: async (id) => {
-    const employee=get().employees.find(e=>e.id===id);if(!employee)return;const revisionVersion=employee.revisionVersion||1;
-    try{if(!get().isOnline)throw new Error('offline');const result=await apiClient.post<any>(`/employees/${id}/restore`,{revisionVersion});set(s=>({employees:s.employees.map(e=>e.id===id?{...e,archivedAt:null,revisionVersion:result.revision_version}:e)}));get().addNotification('Mitarbeiter wiederhergestellt','Der Mitarbeiter ist wieder aktiv.','info');}
-    catch(error:any){if(!get().isOnline){await get().enqueueOfflineAction({tenantId:employee.tenantId,entityType:'employee',action:'RESTORE',payload:{id},baseVersion:revisionVersion});set(s=>({employees:s.employees.map(e=>e.id===id?{...e,archivedAt:null,revisionVersion:revisionVersion+1}:e)}));return;}get().addNotification(error?.status===409?'Versionskonflikt':'Wiederherstellung fehlgeschlagen',error?.message||'Mitarbeiter nicht wiederhergestellt.','alert');}
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const employee = get().employees.find(e => e.id === id && e.tenantId === tenantId);
+    if (!employee) {
+      get().addNotification('Mitarbeiter nicht wiederhergestellt', 'Der Mitarbeiter ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
+    const revisionVersion = employee.revisionVersion || 1;
+    const online = get().isOnline;
+    try {
+      let result: { revision_version: number };
+      if (online) result = await apiClient.post<typeof result>(`/employees/${id}/restore`, { revisionVersion });
+      else {
+        await get().enqueueOfflineAction({ tenantId, entityType: 'employee', action: 'RESTORE', payload: { id }, baseVersion: revisionVersion });
+        result = { revision_version: revisionVersion + 1 };
+      }
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      set(state => ({ employees: state.employees.map(e => e.id === id ? { ...e, archivedAt: null, revisionVersion: result.revision_version } : e) }));
+      get().addNotification(online ? 'Mitarbeiter wiederhergestellt' : 'Wiederherstellung vorgemerkt', online ? 'Der Mitarbeiter ist wieder aktiv.' : 'Dauerhaft lokal gespeichert; Serverbestätigung steht aus.', 'info');
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification(error instanceof ApiError && error.status === 409 ? 'Versionskonflikt' : 'Wiederherstellung fehlgeschlagen', error instanceof Error ? error.message : 'Mitarbeiter nicht wiederhergestellt.', 'alert');
+      return false;
+    }
   },
   addQualification: async (employeeId, qualification) => {
-    const employee=get().employees.find(e=>e.id===employeeId);if(!employee)return;const id=newMutationEntityId();const payload={id,employeeId,type:qualification.type,certificateNumber:qualification.certificateNumber,issueDate:qualification.issueDate||null,expiryDate:qualification.expiryDate||null,verified:qualification.verified,documentReference:qualification.documentReference||null};
-    try{if(!get().isOnline)throw new Error('offline');const result=await apiClient.post<any>(`/employees/${employeeId}/qualifications`,{type:payload.type,certificateNumber:payload.certificateNumber,issueDate:payload.issueDate,expiryDate:payload.expiryDate,verified:payload.verified,documentReference:payload.documentReference});const q={...qualification,id:result.id,status:qualificationStatus(result.status),revisionVersion:result.revision_version};set(s=>({employees:s.employees.map(e=>e.id===employeeId?{...e,qualifications:[q,...e.qualifications]}:e)}));}
-    catch(error:any){if(!get().isOnline){await get().enqueueOfflineAction({tenantId:employee.tenantId,entityType:'employee',action:'QUALIFICATION_CREATE',payload,baseVersion:1});set(s=>({employees:s.employees.map(e=>e.id===employeeId?{...e,qualifications:[{...qualification,id,status:qualification.verified?'GÜLTIG':'AUSSTEHEND',revisionVersion:1},...e.qualifications]}:e)}));return;}get().addNotification('Qualifikation nicht gespeichert',error?.message||'Speichern fehlgeschlagen.','alert');}
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const employee = get().employees.find(e => e.id === employeeId && e.tenantId === tenantId);
+    if (!employee) {
+      get().addNotification('Qualifikation nicht gespeichert', 'Der Mitarbeiter ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
+    const id = newMutationEntityId();
+    const payload = {
+      type: qualification.type, certificateNumber: qualification.certificateNumber,
+      issueDate: qualification.issueDate || null, expiryDate: qualification.expiryDate || null,
+      verified: qualification.verified, documentReference: qualification.documentReference || null
+    };
+    try {
+      let record: Qualification;
+      if (!get().isOnline) {
+        await get().enqueueOfflineAction({
+          tenantId, entityType: 'employee', action: 'QUALIFICATION_CREATE',
+          payload: { ...payload, id, employeeId }, baseVersion: 1
+        });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        record = { ...qualification, id, status: 'AUSSTEHEND', revisionVersion: 1 };
+      } else {
+        const result = await apiClient.post<any>(`/employees/${employeeId}/qualifications`, payload);
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        record = { ...qualification, id: result.id, status: qualificationStatus(result.status), revisionVersion: result.revision_version };
+      }
+      set(state => ({
+        employees: state.employees.map(e => e.id === employeeId ? { ...e, qualifications: [record, ...e.qualifications] } : e)
+      }));
+      return true;
+    } catch (error: any) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification('Qualifikation nicht gespeichert', error?.message || 'Speichern fehlgeschlagen.', 'alert');
+      return false;
+    }
   },
   updateQualification: async (employeeId, qualificationId, changes) => {
-    const employee=get().employees.find(e=>e.id===employeeId);const qualification=employee?.qualifications.find(q=>q.id===qualificationId);if(!employee||!qualification)return;const revisionVersion=qualification.revisionVersion||1;const payload={qualificationId,...changes};
-    try{if(!get().isOnline)throw new Error('offline');const result=await apiClient.patch<any>(`/employees/${employeeId}/qualifications/${qualificationId}`,{...changes,revisionVersion});set(s=>({employees:s.employees.map(e=>e.id===employeeId?{...e,qualifications:e.qualifications.map(q=>q.id===qualificationId?{...q,...changes,status:qualificationStatus(result.status),revisionVersion:result.revision_version}:q)}:e)}));}
-    catch(error:any){if(!get().isOnline){await get().enqueueOfflineAction({tenantId:employee.tenantId,entityType:'employee',action:'QUALIFICATION_UPDATE',payload:{id:qualificationId,...payload},baseVersion:revisionVersion});set(s=>({employees:s.employees.map(e=>e.id===employeeId?{...e,qualifications:e.qualifications.map(q=>q.id===qualificationId?{...q,...changes,revisionVersion:revisionVersion+1}:q)}:e)}));return;}get().addNotification(error?.status===409?'Versionskonflikt Qualifikation':'Qualifikation nicht aktualisiert',error?.message||'Änderung fehlgeschlagen.','alert');}
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const employee = get().employees.find(e => e.id === employeeId && e.tenantId === tenantId);
+    const qualification = employee?.qualifications.find(q => q.id === qualificationId);
+    if (!employee || !qualification) {
+      get().addNotification('Qualifikation nicht aktualisiert', 'Der Nachweis ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
+    const revisionVersion = qualification.revisionVersion || 1;
+    const normalizedChanges = {
+      ...changes,
+      ...(changes.expiryDate !== undefined ? { expiryDate: changes.expiryDate || null } : {})
+    };
+    try {
+      let updated: Qualification;
+      if (!get().isOnline) {
+        await get().enqueueOfflineAction({
+          tenantId, entityType: 'employee', action: 'QUALIFICATION_UPDATE',
+          payload: { ...normalizedChanges, id: qualificationId, qualificationId }, baseVersion: revisionVersion
+        });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        updated = { ...qualification, ...normalizedChanges, status: 'AUSSTEHEND', revisionVersion: revisionVersion + 1 };
+      } else {
+        const result = await apiClient.patch<any>(`/employees/${employeeId}/qualifications/${qualificationId}`, { ...normalizedChanges, revisionVersion });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        updated = { ...qualification, ...normalizedChanges, status: qualificationStatus(result.status), revisionVersion: result.revision_version };
+      }
+      set(state => ({
+        employees: state.employees.map(e => e.id === employeeId
+          ? { ...e, qualifications: e.qualifications.map(q => q.id === qualificationId ? updated : q) } : e)
+      }));
+      return true;
+    } catch (error: any) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification(error?.status === 409 ? 'Versionskonflikt Qualifikation' : 'Qualifikation nicht aktualisiert', error?.message || 'Änderung fehlgeschlagen.', 'alert');
+      return false;
+    }
   },
   addAbsence: async (employeeId, absence) => {
-    const employee=get().employees.find(e=>e.id===employeeId);if(!employee)return;const id=newMutationEntityId();const payload={id,employeeId,type:absence.type,startDate:absence.startDate,endDate:absence.endDate,notes:absence.notes};
-    try{if(!get().isOnline)throw new Error('offline');const result=await apiClient.post<any>(`/employees/${employeeId}/absences`,{type:payload.type,startDate:payload.startDate,endDate:payload.endDate,notes:payload.notes});const record={id:result.id,type:absence.type,startDate:absence.startDate,endDate:absence.endDate,approved:false,status:'PENDING' as const,revisionVersion:result.revision_version,notes:absence.notes};set(s=>({employees:s.employees.map(e=>e.id===employeeId?{...e,absences:[record,...(e.absences||[])]}:e)}));get().addNotification('Abwesenheit beantragt','Der Antrag wartet auf Freigabe.','info');}
-    catch(error:any){if(!get().isOnline){await get().enqueueOfflineAction({tenantId:employee.tenantId,entityType:'employee',action:'ABSENCE_CREATE',payload,baseVersion:1});set(s=>({employees:s.employees.map(e=>e.id===employeeId?{...e,absences:[{id,type:absence.type,startDate:absence.startDate,endDate:absence.endDate,approved:false,status:'PENDING',revisionVersion:1,notes:absence.notes},...(e.absences||[])]}:e)}));return;}get().addNotification(error?.status===409?'Abwesenheitskonflikt':'Abwesenheit nicht gespeichert',error?.message||'Antrag fehlgeschlagen.','alert');}
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const employee = get().employees.find(e => e.id === employeeId && e.tenantId === tenantId);
+    if (!employee) {
+      get().addNotification('Abwesenheit nicht gespeichert', 'Der Mitarbeiter ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
+    const payload = { type: absence.type, startDate: absence.startDate, endDate: absence.endDate, notes: absence.notes };
+    const offline = !get().isOnline;
+    try {
+      let record: AbsenceRecord;
+      if (offline) {
+        const id = newMutationEntityId();
+        await get().enqueueOfflineAction({
+          tenantId, entityType: 'employee', action: 'ABSENCE_CREATE',
+          payload: { ...payload, id, employeeId }, baseVersion: 1
+        });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        record = { ...absence, id, approved: false, status: 'PENDING', revisionVersion: 1 };
+      } else {
+        const result = await apiClient.post<any>(`/employees/${employeeId}/absences`, payload);
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        record = { ...absence, id: result.id, approved: false, status: 'PENDING', revisionVersion: result.revision_version };
+      }
+      set(state => ({
+        employees: state.employees.map(e => e.id === employeeId ? { ...e, absences: [record, ...(e.absences || [])] } : e)
+      }));
+      get().addNotification(
+        offline ? 'Abwesenheit vorgemerkt' : 'Abwesenheit beantragt',
+        offline ? 'Der Antrag wird bei Verbindung synchronisiert.' : 'Der Antrag wartet auf Freigabe.', 'info'
+      );
+      return true;
+    } catch (error: any) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification(error?.status === 409 ? 'Abwesenheitskonflikt' : 'Abwesenheit nicht gespeichert', error?.message || 'Antrag fehlgeschlagen.', 'alert');
+      return false;
+    }
   },
   reviewAbsence: async (employeeId, absenceId, decision) => {
-    const employee=get().employees.find(e=>e.id===employeeId);const absence=employee?.absences?.find(a=>a.id===absenceId);if(!employee||!absence)return;const revisionVersion=absence.revisionVersion||1;
-    try{if(!get().isOnline)throw new Error('offline');const result=await apiClient.post<any>(`/employees/${employeeId}/absences/${absenceId}/review`,{revisionVersion,decision});set(s=>({employees:s.employees.map(e=>e.id===employeeId?{...e,absences:e.absences?.map(a=>a.id===absenceId?{...a,status:decision,approved:decision==='APPROVED',revisionVersion:result.revision_version}:a)}:e)}));}
-    catch(error:any){if(!get().isOnline){await get().enqueueOfflineAction({tenantId:employee.tenantId,entityType:'employee',action:'ABSENCE_REVIEW',payload:{id:absenceId,absenceId,decision},baseVersion:revisionVersion});return;}get().addNotification(error?.status===409?'Abwesenheitskonflikt':'Freigabe fehlgeschlagen',error?.message||'Status nicht geändert.','alert');}
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const employee = get().employees.find(e => e.id === employeeId && e.tenantId === tenantId);
+    const absence = employee?.absences?.find(a => a.id === absenceId);
+    if (!employee || !absence) {
+      get().addNotification('Freigabe fehlgeschlagen', 'Die Abwesenheit ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
+    const revisionVersion = absence.revisionVersion || 1;
+    try {
+      if (!get().isOnline) {
+        await get().enqueueOfflineAction({
+          tenantId, entityType: 'employee', action: 'ABSENCE_REVIEW',
+          payload: { id: absenceId, absenceId, decision }, baseVersion: revisionVersion
+        });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        get().addNotification('Freigabe vorgemerkt', 'Die Entscheidung wird bei Verbindung serverseitig geprüft.', 'info');
+      } else {
+        const result = await apiClient.post<any>(`/employees/${employeeId}/absences/${absenceId}/review`, { revisionVersion, decision });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        set(state => ({
+          employees: state.employees.map(e => e.id === employeeId
+            ? { ...e, absences: e.absences?.map(a => a.id === absenceId
+              ? { ...a, status: decision, approved: decision === 'APPROVED', revisionVersion: result.revision_version } : a) } : e)
+        }));
+      }
+      return true;
+    } catch (error: any) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification(error?.status === 409 ? 'Abwesenheitskonflikt' : 'Freigabe fehlgeschlagen', error?.message || 'Status nicht geändert.', 'alert');
+      return false;
+    }
   },
 
   addShift: async (s) => {
@@ -2724,15 +2991,21 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
 
   addPatrolScan: async (scan) => {
-    const { currentTenantId, isOnline, patrolScans } = get();
+    const identity = currentSOPIdentity(get());
+    const currentTenantId = identity.tenantId;
+    const { isOnline, patrolScans } = get();
     const scannedAt = new Date().toISOString();
     const id = crypto.randomUUID();
     const { checkpointToken, ...displayScan } = scan;
     const record: PatrolScanEvent = { ...displayScan, id, tenantId: currentTenantId, scannedAt, offlineCaptured: !isOnline };
-    const queuedPatrol = await offlineVault.getOutbox(currentTenantId, 'patrol');
+    const queuedPatrol = await offlineVault.getOutbox(currentTenantId, 'patrol', identity.userId);
+    if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) {
+      throw new Error('Die Sitzung hat sich geändert. Der Kontrollpunkt wurde nicht gespeichert.');
+    }
     const recentQueued = queuedPatrol.some(item => item.payload.checkpointId === scan.checkpointId &&
       Math.abs(Date.parse(scannedAt) - Date.parse(item.payload.scannedAt || item.occurredAt)) < 2 * 60 * 1000);
-    const recentLocal = patrolScans.some(item => item.checkpointId === scan.checkpointId &&
+    const recentLocal = patrolScans.some(item => item.tenantId === currentTenantId &&
+      item.guardId === scan.guardId && item.checkpointId === scan.checkpointId &&
       Math.abs(Date.parse(scannedAt) - Date.parse(item.scannedAt)) < 2 * 60 * 1000);
     if (recentQueued || recentLocal) {
       throw new Error('Dieser Kontrollpunkt wurde innerhalb des Zwei-Minuten-Fensters bereits erfasst.');
@@ -2755,6 +3028,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         scannedAt
       }
     });
+    if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return;
     set((state) => ({ patrolScans: [record, ...state.patrolScans] }));
     if (isOnline) void get().triggerManualSync();
   },
@@ -2770,7 +3044,8 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
 
   addGuardBookEntry: async (entry) => {
-    const { currentTenantId, isOnline, enqueueOfflineAction, addTask, addNotification, addAuditLog } = get();
+    const identity = currentSOPIdentity(get());
+    const { currentTenantId, isOnline, authUser, enqueueOfflineAction, addNotification, addAuditLog } = get();
     const entryId = crypto.randomUUID();
     const newEntry: GuardBookEntry = {
       ...entry,
@@ -2779,14 +3054,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       timestamp: new Date().toISOString(),
       stage: entry.stage || 'Erfasst',
       offlineCreated: !isOnline,
-      revisions: [
-        {
-          id: `rev-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          authorName: entry.guardName,
-          note: 'Ersterfassung im digitalen Wachbuch'
-        }
-      ]
+      revisions: []
     };
 
     await enqueueOfflineAction({
@@ -2795,11 +3063,12 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       action: 'CREATE',
       payload: newEntry
     });
+    if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return entryId;
 
     if (entry.priority === 'Kritisch' || entry.priority === 'Dringend') {
-      const taskId = `t-inc-${Date.now()}`;
-      newEntry.createdTaskId = taskId;
-      addTask({
+      const followUpTask: TaskItem = {
+        id: crypto.randomUUID(),
+        tenantId: currentTenantId,
         title: `Vorfallsbearbeitung: ${entry.title}`,
         assignedToName: entry.assignedManagerName || 'Objektleiter / Einsatzleiter',
         siteName: entry.siteName,
@@ -2808,28 +3077,42 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         dueDate: new Date(Date.now() + 1000 * 3600 * 24 * 2).toISOString().split('T')[0],
         priority: entry.priority === 'Kritisch' ? 'Hoch' : 'Mittel',
         status: 'Offen',
-        category: 'Vorfallsbearbeitung'
-      });
-
-      addNotification(
-        `Aufgabe für Vorfall erzeugt`,
-        `Automatisierte Maßnahme für "${entry.title}" (${entry.siteName}) an Objektleiter zugewiesen.`,
-        'warning'
-      );
+        category: 'Vorfallsbearbeitung',
+        offlineCreated: !isOnline
+      };
+      try {
+        await enqueueOfflineAction({
+          tenantId: currentTenantId, entityType: 'task', action: 'CREATE', payload: followUpTask
+        });
+        if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return entryId;
+        addNotification(
+          'Folgeaufgabe lokal vorgemerkt',
+          `Die Maßnahme für "${entry.title}" bleibt bis zur berechtigten Serverbestätigung in der Offline-Warteschlange.`,
+          'warning'
+        );
+      } catch (error) {
+        if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return entryId;
+        addNotification(
+          'Folgeaufgabe nicht vorgemerkt',
+          `Der Wachbucheintrag bleibt gespeichert; die Folgeaufgabe muss erneut erfasst werden. ${errorText(error)}`,
+          'alert'
+        );
+      }
     }
+    if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return entryId;
 
     set((state) => ({
       guardBook: [newEntry, ...state.guardBook]
     }));
 
     addAuditLog({
-      actorEmail: 'guard@secops.local',
-      actorRole: 'Wachdienstmitarbeiter',
+      actorEmail: authUser?.email || 'Nicht ermittelt',
+      actorRole: authUser?.role || 'Nicht ermittelt',
       actionType: 'INCIDENT_MOD',
       severity: entry.priority === 'Kritisch' ? 'ALARM' : 'INFO',
       targetEntity: `Logbook ${entryId}`,
       details: `Neuer Wachbucheintrag "${entry.title}" am Objekt ${entry.siteName} erfasst.`,
-      ipAddress: '194.25.101.44'
+      ipAddress: 'Nicht erhoben (lokal)'
     });
 
     if (isOnline) {
@@ -2838,36 +3121,36 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
     return entryId;
   },
 
-  updateGuardBookStage: (id, stage, note) => {
-    const { currentUserName } = get();
-    set((state) => ({
-      guardBook: state.guardBook.map((item) => {
-        if (item.id === id) {
-          const newRevisions = item.revisions ? [...item.revisions] : [];
-          if (note) {
-            newRevisions.push({
-              id: `rev-${Date.now()}`,
-              timestamp: new Date().toISOString(),
-              authorName: currentUserName,
-              note: `Statusänderung zu "${stage}": ${note}`
-            });
-          }
-          return {
-            ...item,
-            stage,
-            resolved: stage === 'Abgeschlossen' || stage === 'Archiviert',
-            resolutionNote: note || item.resolutionNote,
-            revisions: newRevisions
-          };
-        }
-        return item;
-      })
-    }));
+  updateGuardBookStage: async (id, stage, note) => {
+    const identity = currentSOPIdentity(get());
+    const entry = get().getTenantGuardBook().find(item => item.id === id);
+    const correctionNote = note?.trim() ?? `Statusänderung zu "${stage}"`;
+    if (!entry || entry.pendingUpdate || correctionNote.length < 5) {
+      get().addNotification('Wachbuchänderung nicht vorgemerkt',
+        !entry ? 'Der Eintrag ist im aktuellen Mandanten nicht verfügbar.'
+          : entry.pendingUpdate ? 'Eine Änderung dieses Eintrags wartet bereits auf Serverbestätigung.'
+          : 'Der Abschlussvermerk muss mindestens fünf Zeichen enthalten.', 'alert');
+      return false;
+    }
+    try {
+      await get().enqueueOfflineAction({
+        tenantId: identity.tenantId, entityType: 'guardbook', action: 'UPDATE',
+        payload: { entryId: id, stage, correctionNote }
+      });
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return false;
+      get().addNotification('Wachbuchänderung vorgemerkt',
+        'Dauerhaft lokal gespeichert; Abschluss und Revision gelten erst nach Serverbestätigung.', 'info');
+      if (get().isOnline) void get().triggerManualSync();
+      return true;
+    } catch (error) {
+      if (isCurrentSOPIdentity(identity.tenantId, identity.userId)) {
+        get().addNotification('Wachbuchänderung nicht vorgemerkt', errorText(error), 'alert');
+      }
+      return false;
+    }
   },
 
-  resolveGuardBookEntry: (id, note) => {
-    get().updateGuardBookStage(id, 'Abgeschlossen', note);
-  },
+  resolveGuardBookEntry: (id, note) => get().updateGuardBookStage(id, 'Abgeschlossen', note),
 
   acknowledgeSOP: async (sopId) => {
     const state = get();
@@ -3079,6 +3362,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
 
   issueKey: async (keyId, holderName, holderId, returnDate) => {
+    const identity = currentSOPIdentity(get());
     const issuedAt = new Date().toISOString().replace('T', ' ').substring(0, 16);
 
     try {
@@ -3088,6 +3372,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         issuedAt,
         expectedReturn: returnDate
       });
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return false;
 
       set((state) => ({
         keys: state.keys.map((k) =>
@@ -3105,16 +3390,20 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         )
       }));
       get().addNotification('Schlüssel ausgegeben', 'Die Ausgabe wurde in PostgreSQL gespeichert.', 'info');
-    } catch (error: any) {
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return false;
       get().addNotification(
         'Schlüssel nicht ausgegeben',
-        error?.message || 'Die API-Anfrage ist fehlgeschlagen.',
+        errorText(error),
         'alert'
       );
+      return false;
     }
   },
 
   returnKey: async (keyId) => {
+    const identity = currentSOPIdentity(get());
     try {
       await apiClient.patch(`/keys/${keyId}`, {
         status: 'Im Tresor',
@@ -3122,6 +3411,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         issuedAt: null,
         expectedReturn: null
       });
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return false;
 
       set((state) => ({
         keys: state.keys.map((k) =>
@@ -3139,20 +3429,23 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         )
       }));
       get().addNotification('Schlüssel zurückgenommen', 'Die Rückgabe wurde in PostgreSQL gespeichert.', 'info');
-    } catch (error: any) {
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return false;
       get().addNotification(
         'Schlüssel nicht zurückgenommen',
-        error?.message || 'Die API-Anfrage ist fehlgeschlagen.',
+        errorText(error),
         'alert'
       );
+      return false;
     }
   },
 
   addTask: async (t) => {
-    const { currentTenantId } = get();
+    const identity = currentSOPIdentity(get());
 
     try {
-      const created = await apiClient.post<any>('/tasks', {
+      const created = await apiClient.post<{ id: string; revision_version?: number }>('/tasks', {
         title: t.title,
         assignedToName: t.assignedToName,
         siteName: t.siteName ?? null,
@@ -3161,6 +3454,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         status: t.status,
         category: t.category
       });
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return null;
 
       const newTask = mapTaskRow(
         {
@@ -3173,38 +3467,49 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
           status: t.status,
           category: t.category
         },
-        currentTenantId
+        identity.tenantId
       );
 
       set((state) => ({ tasks: [newTask, ...state.tasks] }));
       get().addNotification('Aufgabe gespeichert', 'Die Aufgabe wurde in PostgreSQL gespeichert.', 'info');
-    } catch (error: any) {
+      return newTask;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return null;
       get().addNotification(
         'Aufgabe nicht gespeichert',
-        error?.message || 'Die API-Anfrage ist fehlgeschlagen. Es wurde nichts gespeichert.',
+        errorText(error),
         'alert'
       );
+      return null;
     }
   },
 
   toggleTaskStatus: async (taskId) => {
+    const identity = currentSOPIdentity(get());
     const task = get().tasks.find((item) => item.id === taskId);
-    if (!task) return;
+    if (!task) {
+      get().addNotification('Aufgabe nicht aktualisiert', 'Die Aufgabe ist im aktuellen Kontext nicht verfügbar.', 'alert');
+      return false;
+    }
 
     const status: TaskItem['status'] = task.status === 'Erledigt' ? 'In Bearbeitung' : 'Erledigt';
 
     try {
       await apiClient.patch(`/tasks/${taskId}`, { status });
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return false;
       set((state) => ({
         tasks: state.tasks.map((item) => (item.id === taskId ? { ...item, status } : item))
       }));
       get().addNotification('Aufgabe aktualisiert', 'Der Status wurde in PostgreSQL gespeichert.', 'info');
-    } catch (error: any) {
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return false;
       get().addNotification(
         'Aufgabe nicht aktualisiert',
-        error?.message || 'Die API-Anfrage ist fehlgeschlagen.',
+        errorText(error),
         'alert'
       );
+      return false;
     }
   },
 
@@ -3254,10 +3559,12 @@ async function syncPendingGuardbookAttachments(
   tenantId: string,
   userId: string,
   isCurrentIdentity: () => boolean
-): Promise<{ failed: number; maxRetryCount: number; ownerlessCount: number }> {
-  if (typeof globalThis.indexedDB === 'undefined') return { failed: 0, maxRetryCount: 0, ownerlessCount: 0 };
+): Promise<{ failed: number; maxRetryCount: number; hasOwnerlessAttachments: boolean }> {
+  if (typeof globalThis.indexedDB === 'undefined') {
+    return { failed: 0, maxRetryCount: 0, hasOwnerlessAttachments: false };
+  }
   const attachments = await offlineVault.getPendingAttachments(tenantId, userId);
-  const ownerlessCount = await offlineVault.getOwnerlessPendingAttachmentCount(tenantId);
+  const hasOwnerlessAttachments = await offlineVault.hasOwnerlessPendingAttachments(tenantId);
   let failed = 0;
   let maxRetryCount = 0;
   for (const attachment of attachments) {
@@ -3303,13 +3610,13 @@ async function syncPendingGuardbookAttachments(
       maxRetryCount = Math.max(maxRetryCount, (attachment.uploadRetryCount ?? 0) + 1);
     }
   }
-  return { failed, maxRetryCount, ownerlessCount };
+  return { failed, maxRetryCount, hasOwnerlessAttachments };
 }
 
-function notifyOwnerlessGuardbookAttachments(count: number): void {
-  if (count <= 0) return;
+function notifyOwnerlessGuardbookAttachments(hasOwnerlessAttachments: boolean): void {
+  if (!hasOwnerlessAttachments) return;
   const title = 'Ältere Wachbuchanhänge nicht synchronisiert';
-  const message = `${count} lokal gespeicherte Wachbuchanhang/Anhänge haben keine gespeicherte Benutzerzuordnung. Sie werden aus Sicherheitsgründen nicht automatisch hochgeladen und bleiben lokal. Bitte prüfen Sie die Dateien und fügen Sie benötigte Anhänge nach manueller Zuordnung erneut hinzu.`;
+  const message = 'Ältere Wachbuchanhänge ohne sichere Benutzer- und Standortzuordnung bleiben lokal gespeichert und werden nicht automatisch synchronisiert. Sie sind in der normalen Oberfläche weder einsehbar noch exportierbar; ein autorisiertes Wiederherstellungsverfahren ist derzeit nicht verfügbar.';
   const state = useSecurityStore.getState();
   if (state.notifications.some((notification) =>
     notification.title === title && notification.message === message

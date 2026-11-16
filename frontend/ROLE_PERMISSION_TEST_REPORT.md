@@ -8,9 +8,9 @@
 3. **Einsatzleitung**: Operative Leitung, Dienstplandisposition, Vorfallbearbeitung und Schlüsselaufsicht.
 4. **Objektleitung**: Standortbezogenes Controlling, Kontrollgangprüfungen und Anweisungsstatus.
 5. **Personalverwaltung (HR)**: Mitarbeiterakten, § 34a Qualifikationsüberwachung und Urlaubsfreigaben.
-6. **Qualitätsmanagement (QM)**: Erstellung und Audit von Dienstanweisungen nach DIN 77200.
+6. **Qualitätsmanagement (QM)**: Erstellung und Prüfung von Dienstanweisungen; dies ist keine DIN-77200-Konformitätsaussage.
 7. **Wachdienstmitarbeiter**: Mobiler Zugriff ("Mein Dienst", QR/NFC Scanner, Wachbuch, Schichtübergabe).
-8. **Lesender Zugriff (Auditor)**: Revisionssichere Einsicht in Berichte und Prüfprotokolle ohne Änderungsrechte.
+8. **Lesender Zugriff (Auditor)**: Lesender Zugriff auf Berichte und Prüfprotokolle ohne Änderungsrechte; rechtliche Revisionssicherheit ist nicht nachgewiesen.
 
 ## 2. SOP-Berechtigungen und Funktionstrennung
 

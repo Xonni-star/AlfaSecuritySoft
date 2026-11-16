@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   FileSpreadsheet,
   Download,
@@ -38,12 +38,22 @@ import {
 } from 'recharts';
 import { useSecurityStore } from '../store';
 import { ReportDefinition, ReportCategory, UserRole } from '../types';
+import { planningApi, WorkHoursReportRow } from '../services/planningService';
+import { getReportDateRange, isDateInRange, ReportPeriod } from '../reportingMetrics';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
+const serializeCsvCell = (value: unknown): string => {
+  let text = String(value ?? '');
+  // Neutralize text formulas even after whitespace, control characters, or a BOM.
+  if (typeof value === 'string' && /^[\s\u0000-\u001f\u007f-\u009f]*[=+\-@]/u.test(text)) {
+    text = `'${text}`;
+  }
+  return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
 export const ReportsModule: React.FC = () => {
   const {
-    calculateTenantKPIs,
     getTenantReportDefinitions,
     addReportDefinition,
     deleteReportDefinition,
@@ -55,11 +65,13 @@ export const ReportsModule: React.FC = () => {
     getTenantKeys,
     getTenantTasks,
     getCurrentTenant,
-    currentUserRole
+    currentUserRole,
+    currentTenantId,
+    currentUserId,
+    authUser
   } = useSecurityStore();
 
   const tenant = getCurrentTenant();
-  const kpis = calculateTenantKPIs();
   const reportDefs = getTenantReportDefinitions();
   const clients = getTenantClients();
   const sites = getTenantSites();
@@ -70,8 +82,59 @@ export const ReportsModule: React.FC = () => {
   const tasks = getTenantTasks();
 
   const [activeTab, setActiveTab] = useState<'controlling' | 'generator' | 'export_audit'>('controlling');
-  const [rolePerspective, setRolePerspective] = useState<UserRole>(currentUserRole);
-  const [dateRangeFilter, setDateRangeFilter] = useState<'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'QUARTER'>('THIS_MONTH');
+  const [dateRangeFilter, setDateRangeFilter] = useState<ReportPeriod>('THIS_MONTH');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+  const [hoursReportResult, setHoursReportResult] = useState<{ key: string; rows: WorkHoursReportRow[] }>({ key: '', rows: [] });
+  const [hoursReportError, setHoursReportError] = useState('');
+  const [hoursReportLoading, setHoursReportLoading] = useState(false);
+  const dateRange = useMemo(() => getReportDateRange(dateRangeFilter, new Date(), {
+    from: customFrom,
+    to: customTo
+  }), [dateRangeFilter, customFrom, customTo]);
+  const tenantReportGrant = authUser?.permissions.includes('planning:reports:read') ?? false;
+  const reportSites = (authUser?.sitePermissions ?? [])
+    .filter(grant => grant.code === 'planning:reports:read').map(grant => grant.siteId).sort();
+  const canReadHours = tenantReportGrant || reportSites.length > 0;
+  const requestKey = JSON.stringify([
+    currentTenantId || tenant.id, authUser?.id || currentUserId,
+    tenantReportGrant ? 'tenant' : reportSites, dateRange.from, dateRange.to
+  ]);
+  const hoursReport = canReadHours && hoursReportResult.key === requestKey ? hoursReportResult.rows : [];
+  const isCalendarDate = (value: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const parsed = new Date(`${value}T00:00:00Z`);
+    return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+  };
+  const customRangeValid = dateRangeFilter !== 'CUSTOM' ||
+    (isCalendarDate(customFrom) && isCalendarDate(customTo) && customFrom <= customTo);
+
+  useEffect(() => {
+    setHoursReportResult({ key: requestKey, rows: [] });
+    if (!canReadHours) {
+      setHoursReportError('');
+      setHoursReportLoading(false);
+      return;
+    }
+    if (!customRangeValid) {
+      setHoursReportError('Bitte wählen Sie einen gültigen Zeitraum aus.');
+      setHoursReportLoading(false);
+      return;
+    }
+
+    let active = true;
+    setHoursReportLoading(true);
+    setHoursReportError('');
+    planningApi.workHoursReport(dateRange.from, dateRange.to)
+      .then((rows) => { if (active) setHoursReportResult({ key: requestKey, rows }); })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setHoursReportResult({ key: requestKey, rows: [] });
+        setHoursReportError(error instanceof Error ? error.message : 'Arbeitszeitbericht konnte nicht geladen werden.');
+      })
+      .finally(() => { if (active) setHoursReportLoading(false); });
+    return () => { active = false; };
+  }, [dateRange.from, dateRange.to, customRangeValid, canReadHours, requestKey]);
 
   // Generator State
   const [genName, setGenName] = useState('');
@@ -80,27 +143,35 @@ export const ReportsModule: React.FC = () => {
   const [genInterval, setGenInterval] = useState<ReportDefinition['scheduleInterval']>('MONTHLY');
   const [previewData, setPreviewData] = useState<any[]>([]);
 
-  // Computed Real Chart Data (No Mockups)
+  const filteredShifts = useMemo(() => customRangeValid ? shifts.filter((shift) =>
+    shift.planningStatus !== 'cancelled' && isDateInRange(shift.date, dateRange)
+  ) : [], [shifts, dateRange, customRangeValid]);
+  const filteredGuardBook = useMemo(() => customRangeValid ? guardBook.filter((entry) =>
+    isDateInRange(entry.timestamp, dateRange)
+  ) : [], [guardBook, dateRange, customRangeValid]);
+
   const shiftHoursComparison = useMemo(() => {
-    return sites.map((s) => {
-      const siteShifts = shifts.filter((sh) => sh.siteId === s.id);
-      const planned = siteShifts.length * 12;
-      const actual = siteShifts.filter((sh) => sh.status === 'Besetzt').length * 12;
-      return {
-        name: s.name.length > 15 ? `${s.name.slice(0, 15)}...` : s.name,
-        Soll: planned,
-        Ist: actual
-      };
-    });
-  }, [sites, shifts]);
+    return hoursReport.map((row) => ({
+      name: `${row.first_name} ${row.last_name}`,
+      Soll: row.planned_hours,
+      Ist: row.actual_status === 'complete' && row.actual_hours !== null ? row.actual_hours : null
+    }));
+  }, [hoursReport]);
+
+  const plannedHours = hoursReport.reduce((sum, row) => sum + row.planned_hours, 0);
+  const actualHoursComplete = hoursReport.length > 0 &&
+    hoursReport.every((row) => row.actual_status === 'complete' && row.actual_hours !== null);
+  const approvedActualHours = actualHoursComplete
+    ? hoursReport.reduce((sum, row) => sum + (row.actual_hours ?? 0), 0)
+    : null;
 
   const incidentsByCategory = useMemo(() => {
     const counts: Record<string, number> = {};
-    guardBook.forEach((g) => {
+    filteredGuardBook.forEach((g) => {
       counts[g.category] = (counts[g.category] || 0) + 1;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [guardBook]);
+  }, [filteredGuardBook]);
 
   const employeeStatusData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -110,6 +181,17 @@ export const ReportsModule: React.FC = () => {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [employees]);
 
+  const expiringQualificationsCount = employees.reduce((count, employee) =>
+    count + (employee.qualifications ?? []).filter((qualification) => {
+      if (!qualification.expiryDate) return false;
+      const expiry = Date.parse(qualification.expiryDate);
+      return Number.isFinite(expiry) && expiry >= Date.now() && expiry <= Date.now() + 30 * 86_400_000;
+    }).length, 0);
+  const expiringContractsCount = clients.filter((client) => {
+    const expiry = Date.parse(client.contractEnd);
+    return Number.isFinite(expiry) && expiry >= Date.now() && expiry <= Date.now() + 90 * 86_400_000;
+  }).length;
+  const openTasksCount = tasks.filter((task) => task.status !== 'Erledigt').length;
   // Export Handlers
   const handlePrintPDF = () => {
     window.print();
@@ -118,7 +200,7 @@ export const ReportsModule: React.FC = () => {
   const handleExportCSV = (dataSource: string) => {
     let rows: any[] = [];
     if (dataSource === 'shifts') {
-      rows = shifts.map((s) => ({
+      rows = filteredShifts.map((s) => ({
         ID: s.id,
         Objekt: s.siteName,
         Datum: s.date,
@@ -128,7 +210,7 @@ export const ReportsModule: React.FC = () => {
         Mitarbeiter: s.employeeName || 'Unbesetzt'
       }));
     } else if (dataSource === 'guardbook') {
-      rows = guardBook.map((g) => ({
+      rows = filteredGuardBook.map((g) => ({
         ID: g.id,
         Zeitpunkt: g.timestamp,
         Objekt: g.siteName,
@@ -154,9 +236,9 @@ export const ReportsModule: React.FC = () => {
       return;
     }
 
-    const headers = Object.keys(rows[0]).join(';');
-    const csvContent = 'data:text/csv;charset=utf-8,﻿' + [headers, ...rows.map((r) => Object.values(r).join(';'))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const headers = Object.keys(rows[0]).map(serializeCsvCell).join(';');
+    const csvContent = '\uFEFF' + [headers, ...rows.map((r) => Object.values(r).map(serializeCsvCell).join(';'))].join('\r\n');
+    const encodedUri = `data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`;
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
     link.setAttribute('download', `SecurityOps_${dataSource}_${new Date().toISOString().split('T')[0]}.csv`);
@@ -177,7 +259,7 @@ export const ReportsModule: React.FC = () => {
       requiredRole: [UserRole.ADMIN, UserRole.GF],
       dataSource: genSource,
       selectedColumns: ['id', 'status', 'createdAt'],
-      filterConfig: { dateRange: dateRangeFilter },
+      filterConfig: { dateRange: dateRangeFilter, from: dateRange.from, to: dateRange.to },
       scheduleInterval: genInterval
     });
 
@@ -195,7 +277,7 @@ export const ReportsModule: React.FC = () => {
             <h1 className="text-xl font-bold text-white">Berichtswesen, Controlling & Management-Dashboard</h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Echte Kennzahlen nach DIN 77200, Soll-/Ist-Stundenbilanzen, Vorfallsstatistiken und revisionssichere Exporte für {tenant.name}.
+            Tenantbezogene Auswertungen für {tenant.name}. Arbeitszeitberichte werden serverseitig berechtigt und nach dem ausgewählten Zeitraum geladen.
           </p>
         </div>
 
@@ -218,20 +300,11 @@ export const ReportsModule: React.FC = () => {
         </div>
       </div>
 
-      {/* Role Perspective Switcher & Date Filter */}
+      {/* Date Filter */}
       <div className="p-3.5 bg-slate-900/80 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2">
-          <span className="text-slate-400 font-medium">Dashboard-Rollenperspektive:</span>
-          <select
-            value={rolePerspective}
-            onChange={(e) => setRolePerspective(e.target.value as UserRole)}
-            className="bg-slate-800 text-blue-300 font-semibold px-2.5 py-1.5 rounded-lg border border-slate-700 focus:outline-none"
-          >
-            <option value={UserRole.GF}>Geschäftsführung (Executive Cockpit)</option>
-            <option value={UserRole.EINSATZLEITUNG}>Einsatzleitung (Operatives Lagebild)</option>
-            <option value={UserRole.OBJEKTLEITUNG}>Objektleitung (Standortcontrolling)</option>
-            <option value={UserRole.HR}>Personalverwaltung (HR & § 34a Audit)</option>
-          </select>
+          <span className="text-slate-400 font-medium">Angemeldete Rolle:</span>
+          <span className="text-blue-300 font-semibold">{currentUserRole}</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -239,57 +312,80 @@ export const ReportsModule: React.FC = () => {
           <span className="text-slate-400">Zeitraum:</span>
           <select
             value={dateRangeFilter}
-            onChange={(e) => setDateRangeFilter(e.target.value as any)}
+            onChange={(e) => setDateRangeFilter(e.target.value as ReportPeriod)}
             className="bg-slate-800 text-slate-200 px-2.5 py-1.5 rounded-lg border border-slate-700 focus:outline-none"
           >
             <option value="TODAY">Heute</option>
+            <option value="YESTERDAY">Gestern</option>
             <option value="THIS_WEEK">Aktuelle Woche</option>
-            <option value="THIS_MONTH">Aktueller Monat (05/2025)</option>
-            <option value="QUARTER">Laufendes Quartal (Q2/2025)</option>
+            <option value="LAST_WEEK">Vorherige Woche</option>
+            <option value="THIS_MONTH">Aktueller Monat</option>
+            <option value="LAST_MONTH">Vorheriger Monat</option>
+            <option value="THIS_QUARTER">Aktuelles Quartal</option>
+            <option value="LAST_QUARTER">Vorheriges Quartal</option>
+            <option value="THIS_YEAR">Aktuelles Jahr</option>
+            <option value="CUSTOM">Benutzerdefiniert</option>
           </select>
+          {dateRangeFilter === 'CUSTOM' && (
+            <div className="flex items-center gap-2">
+              <label className="sr-only" htmlFor="report-range-from">Von</label>
+              <input id="report-range-from" type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)}
+                className="bg-slate-800 text-slate-200 px-2 py-1.5 rounded-lg border border-slate-700" />
+              <span className="text-slate-500">bis</span>
+              <label className="sr-only" htmlFor="report-range-to">Bis</label>
+              <input id="report-range-to" type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)}
+                className="bg-slate-800 text-slate-200 px-2 py-1.5 rounded-lg border border-slate-700" />
+            </div>
+          )}
+          <span role="status" className="text-slate-500">{dateRange.from} – {dateRange.to}</span>
         </div>
       </div>
 
-      {/* Executive KPI Metric Cards (Real Calculated Data) */}
+      {/* Tenant-scoped metrics; hours come from the authorized server report. */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
-          <span className="text-slate-400 block text-[11px]">Soll / Ist Stunden</span>
+          <span className="text-slate-400 block text-[11px]">Planstunden (zugewiesene Dienste)</span>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-xl font-bold text-slate-100">{kpis.totalActualHours}h</span>
-            <span className="text-xs text-slate-400">/ {kpis.totalPlannedHours}h Soll</span>
+            <span className="text-xl font-bold text-slate-100">
+              {!canReadHours ? '—' : hoursReportLoading ? '…' : hoursReportError ? '—' : `${plannedHours.toFixed(1)} h`}
+            </span>
           </div>
-          <span className="text-[10px] text-emerald-400 font-medium">{kpis.planFulfillmentRate}% Planerfüllung</span>
+          <span className="text-[10px] text-slate-500">Zeitfenster und Pausen aus Dienstplanung</span>
         </div>
 
         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
-          <span className="text-slate-400 block text-[11px]">Kritische Vorfälle</span>
+          <span className="text-slate-400 block text-[11px]">Genehmigte Ist-Stunden</span>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className={`text-xl font-bold ${kpis.openCriticalIncidentsCount > 0 ? 'text-rose-400' : 'text-slate-100'}`}>
-              {kpis.openCriticalIncidentsCount}
-            </span>
-            <span className="text-xs text-slate-400">Ungelöst</span>
+            <span className="text-xl font-bold text-slate-100">{approvedActualHours === null ? '—' : `${approvedActualHours.toFixed(1)} h`}</span>
           </div>
-          <span className="text-[10px] text-slate-500">Gesamt: {guardBook.length} erfasst</span>
+          <span className="text-[10px] text-slate-500">
+            {!canReadHours ? 'Keine Berechtigung für Arbeitszeitberichte' : hoursReportError ? hoursReportError : actualHoursComplete ? 'Alle zugewiesenen Ist-Zeiten genehmigt' : 'Nicht vollständig genehmigt oder keine Daten'}
+          </span>
         </div>
 
         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
           <span className="text-slate-400 block text-[11px]">Personalbestand</span>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-xl font-bold text-slate-100">{kpis.activeEmployeesCount}</span>
+            <span className="text-xl font-bold text-slate-100">{employees.filter((employee) => employee.status === 'Aktiv').length}</span>
             <span className="text-xs text-slate-400">/ {employees.length} Gesamt</span>
           </div>
-          <span className="text-[10px] text-amber-400 font-medium">{kpis.expiringQualificationsCount} Nachweise fällig</span>
+          <span className="text-[10px] text-amber-400 font-medium">{expiringQualificationsCount} Nachweise in 30 Tagen fällig</span>
         </div>
 
         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
-          <span className="text-slate-400 block text-[11px]">DIN 77200 Konformität</span>
+          <span className="text-slate-400 block text-[11px]">Offene Aufgaben</span>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-xl font-bold text-emerald-400">{kpis.din77200ComplianceScore}%</span>
-            <span className="text-xs text-slate-400">Audit-Index</span>
+            <span className="text-xl font-bold text-slate-100">{openTasksCount}</span>
           </div>
-          <span className="text-[10px] text-slate-500">KRITIS & BSI Konform</span>
+          <span className="text-[10px] text-slate-500">Mandantbezogener Aufgabenbestand</span>
         </div>
       </div>
+      {!canReadHours && <p role="status" className="text-xs text-slate-400">
+        Keine Berechtigung für Arbeitszeitberichte. Andere verfügbare Auswertungen bleiben zugänglich.
+      </p>}
+      {hoursReportError && <p role="alert" className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+        Arbeitszeitdaten konnten für {dateRange.from} bis {dateRange.to} nicht geladen werden. Prüfen Sie die Berichtsberechtigung oder die Verbindung.
+      </p>}
 
       {/* Tabs */}
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-2 text-xs">
@@ -318,34 +414,39 @@ export const ReportsModule: React.FC = () => {
           }`}
         >
           <FileText className="w-3.5 h-3.5" />
-          <span>Revisionssichere Tabellenansicht</span>
+          <span>Schichtübersicht</span>
         </button>
       </div>
 
       {/* Tab 1: Real Visual Charts & Analytics */}
       {activeTab === 'controlling' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Chart 1: Soll vs Ist Hours per Site */}
+          {/* Server-authorized work-hour report */}
           <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-white">Soll- vs. Ist-Stunden nach Schutzobjekten</h3>
-                <p className="text-xs text-slate-400">Vergleich der geplanten gegen besetzte Schichtstunden</p>
+                <h3 className="text-sm font-bold text-white">Plan- und genehmigte Ist-Stunden je Mitarbeiter</h3>
+                <p className="text-xs text-slate-400">Ist-Stunden erscheinen nur bei vollständig genehmigten Zeitnachweisen</p>
               </div>
-              <span className="text-[11px] font-mono text-blue-400 font-bold">Basis: {shifts.length} Schichten</span>
+              <span className="text-[11px] font-mono text-blue-400 font-bold">{filteredShifts.length} Schichten im Zeitraum</span>
             </div>
 
             <div className="h-64 w-full">
+              {!canReadHours ? <p className="pt-12 text-center text-xs text-slate-400">Keine Berechtigung für Arbeitszeitberichte.</p>
+                : hoursReportLoading ? <p role="status" className="pt-12 text-center text-xs text-slate-400">Arbeitszeitbericht wird geladen.</p>
+                : hoursReportError ? <p className="pt-12 text-center text-xs text-amber-300">Arbeitszeitbericht nicht verfügbar.</p>
+                  : shiftHoursComparison.length === 0 ? <p className="pt-12 text-center text-xs text-slate-500">Keine zugewiesenen Schichten im ausgewählten Zeitraum.</p> : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={shiftHoursComparison} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                   <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} />
                   <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
                   <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px', fontSize: '12px' }} />
-                  <Bar dataKey="Soll" fill="#334155" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Ist" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Soll" name="Geplant (netto)" fill="#334155" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Ist" name="Ist (genehmigt)" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+              )}
             </div>
           </div>
 
@@ -354,9 +455,9 @@ export const ReportsModule: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-white">Vorfallsverteilung nach Kategorien</h3>
-                <p className="text-xs text-slate-400">Ereignisse aus digitalem Wachbuch</p>
+                <p className="text-xs text-slate-400">Ereignisse im gewählten Zeitraum</p>
               </div>
-              <span className="text-[11px] font-mono text-emerald-400 font-bold">{guardBook.length} Vorfälle</span>
+              <span className="text-[11px] font-mono text-emerald-400 font-bold">{filteredGuardBook.length} Einträge</span>
             </div>
 
             <div className="h-64 w-full flex items-center justify-center">
@@ -386,18 +487,18 @@ export const ReportsModule: React.FC = () => {
           <div className="lg:col-span-2 p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3 text-xs">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <span className="font-bold text-white text-sm">
-                Fokussierte Auswertung für: <span className="text-blue-400">{rolePerspective}</span>
+                Fokussierte Auswertung für angemeldete Rolle: <span className="text-blue-400">{currentUserRole}</span>
               </span>
-              <span className="text-[10px] text-slate-500 font-mono">DIN 77200 Zertifiziert</span>
+              <span className="text-[10px] text-slate-500 font-mono">Serverseitige Berechtigungsprüfung</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
               <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800">
-                <span className="text-slate-400 block text-[11px]">Auslaufende Verträge:</span>
+                <span className="text-slate-400 block text-[11px]">Verträge mit Ende in 90 Tagen:</span>
                 <span className="text-sm font-bold text-amber-400 mt-1 block">
-                  {clients.filter(c => !c.contractAutoRenew).length} Verträge
+                  {expiringContractsCount} Verträge
                 </span>
-                <span className="text-[10px] text-slate-500">Kündigungsfristen beachten</span>
+                <span className="text-[10px] text-slate-500">Enddatum liegt im nächsten Quartal</span>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800">
@@ -405,13 +506,15 @@ export const ReportsModule: React.FC = () => {
                 <span className="text-sm font-bold text-slate-200 mt-1 block">
                   {keys.filter(k => k.status === 'Ausgegeben').length} ausgegeben
                 </span>
-                <span className="text-[10px] text-emerald-400">Keine Verlustmeldungen</span>
+                <span className={`text-[10px] ${keys.filter(k => k.status === 'Verlustmeldung').length ? 'text-rose-400' : 'text-slate-500'}`}>
+                  {keys.filter(k => k.status === 'Verlustmeldung').length} Verlustmeldungen
+                </span>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800">
                 <span className="text-slate-400 block text-[11px]">Unbesetzte Schichten:</span>
                 <span className="text-sm font-bold text-rose-400 mt-1 block">
-                  {shifts.filter(s => s.status === 'Offen').length} Schichten
+                  {filteredShifts.filter(s => s.status === 'Offen').length} Schichten
                 </span>
                 <span className="text-[10px] text-slate-500">Ersatzgestellung erforderlich</span>
               </div>
@@ -426,8 +529,8 @@ export const ReportsModule: React.FC = () => {
           {/* Create Custom Report Form */}
           <form onSubmit={handleCreateCustomReport} className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
             <div className="border-b border-slate-800 pb-2">
-              <h3 className="text-sm font-bold text-white">Eigene Berichtsvorlage definieren (Sicherheitsgeprüft)</h3>
-              <p className="text-slate-400 text-xs">Keine ungesicherten SQL-Injektionen – strikt typisierte Datenquellen.</p>
+              <h3 className="text-sm font-bold text-white">Benutzerdefinierte Berichtsvorlage</h3>
+              <p className="text-slate-400 text-xs">Vorlagen verweisen auf vordefinierte Datenquellen.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -531,11 +634,11 @@ export const ReportsModule: React.FC = () => {
         <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-sm text-xs">
           <div className="p-4 border-b border-slate-800 flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold text-white">Revisionssicheres Monats-Schichtenprotokoll ({shifts.length} Schichten)</h2>
-              <p className="text-xs text-slate-400">Verbindliche Datengrundlage für Faktura und Entgeltabrechnung nach § 34a GewO / ArbZG</p>
+              <h2 className="text-sm font-bold text-white">Schichtübersicht ({filteredShifts.length} Schichten)</h2>
+              <p className="text-xs text-slate-400">Planungsdaten im ausgewählten Zeitraum; keine Abrechnungs- oder Rechtskonformitätsbestätigung</p>
             </div>
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              Audit-Ready
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-700 text-slate-300 border border-slate-600">
+              Planungsübersicht
             </span>
           </div>
 
@@ -552,7 +655,7 @@ export const ReportsModule: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 font-mono">
-                {shifts.map((sh) => (
+                {filteredShifts.map((sh) => (
                   <tr key={sh.id} className="hover:bg-slate-800/30 transition">
                     <td className="p-3 text-slate-200">
                       <div>{sh.date}</div>
@@ -563,7 +666,7 @@ export const ReportsModule: React.FC = () => {
                       {sh.employeeName || <span className="text-rose-400 font-bold">Unbesetzt</span>}
                     </td>
                     <td className="p-3 font-sans text-[11px] text-blue-400">{sh.requiredQualification}</td>
-                    <td className="p-3 text-slate-200">12.0h</td>
+                    <td className="p-3 text-slate-400" title="Eine exakte Dauer erfordert Zeitzone, Pause und freigegebene Ist-Zeiten.">—</td>
                     <td className="p-3 text-right font-sans">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                         sh.status === 'Besetzt' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'

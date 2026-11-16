@@ -47,6 +47,7 @@ services:
 
   backup:
     image: ${RESTORE_TEST_BACKUP_IMAGE:-postgres:16-bookworm}
+    user: "${RESTORE_TEST_UID:?Set invoking test user ID}:${RESTORE_TEST_GID:?Set invoking test group ID}"
     depends_on:
       db:
         condition: service_healthy
@@ -58,6 +59,7 @@ services:
       BACKUP_ONCE: "true"
     volumes:
       - ./backup_cron.sh:/usr/local/bin/backup_cron.sh:ro
+      - ./backup_healthcheck.sh:/usr/local/bin/backup_healthcheck.sh:ro
       - ${RESTORE_TEST_TMPDIR:?Set RESTORE_TEST_TMPDIR}/backups:/var/backups
     entrypoint: ["/bin/bash", "/usr/local/bin/backup_cron.sh"]
 

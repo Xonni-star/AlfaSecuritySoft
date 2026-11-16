@@ -3,7 +3,7 @@
 
 ### 1. Behobene Probleme & Implementierte Funktionen
 
-1. **Wachbuchkorrekturen mit entryId & Append-Only Revisionssicherung**:
+1. **Wachbuchkorrekturen mit entryId & technischer Append-Only-Regel**:
    - Korrekturen referenzieren nun zwingend `payload.entryId`.
    - Die Mutation-ID der Korrektur wird getrennt in `guardbook_revisions.client_mutation_id` mit `UNIQUE(tenant_id, client_mutation_id)` persistiert.
    - Wiederholte Übertragungen derselben Korrektur erzeugen keine doppelten Revisionen.

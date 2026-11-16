@@ -65,8 +65,10 @@ function handoverSelect(): string {
                  h.created_by_user_id, concat(creator.first_name, ' ', creator.last_name) AS created_by_name,
                  outgoing.employee_id AS outgoing_employee_id,
                  concat(outgoing_employee.first_name, ' ', outgoing_employee.last_name) AS outgoing_employee_name,
+                 outgoing_employee.account_user_id AS outgoing_account_user_id,
                  incoming.employee_id AS incoming_employee_id,
                  concat(incoming_employee.first_name, ' ', incoming_employee.last_name) AS incoming_employee_name,
+                 incoming_employee.account_user_id AS incoming_account_user_id,
                  (SELECT count(*)::int FROM handover_tasks t
                     WHERE t.tenant_id=h.tenant_id AND t.site_id=h.site_id
                       AND t.status IN ('open','in_progress')) AS open_tasks_count,
@@ -87,7 +89,7 @@ function handoverSelect(): string {
             ON incoming_employee.id=incoming.employee_id AND incoming_employee.tenant_id=h.tenant_id`;
 }
 
-function mapHandoverRow(row: Record<string, any>): Record<string, unknown> {
+function mapHandoverRow(row: Record<string, any>, userId: string): Record<string, unknown> {
   return {
     id: row.id,
     tenantId: row.tenant_id,
@@ -111,8 +113,10 @@ function mapHandoverRow(row: Record<string, any>): Record<string, unknown> {
     createdByName: row.created_by_name,
     outgoingEmployeeId: row.outgoing_employee_id,
     outgoingEmployeeName: row.outgoing_employee_name,
+    isOutgoingAccount: row.outgoing_account_user_id === userId,
     incomingEmployeeId: row.incoming_employee_id,
     incomingEmployeeName: row.incoming_employee_name,
+    isIncomingAccount: row.incoming_account_user_id === userId,
     openTasksCount: Number(row.open_tasks_count || 0),
     createdTasksCount: Number(row.created_tasks_count || 0),
     documentCount: Number(row.document_count || 0)
@@ -122,7 +126,7 @@ function mapHandoverRow(row: Record<string, any>): Record<string, unknown> {
 export async function listHandovers(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const filter = listQuerySchema.parse(req.query);
-    const { tenantId } = req.user!;
+    const { tenantId, userId } = req.user!;
     const result = await withTenantTransaction(tenantId, async db => {
       const values: unknown[] = [tenantId];
       const conditions = ['h.tenant_id=$1'];
@@ -169,7 +173,7 @@ export async function listHandovers(req: Request, res: Response, next: NextFunct
          LIMIT $${values.length - 1} OFFSET $${values.length}`,
         values
       );
-      return { items: items.rows.map(mapHandoverRow), total: count.rows[0].total };
+      return { items: items.rows.map(row => mapHandoverRow(row, userId)), total: count.rows[0].total };
     });
     res.json({ success: true, data: { ...result, limit: filter.limit, offset: filter.offset } });
   } catch (error) {
@@ -210,10 +214,11 @@ export async function getHandoverDashboard(req: Request, res: Response, next: Ne
 export async function getHandover(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const handoverId = uuid.parse(req.params.id);
-    const result = await withTenantTransaction(req.user!.tenantId, async db => {
+    const { tenantId, userId } = req.user!;
+    const result = await withTenantTransaction(tenantId, async db => {
       const handover = await db.query(
         `${handoverSelect()} WHERE h.tenant_id=$1 AND h.id=$2`,
-        [req.user!.tenantId, handoverId]
+        [tenantId, handoverId]
       );
       if (!handover.rows.length) throw statusError(404, 'Übergabe nicht gefunden.');
       const participants = await db.query(
@@ -222,9 +227,9 @@ export async function getHandover(req: Request, res: Response, next: NextFunctio
          FROM handover_participants hp JOIN employees e
            ON e.id=hp.employee_id AND e.tenant_id=hp.tenant_id
          WHERE hp.tenant_id=$1 AND hp.handover_id=$2 ORDER BY hp.participant_role`,
-        [req.user!.tenantId, handoverId]
+        [tenantId, handoverId]
       );
-      return { ...mapHandoverRow(handover.rows[0]), participants: participants.rows };
+      return { ...mapHandoverRow(handover.rows[0], userId), participants: participants.rows };
     });
     res.json({ success: true, data: result });
   } catch (error) {
@@ -568,11 +573,13 @@ export async function listHandoverDocuments(req: Request, res: Response, next: N
     const handoverId = uuid.parse(req.params.id);
     const data = await withTenantTransaction(req.user!.tenantId, async db => {
       const result = await db.query(
-        `SELECT d.id,d.title,d.description,d.category_id,d.mime_type,d.size_bytes,
+        `SELECT d.id,d.title,d.description,d.category_id,v.content_type AS mime_type,v.size_bytes::int AS size_bytes,
                 hd.linked_by_user_id,hd.linked_at
          FROM handover_documents hd
          JOIN handovers h ON h.id=hd.handover_id AND h.tenant_id=hd.tenant_id
          JOIN documents d ON d.id=hd.document_id AND d.tenant_id=hd.tenant_id
+         LEFT JOIN document_versions v ON v.document_id=d.id AND v.tenant_id=d.tenant_id
+           AND v.version_number=d.current_version
          WHERE hd.tenant_id=$1 AND hd.handover_id=$2 AND d.archived_at IS NULL
          ORDER BY hd.linked_at DESC`,
         [req.user!.tenantId, handoverId]

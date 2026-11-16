@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   store: {
     currentUserRole: 'Einsatzleitung',
     setCurrentUserRole: vi.fn(),
-    authUser: { tenantName: 'Echter Mandant', isSuperAdmin: false },
+    authUser: { tenantName: 'Echter Mandant', role: 'BrowserSOPReader', isSuperAdmin: false },
     notifications: [],
     getTenantNotificationDeliveries: vi.fn(() => []),
     tenants: [],
@@ -18,7 +18,8 @@ const mocks = vi.hoisted(() => ({
     theme: 'dark',
     toggleTheme: vi.fn(),
     activeTab: 'dashboard',
-    setActiveTab: vi.fn()
+    setActiveTab: vi.fn(),
+    logout: vi.fn()
   }
 }));
 
@@ -71,6 +72,12 @@ describe('Navbar accessibility', () => {
     expect(container.querySelector('button[aria-label^="Offline-Synchronisierung öffnen"]')).not.toBeNull();
     expect(container.querySelector('button[aria-label^="Benachrichtigungscenter öffnen"]')).not.toBeNull();
     expect(container.textContent).toContain('Echter Mandant');
+    expect(container.querySelector('[aria-label="Sitzungsrolle"]')?.textContent).toBe('BrowserSOPReader');
+    expect(container.querySelector('select')).toBeNull();
     expect(container.querySelector('select[aria-label="Mandant auswählen"]')).toBeNull();
+    const logout = container.querySelector<HTMLButtonElement>('button[aria-label="Abmelden"]');
+    expect(logout?.tabIndex).toBe(0);
+    await act(async () => logout?.click());
+    expect(mocks.store.logout).toHaveBeenCalledOnce();
   });
 });

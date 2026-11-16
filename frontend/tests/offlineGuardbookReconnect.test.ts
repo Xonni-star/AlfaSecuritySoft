@@ -46,17 +46,123 @@ describe('offline guardbook reconnect exercise', () => {
       isOnline: true,
       syncQueue: [],
       guardBook: [],
+      tasks: [],
+      auditLogs: [],
       notifications: []
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    useSecurityStore.setState({ isAuthenticated: false });
+    await vi.waitFor(() => expect(useSecurityStore.getState().isSyncing).toBe(false));
     offlineVault.close();
     vi.restoreAllMocks();
     if (indexedDBDescriptor) Object.defineProperty(globalThis, 'indexedDB', indexedDBDescriptor);
     else Reflect.deleteProperty(globalThis, 'indexedDB');
     if (onlineDescriptor) Object.defineProperty(navigator, 'onLine', onlineDescriptor);
     else Reflect.deleteProperty(navigator, 'onLine');
+  });
+
+  test.each(['success', 'failure'] as const)('keeps a delayed outbox write with outcome %s isolated from a different identity', async outcome => {
+    const enqueue = offlineVault.enqueueMutation.bind(offlineVault);
+    let release!: () => void;
+    let writing!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const started = new Promise<void>(resolve => { writing = resolve; });
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => {
+      writing();
+      await gate;
+      if (outcome === 'failure') throw new Error('Verzögerter Speicherfehler');
+      return enqueue(mutation);
+    });
+    const result = useSecurityStore.getState().enqueueOfflineAction({
+      tenantId, entityType: 'task', action: 'CREATE', payload: { title: 'Privater Entwurf' }
+    }).then(() => null, (error: unknown) => error);
+    await started;
+    useSecurityStore.setState({
+      currentTenantId: 'different-tenant', currentUserId: 'different-user',
+      authUser: {
+        id: 'different-user', email: 'different@test.invalid', fullName: 'Anderer Benutzer',
+        role: 'Wachdienstmitarbeiter', tenantId: 'different-tenant',
+        tenantName: 'Anderer Mandant', permissions: []
+      },
+      syncQueue: [], notifications: []
+    });
+    release();
+    if (outcome === 'success') expect(await result).toBeNull();
+    else expect(await result).toBeInstanceOf(Error);
+    expect(useSecurityStore.getState().syncQueue).toEqual([]);
+    expect(useSecurityStore.getState().notifications).toEqual([]);
+    expect(await offlineVault.getOutbox(tenantId, undefined, userId))
+      .toHaveLength(outcome === 'success' ? 1 : 0);
+  });
+
+  test('durably queues a critical incident follow-up and reconciles only a valid server task receipt', async () => {
+    useSecurityStore.setState({ isOnline: false });
+    const post = vi.spyOn(apiClient, 'post');
+    await useSecurityStore.getState().addGuardBookEntry({
+      siteId: 'site-offline-test', siteName: 'Testobjekt',
+      guardId: 'guard-offline-test', guardName: 'Offline Test',
+      category: 'Vorkommnis', priority: 'Kritisch', stage: 'Erfasst',
+      title: 'Kritischer Offline-Vorfall', description: 'Folgeaufgabe darf offline nicht verloren gehen.',
+      policeInvolved: false, resolved: false
+    });
+    const pending = await offlineVault.getOutbox(tenantId, undefined, userId);
+    expect(pending.map(item => item.entityType).sort()).toEqual(['guardbook', 'task']);
+    expect(post).not.toHaveBeenCalled();
+    expect(useSecurityStore.getState().tasks).toEqual([]);
+    expect(useSecurityStore.getState().notifications.some(item => item.title === 'Aufgabe für Vorfall erzeugt')).toBe(false);
+    expect(useSecurityStore.getState().auditLogs).toEqual([expect.objectContaining({
+      actorEmail: 'offline@test.invalid', actorRole: 'Wachdienstmitarbeiter',
+      ipAddress: 'Nicht erhoben (lokal)'
+    })]);
+    offlineVault.close();
+    await offlineVault.init();
+    expect((await offlineVault.getOutbox(tenantId, undefined, userId)).map(item => item.id))
+      .toEqual(pending.map(item => item.id));
+    const incident = pending.find(item => item.entityType === 'guardbook')!;
+    const followUp = pending.find(item => item.entityType === 'task')!;
+    const incidentServerId = crypto.randomUUID();
+    post.mockResolvedValueOnce([
+      { clientUuid: incident.id, status: 'SYNCED', serverId: incidentServerId, serverVersion: 1 },
+      { clientUuid: followUp.id, status: 'SYNCED', serverId: 'unknown', serverVersion: 1 }
+    ]);
+    useSecurityStore.setState({ isOnline: true });
+    expect(await useSecurityStore.getState().triggerManualSync()).toMatchObject({ success: 1, failed: 1 });
+    const [remaining] = await offlineVault.getOutbox(tenantId, 'task', userId);
+    expect(remaining).toMatchObject({ id: followUp.id, status: 'FAILED' });
+    expect(useSecurityStore.getState().tasks).toEqual([]);
+    const taskServerId = crypto.randomUUID();
+    post.mockResolvedValueOnce([{
+      clientUuid: followUp.id, status: 'SYNCED', serverId: taskServerId, serverVersion: 1
+    }]);
+    expect(await useSecurityStore.getState().triggerManualSync({ retryFailed: true }))
+      .toMatchObject({ success: 1, failed: 0 });
+    expect(await offlineVault.getOutbox(tenantId, undefined, userId)).toEqual([]);
+    expect(useSecurityStore.getState().tasks).toEqual([expect.objectContaining({
+      id: taskServerId, tenantId, title: 'Vorfallsbearbeitung: Kritischer Offline-Vorfall'
+    })]);
+  });
+
+  test('keeps the durable incident and explicitly reports a follow-up queue failure', async () => {
+    useSecurityStore.setState({ isOnline: false });
+    const enqueue = offlineVault.enqueueMutation.bind(offlineVault);
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(mutation =>
+      mutation.entityType === 'task' ? Promise.reject(new Error('Speicher voll')) : enqueue(mutation));
+    const id = await useSecurityStore.getState().addGuardBookEntry({
+      siteId: 'site-offline-test', siteName: 'Testobjekt',
+      guardId: 'guard-offline-test', guardName: 'Offline Test',
+      category: 'Vorkommnis', priority: 'Kritisch', stage: 'Erfasst',
+      title: 'Kritischer Offline-Vorfall', description: 'Erfassung bleibt trotz Folgefehler erhalten.',
+      policeInvolved: false, resolved: false
+    });
+    expect(await offlineVault.getOutbox(tenantId, 'guardbook', userId))
+      .toEqual([expect.objectContaining({ payload: expect.objectContaining({ id }) })]);
+    expect(await offlineVault.getOutbox(tenantId, 'task', userId)).toEqual([]);
+    expect(useSecurityStore.getState().notifications).toEqual(expect.arrayContaining([
+      expect.objectContaining({ title: 'Folgeaufgabe nicht vorgemerkt', message: expect.stringContaining('Speicher voll') })
+    ]));
+    expect(useSecurityStore.getState().guardBook).toHaveLength(1);
   });
 
   test('persists an offline entry and photo across reopen, then retries an unacknowledged mutation by its original ID', async () => {
@@ -150,6 +256,7 @@ describe('offline guardbook reconnect exercise', () => {
       ]);
     });
 
+    await vi.waitFor(() => expect(useSecurityStore.getState().isSyncing).toBe(false));
     const retryResult = await useSecurityStore.getState().triggerManualSync({ retryFailed: true });
     expect(retryResult).toMatchObject({ success: 1, failed: 0, conflicts: 0 });
     expect(post).toHaveBeenCalledTimes(2);
@@ -256,6 +363,22 @@ describe('offline guardbook reconnect exercise', () => {
     expect(await offlineVault.getPendingAttachments(tenantId, userId)).toEqual([]);
   });
 
+  test('reports only whether ownerless pending attachments exist and retains their data', async () => {
+    const base = {
+      tenantId, entityId: crypto.randomUUID(), fileName: 'f.jpg', mimeType: 'image/jpeg',
+      sizeBytes: 5, blobData: 'data:image/jpeg;base64,cGhvdG8=', capturedAt: new Date().toISOString(), synced: false
+    };
+    const ownerless = crypto.randomUUID();
+    const owned = crypto.randomUUID();
+    await offlineVault.saveAttachment({ ...base, id: ownerless });
+    await offlineVault.saveAttachment({ ...base, id: owned, userId });
+
+    expect(await offlineVault.hasOwnerlessPendingAttachments(tenantId)).toBe(true);
+    expect(await offlineVault.hasOwnerlessPendingAttachments('another-tenant')).toBe(false);
+    expect(await readAttachment(offlineVault, ownerless)).toMatchObject({ tenantId, synced: false });
+    expect(await readAttachment(offlineVault, owned)).toMatchObject({ userId });
+  });
+
   test('does not replay another same-tenant user’s or an ownerless legacy attachment after account switch', async () => {
     const ownerEntryId = crypto.randomUUID();
     const otherOwnerAttachmentId = crypto.randomUUID();
@@ -302,13 +425,13 @@ describe('offline guardbook reconnect exercise', () => {
     const ownerlessLegacyAttachment = await readAttachment(offlineVault, legacyAttachmentId);
     expect(ownerlessLegacyAttachment).toMatchObject({ synced: false });
     expect(ownerlessLegacyAttachment).not.toHaveProperty('userId');
-    expect(await offlineVault.getOwnerlessPendingAttachmentCount(tenantId)).toBe(1);
-    expect(await offlineVault.getOwnerlessPendingAttachmentCount('another-tenant')).toBe(0);
+    expect(await offlineVault.hasOwnerlessPendingAttachments(tenantId)).toBe(true);
+    expect(await offlineVault.hasOwnerlessPendingAttachments('another-tenant')).toBe(false);
     expect(useSecurityStore.getState().notifications).toEqual(expect.arrayContaining([
       expect.objectContaining({
         title: 'Ältere Wachbuchanhänge nicht synchronisiert',
         type: 'warning',
-        message: expect.stringContaining('nicht automatisch hochgeladen')
+        message: expect.stringContaining('nicht automatisch synchronisiert')
       })
     ]));
   });

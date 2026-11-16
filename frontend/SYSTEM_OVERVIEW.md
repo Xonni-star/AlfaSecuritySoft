@@ -1,32 +1,22 @@
-# SecurityOps 2.0 - Phase 13: System-Gesamtübersicht (Release 1.0)
+# SecurityOps 2.0 — System overview
 
-> **Historischer Snapshot:** Versions-, Normen- und Modulreife-Angaben dieses Dokuments sind veraltet und keine aktuelle Bestands- oder Produktionsaussage. Maßgeblich sind [README.md](../README.md) und die jeweiligen API-Dokumente.
+**Status:** TEILWEISE IMPLEMENTIERT; not approved for production. This overview is based on the current repository structure. Passing CI does not establish operational, legal, or standards conformity.
 
-## 1. Systemstatus und Versionsstand
-- **Dokumentierter Release-Stand**: 1.0.0 (historische Angabe, kein aktueller Release)
-- **Normative Grundlage**: DIN 77200-1:2020-10, BGV C7 (DGUV V23), § 34a GewO / BewachV, ArbZG, DSGVO / BDSG.
-- **Architekturmuster**: Modularer Monolith mit entkoppelten Fachmodul-Controllern, strikter PostgreSQL 16+ Row Level Security (RLS) und nativer IndexedDB Offline-First Outbox/Inbox Replikation.
+## Architecture
 
----
+- `frontend/` contains the React/Vite TypeScript application, Zustand state, IndexedDB-backed offline queues, and Vitest tests.
+- `frontend/backend/` contains the Node.js/Express TypeScript API under `/api/v1`, PostgreSQL access, and database migrations.
+- PostgreSQL 16+ is used with row-level security on tenant-bound tables. The API derives tenant context from the authenticated session; RLS coverage is table/policy-specific and is not a blanket claim for every historical table.
+- Authentication uses opaque, revocable session cookies and Argon2id password hashes. API permissions are checked server-side; UI visibility is not an authorization boundary.
 
-## 2. Modulübersicht & Integrationsmatrix
-| Fachbereich | Frontend-Komponente | REST-API Endpunkte | DB-Tabellen | RLS-Schutz | Offline-Ready |
-|---|---|---|---|---|---|
-| **Einsatz-Dashboard** | `Dashboard.tsx` | `/api/v1/health`, `/reporting/kpis` | Aggregiert | Ja | Ja |
-| **Kunden & Verträge** | `ClientsModule.tsx` | `/api/v1/customers` | `customers` | Ja | Nein (Read-Only) |
-| **Objektverwaltung** | `SitesModule.tsx` | `/api/v1/objects` | `objects`, `control_points` | Ja | Ja (Inbox Cache) |
-| **Personal & § 34a** | `EmployeesModule.tsx` | `/api/v1/employees` | `employees`, `qualifications` | Ja | Ja |
-| **Dienstplanung** | `RosterModule.tsx` | `/api/v1/planning/*` (Schichten, Perioden, revisionierte Vorlagen, nicht bindende Besetzungsvorschläge, Vertretungen, Ist-Zeit samt Verlauf, Berichte, Regelprofile) | `shifts`, staffing assignments, periods, templates, cover requests, actual times, rule profiles | Ja | Nur Schichtentwürfe/-änderungen über die bestehende Outbox; Zuweisungen, Vorlagen, Vertretungen, Ist-Zeiten, Berichte, Regelprofile und Veröffentlichung online-only |
+## Implemented module families
 
-Vorlagen können revisioniert bearbeitet und aktiviert/deaktiviert, aber nicht hart gelöscht oder über einen eigenen Kopier-Endpunkt dupliziert werden. Ist-Zeitkorrekturen laden die gespeicherte Revision und Audit-Historie; eine separate Ist-Zeitfreigabe wird nicht angeboten. Besetzungsvorschläge sind erklärend und führen ohne separate Zuweisungsbestätigung keine Mutation aus.
-| **Digitales Wachbuch** | `GuardBookModule.tsx` | `/api/v1/logbook` | `logbook_entries`, `revisions` | Ja | Ja (Append-Only) |
-| **Schlüssel & Zutritt** | `KeysModule.tsx` | `/api/v1/keys` | `keys` | Ja | Ja |
-| **QM & Anweisungen** | `SOPModule.tsx` | `/api/v1/sops` | `sop_instructions`, `sop_versions`, `sop_events`, `sop_assignments` | Ja | Teilweise (lokale Vormerkung) |
-| **Alarm- und Notfallmanagement** | `AlarmsModule.tsx` | `/api/v1/alarms`, `/api/v1/emergency-plans`, `/api/v1/alarm-escalation-rules` | `alarm_incidents`, `alarm_event_actions`, `alarm_event_status_history`, `emergency_plans`, `emergency_plan_versions`, `emergency_contacts`, Eskalationstabellen | Ja, plus Site-Scope in der API | Ja: lokale Mutations-Outbox und bereinigter Plan-Cache |
-| **Übergabemanagement** | `HandoversModule.tsx` (`MobileShiftHandover.tsx` nutzt dieselbe Oberfläche) | `/api/v1/handovers`, `/api/v1/handovers/sync` | `handovers`, `handover_participants`, `handover_events`, `handover_confirmations`, `handover_tasks`, `handover_task_events`, `handover_documents` | Ja (FORCE RLS) | Ja (Erfassung/initiale Aufgaben; Status sichtbar bis Quittung) |
-| **Aufgaben & Maßnahmen**| `TasksModule.tsx` | `/api/v1/tasks` | `tasks` | Ja | Ja (Conflict Diff) |
-| **Dokumente (DMS)** | `DocumentsModule.tsx` | Nicht vorhanden | Nicht vorhanden | Nein | Nein (nur lokale Metadaten; kein echter Datei-Upload/-Download) |
-| **Automationen & Watchdog**| `AutomationCenter.tsx` | `/api/v1/automations` | `automation_rules`, `logs` | Ja | Ja |
-| **Mobile Guard App** | `MobileAppShell.tsx` | `/api/v1/mobile/*` | `patrol_scans`, `handovers` | Ja | Ja |
-| **E2E-Abnahme & Release**| `E2EAcceptanceCenter.tsx`| `/api/v1/reporting/kpis`| Alle Tabellen | Ja | Ja |
-| **Sicherheits-Audit** | `SecurityAuditCenter.tsx`| `/api/v1/audit/logs` | `audit_logs`, `sessions` | Ja | Ja |
+The repository includes customer/site and employee administration, shifts and planning, guardbook, keys/tasks, documents, SOPs, alarms/emergency plans, handovers, patrols, and offline synchronization. The exact feature, permission, and offline scope differs by module; see each API contract and the [current project status](../PROJECT_CURRENT_STATUS.md) rather than assuming every UI element has complete persistence or production acceptance.
+
+The planning API currently documents work-hours, coverage, qualification, and absence reports in [SERVICE_PLANNING_API.md](./backend/SERVICE_PLANNING_API.md). The current worktree adds explicit site-grant filtering to those report queries and CSV. The PostgreSQL-backed authorization/sync regression suite passed 33/33 tests against an isolated PostgreSQL 16 database; hosted CI for this worktree has not run.
+
+## Limits and authoritative references
+
+SecurityOps 2.0 is not represented as certified to DIN 77200, BSI, KRITIS, or any law. Process references or operator-entered indicators do not establish conformity. Append-only or versioned records are technical controls, not proof of legal audit immutability.
+
+Use the [README](../README.md), [project completion tracker](../PROJECT_COMPLETION_TRACKER.md), [backend architecture](./BACKEND_ARCHITECTURE.md), and module API documents for current implementation details. Older phase reports are historical snapshots and are not current feature matrices.

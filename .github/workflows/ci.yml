@@ -97,6 +97,21 @@ jobs:
       - name: Kontrollierter Gesamtstart (Frontend + Backend)
         run: node scripts/ci/smoke-start.mjs
 
+      - name: Chromium für authentifizierten Backend-Browsertest installieren
+        run: cd frontend && npx playwright install --with-deps chromium
+
+      - name: Offline-Wachbuch und Fotos mit PostgreSQL, privatem S3 und ClamAV prüfen
+        run: npm run test:browser:backend --prefix frontend
+
+      - name: Authentifizierte Browser-Fehlerdiagnose sichern
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: authenticated-browser-test-results
+          path: frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
   frontend:
     name: Frontend – npm ci, Vitest, Produktions-Build
     runs-on: ubuntu-latest
@@ -129,6 +144,21 @@ jobs:
 
       - name: Produktions-Build erzeugen
         run: npm run build
+
+      - name: Chromium für isolierten Offline-Browsertest installieren
+        run: npx playwright install --with-deps chromium
+
+      - name: Offline-Neustart und idempotente Wiederholung im Browser prüfen
+        run: npm run test:browser
+
+      - name: Browser-Fehlerdiagnose sichern
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-browser-test-results
+          path: frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Frontend-Build auf verbliebene Modell-API-Verbindungen und Schlüssel prüfen
         run: |

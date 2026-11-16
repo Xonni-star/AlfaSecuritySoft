@@ -10,12 +10,15 @@ const createClientSchema = z.object({
   email: z.string().email(),
   phone: z.string(),
   address: z.string(),
-  contractStart: z.string(),
-  contractEnd: z.string(),
+  contractStart: z.string().date(),
+  contractEnd: z.string().date(),
+  contractAutoRenew: z.boolean().optional(),
+  noticePeriodMonths: z.number().int().min(0).max(2147483647).optional(),
   slaLevel: z.string().default('Gold (24/7 Vor-Ort)')
 });
 
 const updateClientSchema = createClientSchema.partial().extend({
+  slaLevel: z.string().optional(),
   revisionVersion: z.number().int().positive()
 }).strict();
 
@@ -26,7 +29,7 @@ export async function listClients(req: Request, res: Response, next: NextFunctio
     const result = await withTenantTransaction(tenantId, async (client) => {
       // RLS Policy greift automatisch über app.current_tenant
       return client.query(
-        'SELECT id, client_number, company_name, contact_person, email, phone, address, contract_start, contract_end, sla_level, billing_status, revision_version FROM clients WHERE archived_at IS NULL ORDER BY company_name'
+        'SELECT id, client_number, company_name, contact_person, email, phone, address, contract_start::text AS contract_start, contract_end::text AS contract_end, contract_auto_renew, notice_period_months, sla_level, billing_status, revision_version FROM clients WHERE archived_at IS NULL ORDER BY company_name'
       );
     });
 
@@ -46,10 +49,10 @@ export async function createClient(req: Request, res: Response, next: NextFuncti
 
     const result = await withTenantTransaction(tenantId, async (client) => {
       return client.query(
-        `INSERT INTO clients (tenant_id, client_number, company_name, contact_person, email, phone, address, contract_start, contract_end, sla_level)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        `INSERT INTO clients (tenant_id, client_number, company_name, contact_person, email, phone, address, contract_start, contract_end, sla_level, contract_auto_renew, notice_period_months)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          RETURNING id, client_number, company_name`,
-        [tenantId, body.clientNumber, body.companyName, body.contactPerson, body.email, body.phone, body.address, body.contractStart, body.contractEnd, body.slaLevel]
+        [tenantId, body.clientNumber, body.companyName, body.contactPerson, body.email, body.phone, body.address, body.contractStart, body.contractEnd, body.slaLevel, body.contractAutoRenew ?? true, body.noticePeriodMonths ?? 3]
       );
     });
 
@@ -72,11 +75,13 @@ export async function updateClient(req: Request, res: Response, next: NextFuncti
       `UPDATE clients SET client_number = COALESCE($1, client_number), company_name = COALESCE($2, company_name),
        contact_person = COALESCE($3, contact_person), email = COALESCE($4, email), phone = COALESCE($5, phone),
        address = COALESCE($6, address), contract_start = COALESCE($7, contract_start), contract_end = COALESCE($8, contract_end),
-       sla_level = COALESCE($9, sla_level), revision_version = revision_version + 1, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10 AND tenant_id = $11 AND archived_at IS NULL AND revision_version = $12
-       RETURNING id, client_number, company_name, contact_person, email, phone, address, contract_start, contract_end, sla_level, billing_status, revision_version`,
+       sla_level = COALESCE($9, sla_level), contract_auto_renew = COALESCE($10, contract_auto_renew),
+       notice_period_months = COALESCE($11, notice_period_months), revision_version = revision_version + 1, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $12 AND tenant_id = $13 AND archived_at IS NULL AND revision_version = $14
+       RETURNING id, client_number, company_name, contact_person, email, phone, address, contract_start::text AS contract_start, contract_end::text AS contract_end, contract_auto_renew, notice_period_months, sla_level, billing_status, revision_version`,
       [body.clientNumber ?? null, body.companyName ?? null, body.contactPerson ?? null, body.email ?? null, body.phone ?? null,
-       body.address ?? null, body.contractStart ?? null, body.contractEnd ?? null, body.slaLevel ?? null, id, tenantId, body.revisionVersion]
+       body.address ?? null, body.contractStart ?? null, body.contractEnd ?? null, body.slaLevel ?? null,
+       body.contractAutoRenew ?? null, body.noticePeriodMonths ?? null, id, tenantId, body.revisionVersion]
     ));
     if (!result.rows.length) {
       const current = await withTenantTransaction(tenantId, (client) => client.query(
@@ -146,9 +151,9 @@ export async function syncClientMutations(req: Request, res: Response, next: Nex
           const id = z.string().guid().safeParse(p.id);
           if (!data.success || !id.success) result = { clientUuid: mutation.clientUuid, status: 'REJECTED', message: 'Ungültige Kundendaten.' };
           else {
-            const inserted = await db.query(`INSERT INTO clients (id, tenant_id, client_number, company_name, contact_person, email, phone, address, contract_start, contract_end, sla_level, client_mutation_id)
-              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT (tenant_id, client_mutation_id) DO NOTHING RETURNING id, revision_version`,
-              [id.data, tenantId, data.data.clientNumber, data.data.companyName, data.data.contactPerson, data.data.email, data.data.phone, data.data.address, data.data.contractStart, data.data.contractEnd, data.data.slaLevel, mutation.clientUuid]);
+            const inserted = await db.query(`INSERT INTO clients (id, tenant_id, client_number, company_name, contact_person, email, phone, address, contract_start, contract_end, sla_level, client_mutation_id, contract_auto_renew, notice_period_months)
+              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) ON CONFLICT (tenant_id, client_mutation_id) DO NOTHING RETURNING id, revision_version`,
+              [id.data, tenantId, data.data.clientNumber, data.data.companyName, data.data.contactPerson, data.data.email, data.data.phone, data.data.address, data.data.contractStart, data.data.contractEnd, data.data.slaLevel, mutation.clientUuid, data.data.contractAutoRenew ?? true, data.data.noticePeriodMonths ?? 3]);
             const existing = inserted.rows[0] || (await db.query('SELECT id, revision_version FROM clients WHERE tenant_id=$1 AND client_mutation_id=$2', [tenantId, mutation.clientUuid])).rows[0];
             result = { clientUuid: mutation.clientUuid, serverId: existing.id, status: 'SYNCED', serverVersion: existing.revision_version };
           }
@@ -162,8 +167,8 @@ export async function syncClientMutations(req: Request, res: Response, next: Nex
             if (!validated.success) result = { clientUuid: mutation.clientUuid, serverId: id.data, status: 'REJECTED', message: 'Ungültige Kundendaten.' };
             else {
               const v = validated.data;
-              const updated = await db.query(`UPDATE clients SET client_number=COALESCE($1,client_number), company_name=COALESCE($2,company_name), contact_person=COALESCE($3,contact_person), email=COALESCE($4,email), phone=COALESCE($5,phone), address=COALESCE($6,address), contract_start=COALESCE($7,contract_start), contract_end=COALESCE($8,contract_end), sla_level=COALESCE($9,sla_level), revision_version=revision_version+1, updated_at=CURRENT_TIMESTAMP WHERE id=$10 AND tenant_id=$11 AND archived_at IS NULL AND revision_version=$12 RETURNING id, revision_version`,
-                [v.clientNumber ?? null, v.companyName ?? null, v.contactPerson ?? null, v.email ?? null, v.phone ?? null, v.address ?? null, v.contractStart ?? null, v.contractEnd ?? null, v.slaLevel ?? null, id.data, tenantId, mutation.baseVersion]);
+              const updated = await db.query(`UPDATE clients SET client_number=COALESCE($1,client_number), company_name=COALESCE($2,company_name), contact_person=COALESCE($3,contact_person), email=COALESCE($4,email), phone=COALESCE($5,phone), address=COALESCE($6,address), contract_start=COALESCE($7,contract_start), contract_end=COALESCE($8,contract_end), sla_level=COALESCE($9,sla_level), contract_auto_renew=COALESCE($10,contract_auto_renew), notice_period_months=COALESCE($11,notice_period_months), revision_version=revision_version+1, updated_at=CURRENT_TIMESTAMP WHERE id=$12 AND tenant_id=$13 AND archived_at IS NULL AND revision_version=$14 RETURNING id, revision_version`,
+                [v.clientNumber ?? null, v.companyName ?? null, v.contactPerson ?? null, v.email ?? null, v.phone ?? null, v.address ?? null, v.contractStart ?? null, v.contractEnd ?? null, v.slaLevel ?? null, v.contractAutoRenew ?? null, v.noticePeriodMonths ?? null, id.data, tenantId, mutation.baseVersion]);
               if (updated.rows.length) result = { clientUuid: mutation.clientUuid, serverId: id.data, status: 'SYNCED', serverVersion: updated.rows[0].revision_version };
               else {
                 const current = await db.query('SELECT revision_version FROM clients WHERE id=$1 AND tenant_id=$2', [id.data, tenantId]);

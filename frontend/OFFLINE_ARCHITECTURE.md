@@ -3,12 +3,20 @@
 > **Projektstatus: In Entwicklung; nicht für Produktion freigegeben.** Offlinefunktionen sind workflow-spezifisch; nicht alle Module oder End-to-End-Geräteabläufe sind implementiert oder abgenommen.
 > **Historischer Status-Snapshot (15.11.2026, 20:30 CET):** Der folgende SHA/PR-Abschnitt stammt aus dem damaligen Review; PR #52 ist inzwischen gemergt. Aktueller Mainline-Stand und aktuelle Gates: [PROJECT_CURRENT_STATUS.md](../PROJECT_CURRENT_STATUS.md) und [PHASE_9_COMPLETION_REPORT.md](../PHASE_9_COMPLETION_REPORT.md).
 > Der damalige Stand war `d06c2d835270b43bd36bb3585fc45d7da7d58a50`. Main-CI [43726729355](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43726729355) bestand alle sieben Jobs; dies ersetzt keine Browser-/Geräteabnahme. PR [#52](https://github.com/Xonni-star/SecurityOps-2.0/pull/52) ergänzte einen Playwright/Chromium-Test gegen eine Loopback-Fixture. Authentifizierte Backend-/Geräteabnahme bleibt offen. Umfang und Grenzen unten beziehen sich auf den Quellcode, nicht auf eine allgemeine Offlinefähigkeit. Fotos besitzen keinen Upload-/Replay-Pfad und werden nicht synchronisiert.
-> **Aktueller Offline-Sync-Stand:** PR [#64](https://github.com/Xonni-star/SecurityOps-2.0/pull/64) wurde in `main` gemergt als `621874535ee480e56716ae8a7bd992272bc7a51a`; der PR-Head bestand 7/7 Checks. Wachbuchfotos mit einer gespeicherten Benutzer-ID können nach Wiederverbindung idempotent übertragen werden. Lokale Altanhänge ohne `userId` werden nicht automatisch hochgeladen oder einem Benutzer zugewiesen; die UI warnt davor und der Benutzer muss sie erneut hinzufügen. Ein Altanhang mit bereits bestätigtem Eintrag und nicht-UUID lokaler ID kann nicht verknüpft werden. Diese Grenzen bleiben offen für die Offline-Akzeptanz.
+> **Aktueller Offline-Sync-Stand:** PR [#64](https://github.com/Xonni-star/SecurityOps-2.0/pull/64) wurde in `main` gemergt als `621874535ee480e56716ae8a7bd992272bc7a51a`; der PR-Head bestand 7/7 Checks. Wachbuchfotos mit einer gespeicherten Benutzer-ID können nach Wiederverbindung idempotent übertragen werden. Lokale Altanhänge ohne `userId` werden weder automatisch hochgeladen noch einem Benutzer zugewiesen. Die aktuelle Oberfläche zeigt nur einen allgemeinen Hinweis; Dateimetadaten und Inhalte sind nicht einsehbar, exportierbar oder löschbar. Eine sichere Wiederherstellung mit verifiziertem Benutzer- und Standortzugriff ist noch nicht verfügbar. Ein Altanhang mit bereits bestätigtem Eintrag und nicht-UUID lokaler ID kann nicht verknüpft werden.
 >
 > **Historischer Status-Snapshot (15.11.2026, 20:30 CET):** Der folgende SHA/PR-Abschnitt stammt aus dem damaligen Review; PR #52 ist inzwischen gemergt. Aktueller Mainline-Stand und aktuelle Gates: [PROJECT_CURRENT_STATUS.md](../PROJECT_CURRENT_STATUS.md) und [PHASE_9_COMPLETION_REPORT.md](../PHASE_9_COMPLETION_REPORT.md).
 > Der damalige Stand war `d06c2d835270b43bd36bb3585fc45d7da7d58a50`. Main-CI [43726729355](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43726729355) bestand alle sieben Jobs; dies ersetzt keine Browser-/Geräteabnahme. PR [#52](https://github.com/Xonni-star/SecurityOps-2.0/pull/52) ergänzte einen Playwright/Chromium-Test gegen eine Loopback-Fixture. Authentifizierte Backend-/Geräteabnahme bleibt offen. Umfang und Grenzen unten beziehen sich auf den Quellcode, nicht auf eine allgemeine Offlinefähigkeit. Fotos besitzen keinen Upload-/Replay-Pfad und werden nicht synchronisiert.
 
 Der Phase-4-Änderungsstand behandelt HTTP `408` und `429` als wiederholbare Fehler der generischen Outbox und persistiert einen gültigen `Retry-After`-Wert (Sekunden oder HTTP-Datum) zusammen mit der Mutation. Die Wiedergabe wartet mindestens bis zu diesem Zeitpunkt; lokale Backoff-Grenzen, Idempotenz und die serverseitige Autorisierung bleiben bestehen. Die Alarm-Mutationsqueue nutzt weiterhin einen eigenen Retry-Pfad. Vitest prüft Header-Parsing, persistierte Verzögerung und Replay nach Rate-Limit; reale Browser-/Geräte- und Hintergrundausführung sind damit nicht nachgewiesen.
+
+Die generische Sync-Sperre und der Pending-Status bleiben bis zum zentralen
+`finally` aktiv, einschließlich eines Snapshot-Refreshs nach leerer Outbox.
+Neue Auslöser währenddessen merken einen Folgezyklus vor, statt vorzeitig
+parallel zu senden. Erfolgs- und Fehlerpfad sind gezielt abgedeckt; die
+Laufzeitsperre ersetzt keine serverseitige Idempotenz oder Tab-/Gerätesperre.
+Das [aktive Protokoll](./SYNC_PROTOCOL.md) unterscheidet tatsächliche Push-
+Endpunkte von nicht implementierter Gerätewiderrufsprüfung und Delta-Pull.
 
 ## 1. PWA & Service Worker
 SecurityOps 2.0 ist als vollwertige Progressive Web App (PWA) nach modernen Webstandards konzipiert:
@@ -56,7 +64,7 @@ Der Offline-Dienstplan wird pro Mandant und Benutzer als einzelner zuletzt gelad
 ---
 
 ## 3. Datenintegrität & Append-Only Modell
-- **Digitales Wachbuch**: Einträge sind grundsätzlich **append-only**. Geschlossene Einträge werden niemals überschrieben; Änderungen werden als versionierte Korrekturrevisionen (`LogbookRevisionEntry`) revisionssicher angehängt.
+- **Digitales Wachbuch**: Einträge folgen einer technischen **append-only**-Regel. Geschlossene Einträge werden nicht überschrieben; Änderungen werden als versionierte Korrekturrevisionen (`LogbookRevisionEntry`) angehängt. Dies belegt keine gesetzliche oder zertifizierte Revisionssicherheit.
 - **Aufgaben & Termine**: Erkennung von Parallelbearbeitungen über `base_version` und `server_version`. Bei Kollisionen wird ein `CONFLICT` erzeugt, der im Conflict Resolution Center manuell oder per Regel aufgelöst werden kann.
 
 ## 4. Dokumentenmanagement

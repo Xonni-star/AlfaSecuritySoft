@@ -1,7 +1,7 @@
 {
   "short_name": "SecurityOps",
   "name": "SecurityOps 2.0 - Sicherheitsdienstverwaltung",
-  "description": "Enterprise Sicherheitsdienstverwaltung mit Offline-First Wachbuch, Dienstplanung und DIN 77200 Konformität.",
+  "description": "Software für Sicherheitsdienstprozesse mit Wachbuch, Dienstplanung und Dokumentenverwaltung.",
   "start_url": "./",
   "display": "standalone",
   "theme_color": "#0a0f1d",

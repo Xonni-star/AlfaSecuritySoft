@@ -67,6 +67,14 @@ Scan- und Abweichungslisten begrenzen nicht-managerielle Rollen zusätzlich serv
 
 Die IndexedDB-Outbox speichert Mutations-ID, Tenant, Benutzer, Ereignistyp, Payload und Client-Erfassungszeit transaktionssicher. Kontrollpunkte, Routen und Rundgangszustände werden nach Tenant und Benutzer partitioniert zwischengespeichert. Offline-Start, Scan und Abschluss lassen sich nach Browser-Neustart wiederherstellen.
 
+Die Scanner-Wiederherstellung liest auch vorgemerkte Starts, Scans und Abschlüsse
+nur für den aktuellen Owner. Ein Konten-/Mandantenwechsel leert vorherige lokale
+Runden, Fortschritte und Entwürfe vor dem Paint; späte Cache-Schreibabschlüsse
+veröffentlichen keine alten Scans in der neuen Ansicht. Ohne Benutzer und Mandant
+wird kein unbeschränkter Restore versucht. Voraussetzung sind eine aktive Sitzung
+und ein zuvor geladener Cache; dies verspricht keine netzwerklose Wiederherstellung
+der Authentifizierung nach vollständigem App-Neustart oder reale Geräteabnahme.
+
 Bei Wiederverbindung wird die Outbox automatisch angestoßen. Rundgangsstart wird vor zugehörigen Scans/Abweichungen, der Abschluss danach synchronisiert. Start, Scan und Abschluss akzeptieren clientseitige Erfassungszeiten höchstens 24 Stunden alt und höchstens fünf Minuten in der Zukunft. Scans eines Rundgangs dürfen nicht vor dessen serverseitig akzeptiertem Start liegen (mit derselben fünfminütigen Uhrabweichung); Abschlüsse nicht vor Rundgangsstart. Client-Erfassungszeit (`client_captured_at`) und Servereingangszeit (`server_received_at`) bleiben getrennt. Das Zwei-Minuten-Duplikatfenster verwendet ausschließlich `server_received_at`, nicht den manipulierbaren Client-Zeitpunkt. Die Mutation verwendet eine stabile ID; direkte API- und Sync-Verarbeitung teilen denselben Payload-Hash, sodass ein verlorenes Antwortpaket gefahrlos wiederholt werden kann. Ein Konflikt bleibt lokal erhalten, bis die berechtigte Person den Serverstand übernimmt (lokales Ereignis wird verworfen) oder das lokale Ereignis als neue, append-only Abweichung dokumentiert. Die Konfliktauflösung verwendet eine getrennte, idempotente Quittung; gespeicherte Abweichungstexte enthalten weder QR-/NFC-Token noch rohe lokale Payloads.
 
 Offline gespeicherte QR-/NFC-Scans sind vor serverseitiger Token- und Zuordnungsprüfung keine verifizierten Servereinträge. Ein Token kann zwischen Erfassung und Sync rotiert oder ein Kontrollpunkt archiviert werden; in diesem Fall wird die Mutation abgelehnt und bleibt zur Prüfung erhalten. Browser-Events garantieren keine Synchronisierung, wenn Browser/App vollständig beendet sind; Background Sync ist nicht zugesichert. Offline hochgeladene Fotos/Dateien werden nicht gepuffert. Eine Offline-Erfassung für Geräte ohne zuvor geladenen Tenant-/Routen-/Kontrollpunktcache ist nicht zugesichert.

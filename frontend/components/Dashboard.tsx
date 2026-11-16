@@ -133,7 +133,7 @@ export const Dashboard: React.FC = () => {
             <span className="text-xs text-slate-400">Standorte ({clients.length} Mandanten)</span>
           </div>
           <div className={`mt-2 text-[11px] ${tenant.din77200Certified ? 'text-emerald-400' : 'text-slate-400'}`}>
-            {tenant.din77200Certified ? 'DIN 77200 Zertifizierung hinterlegt' : 'Keine DIN 77200 Zertifizierung hinterlegt'}
+            {tenant.din77200Certified ? 'Zertifizierungsangabe hinterlegt (nicht verifiziert)' : 'Keine Zertifizierungsangabe hinterlegt'}
           </div>
         </div>
 

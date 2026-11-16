@@ -2,10 +2,12 @@ import argon2 from 'argon2';
 import crypto from 'crypto';
 import request from 'supertest';
 import { app } from '../app';
-import { migrationPool, withTenantTransaction } from '../config/database';
+import { pool, migrationPool, withTenantTransaction } from '../config/database';
 import { materializePatrolOccurrences, processTenantPatrolSchedules } from '../services/patrolScheduleWorker';
 import { removeDocumentBlob } from '../services/documentFiles';
 import { authHeaders, insertTenantMembership } from './testUtils';
+
+jest.setTimeout(60000);
 
 const SEED_PASSWORD = 'SecOpsVault2025SecurePassword!';
 const TENANT_ID = '11111111-1111-1111-1111-111111111111';
@@ -223,6 +225,10 @@ afterAll(async () => {
     await db.query('SET session_replication_role = origin');
     db.release();
   }
+});
+
+afterAll(async () => {
+  await Promise.all([pool.end(), migrationPool.end()]);
 });
 
 test('patrol API verifies tokens, serializes routes, and makes round/exception retries idempotent', async () => {

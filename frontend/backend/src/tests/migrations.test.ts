@@ -16,12 +16,12 @@ const noopLogger = () => {};
 const MIGRATION_VERSIONS = [
   '001', '002', '003', '004', '005', '006', '007', '009', '011', '012', '013', '014',
   '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025', '026',
-  '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040', '041'
+  '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040', '041', '042'
 ];
 const MIGRATION_VERSIONS_WITH_010 = [
   '001', '002', '003', '004', '005', '006', '007', '009', '010', '011', '012', '013',
   '014', '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025',
-  '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040', '041'
+  '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040', '041', '042'
 ];
 
 function migrationUrl(): string {
@@ -112,6 +112,65 @@ afterAll(() => {
 });
 
 describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
+  test('upgrades an unchanged 041 history and preserves append-only protection with technical messaging', async () => {
+    const db = await createTestDatabase();
+    const beforeUpgradeDir = makeMigrationsDir({}, ['042_guardbook_technical_integrity_message.sql']);
+    await runMigrations({
+      connectionString: withDatabaseName(db),
+      migrationsDir: beforeUpgradeDir,
+      logger: noopLogger
+    });
+    const previousHistory = await historyRows(db);
+    const [{ body: previousBody }] = await queryInDatabase<{ body: string }>(
+      db, "SELECT pg_get_functiondef('prevent_guardbook_tampering()'::regprocedure) AS body"
+    );
+    expect(previousBody).toContain('nach DIN 77200 unzulässig');
+
+    const result = await runMigrations({
+      connectionString: withDatabaseName(db),
+      migrationsDir: REAL_MIGRATIONS_DIR,
+      logger: noopLogger
+    });
+    expect(result.applied).toEqual(['042']);
+    expect(result.skipped).toEqual(MIGRATION_VERSIONS.filter(version => version !== '042'));
+    expect((await historyRows(db)).filter(row => row.version !== '042')).toEqual(previousHistory);
+
+    const [{ id: tenantId }] = await queryInDatabase<{ id: string }>(
+      db, `INSERT INTO tenants (name, subdomain, tax_number, bwr_register_id)
+           VALUES ('Integrity test', $1, 'test-tax', 'test-register') RETURNING id`, [randomUUID()]
+    );
+    const [{ id: guardId }] = await queryInDatabase<{ id: string }>(
+      db, `INSERT INTO employees (tenant_id, personnel_number, first_name, last_name, email, phone, date_of_joining)
+           VALUES ($1, 'integrity-guard', 'Test', 'Guard', 'guard@test.invalid', '00', '2026-01-01') RETURNING id`,
+      [tenantId]
+    );
+    const [{ id: clientId }] = await queryInDatabase<{ id: string }>(
+      db, `INSERT INTO clients (tenant_id, client_number, company_name, contact_person, email, phone,
+                               address, contract_start, contract_end)
+           VALUES ($1, 'integrity-client', 'Test client', 'Test', 'test@test.invalid', '00',
+                   'Test address', '2026-01-01', '2027-01-01') RETURNING id`, [tenantId]
+    );
+    const [{ id: siteId }] = await queryInDatabase<{ id: string }>(
+      db, `INSERT INTO sites (tenant_id, client_id, site_code, name, address)
+           VALUES ($1, $2, 'integrity', 'Integrity site', 'Test address') RETURNING id`, [tenantId, clientId]
+    );
+    const [{ id: entryId }] = await queryInDatabase<{ id: string }>(
+      db, `INSERT INTO guardbook_entries (tenant_id, site_id, guard_id, category, title, description)
+           VALUES ($1, $2, $3, 'Vorkommnis', 'Unchanged title', 'Unchanged description') RETURNING id`,
+      [tenantId, siteId, guardId]
+    );
+    await expect(queryInDatabase(db, 'DELETE FROM guardbook_entries WHERE id = $1', [entryId]))
+      .rejects.toThrow('technische Append-Only-Regel');
+    await expect(queryInDatabase(db, "UPDATE guardbook_entries SET title = 'Tampered' WHERE id = $1", [entryId]))
+      .rejects.toThrow('Nachträgliche Manipulation');
+    expect(await queryInDatabase(db, 'SELECT title FROM guardbook_entries WHERE id = $1', [entryId]))
+      .toEqual([{ title: 'Unchanged title' }]);
+    const second = await runMigrations({
+      connectionString: withDatabaseName(db), migrationsDir: REAL_MIGRATIONS_DIR, logger: noopLogger
+    });
+    expect(second.applied).toEqual([]);
+  });
+
   test('1. Erster Lauf wendet alle Migrationen an und protokolliert sie', async () => {
     const db = await createTestDatabase();
     const dir = makeMigrationsDir();

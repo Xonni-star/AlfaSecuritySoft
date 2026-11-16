@@ -1,21 +1,64 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { KeyRound, ShieldAlert, CheckCircle2, User, Clock, ArrowRightLeft } from 'lucide-react';
 import { useSecurityStore } from '../store';
 
 export const KeysModule: React.FC = () => {
-  const { keys, employees, issueKey, returnKey } = useSecurityStore();
+  const { keys, employees, issueKey, returnKey, currentTenantId, currentUserId, authUser } = useSecurityStore();
   const [selectedKeyId, setSelectedKeyId] = useState<string | null>(null);
   const [holderId, setHolderId] = useState(employees[0]?.id || '');
-  const [returnDate, setReturnDate] = useState('2025-05-15 18:00');
+  const [returnDate, setReturnDate] = useState('');
+  const [isIssuing, setIsIssuing] = useState(false);
+  const [returningKeyId, setReturningKeyId] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const identity = `${currentTenantId}:${authUser?.id || currentUserId}`;
+  const identityRef = useRef(identity);
+  identityRef.current = identity;
+  const activeHolderId = employees.some(employee => employee.id === holderId) ? holderId : employees[0]?.id || '';
 
-  const handleIssue = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedKeyId) return;
-    const emp = employees.find((x) => x.id === holderId);
-    if (!emp) return;
-
-    issueKey(selectedKeyId, `${emp.firstName} ${emp.lastName}`, emp.id, returnDate);
+  useEffect(() => {
     setSelectedKeyId(null);
+    setHolderId('');
+    setReturnDate('');
+    setIsIssuing(false);
+    setReturningKeyId(null);
+    setError('');
+  }, [identity]);
+
+  const handleIssue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isIssuing) return;
+    const emp = employees.find((x) => x.id === activeHolderId);
+    if (!selectedKeyId || !emp || !returnDate) {
+      setError('Bitte einen verfügbaren Empfänger und eine Rückgabezeit angeben.');
+      return;
+    }
+
+    setError('');
+    setIsIssuing(true);
+    try {
+      const saved = await issueKey(selectedKeyId, `${emp.firstName} ${emp.lastName}`, emp.id, returnDate);
+      if (identityRef.current !== identity) return;
+      if (!saved) setError('Die Schlüsselausgabe wurde nicht bestätigt. Die Eingaben bleiben erhalten.');
+      else setSelectedKeyId(null);
+    } catch (failure) {
+      if (identityRef.current === identity) setError(failure instanceof Error ? failure.message : 'Schlüsselausgabe fehlgeschlagen.');
+    } finally {
+      if (identityRef.current === identity) setIsIssuing(false);
+    }
+  };
+
+  const handleReturn = async (keyId: string) => {
+    if (returningKeyId) return;
+    setError('');
+    setReturningKeyId(keyId);
+    try {
+      const saved = await returnKey(keyId);
+      if (identityRef.current === identity && !saved) setError('Die Schlüsselrücknahme wurde nicht bestätigt.');
+    } catch (failure) {
+      if (identityRef.current === identity) setError(failure instanceof Error ? failure.message : 'Schlüsselrücknahme fehlgeschlagen.');
+    } finally {
+      if (identityRef.current === identity) setReturningKeyId(null);
+    }
   };
 
   return (
@@ -32,6 +75,7 @@ export const KeysModule: React.FC = () => {
         </div>
       </div>
 
+      {error && !selectedKeyId && <p role="alert" className="text-sm text-rose-300">{error}</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {keys.map((k) => (
           <div
@@ -68,14 +112,15 @@ export const KeysModule: React.FC = () => {
             <div className="mt-4 pt-3 border-t border-slate-800 flex justify-end">
               {k.status === 'Im Tresor' ? (
                 <button
-                  onClick={() => setSelectedKeyId(k.id)}
+                  onClick={() => { setError(''); setSelectedKeyId(k.id); }}
                   className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold"
                 >
                   Ausgeben
                 </button>
               ) : (
                 <button
-                  onClick={() => returnKey(k.id)}
+                  disabled={returningKeyId !== null}
+                  onClick={() => void handleReturn(k.id)}
                   className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold"
                 >
                   Rücknahme bestätigen
@@ -90,11 +135,15 @@ export const KeysModule: React.FC = () => {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0f172a] border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <h3 className="text-base font-bold text-white mb-4">Schlüssel ausgeben</h3>
-            <form onSubmit={handleIssue} className="space-y-4 text-xs">
+            <form onSubmit={event => void handleIssue(event)} className="space-y-4 text-xs">
+              {error && <p role="alert" className="text-rose-300">{error}</p>}
               <div>
-                <label className="block text-slate-400 mb-1">Empfänger (Mitarbeiter)</label>
+                <label htmlFor="key-holder" className="block text-slate-400 mb-1">Empfänger (Mitarbeiter)</label>
                 <select
-                  value={holderId}
+                  id="key-holder"
+                  required
+                  disabled={isIssuing}
+                  value={activeHolderId}
                   onChange={(e) => setHolderId(e.target.value)}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200"
                 >
@@ -105,9 +154,11 @@ export const KeysModule: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1">Geplante Rückgabe</label>
+                <label htmlFor="key-return-date" className="block text-slate-400 mb-1">Geplante Rückgabe</label>
                 <input
-                  type="text"
+                  id="key-return-date"
+                  type="datetime-local"
+                  disabled={isIssuing}
                   value={returnDate}
                   onChange={(e) => setReturnDate(e.target.value)}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200"
@@ -118,6 +169,7 @@ export const KeysModule: React.FC = () => {
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
+                  disabled={isIssuing}
                   onClick={() => setSelectedKeyId(null)}
                   className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300"
                 >
@@ -125,6 +177,7 @@ export const KeysModule: React.FC = () => {
                 </button>
                 <button
                   type="submit"
+                  disabled={isIssuing || !activeHolderId || !returnDate}
                   className="px-4 py-1.5 rounded-lg bg-blue-600 text-white font-semibold"
                 >
                   Ausgabe buchen

@@ -12,6 +12,16 @@ Alle Routen sind unter `/api/v1` verfügbar, verwenden die bestehende Session-/C
 
 Die Bestätigung ist an `employees.account_user_id` gebunden; E-Mail-Adressen werden nicht als Identitätsnachweis verwendet. Der Link wird explizit und mandantengeprüft über `PATCH /api/v1/employees/:id/account` hergestellt. Nur die Rolle `Personalverwaltung` erhält `employees:account:link`; ein allgemeines Recht zum Bearbeiten von Mitarbeitern reicht nicht. Benutzer mit `handovers:confirm` dürfen ihr eigenes Konto nicht neu einem Mitarbeiter zuordnen. Bestehende Mitarbeiter werden nicht anhand von E-Mail-Adressen automatisch zugeordnet. Nach der ersten Bestätigung sind die Protokollinhalte gesperrt. Rückfragen und Korrekturen werden als zusätzliche Historienereignisse gespeichert.
 
+Liste und Detail liefern `isOutgoingAccount` und `isIncomingAccount`: Der Server
+vergleicht die expliziten Teilnehmer-Kontozuordnungen mit der authentifizierten
+Benutzer-ID im Mandantenkontext, ohne fremde Konto-IDs zurückzugeben. Die UI
+verknüpft diese Momentaufnahme mit dem Bestätigungsrecht und Protokollstatus;
+sie leitet Teilnahme nicht aus Kontakt-E-Mails oder dem Zugriff auf die
+Mitarbeiterliste ab. Auch bei geänderter Kontaktadresse beziehungsweise ohne
+`employees:read` bleibt ein zugeordnetes Konto bedienbar. Die Flags ersetzen
+keine Schreibautorisierung: Jede Bestätigung prüft Kontozuordnung, Mandant,
+Recht und Revision erneut serverseitig unter Sperre.
+
 ## Routen
 
 | Methode und Pfad | Recht | Zweck |
@@ -33,6 +43,14 @@ Die Bestätigung ist an `employees.account_user_id` gebunden; E-Mail-Adressen we
 | `GET /handovers/:id/documents` | `handovers:read`, `documents:read` | Verknüpfte DMS-Dokumente lesen |
 | `POST /handovers/:id/documents` | `handovers:manage`, `documents:read` | Vorhandenes DMS-Dokument ohne Dateiduplikat verknüpfen |
 | `POST /handovers/sync` | `handovers:create` (legacy `handover:create` ebenfalls akzeptiert) | Idempotente Übergabe-Outbox-Mutationen synchronisieren |
+
+Die Dokumentliste liest `mime_type` und `size_bytes` aus der aktuellen
+`document_versions`-Zeile (`version_number = documents.current_version`),
+mandanten- und RLS-gebunden. Archivierte Dokumente bleiben ausgeschlossen.
+Verknüpfte Metadatensätze ohne sichtbare aktuelle Dateiversion bleiben
+aufgelistet; beide Dateifelder sind dann `null`, die UI zeigt ausdrücklich
+„Dateimetadaten nicht verfügbar“. Das behauptet weder vorhandene Originalbytes
+noch einen erfolgreichen Download oder Virenscan.
 
 Listenparameter:
 
@@ -76,6 +94,30 @@ Eine spätere Entwurfsänderung benötigt `expectedVersion`. Aufgabenänderungen
 Bei einer späteren Aufgabenänderung wird ein neu gesetzter `assignedEmployeeId` serverseitig gegen Mitarbeiter desselben Mandanten geprüft. Nicht vorhandene oder fremdmandantige Mitarbeiterzuordnungen werden abgewiesen; ein nicht übermittelter Wert lässt die bisherige Zuweisung unverändert.
 
 ## Offline-Synchronisierung
+
+Schreib-/Speicherabschlüsse leeren oder schließen nur den tatsächlich
+übermittelten Entwurfsstand. Neuere Änderungen an Erfassung, Protokoll,
+Aufgabe, Notiz oder Dokumentauswahl bleiben erhalten, auch nach erneutem
+Öffnen beziehungsweise Auswahlwechsel. Jede erneute Besitzeraktivierung
+besitzt einen neuen internen Kontext, auch bei A-B-A; alte Abschlüsse lösen
+keine aktuelle Pending-Operation. Das macht lokale Speicherung weiterhin
+nicht zur Serverbestätigung.
+
+Die lokale Warteschlangenansicht liest ausschließlich Mutationen des aktuellen
+Mandanten und angemeldeten Benutzers. Ein Kontenwechsel leert die bisherige
+lokale Anzeige vor dem Paint; verspätete Ergebnisse oder Speicherfehler des
+vorherigen Kontos werden nicht veröffentlicht. Das löscht oder übernimmt keine
+fremden Mutationen und ersetzt nicht die serverseitige Berechtigungsprüfung.
+Listen, Details, Filter und private Formularentwürfe werden beim Identitätswechsel
+ebenfalls zurückgesetzt. Späte Server-/Schreibabschlüsse dürfen den neuen Kontext
+nicht überschreiben oder dessen Pending-Zustand beenden; Detailergebnisse bleiben
+zusätzlich an die aktuell ausgewählte Übergabe gebunden. Vorbelegung aus frisch
+gefilterten Store-Arrays ändert den Formularzustand nur bei tatsächlichen Änderungen.
+Auch innerhalb derselben Identität werden ältere Listen-, Detail- und
+Outboxantworten beziehungsweise Fehler nach einer neueren Abfrage verworfen.
+Das gilt bei Rückkehr zum vorherigen Filter oder Protokoll; ein alter
+Schreibabschluss darf keine überholte Filterabfrage neu starten. Fehler der
+jeweils aktuellen Abfrage bleiben sichtbar.
 
 Die Oberfläche speichert eine neue Übergabe zuerst in `SecurityOps2_OfflineVault.outbox` und sendet sie danach an:
 

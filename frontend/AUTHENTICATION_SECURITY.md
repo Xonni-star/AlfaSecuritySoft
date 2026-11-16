@@ -8,6 +8,17 @@ Every protected request resolves the cookie hash against an unrevoked, unexpired
 
 ## CSRF and origins
 
+The navigation exposes **Abmelden**, using the existing CSRF-protected logout
+endpoint to revoke the current database session and clear its cookies. Local
+identity and tenant data are cleared even if that request fails; an explicit
+login-screen warning then states that server revocation is unconfirmed and the
+session may remain valid. HTTP 401 already indicates that the cookie no longer
+authorizes a session. Pending user-owned IndexedDB records are retained, not
+silently deleted or assigned to another account. The local authenticated
+Chromium/PostgreSQL test verifies that even a separately retained copy of the old
+cookie returns 401 after successful logout. This is not a full shared-device or
+account-switch acceptance.
+
 Login requires an allowlisted Origin. Every other state-changing method also requires an exact Origin allowlist match and matching `secops_csrf` cookie / `X-CSRF-Token` header, compared in constant time. The random CSRF value is issued at login and exposed to the frontend as response data/header; the authentication cookie itself remains HttpOnly. CORS credentials are enabled only for configured origins, and preflight permits the CSRF header. GET, HEAD and OPTIONS requests bypass CSRF checks and must remain read-only.
 
 ## Frontend and offline behavior

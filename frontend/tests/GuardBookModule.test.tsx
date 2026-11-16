@@ -1,6 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import type { GuardBookEntry } from '../types';
 
 const mocks = vi.hoisted(() => ({
   addGuardBookEntry: vi.fn(),
@@ -9,7 +10,7 @@ const mocks = vi.hoisted(() => ({
     currentTenantId: 'tenant-a',
     currentUserId: 'user-a',
     triggerManualSync: vi.fn(),
-    getTenantGuardBook: vi.fn(() => []),
+    getTenantGuardBook: vi.fn<() => GuardBookEntry[]>(() => []),
     getTenantSites: vi.fn(() => [{
       id: 'site-a',
       tenantId: 'tenant-a',
@@ -57,6 +58,9 @@ describe('GuardBookModule offline capture', () => {
     root = createRoot(container);
     mocks.state.addGuardBookEntry = mocks.addGuardBookEntry;
     mocks.state.isOnline = false;
+    mocks.state.currentTenantId = 'tenant-a';
+    mocks.state.currentUserId = 'user-a';
+    mocks.state.getTenantGuardBook.mockReturnValue([]);
   });
 
   afterEach(async () => {
@@ -64,6 +68,62 @@ describe('GuardBookModule offline capture', () => {
     container.remove();
     vi.unstubAllGlobals();
     vi.clearAllMocks();
+  });
+
+  const entry: GuardBookEntry = {
+    id: 'entry-a', tenantId: 'tenant-a', timestamp: '2026-11-16T12:00:00Z',
+    siteId: 'site-a', siteName: 'Objekt A', guardId: 'employee-a', guardName: 'Erika Muster',
+    category: 'Vorkommnis', priority: 'Normal', stage: 'Erfasst', title: 'Abschluss prüfen',
+    description: 'Tatsächlicher Sachverhalt', policeInvolved: false, resolved: false, revisions: []
+  };
+
+  async function submitCompletion() {
+    vi.stubGlobal('prompt', vi.fn(() => null));
+    mocks.state.getTenantGuardBook.mockReturnValue([entry]);
+    await act(async () => root.render(<GuardBookModule />));
+    await act(async () => Array.from(container.querySelectorAll('button'))
+      .find(button => button.textContent?.trim() === 'Abschließen')?.click());
+    const form = container.querySelector<HTMLFormElement>('form[aria-label="Wachbucheintrag abschließen"]');
+    expect(form).not.toBeNull();
+    const note = form?.querySelector('textarea');
+    if (!form || !note) throw new Error('Bestätigungsformular fehlt');
+    await act(async () => setValue(note, 'Sorgfältig geprüfter Abschlussvermerk'));
+    await act(async () => form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    return form;
+  }
+
+  test('retains the completion note and error until durable confirmation instead of closing optimistically', async () => {
+    let finish!: (value: boolean) => void;
+    mocks.state.resolveGuardBookEntry.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+    const form = await submitCompletion();
+    expect(form.querySelector('button[type="submit"]')?.matches(':disabled')).toBe(true);
+    expect(mocks.state.resolveGuardBookEntry).toHaveBeenCalledOnce();
+    await act(async () => form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(mocks.state.resolveGuardBookEntry).toHaveBeenCalledOnce();
+    await act(async () => finish(false));
+    expect(form.querySelector('textarea')?.value).toBe('Sorgfältig geprüfter Abschlussvermerk');
+    expect(form.querySelector('[role="alert"]')?.textContent).toContain('nicht vorgemerkt');
+    expect(form.querySelector('button[type="submit"]')?.matches(':disabled')).toBe(false);
+  });
+
+  test('discards an old completion dialog on identity change and ignores its later failure', async () => {
+    let fail!: (error: Error) => void;
+    mocks.state.resolveGuardBookEntry.mockReturnValueOnce(new Promise((_, reject) => { fail = reject; }));
+    await submitCompletion();
+    mocks.state.currentUserId = 'different-user';
+    mocks.state.getTenantGuardBook.mockReturnValue([]);
+    await act(async () => root.render(<GuardBookModule />));
+    await act(async () => fail(new Error('Old private failure')));
+    expect(container.querySelector('form[aria-label="Wachbucheintrag abschließen"]')).toBeNull();
+    expect(container.textContent).not.toContain('Old private failure');
+  });
+
+  test('labels a queued completion as unconfirmed rather than resolved', async () => {
+    mocks.state.getTenantGuardBook.mockReturnValue([{ ...entry, pendingUpdate: true }]);
+    await act(async () => root.render(<GuardBookModule />));
+    expect(container.textContent).toContain('Serverbestätigung ausstehend');
+    expect(container.textContent).not.toContain('Erledigt');
+    expect(Array.from(container.querySelectorAll('button')).some(button => button.textContent?.trim() === 'Abschließen')).toBe(false);
   });
 
   test('keeps the report form open and preserves its data when durable enqueue fails', async () => {
@@ -102,6 +162,40 @@ describe('GuardBookModule offline capture', () => {
     expect(container.querySelector<HTMLInputElement>('input[placeholder^="z. B."]')?.value).toBe('Offline-Vorfall');
     expect(container.querySelector('textarea')?.value).toBe('Wichtiger Sachverhalt');
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('IndexedDB quota exceeded');
+  });
+
+  test.each(['empty', 'replaced'] as const)('submits displayed defaults when %s reference data is loaded after mount', async initial => {
+    mocks.state.getTenantSites.mockReturnValueOnce(initial === 'empty' ? [] : [{
+      id: 'old-site', tenantId: 'tenant-a', name: 'Alter Standort', siteCode: 'OLD'
+    }]);
+    mocks.state.getTenantEmployees.mockReturnValueOnce(initial === 'empty' ? [] : [{
+      id: 'old-employee', firstName: 'Alt', lastName: 'Besetzung', personnelNumber: 'OLD'
+    }]);
+    mocks.addGuardBookEntry.mockResolvedValueOnce('late-loaded-entry');
+    await act(async () => root.render(<GuardBookModule />));
+    await act(async () => root.render(<GuardBookModule />));
+    const openButton = Array.from(container.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Ereignis erfassen'));
+    await act(async () => openButton?.click());
+    const title = container.querySelector<HTMLInputElement>('input[placeholder^="z. B."]');
+    const description = container.querySelector<HTMLTextAreaElement>('textarea');
+    if (!title || !description) throw new Error('Wachbucheintragsformular fehlt');
+    expect(Array.from(container.querySelectorAll<HTMLSelectElement>('select[required]')).map(select => select.value))
+      .toEqual(['site-a', 'employee-a']);
+    await act(async () => {
+      setValue(title, 'Spät geladene Stammdaten');
+      setValue(description, 'Die angezeigte Auswahl muss tatsächlich gespeichert werden.');
+    });
+    await act(async () => {
+      container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+    expect(mocks.addGuardBookEntry).toHaveBeenCalledWith(expect.objectContaining({
+      siteId: 'site-a',
+      siteName: 'Objekt A',
+      guardId: 'employee-a',
+      guardName: 'Erika Muster'
+    }));
+    expect(container.querySelector('form')).toBeNull();
   });
 
   test('ignores a second submit while the first entry write is pending', async () => {

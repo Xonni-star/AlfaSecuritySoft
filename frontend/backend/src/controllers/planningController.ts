@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from 'express';
 import { PoolClient } from 'pg';
 import { z } from 'zod';
 import { withTenantTransaction } from '../config/database';
+import { getPermissionSiteScope } from '../security/authorizationScopes';
 import { escapeCsvCell } from '../utils/csv';
 import {
   PlanningFinding,
@@ -2357,6 +2358,7 @@ export async function applyShiftTemplate(req: Request, res: Response, next: Next
 export async function workHoursReport(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const tenantId = req.user!.tenantId;
+    const siteScope = getPermissionSiteScope(req.user!, 'planning:reports:read');
     const input = reportRangeSchema.parse(req.query);
     const rows = await withTenantTransaction(tenantId, async client => {
       const profilesResult = await client.query(
@@ -2396,8 +2398,9 @@ export async function workHoursReport(req: Request, res: Response, next: NextFun
              ON t.tenant_id=s.tenant_id AND t.shift_id=s.id AND t.employee_id=a.employee_id
           WHERE s.tenant_id=$1 AND s.planning_status <> 'cancelled'
             AND s.shift_date BETWEEN $2::date AND $3::date
+            AND ($4::uuid[] IS NULL OR s.site_id=ANY($4::uuid[]))
           ORDER BY e.last_name,e.first_name,s.starts_at,s.id`,
-        [tenantId, input.from, input.to]
+        [tenantId, input.from, input.to, siteScope]
       );
       type MetricTrack = {
         plannedConfigured: number; plannedCount: number;
@@ -2906,6 +2909,7 @@ export async function listShiftSwapRequests(req: Request, res: Response, next: N
 export async function coverageReport(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const tenantId = req.user!.tenantId;
+    const siteScope = getPermissionSiteScope(req.user!, 'planning:reports:read');
     const input = reportRangeSchema.parse(req.query);
     const result = await withTenantTransaction(tenantId, client => client.query(
       `WITH assignments AS (
@@ -2930,10 +2934,11 @@ export async function coverageReport(req: Request, res: Response, next: NextFunc
          LEFT JOIN assignments a ON a.tenant_id=s.tenant_id AND a.shift_id=s.id
         WHERE s.tenant_id=$1 AND s.shift_date BETWEEN $2::date AND $3::date
           AND s.planning_status <> 'cancelled'
+          AND ($4::uuid[] IS NULL OR s.site_id=ANY($4::uuid[]))
         GROUP BY s.id,s.shift_date,s.starts_at,s.ends_at,si.id,si.name,
                  r.qualification_type,r.required_count,s.required_qualification
         ORDER BY s.shift_date,si.name,s.starts_at`,
-      [tenantId, input.from, input.to]
+      [tenantId, input.from, input.to, siteScope]
     ));
     const data = result.rows.map(row => ({
       ...row,
@@ -2967,6 +2972,7 @@ export async function coverageReport(req: Request, res: Response, next: NextFunc
 export async function qualificationReport(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const tenantId = req.user!.tenantId;
+    const siteScope = getPermissionSiteScope(req.user!, 'planning:reports:read');
     const input = reportRangeSchema.parse(req.query);
     const result = await withTenantTransaction(tenantId, client => client.query(
       `WITH assigned AS (
@@ -2989,7 +2995,12 @@ export async function qualificationReport(req: Request, res: Response, next: Nex
                 count(DISTINCT q.employee_id)::int AS employees_with_record
            FROM employee_qualifications q
            JOIN employees e ON e.tenant_id=q.tenant_id AND e.id=q.employee_id
-          WHERE q.tenant_id=$1
+           WHERE q.tenant_id=$1
+             AND ($4::uuid[] IS NULL OR EXISTS (
+               SELECT 1 FROM employee_site_assignments esa
+                WHERE esa.tenant_id=e.tenant_id AND esa.employee_id=e.id
+                  AND esa.site_id=ANY($4::uuid[])
+             ))
           GROUP BY q.qualification_type
        ),
        requirements AS (
@@ -3000,6 +3011,7 @@ export async function qualificationReport(req: Request, res: Response, next: Nex
            LEFT JOIN shift_staffing_requirements r ON r.tenant_id=s.tenant_id AND r.shift_id=s.id
           WHERE s.tenant_id=$1 AND s.planning_status <> 'cancelled'
             AND s.shift_date BETWEEN $2::date AND $3::date
+            AND ($4::uuid[] IS NULL OR s.site_id=ANY($4::uuid[]))
        ),
        demand AS (
          SELECT r.qualification_type,
@@ -3026,7 +3038,7 @@ export async function qualificationReport(req: Request, res: Response, next: Nex
               GREATEST(COALESCE(d.required_slots,0)-COALESCE(d.assigned_qualified_slots,0),0)::int AS shortfall
          FROM employee_counts e FULL OUTER JOIN demand d USING (qualification_type)
         ORDER BY qualification_type`,
-      [tenantId, input.from, input.to]
+      [tenantId, input.from, input.to, siteScope]
     ));
     res.json({
       success: true, data: result.rows, range: input,
@@ -3040,6 +3052,7 @@ export async function qualificationReport(req: Request, res: Response, next: Nex
 export async function absenceReport(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const tenantId = req.user!.tenantId;
+    const siteScope = getPermissionSiteScope(req.user!, 'planning:reports:read');
     const input = reportRangeSchema.parse(req.query);
     const report = await withTenantTransaction(tenantId, async client => {
       const rows = await client.query(
@@ -3048,15 +3061,27 @@ export async function absenceReport(req: Request, res: Response, next: NextFunct
                 sum(GREATEST(0,LEAST(date_to,$3::date)-GREATEST(date_from,$2::date)+1))::int AS overlapping_calendar_days
            FROM employee_absences
           WHERE tenant_id=$1 AND date_from <= $3::date AND date_to >= $2::date
+            AND ($4::uuid[] IS NULL OR EXISTS (
+              SELECT 1 FROM employee_site_assignments esa
+               WHERE esa.tenant_id=employee_absences.tenant_id
+                 AND esa.employee_id=employee_absences.employee_id
+                 AND esa.site_id=ANY($4::uuid[])
+            ))
           GROUP BY absence_type,status
           ORDER BY absence_type,status`,
-        [tenantId, input.from, input.to]
+        [tenantId, input.from, input.to, siteScope]
       );
       const affected = await client.query(
         `SELECT count(DISTINCT employee_id)::int AS affected_employees
            FROM employee_absences
-          WHERE tenant_id=$1 AND date_from <= $3::date AND date_to >= $2::date`,
-        [tenantId, input.from, input.to]
+          WHERE tenant_id=$1 AND date_from <= $3::date AND date_to >= $2::date
+            AND ($4::uuid[] IS NULL OR EXISTS (
+              SELECT 1 FROM employee_site_assignments esa
+               WHERE esa.tenant_id=employee_absences.tenant_id
+                 AND esa.employee_id=employee_absences.employee_id
+                 AND esa.site_id=ANY($4::uuid[])
+            ))`,
+        [tenantId, input.from, input.to, siteScope]
       );
       return { rows: rows.rows, affectedEmployees: Number(affected.rows[0].affected_employees) };
     });

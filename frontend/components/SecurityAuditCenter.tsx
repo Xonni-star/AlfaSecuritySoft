@@ -1,57 +1,19 @@
 import React, { useState } from 'react';
-import {
-  Shield,
-  ShieldCheck,
-  ShieldAlert,
-  Lock,
-  Key,
-  Users,
-  Eye,
-  FileCheck2,
-  Trash2,
-  AlertTriangle,
-  CheckCircle2,
-  Play,
-  RotateCcw,
-  Laptop,
-  Smartphone,
-  Server,
-  FileText
-} from 'lucide-react';
+import { ShieldCheck, Laptop, Smartphone } from 'lucide-react';
 import { useSecurityStore } from '../store';
 
 export const SecurityAuditCenter: React.FC = () => {
   const {
     getTenantAuditLogs,
     activeSessions,
-    revokeSession,
     gdprPolicies,
-    getCurrentTenant,
-    currentUserRole
+    getCurrentTenant
   } = useSecurityStore();
 
   const tenant = getCurrentTenant();
   const auditLogs = getTenantAuditLogs();
 
   const [activeTab, setActiveTab] = useState<'audit_trail' | 'sessions' | 'pen_test' | 'gdpr'>('audit_trail');
-  const [penTestStatus, setPenTestStatus] = useState<'idle' | 'running' | 'completed'>('idle');
-  const [testResults, setTestResults] = useState<any[]>([]);
-
-  const handleRunPenTest = () => {
-    setPenTestStatus('running');
-    setTimeout(() => {
-      setTestResults([
-        { id: 't1', test: 'Cross-Tenant IDOR Injection', result: 'BLOCKIERT (403)', status: 'PASS', desc: 'RLS fängt Zugriff auf c-3 (Bavaria Schutz) ab' },
-        { id: 't2', test: 'Argon2id Hash KDF Stärke', result: 'KONFORM', status: 'PASS', desc: '310.000 Runden mit kryptografischem Salt' },
-        { id: 't3', test: 'SQL Injection Fuzzing / ORM', result: 'SICHER (0 Leaks)', status: 'PASS', desc: 'Ausschließliche Verwendung von bind parameters' },
-        { id: 't4', test: 'Path Traversal File Upload', result: 'ABGEWIESEN', status: 'PASS', desc: 'MIME-Typ & Whitelist-Prüfung (.pdf, .png)' },
-        { id: 't5', test: 'Brute-Force Rate Limiting', result: 'AKTIV', status: 'PASS', desc: '5 Fehlversuche führen zu 15 Min. Account-Lockout' },
-        { id: 't6', test: 'Wachbuch Append-Only Integrität', result: 'UNVERÄNDERLICH', status: 'PASS', desc: 'Korrekturen werden als Revision angehängt' }
-      ]);
-      setPenTestStatus('completed');
-    }, 1200);
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -61,17 +23,23 @@ export const SecurityAuditCenter: React.FC = () => {
             <h1 className="text-xl font-bold text-white">Sicherheits-Audit, Datenschutz & Systemhärtung</h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            BSI & DIN 77200 Zertifizierungskontrolle: Revisionssicheres Audit-Log, Sitzungsverwaltung, DSGVO-Fristen und IDOR-Schutz.
+            Übersicht vorhandener Sicherheits- und Datenschutzfunktionen. Diese Ansicht ist keine BSI-/DIN-Zertifizierungsprüfung oder externe Sicherheitsfreigabe.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            RLS-Schutz: Aktiv
+          <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30 text-xs font-semibold">
+            RLS-Livestatus: NICHT VERIFIZIERT
           </span>
         </div>
       </div>
+
+      <p role="status" className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+        TEILWEISE IMPLEMENTIERT: Diese Ansicht enthält Beispieldaten und lokale UI-Ereignisse,
+        keine vollständigen serverseitigen Audit- oder Sitzungsdaten. Fernwiderruf,
+        Penetrationstest und Datenschutzauskunft sind hier nicht angebunden.
+        Die eigene Sitzung kann über „Abmelden“ serverseitig widerrufen werden.
+      </p>
 
       {/* Security Metrics Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
@@ -83,22 +51,20 @@ export const SecurityAuditCenter: React.FC = () => {
 
         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
           <span className="text-slate-400 block text-[11px]">Aktive Gerätesitzungen</span>
-          <span className="text-sm font-bold text-slate-100 mt-1 block">
-            {activeSessions.filter((s) => s.status === 'ACTIVE').length} Aktiv
-          </span>
-          <span className="text-[10px] text-emerald-400">100% MFA verifiziert</span>
+          <span className="text-sm font-bold text-slate-100 mt-1 block">Nicht angebunden</span>
+          <span className="text-[10px] text-slate-400">MFA-Status nicht verifiziert</span>
         </div>
 
         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
-          <span className="text-slate-400 block text-[11px]">Audit-Log Einträge</span>
+          <span className="text-slate-400 block text-[11px]">Lokale Auditansicht</span>
           <span className="text-sm font-bold text-slate-100 mt-1 block">{auditLogs.length} Ereignisse</span>
-          <span className="text-[10px] text-slate-400">Schreibgeschützt / Tamper-Evident</span>
+          <span className="text-[10px] text-slate-400">Keine nachgewiesene Revisionssicherheit</span>
         </div>
 
         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
           <span className="text-slate-400 block text-[11px]">Passwort-Kryptografie</span>
           <span className="text-sm font-bold text-emerald-400 mt-1 block">Argon2id KDF</span>
-          <span className="text-[10px] text-slate-400">310k HMAC-SHA512 Salt</span>
+          <span className="text-[10px] text-slate-400">Backendimplementierung; keine Live-Parameterprüfung</span>
         </div>
       </div>
 
@@ -110,7 +76,7 @@ export const SecurityAuditCenter: React.FC = () => {
             activeTab === 'audit_trail' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          Revisionssicheres Audit-Log ({auditLogs.length})
+          Lokale Auditansicht ({auditLogs.length})
         </button>
         <button
           onClick={() => setActiveTab('sessions')}
@@ -118,7 +84,7 @@ export const SecurityAuditCenter: React.FC = () => {
             activeTab === 'sessions' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          Sitzungen & Geräte ({activeSessions.length})
+          Sitzungen & Geräte (Beispiele)
         </button>
         <button
           onClick={() => setActiveTab('pen_test')}
@@ -126,7 +92,7 @@ export const SecurityAuditCenter: React.FC = () => {
             activeTab === 'pen_test' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          Automatisierter Penetration-Test
+          Sicherheitsprüfung (nicht angebunden)
         </button>
         <button
           onClick={() => setActiveTab('gdpr')}
@@ -143,8 +109,8 @@ export const SecurityAuditCenter: React.FC = () => {
         <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-sm">
           <div className="p-4 border-b border-slate-800 flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold text-white">Unveränderliches Sicherheits- und Zugriffsprotokoll</h2>
-              <p className="text-xs text-slate-400">Automatische Erfassung aller sicherheitsrelevanten Aktionen ohne Passwörter oder Klartext-Tokens.</p>
+              <h2 className="text-sm font-bold text-white">Lokale Ereignisse und Beispieldaten</h2>
+              <p className="text-xs text-slate-400">Nicht serverbestätigt, nicht vollständig und nicht unveränderlich. Keine Sicherheitsabnahme.</p>
             </div>
           </div>
 
@@ -196,7 +162,7 @@ export const SecurityAuditCenter: React.FC = () => {
       {activeTab === 'sessions' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-300">Aktive Anmeldungen & vertrauenswürdige Endgeräte:</span>
+            <span className="text-xs font-bold text-slate-300">Beispielgeräte, keine tatsächlichen Anmeldungen:</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -234,16 +200,16 @@ export const SecurityAuditCenter: React.FC = () => {
 
                 <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
                   {sess.isCurrentSession ? (
-                    <span className="text-[11px] text-blue-400 font-semibold">Dieses Gerät (Aktiv)</span>
+                    <span className="text-[11px] text-slate-400">Beispiel, nicht dieses Gerät</span>
                   ) : sess.status === 'ACTIVE' ? (
                     <button
-                      onClick={() => revokeSession(sess.id)}
+                      disabled
                       className="px-3 py-1 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-semibold transition"
                     >
-                      Sitzung widerrufen
+                      Sitzungsverwaltung nicht angebunden
                     </button>
                   ) : (
-                    <span className="text-[11px] text-slate-500">Gesperrt</span>
+                    <span className="text-[11px] text-slate-500">Beispielstatus, nicht serverbestätigt</span>
                   )}
                 </div>
               </div>
@@ -257,47 +223,24 @@ export const SecurityAuditCenter: React.FC = () => {
         <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
             <div>
-              <h2 className="text-base font-bold text-white">Automatisierte Sicherheits- & Pentest-Suite</h2>
+              <h2 className="text-base font-bold text-white">Sicherheitsprüfungen: OFFEN</h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Überprüft IDOR-Schutz, SQL-Injection-Resistenz, Path-Traversal und Brute-Force-Sperren.
+                Keine ausführbare Prüfsuite in dieser Oberfläche angebunden.
+                CI-Ergebnisse gelten nur für den jeweils geprüften Commit;
+                ein unabhängiger Penetrationstest bleibt erforderlich.
               </p>
             </div>
 
             <button
-              onClick={handleRunPenTest}
-              disabled={penTestStatus === 'running'}
+              disabled
               className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-lg shadow-blue-600/20 transition flex items-center gap-2 disabled:opacity-50"
             >
-              <Play className={`w-3.5 h-3.5 ${penTestStatus === 'running' ? 'animate-spin' : ''}`} />
-              <span>{penTestStatus === 'running' ? 'Prüfung läuft...' : 'Pentest-Suite starten'}</span>
+              <span>Keine Prüfsuite angebunden</span>
             </button>
           </div>
 
-          <div className="space-y-3">
-            {testResults.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 text-xs">
-                Klicken Sie auf &bdquo;Pentest-Suite starten&ldquo;, um alle Härtungsmaßnahmen automatisiert zu verifizieren.
-              </div>
-            ) : (
-              testResults.map((t) => (
-                <div
-                  key={t.id}
-                  className="p-3.5 rounded-xl bg-slate-800/40 border border-slate-800 flex items-center justify-between text-xs"
-                >
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <div>
-                      <div className="font-semibold text-slate-200">{t.test}</div>
-                      <div className="text-[11px] text-slate-400">{t.desc}</div>
-                    </div>
-                  </div>
-
-                  <span className="font-mono text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
-                    {t.result}
-                  </span>
-                </div>
-              ))
-            )}
+          <div className="text-xs text-slate-400">
+            Es wurde kein Test gestartet. Diese Ansicht erzeugt keine Prüfergebnisse oder Freigaben.
           </div>
         </div>
       )}
@@ -308,7 +251,8 @@ export const SecurityAuditCenter: React.FC = () => {
           <div className="border-b border-slate-800 pb-3">
             <h2 className="text-base font-bold text-white">DSGVO Aufbewahrungs- & Löschkonzept</h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Gesetzliche Aufbewahrungspflichten nach § 34a GewO und ArbZG vs. Recht auf Vergessenwerden (Art. 17 DSGVO).
+              Beispielhafte Fristen, nicht rechtlich freigegeben oder als Löschlauf implementiert.
+              Die konkrete Rechtsgrundlage und Aufbewahrung müssen vor dem Einsatz geprüft werden.
             </p>
           </div>
 
@@ -322,15 +266,15 @@ export const SecurityAuditCenter: React.FC = () => {
                   <div className="font-semibold text-slate-200 text-sm">{p.category}</div>
                   <div className="text-[11px] text-slate-400 mt-0.5">Rechtsgrundlage: {p.statutoryBasis}</div>
                   <div className="text-[10px] text-slate-500 mt-1">
-                    Frist: <strong className="text-slate-300">{p.retentionYears} Jahre</strong> • Automatische Bereinigung: {p.autoPurgeEnabled ? 'Aktiv' : 'Manuell durch DSB'}
+                    Beispiel-Frist: <strong className="text-slate-300">{p.retentionYears} Jahre</strong> • Automatische Bereinigung: nicht implementiert
                   </div>
                 </div>
 
                 <button
-                  onClick={() => alert(`Art. 15 Datenauskunft-Export für ${p.category} erstellt.`)}
+                  disabled
                   className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold shrink-0"
                 >
-                  Auskunfts-Export (Art. 15)
+                  Auskunfts-Export nicht implementiert
                 </button>
               </div>
             ))}

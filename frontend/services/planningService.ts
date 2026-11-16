@@ -125,6 +125,16 @@ export interface ActualTimeRead {
   }>;
 }
 
+export interface WorkHoursReportRow {
+  employee_id: string;
+  first_name: string;
+  last_name: string;
+  assigned_shifts: number;
+  planned_hours: number;
+  actual_hours: number | null;
+  actual_status: 'complete' | 'partial' | 'pending' | 'unavailable' | string;
+}
+
 export interface PlanningNotification {
   id: string;
   event_type: string;
@@ -464,6 +474,9 @@ async function getAllPages<T>(path: string, query: URLSearchParams, pageSize = 2
 }
 
 export const planningApi = {
+  workHoursReport: (from: string, to: string) => apiClient.get<WorkHoursReportRow[]>(
+    `/planning/reports/work-hours?${new URLSearchParams({ from, to }).toString()}`
+  ),
   listShifts: (from: string, to: string) => getAllPages<Record<string, any>>(
     '/planning/shifts',
     new URLSearchParams({ from, to })
