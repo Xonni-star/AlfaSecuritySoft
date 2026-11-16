@@ -43,10 +43,16 @@ historischen Kontext im [Sicherheitsbericht](./SECURITY_AUDIT_REPORT.md).
 - FNL-013 ersetzt weitere simulierte Technik-/Abnahmenachweise durch echte
   GET-Antworten, sichtbare Fehler und einen schreibgeschützten Prüfplan;
   generische Automationen sind lokale Entwürfe ohne Engine.
-  Lokal: Frontend 212/212, Typprüfung, beide Builds und sieben echte Browserfälle
-  bestanden. Die neue Journey prüft echte GET-Daten, exakt erlaubte Kunden-ID,
-  tatsächliches HTTP 403 eines Readers und keine Mutation. Neue Hosted-Evidenz
-  muss diesem späteren Code zugeordnet werden.
+  Exakter veröffentlichter Code `3110bbbda1655e804cba35c89ccbda5174e84444`
+  bestand [CI 43932552825](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43932552825),
+  7/7; Logs: Frontend 212, Backend 546, sieben echte Browserfälle mit Cleanup.
+  Die neue Journey prüft echte GET-Daten, exakt erlaubte Kunden-ID,
+  tatsächliches HTTP 403 eines Readers und keine Mutation.
+- Nachfolgendes FNL-014 gibt Kunden-/Objekt-/Mitarbeiterformularen explizite
+  API-/Offline-Bestätigung und schützt Entwürfe/verspätete Identitätsantworten.
+  Lokal: Frontend 242/242 in 35 Dateien, Typprüfung/Build und Browser 7/7.
+  Das ist eine Funktionskorrektur, keine neue bestätigte Schwachstelle oder
+  vollständige Rollen-/Objektprüfung. Neue Hosted-Evidenz bleibt separat.
 
 ## Fachliche Fehler sind keine behaupteten Exploits
 

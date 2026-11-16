@@ -247,6 +247,82 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     expect(state.dataLoadError).toBeNull();
   });
 
+  const resourceWrites = [
+    { name: 'create customer', write: () => useSecurityStore.getState().addClient(useSecurityStore.getState().clients[0]) },
+    { name: 'update customer', write: () => useSecurityStore.getState().updateClient(customerRow.id, { companyName: 'Updated customer' }) },
+    { name: 'create site', write: () => useSecurityStore.getState().addSite(useSecurityStore.getState().sites[0]) },
+    { name: 'update site', write: () => useSecurityStore.getState().updateSite(siteRow.id, { name: 'Updated site' }) },
+    { name: 'create employee', write: () => useSecurityStore.getState().addEmployee(useSecurityStore.getState().employees[0]) },
+    { name: 'update employee', write: () => useSecurityStore.getState().updateEmployee(employeeRow.id, { firstName: 'Updated employee' }) }
+  ];
+
+  test.each(resourceWrites)('$name reports a real rejected write instead of a success-shaped void result', async ({ write }) => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    mockedApi.post.mockRejectedValueOnce(new ApiError(403, 'Write denied'));
+    mockedApi.patch.mockRejectedValueOnce(new ApiError(403, 'Write denied'));
+    expect(await write()).toBe(false);
+    expect(useSecurityStore.getState().notifications.at(-1)?.message).toContain('Write denied');
+  });
+
+  test.each(resourceWrites)('$name does not publish an old identity response into current resources', async ({ write }) => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    let resolve!: (value: unknown) => void;
+    const response = new Promise(done => { resolve = done; });
+    mockedApi.post.mockReturnValueOnce(response);
+    mockedApi.patch.mockReturnValueOnce(response);
+    const pending = write();
+    useSecurityStore.setState({
+      authUser: { ...readUser, id: 'other-user' }, currentUserId: 'other-user',
+      clients: [], sites: [], employees: [], notifications: []
+    });
+    resolve({ id: '55555555-5555-4555-8555-555555555555', revision_version: 2 });
+    expect(await pending).toBe(false);
+    expect(useSecurityStore.getState()).toMatchObject({
+      clients: [], sites: [], employees: [], notifications: []
+    });
+  });
+
+  test.each(resourceWrites)('$name waits for durable local storage before confirming an offline write', async ({ write }) => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    useSecurityStore.setState({ isOnline: false });
+    let release!: () => void;
+    const stored = new Promise<void>(resolve => { release = resolve; });
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => {
+      await stored;
+      return { ...mutation, deviceId: 'resource-test-device', retryCount: 0, status: 'PENDING' };
+    });
+    let settled = false;
+    const pending = write().then(result => { settled = true; return result; });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    expect(useSecurityStore.getState().syncQueue).toEqual([]);
+    release();
+    expect(await pending).toBe(true);
+    expect(useSecurityStore.getState().syncQueue).toEqual([
+      expect.objectContaining({ tenantId: readUser.tenantId, userId: readUser.id, status: 'pending' })
+    ]);
+    expect(mockedApi.post).not.toHaveBeenCalled();
+    expect(mockedApi.patch).not.toHaveBeenCalled();
+  });
+
+  test.each(resourceWrites)('$name does not confirm an offline storage failure', async ({ write }) => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    const { clients, sites, employees } = useSecurityStore.getState();
+    useSecurityStore.setState({ isOnline: false });
+    vi.spyOn(offlineVault, 'enqueueMutation').mockRejectedValueOnce(new Error('Local quota exceeded'));
+    expect(await write()).toBe(false);
+    expect(useSecurityStore.getState()).toMatchObject({ clients, sites, employees, syncQueue: [] });
+    expect(useSecurityStore.getState().notifications.at(-1)?.message).toContain('Local quota exceeded');
+  });
+
   test('replays the authenticated outbox after restoring a session while already online', async () => {
     mockReadEndpoints();
     mockedApi.get.mockImplementation((endpoint: string) => endpoint === '/auth/me'

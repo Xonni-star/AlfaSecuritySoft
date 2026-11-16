@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Users, Plus, Search, Archive, RotateCcw, Pencil, Award, CalendarDays, AlertTriangle } from 'lucide-react';
 import { useSecurityStore } from '../store';
 import { Employee, QualificationType, UserRole } from '../types';
@@ -7,11 +7,16 @@ const today = () => new Date().toISOString().slice(0, 10);
 const field = 'w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200';
 
 export const EmployeesModule: React.FC = () => {
-  const { employees, sites: allSites, addEmployee, updateEmployee, archiveEmployee, restoreEmployee, addQualification, updateQualification, addAbsence, reviewAbsence, getTenantDocuments } = useSecurityStore();
+  const { employees, sites: allSites, addEmployee, updateEmployee, archiveEmployee, restoreEmployee, addQualification, updateQualification, addAbsence, reviewAbsence, getTenantDocuments, currentTenantId, currentUserId, authUser } = useSecurityStore();
   const [search, setSearch] = useState('');
   const [showArchived, setShowArchived] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
   const [modal, setModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const identity = `${currentTenantId}:${authUser?.id || currentUserId}`;
+  const identityRef = useRef(identity);
+  identityRef.current = identity;
   const [personnelNumber, setPersonnelNumber] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -33,18 +38,38 @@ export const EmployeesModule: React.FC = () => {
   const [editCertificateNumber, setEditCertificateNumber] = useState('');
   const [editVerified, setEditVerified] = useState(false);
 
+  useEffect(() => {
+    setModal(false); setEditing(null); setPersonnelNumber(''); setFirstName('');
+    setLastName(''); setEmail(''); setPhone(''); setAssignedSiteIds([]);
+    setQualEmployee(''); setQualCert(''); setQualExpiry('');
+    setEditingQualificationId(null); setEditCertificateNumber('');
+    setIsSaving(false); setSaveError('');
+  }, [identity]);
+
   const visible = useMemo(() => employees.filter(e => Boolean(e.archivedAt) === showArchived && `${e.firstName} ${e.lastName} ${e.personnelNumber}`.toLowerCase().includes(search.toLowerCase())), [employees, showArchived, search]);
   const assignableSites = allSites.filter(site => !site.archivedAt || assignedSiteIds.includes(site.id));
   const employeeDocuments = getTenantDocuments();
   const expiring = employees.flatMap(e => (e.qualifications || []).filter(q => q.expiryDate && new Date(q.expiryDate).getTime() <= Date.now() + 30 * 86400000 && new Date(q.expiryDate).getTime() >= Date.now()).map(q => `${e.firstName} ${e.lastName}: ${q.type} (${q.expiryDate})`));
 
-  const openCreate = () => { setEditing(null); setPersonnelNumber(''); setFirstName(''); setLastName(''); setEmail(''); setPhone(''); setRole(UserRole.GUARD); setWeeklyHours(40); setHourlyRate(18.5); setDateOfJoining(today()); setAssignedSiteIds([]); setModal(true); };
-  const openEdit = (e: Employee) => { setEditing(e); setPersonnelNumber(e.personnelNumber); setFirstName(e.firstName); setLastName(e.lastName); setEmail(e.email); setPhone(e.phone); setRole(e.role); setWeeklyHours(e.weeklyHours); setHourlyRate(e.hourlyRate); setDateOfJoining(e.dateOfJoining); setAssignedSiteIds(e.assignedSiteIds || []); setModal(true); };
+  const openCreate = () => { if (isSaving) return; setSaveError(''); setEditing(null); setPersonnelNumber(''); setFirstName(''); setLastName(''); setEmail(''); setPhone(''); setRole(UserRole.GUARD); setWeeklyHours(40); setHourlyRate(18.5); setDateOfJoining(today()); setAssignedSiteIds([]); setModal(true); };
+  const openEdit = (e: Employee) => { if (isSaving) return; setSaveError(''); setEditing(e); setPersonnelNumber(e.personnelNumber); setFirstName(e.firstName); setLastName(e.lastName); setEmail(e.email); setPhone(e.phone); setRole(e.role); setWeeklyHours(e.weeklyHours); setHourlyRate(e.hourlyRate); setDateOfJoining(e.dateOfJoining); setAssignedSiteIds(e.assignedSiteIds || []); setModal(true); };
   const saveEmployee = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (editing) await updateEmployee(editing.id, { personnelNumber, firstName, lastName, email, phone, role, weeklyHours, hourlyRate, dateOfJoining, assignedSiteIds });
-    else await addEmployee({ personnelNumber, firstName, lastName, email, phone, role, status: 'Aktiv', weeklyHours, hourlyRate, dateOfJoining, assignedSiteIds, qualifications: [] });
-    setModal(false);
+    if (isSaving) return;
+    setSaveError('');
+    setIsSaving(true);
+    try {
+      const saved = editing
+        ? await updateEmployee(editing.id, { personnelNumber, firstName, lastName, email, phone, role, weeklyHours, hourlyRate, dateOfJoining, assignedSiteIds })
+        : await addEmployee({ personnelNumber, firstName, lastName, email, phone, role, status: 'Aktiv', weeklyHours, hourlyRate, dateOfJoining, assignedSiteIds, qualifications: [] });
+      if (identityRef.current !== identity) return;
+      if (saved) setModal(false);
+      else setSaveError('Die Speicherung wurde nicht bestätigt. Die Eingaben bleiben erhalten.');
+    } catch (error) {
+      if (identityRef.current === identity) setSaveError(error instanceof Error ? error.message : 'Mitarbeiter nicht gespeichert.');
+    } finally {
+      if (identityRef.current === identity) setIsSaving(false);
+    }
   };
   const createQualification = async (event: React.FormEvent) => { event.preventDefault(); await addQualification(qualEmployee, { type: qualType, certificateNumber: qualCert, issueDate: qualIssue, expiryDate: qualExpiry, verified: false, status: 'AUSSTEHEND' }); setQualEmployee(''); setQualCert(''); setQualIssue(today()); setQualExpiry(''); };
   const saveQualification = async (event: React.FormEvent, employeeId: string) => { event.preventDefault(); if (!editingQualificationId) return; await updateQualification(employeeId, editingQualificationId, { certificateNumber: editCertificateNumber, issueDate: editIssueDate, expiryDate: editExpiryDate, verified: editVerified }); setEditingQualificationId(null); };
@@ -63,6 +88,56 @@ export const EmployeesModule: React.FC = () => {
       {!emp.archivedAt && <div className="flex flex-wrap gap-2 border-t border-slate-800 pt-3"><form onSubmit={createQualification} className="flex flex-wrap gap-2 items-center"><input type="hidden" value={qualEmployee === emp.id ? emp.id : ''} onChange={() => {}}/><select aria-label="Qualifikation Mitarbeiter" value={qualEmployee === emp.id ? qualType : ''} onChange={e => {setQualEmployee(emp.id);setQualType(e.target.value as QualificationType)}} className={`${field} w-auto`}><option value="">Nachweis hinzufügen…</option>{Object.values(QualificationType).map(q => <option key={q} value={q}>{q}</option>)}</select>{qualEmployee === emp.id && <><input className={`${field} w-32`} placeholder="Nachweis-Nr." value={qualCert} onChange={e=>setQualCert(e.target.value)}/><input className={`${field} w-36`} type="date" aria-label="Ausstellungsdatum" value={qualIssue} onChange={e=>setQualIssue(e.target.value)}/><input className={`${field} w-36`} type="date" aria-label="Ablaufdatum" value={qualExpiry} onChange={e=>setQualExpiry(e.target.value)}/><button className="text-xs text-blue-300">Hinzufügen</button></>}</form>
         <form onSubmit={createAbsence} className="flex flex-wrap gap-2 items-center"><input type="hidden" name="employeeId" value={emp.id}/><select name="type" className={`${field} w-auto`}><option>Urlaub</option><option>Krankheit</option><option>Sonstige</option></select><input name="startDate" type="date" required className={`${field} w-36`}/><input name="endDate" type="date" required className={`${field} w-36`}/><button type="submit" className="text-xs text-blue-300">Abwesenheit beantragen</button></form></div>}
     </article>)}</div>
-    {modal && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"><form onSubmit={saveEmployee} className="w-full max-w-lg space-y-3 rounded-2xl border border-slate-700 bg-[#0f172a] p-6"><div className="flex justify-between"><h2 className="font-bold text-white">{editing ? 'Mitarbeiter bearbeiten' : 'Mitarbeiter anlegen'}</h2><button type="button" onClick={() => setModal(false)}>✕</button></div><div className="grid grid-cols-2 gap-3">{[[personnelNumber,setPersonnelNumber,'Personalnummer'],[firstName,setFirstName,'Vorname'],[lastName,setLastName,'Nachname'],[email,setEmail,'E-Mail'],[phone,setPhone,'Telefon']].map(([value,setter,label]: any)=><label key={label} className="text-xs text-slate-400">{label}<input aria-label={label} required className={field} value={value} onChange={e=>setter(e.target.value)}/></label>)}<label className="text-xs text-slate-400">Rolle<select className={field} value={role} onChange={e=>setRole(e.target.value as UserRole)}>{Object.values(UserRole).map(v=><option key={v}>{v}</option>)}</select></label><label className="text-xs text-slate-400">Wochenstunden<input className={field} type="number" min="0" max="80" value={weeklyHours} onChange={e=>setWeeklyHours(Number(e.target.value))}/></label><label className="text-xs text-slate-400">Stundenlohn<input className={field} type="number" min="0" step="0.01" value={hourlyRate} onChange={e=>setHourlyRate(Number(e.target.value))}/></label><label className="text-xs text-slate-400">Eintritt<input className={field} type="date" value={dateOfJoining} onChange={e=>setDateOfJoining(e.target.value)}/></label><fieldset className="col-span-2 space-y-2"><legend className="text-xs font-semibold text-slate-300">Zugeordnete Standorte</legend><p className="text-xs text-slate-500">Diese dauerhafte Zuordnung gilt unabhängig von geplanten Schichten.</p><div className="max-h-36 space-y-1 overflow-y-auto">{assignableSites.map(site => <label key={site.id} className="flex items-center gap-2 text-xs text-slate-300"><input aria-label={`Standort ${site.name}`} type="checkbox" checked={assignedSiteIds.includes(site.id)} onChange={event => setAssignedSiteIds(current => event.target.checked ? [...current, site.id] : current.filter(id => id !== site.id))}/><span>{site.name} · {site.siteCode}</span></label>)}{assignableSites.length === 0 && <p className="text-xs text-slate-500">Keine Standorte im Mandanten verfügbar.</p>}</div></fieldset></div><div className="flex justify-end gap-2"><button type="button" onClick={() => setModal(false)} className="px-3 py-2 bg-slate-800 rounded-lg text-slate-300">Abbrechen</button><button className="px-4 py-2 bg-blue-600 rounded-lg text-white">Speichern</button></div></form></div>}
+    {modal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+        <form onSubmit={saveEmployee} className="w-full max-w-lg space-y-3 rounded-2xl border border-slate-700 bg-[#0f172a] p-6">
+          <fieldset disabled={isSaving} className="space-y-3">
+            <div className="flex justify-between">
+              <h2 className="font-bold text-white">{editing ? 'Mitarbeiter bearbeiten' : 'Mitarbeiter anlegen'}</h2>
+              <button type="button" onClick={() => setModal(false)}>✕</button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                [personnelNumber, setPersonnelNumber, 'Personalnummer'],
+                [firstName, setFirstName, 'Vorname'],
+                [lastName, setLastName, 'Nachname'],
+                [email, setEmail, 'E-Mail'],
+                [phone, setPhone, 'Telefon']
+              ] as const).map(([value, setter, label]) => (
+                <label key={label} className="text-xs text-slate-400">
+                  {label}<input aria-label={label} required className={field} value={value} onChange={event => setter(event.target.value)} />
+                </label>
+              ))}
+              <label className="text-xs text-slate-400">Rolle
+                <select className={field} value={role} onChange={event => setRole(event.target.value as UserRole)}>
+                  {Object.values(UserRole).map(value => <option key={value}>{value}</option>)}
+                </select>
+              </label>
+              <label className="text-xs text-slate-400">Wochenstunden<input className={field} type="number" min="0" max="80" value={weeklyHours} onChange={event => setWeeklyHours(Number(event.target.value))} /></label>
+              <label className="text-xs text-slate-400">Stundenlohn<input className={field} type="number" min="0" step="0.01" value={hourlyRate} onChange={event => setHourlyRate(Number(event.target.value))} /></label>
+              <label className="text-xs text-slate-400">Eintritt<input className={field} type="date" value={dateOfJoining} onChange={event => setDateOfJoining(event.target.value)} /></label>
+              <fieldset className="col-span-2 space-y-2">
+                <legend className="text-xs font-semibold text-slate-300">Zugeordnete Standorte</legend>
+                <p className="text-xs text-slate-500">Diese dauerhafte Zuordnung gilt unabhängig von geplanten Schichten.</p>
+                <div className="max-h-36 space-y-1 overflow-y-auto">
+                  {assignableSites.map(site => (
+                    <label key={site.id} className="flex items-center gap-2 text-xs text-slate-300">
+                      <input aria-label={`Standort ${site.name}`} type="checkbox" checked={assignedSiteIds.includes(site.id)} onChange={event => setAssignedSiteIds(current => event.target.checked ? [...current, site.id] : current.filter(id => id !== site.id))} />
+                      <span>{site.name} · {site.siteCode}</span>
+                    </label>
+                  ))}
+                  {assignableSites.length === 0 && <p className="text-xs text-slate-500">Keine Standorte im Mandanten verfügbar.</p>}
+                </div>
+              </fieldset>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setModal(false)} className="px-3 py-2 bg-slate-800 rounded-lg text-slate-300">Abbrechen</button>
+              <button disabled={isSaving} className="px-4 py-2 bg-blue-600 rounded-lg text-white">Speichern</button>
+            </div>
+          </fieldset>
+          {saveError && <p role="alert" className="text-rose-300">{saveError}</p>}
+        </form>
+      </div>
+    )}
   </div>;
 };

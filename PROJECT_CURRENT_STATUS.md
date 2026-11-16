@@ -8,18 +8,19 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
-**Fully hosted-verified code revision:** `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
+**Fully hosted-verified code revision:** `3110bbbda1655e804cba35c89ccbda5174e84444`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
-Its exact [CI 43929519192](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43929519192)
-passed **7/7 jobs**; downloaded logs confirm frontend **206/206**, backend
-**546/546 in 35 suites**, real browser **6/6** and owned-container cleanup.
+Its exact [CI 43932552825](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43932552825)
+passed **7/7 jobs**; downloaded logs confirm frontend **212/212**, backend
+**546/546 in 35 suites**, real browser **7/7** and owned-container cleanup.
 This includes confirmed form writes, report grant/date/identity fixes, durable
 critical-incident follow-ups, truthful audit displays and delayed local-write
-identity isolation. Earlier code `5ef02b3ab0b9f711025405247e711f21d3ee9811`
-also passed exact CI 43928436875, 7/7.
+identity isolation, plus FNL-013 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
+and `5ef02b3ab0b9f711025405247e711f21d3ee9811` passed their own
+CI 43929519192 and 43928436875, 7/7 each.
 
-**Subsequent FNL-013 worktree — locally IMPLEMENTIERT UND GETESTET:** Genuine
+**Published FNL-013 — IMPLEMENTIERT UND GETESTET:** Genuine
 read-only API console (`/auth/me`, `/customers`, `/logbook`), actual response/error
 display and identity-bound results replace fabricated API/Python/isolation checks.
 Acceptance is a read-only checklist, not a local role-switch or fake release.
@@ -32,8 +33,20 @@ The new case compares UI JSON with actual GET data, checks the exact authorized
 seed customer and a SOP-only reader's real HTTP 403, with no mutation request.
 Two initial test assumptions were corrected: the actual singular/counted log-tab
 name and the customer list's public response shape (no `tenant_id` field).
-No product permission was weakened and no assertion removed. Hosted verification
-of these newer changes is separate from the preceding revision's CI.
+No product permission was weakened and no assertion removed. Exact hosted
+verification is the 3110bbb revision above, not inferred from its predecessor.
+
+**Subsequent FNL-014 worktree — locally IMPLEMENTIERT UND GETESTET:** Six customer,
+site and employee create/update methods now return explicit confirmation only
+after API success or durable offline storage. Failures retain drafts; pending
+submits are blocked and completions/errors remain identity-bound. Site creation
+uses the actually displayed hydrated customer; editing never silently substitutes
+another customer when the original is unavailable.
+Seventeen assertions failed before correction. Focused 74/74 passed, followed by
+full frontend **242/242 in 35 files** including twelve additional offline
+durability/failure cases. Typecheck/build, real browser **7/7** and owned-container
+cleanup passed. This is not complete resource-browser acceptance. Newer hosted
+verification remains separate from the 3110bbb CI.
 
 **Historical rejected-attachment extension (`3617576`) — IMPLEMENTIERT UND GETESTET:** The complete real
 browser suite passed **5/5** locally and in the hosted root job of
@@ -159,18 +172,18 @@ This is the current evidence index. Phase reports and dated status sections rema
 | Mainline CI | **IMPLEMENTIERT UND GETESTET** | Post-merge [CI run 43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed **7/7 jobs** on the exact current-main SHA. |
 | Release package validation | **TEILWEISE IMPLEMENTIERT** | Artifact run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2 on current `main`; packaging/provenance/install validation is not a deployment or production release. |
 | Documentation PR validation | **IMPLEMENTIERT UND GETESTET** | PR #62 (head `6c8a52c`, hosted [CI run 43761213396](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43761213396) 7/7) is merged as `9df02aa`. |
-| Published Phase 11 CI | **IMPLEMENTIERT UND GETESTET** | Photo code `31e63726d8b377abafe564da349c3aa622468291` passed 7/7 in 43916713656, including all 4 real browser journeys. Cleanup `3aeebc0` and fixture/ownership `4524f12` each previously passed 7/7. Failed 5/7 and 6/7 runs remain recorded; later documentation-only commits are outside this code ID. |
+| Published finalization CI | **IMPLEMENTIERT UND GETESTET** | Exact `3110bbbda1655e804cba35c89ccbda5174e84444` passed CI 43932552825, 7/7: frontend 212, backend 546 and seven real browser cases with cleanup. FNL-014 is separately locally verified, not covered by this earlier run. |
 | Reporting UI | **IMPLEMENTIERT UND GETESTET** | PR #66's frontend uses approved actual hours, calendar ranges, and safe CSV export; its frontend checks passed for the identified revision. |
 | Report site-scope correction | **IMPLEMENTIERT UND GETESTET** | All four report handlers and work-hours CSV use authenticated site grants. Local scope-helper/integration tests and the hosted backend job on `6ead55c` passed. Production acceptance and the full role/object matrix remain outstanding. |
 | Prior backend validation | **IMPLEMENTIERT UND GETESTET** | On an earlier PR revision, migration and seed ran against isolated PostgreSQL 16; backend build and 34 Jest suites / 315 tests passed. These results do not cover the current report-scope change. |
 | Phase 11 backend and migrations | **IMPLEMENTIERT UND GETESTET** | Latest full local backend suite: 35/35 suites, 546/546 tests, no open-handle warning. API/sync integration budget is explicitly 30 s, Patrol 60 s; no assertions removed and no application/PostgreSQL defaults changed. Earlier 5-s/30-s timeout runs are documented above, not reclassified as passing. A real 041→042 upgrade preserves earlier checksums, rejects GuardBook DELETE/core-field UPDATE and becomes a no-op on rerun. Published 001/004 remain unchanged; text correction is additive in 042. |
 | Authenticated report authorization | **IMPLEMENTIERT UND GETESTET** | Extended boundary suite: 16/16, with two tenants/three sites, report-only and site grants, absent/removed permissions, CSV, exact aggregates, forged tenant hints and direct shift IDs. Existing sessions immediately lose removed report grants. No new runtime authorization defect found; other endpoint/object combinations remain open. |
-| Phase 11 frontend and browser | **IMPLEMENTIERT UND GETESTET** | Local frontend 29 files/184 tests with two workers and unchanged default 5-s budgets; typecheck/build passed, and hosted frontend job passed on the photo code SHA. Separate fixture 1/1; real suite 4/4 locally and hosted covers session/replay/logout/identity/SOP and a synthetic photo through private S3/ClamAV. Exact photo assertions and unchanged case budgets are stated above. No physical-device/provider, representative-file or complete identity-matrix acceptance is inferred. |
+| Finalization frontend and browser | **IMPLEMENTIERT UND GETESTET** | Local frontend 35 files/242 tests with two workers and unchanged standard budgets; typecheck/build and real suite 7/7 passed after resource-form fixes. Exact hosted 3110bbb has frontend 212 and browser 7; separate fixture remains distinct. No physical-device/provider, representative-file or complete identity-matrix acceptance is inferred. |
 | API authentication boundary | **IMPLEMENTIERT UND GETESTET** | All 215 currently registered protected method/path pairs return 401 without a session in the local backend suite. Health, login and password-reset completion are explicit public exceptions. Full per-role/site/object matrix remains open. |
-| Module/architecture inventory | **IMPLEMENTIERT** | [13-module evidence matrix](./MODULE_IMPLEMENTATION_STATUS.md) identifies active UI/API/database/test paths and remaining limits. npm and production Docker use Node/TypeScript; historical Python/Alembic files were not validated by these runs. Not a complete product acceptance. |
+| Module/architecture inventory | **IMPLEMENTIERT** | [Module evidence matrix](./MODULE_IMPLEMENTATION_STATUS.md) identifies active UI/API/database/test paths, local-only automation/audit/acceptance views and remaining limits. npm and production Docker use Node/TypeScript; historical Python/Alembic files were not validated by these runs. Not a complete product acceptance. |
 | Test-only Linux install | **IMPLEMENTIERT UND GETESTET** | PR #56 merged. The tar/deb installer and lifecycle guidance target isolated testing; they are not production installers. |
 | Backup/restore | **TEILWEISE IMPLEMENTIERT** | Full local PostgreSQL/MinIO drill through 042 passed again after matching backup UID/GID to the invoking restore user; archive ownership, readability and private mode 0600 are asserted. Mid-DDL rollback, stopped services on restore/resume failure and backup-health failure/recovery remain covered. Previous hosted Linux archive-access failure and correction CI are tracked above. Health is not an integrity/restore check or external alert; real-provider restore and measured RPO/RTO remain open. |
-| Offline and SOP workflows | **TEILWEISE IMPLEMENTIERT** | Ownerless-attachment disclosure UI is removed; legacy attachments stay local without a secure recovery flow. Real suite including synthetic photo/S3/ClamAV passes 4/4 locally and hosted; separate fixture 1/1. This is not complete photo/file/identity-matrix or physical-device acceptance. |
+| Offline and SOP workflows | **TEILWEISE IMPLEMENTIERT** | Ownerless-attachment disclosure UI is removed; legacy attachments stay local without authorized recovery. Seven real journeys cover critical incident/task, private photo, genuine file rejection, identity/SOP and read-only API data/denial; separate fixture remains distinct. Not a complete file/identity/device matrix. |
 | Security and tenancy | **TEILWEISE IMPLEMENTIERT** | Bounded static reviews of authentication/session/web-security and tenant/RLS/report-scope paths found no confirmed bypass. Report and authorization negative tests passed on isolated PostgreSQL. Full route/migration/deployed-policy coverage, penetration testing, and production acceptance are not established. |
 | Performance | **TEILWEISE IMPLEMENTIERT** | PR #53 adds a bounded local baseline; its workload does not establish production capacity, an SLA, or resource headroom. |
 | Production/provider/device acceptance | **OFFEN** | No evidence establishes production deployment, real-provider behavior, customer acceptance, or physical-device acceptance. |

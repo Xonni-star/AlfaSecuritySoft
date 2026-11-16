@@ -112,6 +112,27 @@ counted log-tab name and the customer response shape: it deliberately omits
 customer `c1111111-1111-1111-1111-111111111111`, not a weaker empty-list check.
 Log: `finalization-genuine-console-browser-final.log`.
 
+FNL-013 is published as `3110bbbda1655e804cba35c89ccbda5174e84444`.
+Exact [CI 43932552825](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43932552825)
+passed 7/7; downloaded logs confirm frontend 212/212, backend 546/546 in 35 suites,
+real browser 7/7 and cleanup. Log: `finalization-genuine-console-hosted-ci.log`.
+
+The next convergence pass found FNL-014: customer creation did not await its
+request, and customer/site/employee store methods swallowed failures while all
+three forms closed drafts. Seventeen assertions reproduced the failures.
+Six create/update methods now return explicit actual-API/durable-offline results,
+isolate old-identity responses and preserve failed input. Pending forms reject
+duplicates; identity changes clear private drafts and old completions cannot
+close a new identity's form. Site creation uses the displayed hydrated customer;
+editing an unavailable customer requires a new explicit choice, never silently
+substitutes the first one.
+Focused 74/74 passed, then full frontend **242/242 in 35 files**, typecheck/build
+and real browser **7/7** with cleanup. Twelve additional offline cases verify
+that confirmation waits for storage and errors never change resource/queue state.
+Logs: `finalization-resource-forms-red.log`,
+`finalization-resource-forms-browser.log`.
+This subsequent package still needs publication and exact-head CI.
+
 Required `FINAL_SECURITY_AUDIT.md`, `PRODUCTION_READINESS_REPORT.md` and
 `PRODUCTION_RELEASE_CHECKLIST.md` now exist and explicitly preserve open
 internal/external boundaries. README/current status, module matrix, changelog,
@@ -121,7 +142,7 @@ in development, not approved for production. Do not repeat this already done wor
 
 ## Remaining work
 
-1. Publish the coherent FNL-013/documentation package and verify all hosted jobs
+1. Publish the coherent FNL-014/documentation package and verify all hosted jobs
    on the exact new full SHA; inspect actual logs before updating evidence.
    The preceding 7/7 does not validate these newer changes.
 2. Repeat a bounded convergence audit for new concrete functional defects,

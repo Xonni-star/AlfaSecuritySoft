@@ -700,15 +700,15 @@ interface SecurityOpsStore {
   getTenantNotificationDeliveries: () => NotificationDelivery[];
 
   // Actions
-  addClient: (client: Omit<Client, 'id' | 'tenantId'>) => Promise<void>;
-  updateClient: (id: string, updates: Partial<Client>) => Promise<void>;
+  addClient: (client: Omit<Client, 'id' | 'tenantId'>) => Promise<boolean>;
+  updateClient: (id: string, updates: Partial<Client>) => Promise<boolean>;
   archiveClient: (id: string) => Promise<void>;
-  addSite: (site: Omit<Site, 'id' | 'tenantId'>) => Promise<void>;
-  updateSite: (id: string, updates: Partial<Site>) => Promise<void>;
+  addSite: (site: Omit<Site, 'id' | 'tenantId'>) => Promise<boolean>;
+  updateSite: (id: string, updates: Partial<Site>) => Promise<boolean>;
   archiveSite: (id: string) => Promise<void>;
   restoreSite: (id: string) => Promise<void>;
-  addEmployee: (emp: Omit<Employee, 'id' | 'tenantId'>) => Promise<void>;
-  updateEmployee: (id: string, updates: Partial<Employee>) => Promise<void>;
+  addEmployee: (emp: Omit<Employee, 'id' | 'tenantId'>) => Promise<boolean>;
+  updateEmployee: (id: string, updates: Partial<Employee>) => Promise<boolean>;
   archiveEmployee: (id: string) => Promise<void>;
   restoreEmployee: (id: string) => Promise<void>;
   addQualification: (employeeId: string, qualification: Omit<Qualification, 'id'>) => Promise<void>;
@@ -2276,16 +2276,16 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
 
   addClient: async (c) => {
-    const { currentTenantId } = get();
-
-    if (!get().isOnline) {
-      const id = crypto.randomUUID();
-      await get().enqueueOfflineAction({ tenantId: currentTenantId, entityType: 'client' as any, action: 'CREATE', payload: { id, ...c }, baseVersion: 1 });
-      set((state) => ({ clients: [mapClientRow({ id, ...c, revision_version: 1 }, currentTenantId), ...state.clients] }));
-      return;
-    }
-
+    const { tenantId: currentTenantId, userId } = currentSOPIdentity(get());
     try {
+      if (!get().isOnline) {
+        const id = newMutationEntityId();
+        await get().enqueueOfflineAction({ tenantId: currentTenantId, entityType: 'client', action: 'CREATE', payload: { ...c, id }, baseVersion: 1 });
+        if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
+        set((state) => ({ clients: [mapClientRow({ ...c, id, revision_version: 1 }, currentTenantId), ...state.clients] }));
+        get().addNotification('Kunde vorgemerkt', `${c.companyName} wird bei Verbindung synchronisiert.`, 'info');
+        return true;
+      }
       const created = await apiClient.post<any>('/customers', {
         clientNumber: c.clientNumber,
         companyName: c.companyName,
@@ -2299,6 +2299,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         noticePeriodMonths: c.noticePeriodMonths,
         slaLevel: c.slaLevel
       });
+      if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
 
       const newClient = mapClientRow(
         {
@@ -2325,27 +2326,41 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         `${c.companyName} wurde in PostgreSQL gespeichert.`,
         'info'
       );
+      return true;
     } catch (error: any) {
+      if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
       get().addNotification(
         'Kunde nicht gespeichert',
         error?.message || 'Die API-Anfrage ist fehlgeschlagen. Es wurde nichts gespeichert.',
         'alert'
       );
+      return false;
     }
   },
 
   updateClient: async (id, updates) => {
-    const client = get().clients.find((c) => c.id === id);
-    if (!client) return;
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const client = get().clients.find((c) => c.id === id && c.tenantId === tenantId);
+    if (!client) {
+      get().addNotification('Kunde nicht gespeichert', 'Der Kunde ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
     const revisionVersion = client.revisionVersion || 1;
     try {
-      if (!get().isOnline) throw new Error('offline');
-      const saved = await apiClient.patch<any>(`/customers/${id}`, { ...updates, revisionVersion });
-      set((s) => ({ clients: s.clients.map((c) => c.id === id ? mapClientRow(saved, c.tenantId) : c) }));
+      if (!get().isOnline) {
+        await get().enqueueOfflineAction({ tenantId, entityType: 'client', action: 'UPDATE', payload: { id, ...updates }, baseVersion: revisionVersion });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        set((s) => ({ clients: s.clients.map((c) => c.id === id ? { ...c, ...updates } : c) }));
+      } else {
+        const saved = await apiClient.patch<any>(`/customers/${id}`, { ...updates, revisionVersion });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        set((s) => ({ clients: s.clients.map((c) => c.id === id ? mapClientRow(saved, c.tenantId) : c) }));
+      }
+      return true;
     } catch (error: any) {
-      if (get().isOnline) { get().addNotification('Kunde nicht gespeichert', error?.message || 'Änderung fehlgeschlagen.', 'alert'); return; }
-      await get().enqueueOfflineAction({ tenantId: client.tenantId, entityType: 'client' as any, action: 'UPDATE', payload: { id, ...updates }, baseVersion: revisionVersion });
-      set((s) => ({ clients: s.clients.map((c) => c.id === id ? { ...c, ...updates } : c) }));
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification('Kunde nicht gespeichert', error?.message || 'Änderung fehlgeschlagen.', 'alert');
+      return false;
     }
   },
 
@@ -2365,7 +2380,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
 
   addSite: async (s) => {
-    const { currentTenantId } = get();
+    const { tenantId: currentTenantId, userId } = currentSOPIdentity(get());
 
     try {
       const payload = {
@@ -2380,12 +2395,14 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         accessRules: s.accessRules
       };
       if (!get().isOnline) {
-        const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `site-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const id = newMutationEntityId();
         await get().enqueueOfflineAction({ tenantId: currentTenantId, entityType: 'site', action: 'CREATE', payload: { id, ...payload }, baseVersion: 1 });
+        if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
         set(state => ({ sites: [mapSiteRow({ id, ...payload, client_name: s.clientName }, currentTenantId), ...state.sites] }));
-        get().addNotification('Objekt vorgemerkt', `${s.name} wird bei Verbindung synchronisiert.`, 'info'); return;
+        get().addNotification('Objekt vorgemerkt', `${s.name} wird bei Verbindung synchronisiert.`, 'info'); return true;
       }
       const created = await apiClient.post<any>('/sites', payload);
+      if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
 
       const newSite = mapSiteRow(
         {
@@ -2405,29 +2422,44 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
 
       set((state) => ({ sites: [newSite, ...state.sites] }));
       get().addNotification('Objekt gespeichert', `${s.name} wurde in PostgreSQL gespeichert.`, 'info');
+      return true;
     } catch (error: any) {
+      if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
       get().addNotification(
         'Objekt nicht gespeichert',
         error?.message || 'Die API-Anfrage ist fehlgeschlagen. Es wurde nichts gespeichert.',
         'alert'
       );
+      return false;
     }
   },
 
   updateSite: async (id, updates) => {
-    const site = get().sites.find(s => s.id === id); if (!site) return;
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const site = get().sites.find(s => s.id === id && s.tenantId === tenantId);
+    if (!site) {
+      get().addNotification('Objekt nicht gespeichert', 'Das Objekt ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
     const revisionVersion = site.revisionVersion || 1;
     const changes = { clientId: updates.clientId ?? site.clientId, siteCode: updates.siteCode ?? site.siteCode, name: updates.name ?? site.name, address: updates.address ?? site.address, securityLevel: updates.securityLevel ?? site.securityLevel };
     try {
-      if (!get().isOnline) throw new Error('offline');
-      const result = await apiClient.patch<any>(`/sites/${id}`, { ...changes, revisionVersion });
-      const updated = mapSiteRow({ ...result, client_name: get().clients.find(c=>c.id===changes.clientId)?.companyName, ...changes, revision_version: result.revision_version }, site.tenantId);
-      set(state => ({ sites: state.sites.map(s => s.id === id ? updated : s) }));
-      get().addNotification('Objekt aktualisiert', `${site.name} wurde gespeichert.`, 'info');
+      if (!get().isOnline) {
+        await get().enqueueOfflineAction({ tenantId, entityType: 'site', action: 'UPDATE', payload: { id, ...changes }, baseVersion: revisionVersion });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        set(state => ({ sites: state.sites.map(s => s.id === id ? { ...s, ...changes, revisionVersion: revisionVersion + 1 } : s) }));
+      } else {
+        const result = await apiClient.patch<any>(`/sites/${id}`, { ...changes, revisionVersion });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        const updated = mapSiteRow({ ...result, client_name: get().clients.find(c=>c.id===changes.clientId)?.companyName, ...changes, revision_version: result.revision_version }, site.tenantId);
+        set(state => ({ sites: state.sites.map(s => s.id === id ? updated : s) }));
+        get().addNotification('Objekt aktualisiert', `${site.name} wurde gespeichert.`, 'info');
+      }
+      return true;
     } catch (error: any) {
-      if (get().isOnline) { get().addNotification(error?.status === 409 ? 'Versionskonflikt' : 'Objekt nicht gespeichert', error?.message || 'Änderung fehlgeschlagen.', 'alert'); return; }
-      await get().enqueueOfflineAction({ tenantId: site.tenantId, entityType: 'site', action: 'UPDATE', payload: { id, ...changes }, baseVersion: revisionVersion });
-      set(state => ({ sites: state.sites.map(s => s.id === id ? { ...s, ...changes, revisionVersion: revisionVersion + 1 } : s) }));
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification(error?.status === 409 ? 'Versionskonflikt' : 'Objekt nicht gespeichert', error?.message || 'Änderung fehlgeschlagen.', 'alert');
+      return false;
     }
   },
 
@@ -2458,7 +2490,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
 
   addEmployee: async (e) => {
-    const { currentTenantId } = get();
+    const { tenantId: currentTenantId, userId } = currentSOPIdentity(get());
 
     try {
       const id = newMutationEntityId();
@@ -2477,11 +2509,17 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       };
       if (!get().isOnline) {
         await get().enqueueOfflineAction({ tenantId: currentTenantId, entityType: 'employee', action: 'CREATE', payload: { id, ...payload }, baseVersion: 1 });
+        if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
         set(state => ({ employees: [{ ...e, id, tenantId: currentTenantId, revisionVersion: 1, archivedAt: null, synced: false }, ...state.employees] }));
-        for (const q of e.qualifications || []) await get().addQualification(id, q);
-        get().addNotification('Mitarbeiter vorgemerkt', `${e.firstName} ${e.lastName} wird nach der Verbindung synchronisiert.`, 'info'); return;
+        for (const q of e.qualifications || []) {
+          if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
+          await get().addQualification(id, q);
+        }
+        if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
+        get().addNotification('Mitarbeiter vorgemerkt', `${e.firstName} ${e.lastName} wird nach der Verbindung synchronisiert.`, 'info'); return true;
       }
       const created = await apiClient.post<any>('/employees', payload);
+      if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
 
       const newEmp = mapEmployeeRow(
         {
@@ -2501,23 +2539,35 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       );
 
       set((state) => ({ employees: [newEmp, ...state.employees] }));
-      for (const q of e.qualifications || []) await get().addQualification(newEmp.id, q);
+      for (const q of e.qualifications || []) {
+        if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
+        await get().addQualification(newEmp.id, q);
+      }
+      if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
       get().addNotification(
         'Mitarbeiter gespeichert',
         `${e.firstName} ${e.lastName} wurde in PostgreSQL gespeichert.`,
         'info'
       );
+      return true;
     } catch (error: any) {
+      if (!isCurrentSOPIdentity(currentTenantId, userId)) return false;
       get().addNotification(
         'Mitarbeiter nicht gespeichert',
         error?.message || 'Die API-Anfrage ist fehlgeschlagen. Es wurde nichts gespeichert.',
         'alert'
       );
+      return false;
     }
   },
 
   updateEmployee: async (id, updates) => {
-    const employee = get().employees.find(e => e.id === id); if (!employee) return;
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const employee = get().employees.find(e => e.id === id && e.tenantId === tenantId);
+    if (!employee) {
+      get().addNotification('Mitarbeiter nicht aktualisiert', 'Der Mitarbeiter ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
     const payload: Record<string, unknown> = {};
     const allowed: Array<keyof Employee> = [
       'personnelNumber',
@@ -2542,24 +2592,29 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
 
     const revisionVersion = employee.revisionVersion || 1;
     try {
-      if (!get().isOnline) throw new Error('offline');
-      const updated = await apiClient.patch<any>(`/employees/${id}`, { ...payload, revisionVersion });
-      set((state) => ({
-        employees: state.employees.map((emp) =>
-          emp.id === id ? { ...emp, ...updates, revisionVersion: updated.revision_version, synced: true } : emp
-        )
-      }));
-      get().addNotification('Mitarbeiter aktualisiert', 'Die Änderung wurde in PostgreSQL gespeichert.', 'info');
-    } catch (error: any) {
       if (!get().isOnline) {
         await get().enqueueOfflineAction({ tenantId: employee.tenantId, entityType: 'employee', action: 'UPDATE', payload: { id, ...payload }, baseVersion: revisionVersion });
-        set(state => ({ employees: state.employees.map(emp => emp.id === id ? { ...emp, ...updates, revisionVersion: revisionVersion + 1, synced: false } : emp) })); return;
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        set(state => ({ employees: state.employees.map(emp => emp.id === id ? { ...emp, ...updates, revisionVersion: revisionVersion + 1, synced: false } : emp) }));
+      } else {
+        const updated = await apiClient.patch<any>(`/employees/${id}`, { ...payload, revisionVersion });
+        if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+        set((state) => ({
+          employees: state.employees.map((emp) =>
+            emp.id === id ? { ...emp, ...updates, revisionVersion: updated.revision_version, synced: true } : emp
+          )
+        }));
+        get().addNotification('Mitarbeiter aktualisiert', 'Die Änderung wurde in PostgreSQL gespeichert.', 'info');
       }
+      return true;
+    } catch (error: any) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
       get().addNotification(
         error?.status === 409 ? 'Versionskonflikt beim Mitarbeiter' : 'Mitarbeiter nicht aktualisiert',
         error?.message || 'Die API-Anfrage ist fehlgeschlagen. Es wurde nichts gespeichert.',
         'alert'
       );
+      return false;
     }
   },
 

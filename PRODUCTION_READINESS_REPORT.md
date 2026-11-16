@@ -30,7 +30,12 @@ Der nachfolgende veröffentlichte Code
 7/7; Logs: Frontend 206/206, Backend 546/546, Browser 6/6 mit Cleanup.
 Nachfolgendes FNL-013 bestand lokal Frontend 212/212 in 34 Dateien,
 Typprüfung, beide Builds, Root-/Compose-Prüfung und Browser 7/7.
-Spätere Hosted-Ergebnisse sind getrennt im
+Sein veröffentlichter Code `3110bbbda1655e804cba35c89ccbda5174e84444` bestand
+[CI 43932552825](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43932552825),
+7/7; Logs: Frontend 212, Backend 546, Browser 7 mit Cleanup.
+Nachfolgendes FNL-014 korrigiert Bestätigungs-/Identitätsgrenzen der Kunden-/
+Objekt-/Mitarbeiterformulare; lokal Frontend 242/242, Typprüfung/Build und
+Browser 7/7. Spätere Hosted-Ergebnisse sind getrennt im
 [Projektstatus](./PROJECT_CURRENT_STATUS.md) zu prüfen.
 
 ## Verbindliche offene Gates

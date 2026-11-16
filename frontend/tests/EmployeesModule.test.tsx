@@ -45,6 +45,8 @@ describe('EmployeesModule site assignments', () => {
     mocks.state.sites = sites;
     mocks.state.addEmployee = mocks.addEmployee;
     mocks.state.updateEmployee = mocks.updateEmployee;
+    mocks.addEmployee.mockResolvedValue(true);
+    mocks.updateEmployee.mockResolvedValue(true);
   });
 
   afterEach(async () => {

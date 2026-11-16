@@ -32,6 +32,7 @@
 
 ### Fehlerkorrekturen
 
+- Kunden-/Objekt-/Mitarbeiterformulare warten auf expliziten API-Erfolg oder dauerhafte Offline-Vormerkung; Fehler erhalten Entwürfe, Pendingzustand blockiert Mehrfachsubmit und alte Identitätsantworten verändern keine neue UI. Sechs Storemethoden melden tatsächlichen Erfolg/Fehlschlag; Storagefehler werden nicht bestätigt und echte Onlinefehler nicht nachträglich als Offlineerfolg umgedeutet. Site-Kundenauswahl bleibt nach Hydration konsistent und ersetzt bei Bearbeitung keinen nicht verfügbaren Kunden. Lokal Frontend 242/242 und echte Browser 7/7; neue Hosted-Evidenz separat.
 - Schlüssel-/Aufgabenformulare behalten unbestätigte Daten, zeigen Pending-/Fehlerzustände und ignorieren verspätete Antworten fremder Identitäten; keine erfundene Standardperson oder veraltete Schlüsselrückgabezeit.
 - Arbeitszeitberichte beachten Tenant-/Site-Grants und binden Ergebnisse an Identität, Scope und Zeitraum; lokale Kalendertage bleiben unabhängig vom positiven UTC-Offset gültig.
 - Native Ist-Zeitmuster akzeptieren gültige ISO-Zeitpunkte und lehnen fehlerhafte Eingaben tatsächlich ab; Komponentenregression und echter Chromium-Patterncheck.

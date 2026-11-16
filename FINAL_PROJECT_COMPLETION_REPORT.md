@@ -26,11 +26,22 @@ Engine ersetzen erfundene API-/Python-/RLS-/Abnahmeerfolge. Lokal bestehen
 212/212 Frontendtests in 34 Dateien, Typprüfung, beide Builds, Root-/Compose-Prüfung
 und 7/7 echte Browserjourneys. Der neue Fall vergleicht tatsächliche API-/UI-Daten,
 exakt erlaubte Kunden-ID und echte Reader-403 ohne Mutationsanforderung.
-Neue Hosted-Prüfung und abschließender Konvergenzaudit stehen separat aus.
+Veröffentlichter Code `3110bbbda1655e804cba35c89ccbda5174e84444` bestand exakte
+CI 43932552825, 7/7; heruntergeladene Logs bestätigen Frontend 212,
+Backend 546 und sieben echte Browserfälle mit Cleanup.
 README, Status, Modulmatrix, Contributor-Anleitung und erforderliche Ergebnis-/
 Readiness-/Releaseunterlagen sind auf diese getrennten Nachweise abgeglichen.
 Die GitHub-Beschreibung nennt jetzt den tatsächlichen React-/Express-/
 PostgreSQL-Pfad und ausdrücklich keine Produktionsfreigabe.
+
+Die nächste Auditkorrektur FNL-014 behebt vorzeitig geschlossene Kunden-/
+Objekt-/Mitarbeiterentwürfe und verspätete Kontextantworten: sechs Storemethoden
+bestätigen nur tatsächlichen API-Erfolg oder abgeschlossene lokale Speicherung.
+Fehler erhalten Eingaben; Pendingzustand verhindert doppelte Übertragung.
+Siebzehn Assertions waren vorher rot. Nach Korrektur: fokussiert 74/74,
+anschließend vollständig 242/242 in 35 Dateien einschließlich zusätzlicher
+Offline-Dauerhaftigkeits-/Fehlerfälle, Typprüfung/Build und Browser 7/7.
+Neue exakte Hosted-Prüfung steht für diese Nachfolgeänderung separat aus.
 
 Noch interne Arbeit: vollständige Rollen-/Objektmatrix und offene Teilmodule
 abnehmen; erforderliche Prüfung vor autorisierter PR-Integration abschließen.
