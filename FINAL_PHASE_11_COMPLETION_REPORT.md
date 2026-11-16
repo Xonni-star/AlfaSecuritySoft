@@ -8,21 +8,28 @@ Projektabschluss und keine Produktions-, Sicherheits- oder Rechtsfreigabe.
 
 - `main` wurde erneut über GitHub geprüft:
   `9df02aaa5ef01de78e0fe5d53be446b2037db24d`.
-- PR #66 ist weiterhin der einzige offene PR, Remote-Head
-  `785e9eabc9e6ab5f1ce4e726fdff2cbfa49367e4`. Seine
-  [CI 43843645961](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43843645961)
-  bestand 7/7 Jobs, enthält aber **keine** der nachfolgenden lokalen Commits.
+- PR #66 ist weiterhin der einzige offene PR. Veröffentlichte Code-Revision:
+  `4524f121420dd66829feafe7b7aed07aece7a338`; nachfolgende reine
+  Dokumentationscommits sind in dieser Code-ID nicht enthalten.
+- [CI 43906594339](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43906594339)
+  auf `6ead55c73885b1b5779501c50c55c08ee01c6184` bestand **5/7**:
+  Backend, Root samt echten Browserjourneys, DMS, ClamAV und Produktions-Docker.
+  Offline-Fixture und Linux-Restore scheiterten; dieser Lauf bleibt fehlgeschlagen.
+- Die korrigierte Revision `4524f12` wird in
+  [CI 43908926864](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43908926864)
+  mit **7/7 erfolgreichen Jobs** bestätigt, einschließlich Linux-Restore und
+  der getrennten Fixture-/echten Browser-Suiten. Dies ist keine Produktionsabnahme.
 - Die Arbeit bleibt auf dem vorhandenen isolierten Branch
   `xonni-star-phase9-docs-and-status-cleanup`. Ein zusätzlicher Phase-11-Branch
   wurde nicht angelegt; dies wird nicht als erledigt dargestellt.
-- Keine Pushes, Merges, Tags oder Deployments wurden durchgeführt.
+- Die Code-Commits wurden normal gepusht; keine Merges, Tags oder Deployments.
 
 ## Umgesetzte und lokal geprüfte Pakete
 
 | Commit | Änderung und abgegrenzter Nachweis |
 |---|---|
 | `ef6a2c6` | Veröffentlichte Migrationen 001/004 wieder bytegleich zum veröffentlichten PR-Stand; Textänderung additiv in 042. Echter Upgrade-Test 041→042 erhält Checksums/History, schützt Wachbucheinträge und wird beim zweiten Lauf zum No-op. 215 geschützte API-Method/Pfad-Paare ohne Sitzung geprüft. Patrol-Testpools geschlossen. Mid-DDL-Restorefehler und Rollback nachgewiesen. |
-| `55384e6` | Vorhandenen Chromium-Offline-Fixture-Test in Frontend-CI konfiguriert; Fehler-Screenshots und Traces. Lokal bestanden, gehostete Ausführung offen. |
+| `55384e6` | Vorhandenen Chromium-Offline-Fixture-Test in Frontend-CI konfiguriert; Fehler-Screenshots und Traces. Spätere gehostete Fixture-Regression und Korrektur siehe `4524f12`; Konfiguration allein war kein Ausführungsnachweis. |
 | `f38499a` | 13-Modul-Evidenzmatrix, aktive Node-/Docker-Laufzeit und nicht mitvalidierten historischen Python-Pfad abgegrenzt; veraltete Backend-Architekturaussagen korrigiert. |
 | `b3889b6` | Verschlüsseltes Backup wird zunächst partiell geschrieben und erst bei Erfolg veröffentlicht; private Dateirechte. Frische-/Fehler-Healthcheck im Backupdienst, einschließlich Fehler und erfolgreichem Folgelauf im echten isolierten Restore-Drill. |
 | `840c5bd` | Echter Chromium-/Express-/PostgreSQL-Test mit Cookie-/CSRF-Anmeldung, Offline-Erfassung, Offline-Reload, erneuter Anmeldung und bewusst verlorener erster Quittung. Gleiche Mutation-/Server-ID und ein persistierter Eintrag beim Retry. Dabei reproduzierte leere Standort-/Mitarbeiter-IDs im Wachbuchformular behoben und regressionsgetestet. |
@@ -32,10 +39,12 @@ Projektabschluss und keine Produktions-, Sicherheits- oder Rechtsfreigabe.
 | `67a1185` | Echte SOP-Browserjourney mit vier Konten, Veröffentlichung und expliziter Offlinekenntnisnahme, Offline-Reload sowie identischem Retry nach verlorener echter Serverantwort. Nullable Formularwerte und fehlende Versions-UUIDs korrigiert; ersetzte Wachbuchreferenzen bleiben konsistent. Frontend 179/179, reale Browsersuite 3/3, Typcheck und Backendbuild bestanden. |
 | `18aca69` | Berechtigungsgerechtes Laden mit erhaltenen Tenant-/Site-/Own-Grants und sichtbaren echten API-Fehlern. Navbar zeigt tatsächliche Sitzungsrolle. Frontend 184/184, Store/Navbar 51/51 und reale Browsersuite 3/3 einschließlich null unberechtigter Basis-GETs des SOP-Mitarbeiters bestanden. |
 | Aktueller Backendabschluss | Vollständige 35 Suites / 546 Tests bestanden auf frischem Standard-PostgreSQL 16 mit expliziten API-/Sync-Integrationsbudgets 30 s und Patrol 60 s. Keine Assertions entfernt oder Anwendungs-/DB-Konfiguration geändert; frühere Fehlläufe bleiben dokumentiert. Keine Performancefreigabe. |
+| `4524f12` | Behebt die beiden gehosteten Testregressionen: Offline-Fixture erhält explizite Standort-/Mitarbeiter-Leserechte und prüft geladene IDs; isolierter Backup-Container läuft mit UID/GID des Restore-Benutzers. Besitzer, Lesbarkeit und unveränderte private `0600`-Rechte werden geprüft. Fixture 1/1 und vollständiger PostgreSQL-/MinIO-Drill einschließlich Fehlerpfaden/Cleanup erneut lokal bestanden. Keine produktiven Rechte oder Testbudgets aufgeweicht. |
 
 Die Phase-11-Tabelle im Tracker enthält **22 abgegrenzte Pakete**:
-**18 lokal erledigt**, **1 in Arbeit** (gehostete Browser-CI) und
-**3 extern zu prüfen**. Diese Zahlen sind keine Fertigstellungsquote des Produkts.
+**19 im jeweils beschriebenen Umfang erledigt** und **3 extern zu prüfen**.
+Das frühere gehostete Browser-CI-Gate ist auf `4524f12` bestanden.
+Diese Zahlen sind keine Fertigstellungsquote des Produkts.
 Die ältere breite Audit-/Anforderungsmatrix enthält weiterhin offene Arbeit.
 
 ## Tatsächliche Verifikation
@@ -55,7 +64,8 @@ Die ältere breite Audit-/Anforderungsmatrix enthält weiterhin offene Arbeit.
 | Backup-Health-Negativfälle | Bestanden | Fehlend, partiell, leer, veraltet, letzter Fehler und erfolgreicher Folgelauf |
 | Restorefehler und Teilstart | Bestanden | Mid-DDL-Rollback erhält abweichenden Vorzustand; Dienste bleiben gestoppt |
 | Ressourcenbereinigung | Bestanden | Restore-Projektressourcen entfernt; eigener Browser-PostgreSQL-Container entfernt |
-| Produktions-Compose und Workflow-YAML | Bestanden | Konfigurationsprüfung, keine Bereitstellung oder gehostete Ausführung |
+| Produktions-Compose und Workflow-YAML | Bestanden | Konfigurationsprüfung und gehosteter Produktions-Docker-Job auf `6ead55c`; keine Bereitstellung |
+| Gehostete Korrektur-CI 43908926864 | 7/7 Jobs bestanden auf `4524f121420dd66829feafe7b7aed07aece7a338` | Fixture, echte Browserjourneys, Linux-Restore, Backend, DMS, ClamAV, Produktions-Docker; isolierte Testdaten und keine Produktions-/Provider-/Geräteabnahme |
 
 Reproduzierbare lokale Befehle nach vorhandener Abhängigkeits-/Chromium-Installation:
 
@@ -182,9 +192,9 @@ wurde abgeschlossen.
 3. Default-5-s-Frontendlauf bestanden (184/184, zwei Worker).
    Neue reproduzierbare Timer-/Test-Isolationsfehler weiterhin fokussiert beheben;
    frühere 30-s-Läufe bleiben historische Evidenz und werden nicht umgedeutet.
-4. Vor Integration GitHub-/Branch-/CI-Stand erneut prüfen und lokale Commits
-   gegen veröffentlichten PR-Head abgleichen. Hosted-CI-Gate bleibt offen bis
-   tatsächlich ein Run auf dem exakten neuen SHA vorliegt.
+4. Vor Integration GitHub-/Branch-/CI-Stand erneut prüfen; den aktuellen
+   CI-Nachweis immer dem exakten Code-SHA zuordnen. Der fehlgeschlagene
+   Erstlauf bleibt als Regressionsevidenz erhalten.
 5. Breite Modul-/Dokumentationsabnahme anhand `MODULE_IMPLEMENTATION_STATUS.md`
    und `PROJECT_COMPLETION_TRACKER.md` fortsetzen. Historische Berichte nicht
    umschreiben und veröffentlichte SQL-Migrationsdateien nicht nachträglich ändern.

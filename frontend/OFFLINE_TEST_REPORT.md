@@ -1,5 +1,15 @@
 # SecurityOps 2.0 - Phase 6: Offline-Testbericht
 
+> **Gehostete Phase-11-Evidenz:** Run [43906594339](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43906594339)
+> auf `6ead55c` bestand insgesamt nur 5/7, aber die drei echten Browserjourneys
+> im Root-Job bestanden. Der separate Offline-Fixture scheiterte nach dem
+> Rechte-Gating an fehlenden Standort-/Mitarbeiter-Leserechten. `4524f12` ergänzt
+> genau diese Fixture-Grants und prüft geladene Referenz-IDs; lokal wieder 1/1.
+> Korrekturlauf [43908926864](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43908926864)
+> bestand auf `4524f121420dd66829feafe7b7aed07aece7a338` **7/7 Jobs**,
+> einschließlich beider getrennter Browser-Suiten und des Linux-Restore-Drills.
+> Aktuelle Korrektur-CI und exakte SHAs: [Projektstatus](../PROJECT_CURRENT_STATUS.md).
+
 > **Aktueller Phase-11-Browsernachweis:** Die echte Chromium-/Express-/PostgreSQL-
 > Suite besteht lokal **3/3**. Zusätzlich zu den beiden Wachbuch-/Identitätsfällen
 > erfolgt eine SOP-Veröffentlichung mit getrennten Erstellungs-, Prüfungs- und
@@ -16,19 +26,20 @@
 > Storetests erhalten Tenant-/Site-/Own-Grants getrennt und zeigen echte
 > Serverablehnungen weiterhin an. Voller Frontendlauf 184/184 mit unverändertem
 > Standard-5-s-Budget; keine Performance- oder vollständige Rollenabnahme.
-> Keine Foto-/Scanner-/Provider-/physische Geräteabnahme; Hosted CI bleibt offen.
+> Keine Browser-Foto-/Scanner-/Provider-/physische Geräteabnahme; gehostete
+> Ergebnisse der getrennten Suiten siehe Evidenzblock oben.
 
 > **Vorheriger Phase-11-Nachweis:** Die authentifizierte Chromium-/Express-/PostgreSQL-Suite bestand damals **2/2**. Zusätzlich zum Replay-/Abmeldetest bleibt eine offene Mutation bei Wechsel zu einem anderen Konto desselben Mandanten und zum ursprünglichen Konto in einem anderen Mandanten unangetastet und unsichtbar; erst nach Rückkehr zur ursprünglichen Identität wird sie genau einmal übertragen und persistiert. Der Test fand außerdem, dass `restoreSession` das reale `userId`-Feld von `/auth/me` nicht las; die Korrektur ist durch Unit- und echte Browser-Erfassung nach Reload belegt. Keine Foto-/SOP-/Geräteabnahme in diesem damaligen Umfang.
 
-> **Authentifizierter Phase-11-Browsertest (16.11.2026):** `npm run test:browser:backend` bestand lokal **1/1** mit echtem Express-Backend, Cookie-/CSRF-Sitzung, frischer PostgreSQL-16-Datenbank und Migrationen bis 042. Chromium erfasst offline, lädt offline neu und meldet sich nach Wiederverbindung erneut an. Der Test lässt den echten Server die erste Mutation speichern, verwirft ausschließlich die Antwort im Browser und prüft beim Retry dieselbe Mutation-ID, dieselbe Server-ID, eine geleerte Outbox und genau einen über die authentifizierte API nach Reload lesbaren Wachbucheintrag. Keine API-Antworten werden hierfür erfunden. Der Root-CI-Job ist dafür konfiguriert; gehostete Ausführung dieser lokalen Änderung steht aus. Foto-/Scanner-/Providerbetrieb, Konten-/Tenantwechsel und physische Geräte sind nicht Teil dieses Tests.
+> **Historischer erster Phase-11-Browsertest (16.11.2026):** `npm run test:browser:backend` bestand damals lokal **1/1** mit echtem Express-Backend, Cookie-/CSRF-Sitzung, frischer PostgreSQL-16-Datenbank und Migrationen bis 042. Chromium erfasst offline, lädt offline neu und meldet sich nach Wiederverbindung erneut an. Der Test lässt den echten Server die erste Mutation speichern, verwirft ausschließlich die Antwort im Browser und prüft beim Retry dieselbe Mutation-ID, dieselbe Server-ID, eine geleerte Outbox und genau einen über die authentifizierte API nach Reload lesbaren Wachbucheintrag. Keine API-Antworten werden hierfür erfunden. Gehostete Ausführung stand zu diesem Zeitpunkt noch aus; spätere Ergebnisse stehen oben. Foto-/Scanner-/Providerbetrieb, Konten-/Tenantwechsel und physische Geräte waren nicht Teil dieses ersten Tests.
 >
 > Der erste reale Durchlauf deckte leere Standort-/Mitarbeiter-IDs auf, wenn das Wachbuch vor Abschluss der Stammdatenladung montiert wurde. Die Form verwendet nun dieselben nachgeladenen Standardwerte für Anzeige und Speicherung und weist fehlende Referenzen sichtbar zurück. Ein zusätzlicher Vitest-Regressionstest und der echte Backend-Browsertest bestanden nach der Korrektur.
 
-> **Phase-11-Nachweis (16.11.2026):** Der vorhandene isolierte Chromium-Test wird jetzt im Frontend-CI-Job konfiguriert ausgeführt (Chromium-Installation, Fehler-Trace und Screenshot). Lokal bestand er 1/1; gehostete CI für diese Änderung steht aus. Der Test bleibt eine Loopback-Fixture und keine authentifizierte Backend-/Geräteabnahme. Frühere Aussagen „nicht Teil der CI“ gelten nur für den jeweils datierten Vorzustand.
+> **Historische Phase-11-CI-Konfiguration (16.11.2026):** Der vorhandene isolierte Chromium-Test wurde im Frontend-CI-Job eingerichtet (Chromium-Installation, Fehler-Trace und Screenshot). Lokal bestand er damals 1/1; gehostete Ausführung stand noch aus. Der Test bleibt eine Loopback-Fixture und keine authentifizierte Backend-/Geräteabnahme. Der aktuelle Ausführungsstand steht oben.
 
 > **Historische Szenariomatrix:** Die 18 Einträge unten dokumentieren damalige lokale Prüfungen, keine aktuelle Browser-/Geräteabnahme. Insbesondere Szenario 2 prüft nur lokale IndexedDB-Validierung und ist kein Nachweis für Upload-/Replay-Verhalten; dieses Verhalten wird in aktuellen Offline-Sync-Tests separat geprüft.
 > **Aktueller Stand (15.11.2026):** PR [#64](https://github.com/Xonni-star/SecurityOps-2.0/pull/64) ist in `main` gemergt (`621874535ee480e56716ae8a7bd992272bc7a51a`). Migration 041 ergänzt tenant-scoped Idempotenzquittungen für den Wachbuchanhang-Upload. Anhänge mit gespeicherter `userId` können nach Wiederverbindung idempotent hochgeladen werden. Lokale Altanhänge ohne `userId` werden nicht automatisch hochgeladen oder einem Benutzer zugewiesen; die UI warnt davor, und der Benutzer muss sie erneut hinzufügen. Ein Altanhang mit bereits bestätigtem Eintrag und nicht-UUID lokaler ID kann nicht verknüpft werden. Main-CI-Lauf [43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) lief beim letzten Statuscheck noch.
-> **Worktree-Korrektur (16.11.2026):** Ein bestätigtes MEDIUM-Finding zur tenantweiten Sichtbarkeit und zum Export ownerloser lokaler Anhänge wurde behoben. Die Oberfläche zeigt weder Dateimetadaten noch Inhalte; die Daten bleiben lokal. Frontend-Regressionstests, Typcheck und Produktionsbuild bestanden. Dieser Fix ist nicht durch Hosted CI abgedeckt.
+> **Veröffentlichte Korrektur (16.11.2026):** Ein bestätigtes MEDIUM-Finding zur tenantweiten Sichtbarkeit und zum Export ownerloser lokaler Anhänge wurde behoben. Die Oberfläche zeigt weder Dateimetadaten noch Inhalte; die Daten bleiben lokal. Frontend-Regressionstests, Typcheck und Produktionsbuild bestanden. Die Revision ist veröffentlicht; exakte CI-Prüfgrenzen stehen im aktuellen Projektstatus. Ein sicherer Recovery-Pfad bleibt offen.
 
 ## 1. Testergebnisse der 18 Szenarien
 | Nr | Szenario | Status | Verifikation |

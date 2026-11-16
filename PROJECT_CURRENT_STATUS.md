@@ -8,7 +8,25 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
-**Current worktree:** branch `xonni-star-phase9-docs-and-status-cleanup` includes Phase 10 fixes plus Phase 11 migration-history preservation (`ef6a2c6`), offline-fixture CI (`55384e6`), module/architecture inventory (`f38499a`), backup generation health (`b3889b6`), a real authenticated Chromium/PostgreSQL replay test with a GuardBook default-selection fix (`840c5bd`), and reachable logout with server-side revocation evidence (`4946d31`). The commits have not been pushed; PR #66 and hosted CI still refer to remote head `785e9eabc9e6ab5f1ce4e726fdff2cbfa49367e4`. This remains the existing isolated PR branch, not a separately created Phase 11 branch.
+**Published code revision:** `4524f121420dd66829feafe7b7aed07aece7a338`
+on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
+The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
+Later documentation-only commits are not included in this code-revision identifier.
+
+**Hosted CI history:** [Run 43906594339](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43906594339)
+on `6ead55c73885b1b5779501c50c55c08ee01c6184` completed **5/7**:
+backend, root/real browser, DMS, ClamAV and production Docker passed.
+The offline fixture failed because it lacked reference-data read grants; Linux
+restore failed because its root-owned private archive was unreadable to the
+host runner. Both test contracts are corrected in `4524f12`: explicit fixture
+grants and selected-ID checks; backup UID/GID matching the restore test user,
+with ownership/readability and unchanged `0600` assertions.
+Local fixture **1/1**, full PostgreSQL/MinIO restore and backup-health checks passed.
+[Run 43908926864](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43908926864)
+on the exact correction SHA completed **7/7 successfully**, including the
+separate fixture, real-browser/root, Linux restore, backend, DMS, ClamAV and
+production-Docker jobs. The failed first run is not reclassified. These are
+isolated automated checks, not provider/device/production acceptance.
 
 **SOP functional package (`67a1185`):** The authenticated Chromium suite passes **3/3**.
 It includes account/tenant switches, owner-bound replay, session-restoring reload
@@ -17,7 +35,9 @@ reader with only `sop:read`/`sop:acknowledge`. Opening does not acknowledge;
 offline capture survives reload and a lost server response retries the same
 mutation before clearing IndexedDB. This found and corrected empty optional
 SOP values and missing version UUIDs. GuardBook selections also recover when
-reference data replaces initial IDs. These results remain local.
+reference data replaces initial IDs. These three real-browser scenarios also
+passed in the hosted root job of run 43906594339; its two other failing jobs
+still prevented an overall green CI result.
 
 **Latest regression package:** `authorization_boundaries.integration.test.ts`
 passes **16/16** against fresh migrated/seeded PostgreSQL 16: four reports and
@@ -71,9 +91,9 @@ This is the current evidence index. Phase reports and dated status sections rema
 | Mainline CI | **IMPLEMENTIERT UND GETESTET** | Post-merge [CI run 43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed **7/7 jobs** on the exact current-main SHA. |
 | Release package validation | **TEILWEISE IMPLEMENTIERT** | Artifact run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2 on current `main`; packaging/provenance/install validation is not a deployment or production release. |
 | Documentation PR validation | **IMPLEMENTIERT UND GETESTET** | PR #62 (head `6c8a52c`, hosted [CI run 43761213396](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43761213396) 7/7) is merged as `9df02aa`. |
-| Current remote PR validation | **IMPLEMENTIERT UND GETESTET** | PR #66 remote head `785e9eabc9e6ab5f1ce4e726fdff2cbfa49367e4`; [CI run 43843645961](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43843645961) passed 7/7. This run does not include local worktree changes. |
+| Published Phase 11 CI | **IMPLEMENTIERT UND GETESTET** | Correction code SHA `4524f121420dd66829feafe7b7aed07aece7a338`, run 43908926864 passed 7/7. Previous published SHA `6ead55c` completed 5/7; failed jobs and correction evidence are preserved above. Subsequent documentation-only commits are outside this code-SHA identifier. |
 | Reporting UI | **IMPLEMENTIERT UND GETESTET** | PR #66's frontend uses approved actual hours, calendar ranges, and safe CSV export; its frontend checks passed for the identified revision. |
-| Report site-scope correction | **IMPLEMENTIERT UND GETESTET** | This worktree explicitly filters all four report handlers and the work-hours CSV by authenticated site grants. Backend TypeScript build, three scope-helper tests, and `sync_and_roles.test.ts` (33/33) passed against isolated PostgreSQL 16. Hosted CI and production acceptance for this change remain outstanding. |
+| Report site-scope correction | **IMPLEMENTIERT UND GETESTET** | All four report handlers and work-hours CSV use authenticated site grants. Local scope-helper/integration tests and the hosted backend job on `6ead55c` passed. Production acceptance and the full role/object matrix remain outstanding. |
 | Prior backend validation | **IMPLEMENTIERT UND GETESTET** | On an earlier PR revision, migration and seed ran against isolated PostgreSQL 16; backend build and 34 Jest suites / 315 tests passed. These results do not cover the current report-scope change. |
 | Phase 11 backend and migrations | **IMPLEMENTIERT UND GETESTET** | Latest full local backend suite: 35/35 suites, 546/546 tests, no open-handle warning. API/sync integration budget is explicitly 30 s, Patrol 60 s; no assertions removed and no application/PostgreSQL defaults changed. Earlier 5-s/30-s timeout runs are documented above, not reclassified as passing. A real 041→042 upgrade preserves earlier checksums, rejects GuardBook DELETE/core-field UPDATE and becomes a no-op on rerun. Published 001/004 remain unchanged; text correction is additive in 042. |
 | Authenticated report authorization | **IMPLEMENTIERT UND GETESTET** | Extended boundary suite: 16/16, with two tenants/three sites, report-only and site grants, absent/removed permissions, CSV, exact aggregates, forged tenant hints and direct shift IDs. Existing sessions immediately lose removed report grants. No new runtime authorization defect found; other endpoint/object combinations remain open. |
@@ -81,8 +101,8 @@ This is the current evidence index. Phase reports and dated status sections rema
 | API authentication boundary | **IMPLEMENTIERT UND GETESTET** | All 215 currently registered protected method/path pairs return 401 without a session in the local backend suite. Health, login and password-reset completion are explicit public exceptions. Full per-role/site/object matrix remains open. |
 | Module/architecture inventory | **IMPLEMENTIERT** | [13-module evidence matrix](./MODULE_IMPLEMENTATION_STATUS.md) identifies active UI/API/database/test paths and remaining limits. npm and production Docker use Node/TypeScript; historical Python/Alembic files were not validated by these runs. Not a complete product acceptance. |
 | Test-only Linux install | **IMPLEMENTIERT UND GETESTET** | PR #56 merged. The tar/deb installer and lifecycle guidance target isolated testing; they are not production installers. |
-| Backup/restore | **TEILWEISE IMPLEMENTIERT** | Full isolated PostgreSQL/MinIO drill through migration 042 passed, including injected mid-DDL rollback, stopped services on restore/resume failure, backup-error health state and recovery after a successful backup. Archives publish atomically; Compose checks freshness (25 h), nonempty completed files and last-attempt failure. Health is not an integrity/restore check or external alert. Hosted CI, real provider restore and measured RPO/RTO remain open. |
-| Offline and SOP workflows | **TEILWEISE IMPLEMENTIERT** | Ownerless-attachment disclosure UI is removed; legacy attachments stay local without a secure recovery flow. Real GuardBook and SOP offline replay are locally covered as described above; complete SOP/photo/account-switch/physical-device acceptance remains open. Both browser suites are configured in CI source; hosted results for these local commits are pending. |
+| Backup/restore | **TEILWEISE IMPLEMENTIERT** | Full local PostgreSQL/MinIO drill through 042 passed again after matching backup UID/GID to the invoking restore user; archive ownership, readability and private mode 0600 are asserted. Mid-DDL rollback, stopped services on restore/resume failure and backup-health failure/recovery remain covered. Previous hosted Linux archive-access failure and correction CI are tracked above. Health is not an integrity/restore check or external alert; real-provider restore and measured RPO/RTO remain open. |
+| Offline and SOP workflows | **TEILWEISE IMPLEMENTIERT** | Ownerless-attachment disclosure UI is removed; legacy attachments stay local without a secure recovery flow. Real GuardBook/SOP replay passed locally 3/3 and in the hosted root job on `6ead55c`. The separate fixture passed locally 1/1 after its read-grant correction; its exact hosted status is tracked above. Complete photo/identity-matrix/physical-device acceptance remains open. |
 | Security and tenancy | **TEILWEISE IMPLEMENTIERT** | Bounded static reviews of authentication/session/web-security and tenant/RLS/report-scope paths found no confirmed bypass. Report and authorization negative tests passed on isolated PostgreSQL. Full route/migration/deployed-policy coverage, penetration testing, and production acceptance are not established. |
 | Performance | **TEILWEISE IMPLEMENTIERT** | PR #53 adds a bounded local baseline; its workload does not establish production capacity, an SLA, or resource headroom. |
 | Production/provider/device acceptance | **OFFEN** | No evidence establishes production deployment, real-provider behavior, customer acceptance, or physical-device acceptance. |

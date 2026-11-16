@@ -1,5 +1,11 @@
 # SecurityOps 2.0 — Phase 10 completion report
 
+**Historical snapshot:** This report predates publication of the Phase 10/11
+commits. Its PR-head, unpushed-work and pending-CI statements describe that
+earlier point only. Current exact-SHA results and remaining gates are in
+[PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md) and the
+[Phase 11 continuation report](./FINAL_PHASE_11_COMPLETION_REPORT.md).
+
 **Assessment:** **PARTIAL / NOT APPROVED FOR PRODUCTION.** This report records the work completed and evidence available in this worktree. It does not claim that Phase 10 acceptance criteria are fully met, that a comprehensive security audit or penetration test was performed, or that the product is legally or operationally certified.
 
 ## Repository and GitHub state

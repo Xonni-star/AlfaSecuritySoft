@@ -6,7 +6,10 @@
 **Last checked:** 2026-11-16
 **Open PR:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66) is the only open PR. PRs #50–#65 are merged, including [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62).
 
-The current remote head of PR #66 is `785e9eabc9e6ab5f1ce4e726fdff2cbfa49367e4`; its latest CI run [43843645961](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43843645961) passed 7/7. The local worktree changes are not included in that run. Their TypeScript build, scope-helper tests, and PostgreSQL-backed `sync_and_roles.test.ts` suite (33/33) passed against isolated PostgreSQL 16. Hosted CI and production acceptance for the worktree remain outstanding.
+Phase 10/11 changes are published in PR #66. The canonical exact-SHA CI record,
+including the failed first hosted run and its fixture/restore corrections, is
+[PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md). This shorter index
+does not maintain a second independent PR-head or latest-run value.
 
 Use the status labels **IMPLEMENTIERT**, **IMPLEMENTIERT UND GETESTET**, **TEILWEISE IMPLEMENTIERT**, **IN ENTWICKLUNG**, **GEPLANT**, **NICHT VERIFIZIERT**, and **OFFEN** consistently. The project’s broader history and evidence are summarized in [PROJECT_COMPLETION_REPORT.md](./PROJECT_COMPLETION_REPORT.md). Phase 9 operations evidence and remaining gates are in [PHASE_9_COMPLETION_REPORT.md](./PHASE_9_COMPLETION_REPORT.md). Dated phase reports remain historical snapshots.
 
@@ -21,9 +24,9 @@ Use the status labels **IMPLEMENTIERT**, **IMPLEMENTIERT UND GETESTET**, **TEILW
 
 ### IN ENTWICKLUNG
 
-- PR #66 remains open. Its remote head `785e9eabc9e6ab5f1ce4e726fdff2cbfa49367e4` passed all 7 hosted jobs in [43843645961](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43843645961). The separate Chromium fixture passed locally but is not part of hosted CI.
-- The PR uses tenant-authorized work-hour reporting, applies calendar filters to reports/exports, and removes unsupported shift-hour and certification/audit-readiness claims. Frontend typecheck, production build, and 169 tests across 29 files passed for its identified revision.
-- The current local worktree additionally restricts all four planning reports and work-hours CSV to the authenticated site grants. Backend build, scope-helper tests, and the 33-test PostgreSQL-backed integration suite passed locally; hosted CI is **NICHT VERIFIZIERT** for this change.
+- PR #66 remains open and unmerged. Hosted CI executes both the separate API-fixture browser test and the real Express/PostgreSQL suite; their outcomes must not be conflated.
+- The PR uses tenant/site-authorized reporting, calendar filters and safe CSV export, and removes unsupported shift-hour and certification/audit-readiness claims. Latest local full suites passed 184 frontend and 546 backend tests; exact revision, budgets and hosted evidence are in the canonical status.
+- All four planning reports and work-hours CSV use authenticated site grants. Focused PostgreSQL regressions and the published hosted backend job passed; the full authenticated role/object matrix and production acceptance remain open.
 
 ### OFFEN
 
@@ -36,13 +39,13 @@ Use the status labels **IMPLEMENTIERT**, **IMPLEMENTIERT UND GETESTET**, **TEILW
 ### IMPLEMENTIERT UND GETESTET
 
 - PR #64 head `b814b65` passed **7/7 hosted CI jobs**. Its PR description records frontend typecheck, seven focused frontend tests, frontend build, backend build, 22 migration-parser tests, and 17 authorization/sync tests as passed. The PostgreSQL-backed migration/API suites were not run locally because a verified isolated database was unavailable.
-- Historical push CI run [43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on merge SHA `621874535ee480e56716ae8a7bd992272bc7a51a`; it is not the current-main run. The current-main run is listed above.
+- Historical push CI run [43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on merge SHA `621874535ee480e56716ae8a7bd992272bc7a51a`; it is not the current-main run. Current-main evidence is in the canonical status.
 - The rebased docs head `6c8a52c` passed 7/7 hosted jobs in run 43761213396.
 - Prior CI/artifact results apply only to their stated revisions.
 
 ### OFFEN — Produktionsfreigabe
 
-**None.** No production deployment, provider acceptance, real-device acceptance, production restore, customer sign-off, or standards/legal conformity approval is evidenced here.
+**Not granted.** No production deployment, provider acceptance, real-device acceptance, production restore, customer sign-off, or standards/legal conformity approval is evidenced here.
 
 ## Current validation snapshot
 
@@ -52,7 +55,7 @@ Use the status labels **IMPLEMENTIERT**, **IMPLEMENTIERT UND GETESTET**, **TEILW
 | Main CI | **7/7 passed** on `9df02aa` | Post-merge run [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) on exact current SHA. |
 | PR #62 hosted CI | **7/7 passed** | Run 43761213396 on head `6c8a52c`; PR since merged. |
 | Artifact validation | **2/2 passed** on `9df02aa` | Run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834). Not a release approval. |
-| Current remote PR #66 | **7/7 passed** | Run [43843645961](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43843645961) validates remote head `785e9ea`; it does not include this worktree's changes. |
+| Published Phase 11 code in PR #66 | **7/7 passed** | Run [43908926864](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43908926864) on code SHA `4524f121420dd66829feafe7b7aed07aece7a338`. Later documentation-only revisions are separate. |
 | Reporting UI update | **IMPLEMENTIERT UND GETESTET** | 169 frontend tests, TypeScript check, production build, and the 7-job hosted workflow passed for the identified PR revision. |
-| Report site-scope changes | **IMPLEMENTIERT UND GETESTET** | Backend TypeScript build, scope-helper tests, and `sync_and_roles.test.ts` (33/33) passed against isolated PostgreSQL 16; hosted CI has not run on this worktree. |
+| Report site-scope changes | **IMPLEMENTIERT UND GETESTET** | Local and hosted PostgreSQL-backed backend regressions passed on the published code revision; this is not full role/object or production acceptance. |
 | Production acceptance | **Not performed / not established** | No deployment or production approval is claimed. |

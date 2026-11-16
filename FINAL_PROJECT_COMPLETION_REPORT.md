@@ -1,7 +1,12 @@
-# SecurityOps 2.0 — Ergebnisbericht zum aktuellen Arbeitsstand
+# SecurityOps 2.0 — historischer Ergebnisbericht vor Phase 11
 
 **Stand:** 2026-11-16  
-**Gesamtstatus:** Teilabschluss. Die umgesetzten Änderungen und ihre lokalen Prüfungen sind dokumentiert; das vollständige Projekt-Audit, Hosted CI für diesen Worktree und die Produktionsabnahme bleiben offen.
+**Einordnung:** Historischer Teilabschluss vor Veröffentlichung der
+Phase-10/11-Codeänderungen. Die folgenden Tests und damaligen offenen CI-Punkte
+bleiben als Snapshot erhalten, nicht als heutiger Prüfstand.
+Aktuelle Ergebnisse: [Projektstatus](./PROJECT_CURRENT_STATUS.md) und
+[Phase-11-Fortsetzungsbericht](./FINAL_PHASE_11_COMPLETION_REPORT.md).
+Vollständiges Projekt-Audit und Produktionsabnahme bleiben offen.
 
 ## Umgesetzte und verifizierte Arbeiten
 
