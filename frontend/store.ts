@@ -1644,11 +1644,9 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         scheduleGuardbookAttachmentRetry(currentTenantId, currentUserId, attachmentSync.maxRetryCount);
         set({
           syncQueue: allItems.map(offlineOutboxToQueueItem),
-          isSyncing: false,
           lastSyncTime: new Date().toLocaleTimeString()
         });
         scheduleOutboxRetry(allItems);
-        isSyncRunningMutex = false;
         if (options.refreshWhenOutboxEmpty && allItems.length === 0 && isCurrentSyncIdentity()) {
           await get().loadTenantData({ preserveCurrentData: true });
         }
@@ -1815,8 +1813,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         scheduleOutboxRetry(remainingOutbox);
         if (isCurrentSyncIdentity()) {
           set({
-            syncQueue: remainingOutbox.map(offlineOutboxToQueueItem),
-            isSyncing: false
+            syncQueue: remainingOutbox.map(offlineOutboxToQueueItem)
           });
           get().addNotification(
             'Synchronisierung fehlgeschlagen',
@@ -1824,7 +1821,6 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
             'alert'
           );
         }
-        isSyncRunningMutex = false;
         return { success: successCount, failed: failedCount + failedItems.length, conflicts: conflictCount };
       }
 
@@ -1837,7 +1833,6 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       scheduleGuardbookAttachmentRetry(currentTenantId, currentUserId, attachmentSync.maxRetryCount);
       set({
         syncQueue: remainingOutbox.map(offlineOutboxToQueueItem),
-        isSyncing: false,
         lastSyncTime: new Date().toLocaleTimeString()
       });
 

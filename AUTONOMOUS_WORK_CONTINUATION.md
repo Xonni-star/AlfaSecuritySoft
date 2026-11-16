@@ -425,7 +425,23 @@ still clear normally. Targeted42/typecheck/build pass. Logs:
 `finalization-handover-create-drafts-red.log`,
 `finalization-handover-write-drafts-build.log`.
 
-1. Publish FNL-027 and verify every hosted job on its exact full SHA.
+FNL-027 is now hosted-verified on
+6486a1798249dcd9c068d73b9bf333ab45668984, CI43970970744 **7/7**.
+Read logs376 frontend,553 backend in35 suites,10 real browser journeys and
+cleanup: `finalization-handover-write-drafts-hosted-ci.log`.
+
+Next FNL-028 reproduced two real store-level refresh overlaps: empty-cycle sync
+released its mutex before awaiting loadTenantData, so a second push started
+before the first finished and its finally could release another cycle's lock.
+Only the central finally now releases mutex/Pending, including snapshot success
+and failure; queued work still reruns. Targeted148/typecheck/build pass.
+`finalization-sync-refresh-mutex-red.log` and
+`finalization-sync-refresh-mutex-build.log` preserve local evidence.
+Active SYNC_PROTOCOL also falsely claimed device revocation and sequence pull:
+the active controller only validates deviceId as a string and Express registers
+no sync/pull route. Docs now state these are OFFEN, not a new exploit finding.
+
+1. Publish FNL-028 and verify every hosted job on its exact full SHA.
    Read actual logs/counts and resolve any API/browser failure.
    Earlier seven-job success does not validate these subsequent changes.
 2. Repeat a bounded convergence audit for new concrete functional defects,

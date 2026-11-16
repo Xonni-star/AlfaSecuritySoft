@@ -10,6 +10,14 @@
 
 Der Phase-4-Änderungsstand behandelt HTTP `408` und `429` als wiederholbare Fehler der generischen Outbox und persistiert einen gültigen `Retry-After`-Wert (Sekunden oder HTTP-Datum) zusammen mit der Mutation. Die Wiedergabe wartet mindestens bis zu diesem Zeitpunkt; lokale Backoff-Grenzen, Idempotenz und die serverseitige Autorisierung bleiben bestehen. Die Alarm-Mutationsqueue nutzt weiterhin einen eigenen Retry-Pfad. Vitest prüft Header-Parsing, persistierte Verzögerung und Replay nach Rate-Limit; reale Browser-/Geräte- und Hintergrundausführung sind damit nicht nachgewiesen.
 
+Die generische Sync-Sperre und der Pending-Status bleiben bis zum zentralen
+`finally` aktiv, einschließlich eines Snapshot-Refreshs nach leerer Outbox.
+Neue Auslöser währenddessen merken einen Folgezyklus vor, statt vorzeitig
+parallel zu senden. Erfolgs- und Fehlerpfad sind gezielt abgedeckt; die
+Laufzeitsperre ersetzt keine serverseitige Idempotenz oder Tab-/Gerätesperre.
+Das [aktive Protokoll](./SYNC_PROTOCOL.md) unterscheidet tatsächliche Push-
+Endpunkte von nicht implementierter Gerätewiderrufsprüfung und Delta-Pull.
+
 ## 1. PWA & Service Worker
 SecurityOps 2.0 ist als vollwertige Progressive Web App (PWA) nach modernen Webstandards konzipiert:
 - **App Shell Caching**: Die Kernanwendung (`index.html`, Scripts, Styles, Icons) wird über `public/sw.js` lokal im Cache vorgehalten.

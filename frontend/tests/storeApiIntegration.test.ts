@@ -954,6 +954,51 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     expect(refresh).toHaveBeenCalledWith({ preserveCurrentData: true });
   });
 
+  test.each(['success', 'failure'] as const)('serializes a newly queued mutation until an empty-cycle refresh finishes with %s', async outcome => {
+    const mutation: OutboxMutation = {
+      id: 'queued-during-empty-refresh', tenantId: readUser.tenantId, userId: readUser.id,
+      deviceId: 'serial-device', entityType: 'key', action: 'UPDATE', payload: { id: 'key-1' },
+      occurredAt: '2026-11-16T00:00:00Z', baseVersion: 1, retryCount: 0, status: 'PENDING'
+    };
+    let queued = false;
+    vi.spyOn(offlineVault, 'getPendingOutbox').mockImplementation(async () => queued ? [mutation] : []);
+    vi.spyOn(offlineVault, 'getOutbox').mockImplementation(async () => queued ? [mutation] : []);
+    vi.spyOn(offlineVault, 'getPendingAttachments').mockResolvedValue([]);
+    vi.spyOn(offlineVault, 'hasOwnerlessPendingAttachments').mockResolvedValue(false);
+    const synced = vi.spyOn(offlineVault, 'markSynced').mockImplementation(async () => { queued = false; });
+    let finishRefresh!: () => void;
+    let failRefresh!: (error: Error) => void;
+    const refresh = vi.spyOn(useSecurityStore.getState(), 'loadTenantData').mockReturnValueOnce(
+      new Promise<void>((resolve, reject) => { finishRefresh = resolve; failRefresh = reject; })
+    );
+    let finishPush!: (receipts: object[]) => void;
+    mockedApi.post.mockReturnValueOnce(new Promise<object[]>(resolve => { finishPush = resolve; }));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    useSecurityStore.setState({
+      authUser: readUser, isAuthenticated: true, isOnline: true,
+      currentTenantId: readUser.tenantId, currentUserId: readUser.id
+    });
+    const initial = useSecurityStore.getState().triggerManualSync({ refreshWhenOutboxEmpty: true });
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+    const busyDuringRefresh = useSecurityStore.getState().isSyncing;
+    queued = true;
+    let secondFinished = false;
+    const next = useSecurityStore.getState().triggerManualSync().then(result => {
+      secondFinished = true;
+      return result;
+    });
+    await vi.waitFor(() => expect(secondFinished || mockedApi.post.mock.calls.length > 0).toBe(true));
+    const observed = { pushes: mockedApi.post.mock.calls.length, busy: busyDuringRefresh };
+    if (outcome === 'success') finishRefresh();
+    else failRefresh(new Error('Refresh failed while new work was queued'));
+    finishPush([{ clientUuid: mutation.id, status: 'SYNCED', serverVersion: 2 }]);
+    const [initialResult] = await Promise.all([initial, next]);
+    await vi.waitFor(() => expect(synced).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(useSecurityStore.getState().isSyncing).toBe(false));
+    expect(observed).toEqual({ pushes: 0, busy: true });
+    if (outcome === 'failure') expect(initialResult.error).toBe('Refresh failed while new work was queued');
+  });
+
   test('does not refresh an empty pending queue while failed or conflicted outbox rows remain', async () => {
     const unresolvedRows = [
       {

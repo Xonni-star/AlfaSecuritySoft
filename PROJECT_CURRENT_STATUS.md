@@ -20,18 +20,23 @@ checks every original/replayed UUID and server ID across independently due
 retry batches. Local targeted UI **27/27**, controller **11/11**, typecheck
 and both builds passed; the complete hosted result below closes this gap.
 
-**Fully hosted-verified code revision:** `aa1d7738f9074393533fca74d0914ab2a3ab1a9d`
+**Fully hosted-verified code revision:** `6486a1798249dcd9c068d73b9bf333ab45668984`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
-Its exact [CI 43968759380](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43968759380)
-passed **7/7 jobs**; downloaded logs confirm frontend **368/368**, backend
+Its exact [CI 43970970744](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43970970744)
+passed **7/7 jobs**; downloaded logs confirm frontend **376/376**, backend
 **553/553 in 35 suites**, real browser **10/10** and owned-container cleanup.
 This closes the historical FNL-022–026 hosted gaps below, including real
 participant confirmation, current document metadata and per-UUID replay checks.
 Subsequent FNL-027 reproduced eight write/creation-draft loss and owner-activation
 A-B-A cases. Independent draft revisions and monotonic owner activations now
 preserve newer drafts and pending operations; unchanged submissions still clear
-normally. Targeted42/42, typecheck/build pass; its exact hosted execution is open.
+normally. Its exact hosted result above closes FNL-027.
+Subsequent FNL-028 reproduced two empty-cycle refresh overlaps and centralizes
+mutex/Pending release in `finally`. Targeted148/148/typecheck/build pass;
+its own complete hosted execution is open. Active protocol documentation now
+explicitly marks device revocation and sequence-based delta pull unimplemented,
+instead of claiming them from the unrelated historical backend.
 This includes confirmed form writes, report grant/date/identity fixes, durable
 critical-incident follow-ups, truthful audit displays and delayed local-write
 identity isolation, plus FNL-013–026 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`

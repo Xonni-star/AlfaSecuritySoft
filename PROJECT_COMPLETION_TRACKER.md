@@ -38,13 +38,14 @@ not a complete acceptance. Continuation: `AUTONOMOUS_WORK_CONTINUATION.md`.
 | FNL-024 | P1 | ERLEDIGT | Keep latest handover list/detail/local reads and current query during concurrent completions | Seven red same-owner read/error/query ABA cases corrected with independent monotonic read versions/current-query guard. Exact aa1d773/CI43968759380 passed7/7, read368/553/10 and cleanup. |
 | FNL-025 | P1 | ERLEDIGT | Repair the genuine handover document HTTP500 and require actual detail success | Current tenant-bound document_versions metadata replaces nonexistent document columns; missing metadata stays explicit and archived links excluded. UI case failed before correction. Actual PostgreSQL/API empty/current/missing/archive/denied-read and strict real browser document200/no-alert checks passed. Exact aa1d773/CI43968759380 passed7/7, read368/553/10 and cleanup. |
 | FNL-026 | P1 | ERLEDIGT | Correct critical incident replay evidence for independently due mutation retries | Actual failed trace showed guardbook+task, then guardbook alone1.072s later, matching per-mutation deadlines. Genuine initial two-mutation lost receipt, exact per-request UUID matching, both replayed UUIDs, stable server IDs, one real incident/task and empty outbox now pass. Exact aa1d773/CI43968759380 passed7/7, read368/553/10 and cleanup; no larger budgets. |
-| FNL-027 | P1 | IN ARBEIT | Preserve newer write/creation drafts and owner-activation ABA context | Eight reproduced red cases cover four detail writes, edited/reopened create dialog, equal-text note ABA and old owner activation releasing a newer pending operation. Independent draft revisions/current owner activation guard cleanup; current submissions still clear normally. Targeted42/typecheck/build pass; own hosted verification pending. |
+| FNL-027 | P1 | ERLEDIGT | Preserve newer write/creation drafts and owner-activation ABA context | Eight reproduced red cases cover four detail writes, edited/reopened create dialog, equal-text note ABA and old owner activation releasing a newer pending operation. Independent draft revisions/current owner activation guard cleanup; current submissions still clear normally. Exact6486a17/CI43970970744 passed7/7; read376/553/10 and cleanup. |
+| FNL-028 | P1 | IN ARBEIT | Hold generic sync mutex/Pending through the full snapshot refresh | Two initial red cases proved a new API push starts during an unfinished empty-cycle refresh. Central finally is the sole lock/Pending release; queued rerun and explicit failure preserved. Targeted148/typecheck/build pass; own hosted verification open. Protocol docs corrected: actual camelCase receipts/endpoints, no implemented device-revocation or delta-pull guarantee. |
 
-**Latest complete hosted verification:** `aa1d7738f9074393533fca74d0914ab2a3ab1a9d`,
-CI43968759380 **7/7**; read logs368 frontend,553 backend in35 suites,
+**Latest complete hosted verification:** `6486a1798249dcd9c068d73b9bf333ab45668984`,
+CI43970970744 **7/7**; read logs376 frontend,553 backend in35 suites,
 10 genuine browser journeys and owned-container cleanup. This closes
 FNL-022–026, including the real document API regression and stricter document
-browser checks. FNL-027 still requires its own CI.
+browser checks. FNL-027 is also verified; subsequent FNL-028 still needs its CI.
 
 Earlier published `9b79a03a4bc119e51f8f7933b3a82953715b6742`,
 CI43966537946, confirms read logs367/552, browser9/10 and cleanup, only6/7.
