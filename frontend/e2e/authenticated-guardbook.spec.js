@@ -462,6 +462,59 @@ test('retains a genuinely rejected attachment across reload and tenant switch wi
   }
 });
 
+test('uses genuine read-only API responses and surfaces a permission denial instead of simulated checks', async ({ page }) => {
+  test.setTimeout(120_000);
+  const openConsole = async () => {
+    await page.getByRole('button', { name: 'Backend & DB Blueprint', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Aktive Backend-Architektur', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Schreibgeschützte API-Konsole öffnen', exact: true }).click();
+    await expect(page.getByLabel('API-Endpunkt')).toBeVisible();
+  };
+  await page.goto('/');
+  await login(page);
+  await openConsole();
+  const identityResponse = page.waitForResponse(response =>
+    response.url().endsWith('/api/v1/auth/me') && response.request().method() === 'GET');
+  await page.getByRole('button', { name: 'Anfrage senden', exact: true }).click();
+  const identity = await identityResponse;
+  expect(identity.status()).toBe(200);
+  const identityData = (await identity.json()).data;
+  expect(identityData.tenantId).toBe(tenantA);
+  await expect(page.locator('pre')).toContainText(identityData.userId);
+  expect(JSON.parse(await page.locator('pre').textContent()).data).toEqual(identityData);
+  const writes = [];
+  page.on('request', request => {
+    if (new URL(request.url()).pathname.startsWith('/api/v1/') && request.method() !== 'GET') {
+      writes.push(request.method());
+    }
+  });
+  await page.getByLabel('API-Endpunkt').selectOption('/customers');
+  const customersResponse = page.waitForResponse(response =>
+    response.url().endsWith('/api/v1/customers') && response.request().method() === 'GET');
+  await page.getByRole('button', { name: 'Anfrage senden', exact: true }).click();
+  const customers = await customersResponse;
+  expect(customers.status()).toBe(200);
+  const customersData = (await customers.json()).data;
+  expect(customersData.length).toBeGreaterThan(0);
+  expect(customersData.map(customer => customer.id)).toEqual(['c1111111-1111-1111-1111-111111111111']);
+  await expect(page.locator('pre')).toContainText(customersData[0].id);
+  expect(JSON.parse(await page.locator('pre').textContent()).data).toEqual(customersData);
+  expect(writes).toEqual([]);
+  await logout(page);
+
+  await login(page, 'reader@browser.test.invalid');
+  await openConsole();
+  await page.getByLabel('API-Endpunkt').selectOption('/customers');
+  const deniedResponse = page.waitForResponse(response =>
+    response.url().endsWith('/api/v1/customers') && response.request().method() === 'GET');
+  await page.getByRole('button', { name: 'Anfrage senden', exact: true }).click();
+  const denied = await deniedResponse;
+  expect(denied.status()).toBe(403);
+  await expect(page.getByRole('alert')).toContainText('Berechtigung');
+  await expect(page.locator('pre')).toHaveText('Keine bestätigten Antwortdaten.');
+  await logout(page);
+});
+
 test('publishes an independently reviewed SOP and retries one employee acknowledgement after offline reload', async ({ page, context }) => {
   test.setTimeout(180_000);
   const title = `SOP-Browser-${randomUUID()}`;

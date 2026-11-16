@@ -1457,7 +1457,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     expect(markSynced).toHaveBeenCalledTimes(2);
   });
 
-  test('Regelbasierte Automatisierungsregeln bleiben tenantbezogen steuerbar', () => {
+  test('Lokale Automatisierungsentwürfe bleiben tenantbezogen steuerbar, ohne eine Ausführung zu behaupten', () => {
     useSecurityStore.setState({ currentTenantId: 'tenant-frankfurt', automations: [] });
     useSecurityStore.getState().addAutomationRule({
       name: 'Wachbuch-Regression',
@@ -1470,7 +1470,13 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     });
     const rule = useSecurityStore.getState().getTenantAutomations()[0];
     expect(rule.tenantId).toBe('tenant-frankfurt');
-    expect(useSecurityStore.getState().testRunRule(rule.id)).toMatchObject({ matched: true, actions: ['NOTIFY_MANAGER'] });
+    expect(rule).toMatchObject({
+      conditions: [{ field: 'priority', operator: 'equals', value: 'Kritisch' }],
+      actions: [{ type: 'NOTIFY_MANAGER' }]
+    });
+    useSecurityStore.setState({ currentTenantId: 'tenant-bavaria' });
+    expect(useSecurityStore.getState().getTenantAutomations()).toEqual([]);
+    useSecurityStore.setState({ currentTenantId: 'tenant-frankfurt' });
 
     useSecurityStore.getState().toggleAutomationRule(rule.id);
     expect(useSecurityStore.getState().getTenantAutomations()[0].active).toBe(false);

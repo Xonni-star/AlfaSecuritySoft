@@ -8,7 +8,7 @@ Die Session-Authentifizierung verwendet ein zufälliges HttpOnly-Cookie. `authen
 
 ## DMS-Datenfluss
 
-1. Das Frontend sendet einen binären Upload (`application/octet-stream`) mit Dateiname als Metadatum. Es werden weder Base64-Dateien noch Daten in `localStorage`/IndexedDB geschrieben.
+1. Das DMS-Modul sendet einen binären Online-Upload (`application/octet-stream`) mit Dateiname als Metadatum; es besitzt keine allgemeine Offline-Binärdateisynchronisation. Davon getrennt speichert das Wachbuch ownergebundene Offline-Fotoanhänge in IndexedDB und überträgt sie später über seinen idempotenten Anhangpfad.
 2. Der Server validiert Dateigröße, Dateiendung **und** Signatur/Formatinhalt (bei OOXML zusätzlich ZIP-Verzeichnis, CRC, Content-Type und Haupteintrag). Browser-MIME-Angaben werden nicht vertraut.
 3. Ein zufällig generierter UUID-Speicherschlüssel adressiert ein privates Objekt im konfigurierten S3-kompatiblen Bucket. Originaldateinamen werden ausschließlich als Metadaten gespeichert.
 4. PostgreSQL-Transaktionen legen Dokument, Version, Zuordnung und Audit-Einträge atomar an. Dateien werden vor dem Commit geschrieben und bei Fehlern best-effort entfernt; unerreichbare Dateien sind keine Downloadobjekte, da Downloads zuerst eine tenant-gefilterte DB-Version auflösen.
@@ -35,6 +35,17 @@ Die Übergabe-API verwendet `handovers:*`-RBAC und den Statusfluss `pending_hand
 ## REST-API
 
 Die Fachpfade haben das Präfix `/api/v1` und benötigen eine gültige Sitzung. Health, Login und Abschluss eines Passwort-Resets sind explizite öffentliche Ausnahmen. Die Request-/Response-Verzeichnisse sowie Berechtigungen stehen in [DOCUMENTS_API.md](./DOCUMENTS_API.md), [SOP_API.md](./SOP_API.md), [HANDOVERS_API.md](./HANDOVERS_API.md) und [PATROL_MANAGEMENT.md](./PATROL_MANAGEMENT.md). Aktive Module, Tests und Grenzen stehen in der [Implementierungsmatrix](../MODULE_IMPLEMENTATION_STATUS.md).
+
+Die schreibgeschützte UI-Konsole verwendet den bestehenden API-Client und nur
+`GET /auth/me`, `GET /customers` und `GET /logbook`. Sie zeigt tatsächliche
+Antwortdaten oder Fehler, keine generierten Tokens, Python-Testläufe oder
+RLS-Nachweise. Die Kundenliste liefert bewusst keine `tenant_id`; der
+Mandantenkontext stammt aus der authentifizierten Transaktion. Eine echte
+Browserregression vergleicht API-/UI-Daten und prüft eine tatsächliche
+Reader-Ablehnung. Der Abnahme-Prüfplan startet keine Tests und erteilt keine
+Produktionsfreigabe. Der generische Automationseditor besitzt keine
+serverseitige Persistenz oder Engine; die vorhandenen Alarm-/Patrolworker sind
+gesonderte implementierte Fachabläufe, keine generische Regelengine.
 
 ## Kontrollgänge und Patrol-Sync
 

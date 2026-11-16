@@ -4,6 +4,9 @@
 
 ### Hinzugefügt
 
+- Echte schreibgeschützte API-Konsole mit vorhandenen GET-Routen, tatsächlichen Daten/Fehlern, Pendingzustand und identitätsgebundenen Ergebnissen. Siebte echte Browserjourney prüft identische API-/UI-Daten, exakt erlaubten Kunden und tatsächliches HTTP 403 für SOP-only-Reader ohne Mutation. Lokal: Frontend 212/212 in 34 Dateien und Browser 7/7; exakte Hosted-Zuordnung steht im Projektstatus.
+- Dauerhafte Offline-Folgeaufgabe für kritische Vorfälle über bestehende Outbox, echte UUID-Quittung und Retry ohne doppelte DB-Zeilen. Sechste echte Browserjourney verliert die tatsächliche erste Incident-/Task-Antwort; CI 43928436875 auf `5ef02b3` bestand 7/7.
+- Erforderliche Sicherheits-/Produktionsreife-/Releasechecklisten und aktualisierte Fortsetzungsdokumentation mit ausdrücklich offenen Geräte-, Provider-, unabhängigen Sicherheits- und Rechtsgates; Modulmatrix um Technik-/Auditansichten und lokale Automationsentwürfe ergänzt.
 - Echte Browserregression für HTTP-415-Anhangablehnung: Originalbytes, Besitzer, Idempotenzschlüssel und Uploadfehler bleiben nach Offline-Reload und Mandantenwechsel erhalten. Rückkehr zum Besitzer wiederholt die echte Ablehnung; kein DMS-Dokument und unveränderte tatsächliche S3-Objekte. Lokal/gehostet 5/5 Browserfälle; CI 43921057411 auf `3617576` 7/7. Neuer Fall 120 s, übrige Budgets unverändert; Dateitypprüfung vor dem Scan, kein Malware-/Geräte-/Providernachweis.
 - Echte Browser-Fotojourney mit isoliertem privatem MinIO und ClamAV: Offline-Reload, fremdes Konto, verlorene echte Uploadquittung und identischer Retry; eine Version/ein Upload-/Clean-Audit, Originalbytes in S3/Download, anonymes S3 403 und Fremdtenant 404. Authentifizierte Suite lokal 4/4; neuer Fotofall 120 s, bestehende Budgets unverändert (Wachbuch/Identität 120 s, SOP 180 s). Kein Geräte-/Provider-Nachweis.
 - Echte SOP-Browserjourney: unabhängige Erstellung/Prüfung/Freigabe, reine Mitarbeiterrechte, bewusste Offline-Kenntnisnahme, Offline-Reload und idempotente Wiederholung nach verlorener echter Quittung. Authentifizierte Chromium-Suite lokal 3/3.
@@ -21,12 +24,19 @@
 
 ### Geändert
 
+- Technik-/Abnahmeansichten beschreiben den tatsächlichen Express-/TypeScript-Pfad und einen schreibgeschützten Prüfplan statt simulierter Python-/RLS-/Releasefreigaben. Generische Automationen sind ausdrücklich lokale, nicht persistierte Entwürfe ohne Ausführungsengine; immer erfolgreiche Store-Test-/Run-Methoden entfernt.
+- GitHub-Repositorybeschreibung nennt tatsächlichen React-/Express-/PostgreSQL-Pfad statt Node-Proxy und ausdrücklich keine Produktionsfreigabe.
 - Explizite Backend-Integrationsbudgets für lange echte API-/Sync-Abläufe (30 s) und Patrol (60 s), analog zu bestehenden Handover-/Migrationstests. Der vollständige Lauf besteht 546/546; frühere 5-s-/30-s-Fehlläufe bleiben im Phase-11-Bericht dokumentiert. Keine Performancekorrektur, keine entfernten Assertions oder geänderten Anwendungs-/DB-Defaults.
 - Oberflächentexte behaupten keine DIN-77200-/KRITIS-/BSI-Konformität mehr.
 - Wachbuch-Fehlermeldungen beschreiben die technische Append-Only-Regel statt einer unbelegten DIN-77200-Pflicht.
 
 ### Fehlerkorrekturen
 
+- Schlüssel-/Aufgabenformulare behalten unbestätigte Daten, zeigen Pending-/Fehlerzustände und ignorieren verspätete Antworten fremder Identitäten; keine erfundene Standardperson oder veraltete Schlüsselrückgabezeit.
+- Arbeitszeitberichte beachten Tenant-/Site-Grants und binden Ergebnisse an Identität, Scope und Zeitraum; lokale Kalendertage bleiben unabhängig vom positiven UTC-Offset gültig.
+- Native Ist-Zeitmuster akzeptieren gültige ISO-Zeitpunkte und lehnen fehlerhafte Eingaben tatsächlich ab; Komponentenregression und echter Chromium-Patterncheck.
+- Audit-Center zeigt lokale/Beispieldaten statt erfundener Pentest-/MFA-/Unveränderlichkeitsgarantien; unwirksamer Fernwiderruf und nicht implementierter Auskunftsexport sind deaktiviert. Lokale Vorfallzuordnung verwendet echte Sitzungsemail/-rolle und ausdrücklich nicht erhobene IP.
+- Verspätete IndexedDB-Erfolge und -Fehler verändern nach Identitätswechsel nicht die neue Queue-/Fehleranzeige; ursprünglicher dauerhafter Besitz bleibt erhalten. CI 43929519192 auf `3b98363` bestand 7/7 mit Frontend 206, Backend 546 und Browser 6.
 - Echter Browser-Runner wartet nach `docker stop` mit höchstens zehn erfolgreichen Containerlisten-Prüfungen auf die asynchrone `--rm`-Entfernung. Docker-Fehler werden nicht als erfolgreiche Bereinigung behandelt; die Ressourcenprüfung bleibt verpflichtend.
 - Offline-Browser-Fixture besitzt explizite Standort-/Mitarbeiter-Leserechte und wartet vor Erfassung auf die erwarteten Referenz-IDs; kein Umgehen des produktiven Rechte-Gatings.
 - Isolierter Restore-Drill erzeugt Archive mit UID/GID des aufrufenden Restore-Benutzers und prüft Besitz, Lesbarkeit sowie weiterhin private `0600`-Rechte. Behebt den Linux-Bindmount-Zugriffsfehler ohne Änderung der Produktionsrechte.

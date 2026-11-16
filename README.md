@@ -7,8 +7,8 @@ Mandantenfähige Verwaltungssoftware für Sicherheitsunternehmen mit Prozessbezu
 > Der aktuelle quellcodebasierte Stand und Prüfgrenzen stehen in [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md), der [Modul-Evidenzmatrix](./MODULE_IMPLEMENTATION_STATUS.md) und dem [Projekt-Tracker](./PROJECT_COMPLETION_TRACKER.md). Frühere Umsetzungsberichte einschließlich Phase 1 sind historische Snapshots.
 > Alarmmanagement (#12), Übergaben (#13) und Kontrollgänge (#14) sind in `main` integriert. Details: [Handovers-API](./frontend/HANDOVERS_API.md), [Alarm-API](./frontend/ALARM_EMERGENCY_API.md) und [Kontrollgang-Modul](./frontend/PATROL_MANAGEMENT.md).
 > **GitHub-Status (16.11.2026):** `main` steht auf `9df02aaa5ef01de78e0fe5d53be446b2037db24d`; PRs #50–#65 sind gemergt und PR [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66) ist der einzige offene PR. Main-CI [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) bestand 7/7 Jobs und die Release-Artefakt-Prüfung [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) 2/2 auf diesem SHA.
-> Die Phase-10/11-Codeänderungen sind veröffentlicht. Gehostet verifizierte Code-Revision einschließlich Foto-Replay, Anhang-Ablehnungsfall, Fixture-, privater Archivbesitz- und asynchroner Cleanup-Korrekturen: `3617576a8408002a99e1ed4f66e5a94b17a13cf5`, [CI 43921057411](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43921057411) **7/7 Jobs**. Frühere 5/7- und 6/7-Fehlläufe bleiben im Projektstatus dokumentiert; spätere reine Dokumentationscommits sind nicht Teil dieser Code-ID.
-> Die authentifizierte Suite besteht lokal und gehostet **5/5 Browserjourneys** mit privatem MinIO, echtem ClamAV und Originalbytes in S3/Download. Verlorene Quittung erzeugt beim Retry kein zweites Dokument; anonymer Speicherzugriff und Fremdmandanten-Download werden abgewiesen. Eine tatsächlich mit HTTP 415 abgelehnte Datei bleibt nach Offline-Reload und Mandantenwechsel mit Originaldaten und Fehlermeldung lokal erhalten, ohne DMS-Dokument oder S3-Objekt. Exakte Revisionszuordnung und Prüfgrenzen stehen im aktuellen Projektstatus.
+> Zuletzt vollständig gehostet geprüfter Code: `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`, [CI 43929519192](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43929519192) **7/7 Jobs**; Logs: Frontend **206/206**, Backend **546/546**, echte Browserjourneys **6/6** einschließlich kritischem Offline-Vorfall mit dauerhafter Folgeaufgabe. Frühere Fehlläufe bleiben dokumentiert.
+> Nachfolgende Finalisierungsänderung FNL-013: lokal **212/212 Frontendtests in 34 Dateien**, Typprüfung, beide Builds und **7/7 echte Browserjourneys** bestanden. Die neue schreibgeschützte API-Konsole zeigt tatsächliche GET-Antworten und echte Berechtigungsfehler statt erfundener Prüfungen. Architektur-/Abnahmeansichten versprechen keine Produktionsreife; generische Automationen sind ausdrücklich lokale, nicht persistierte Entwürfe ohne Ausführungsengine. Der vorige CI-Lauf wird nicht als Nachweis dieser Nachfolgeänderung ausgegeben.
 > **Projektstatus: TEILWEISE IMPLEMENTIERT / OFFEN; nicht für Produktion freigegeben.** Vollständige Rollen-/Objekt-/Geräteabnahme, realer S3-Provider-Restore und gemessene RPO/RTO bleiben offen. Exakte Revisions-/Prüfgrenzen: [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md), [Phase-11-Bericht](./FINAL_PHASE_11_COMPLETION_REPORT.md) und [Deployment-/Restore-Runbook](./frontend/deploy/PRODUCTION_DEPLOYMENT.md).
 > **Historischer GitHub-Status (15.11.2026, 20:59 CET):** `main` stand auf `879ae951d6cea52fd84d01dc699cf2ed08843300`; PRs #50–#59 waren gemergt und es waren keine PRs offen. Post-Merge-CI [43754217295](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43754217295) bestand 7/7 Jobs; Paketierung und Artefaktvalidierung [43754417115](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43754417115) bestanden 2/2. Diese Ergebnisse belegen keine Produktion. Frühere Phase- und PR-Statusangaben in diesem README sind historische Snapshots, keine Live-Statusquelle.
 > **Historischer Status-Snapshot (15.11.2026, 20:30 CET):** Die folgenden Berechtigungs- und Dependency-Audit-Absätze beschreiben den damaligen Stand, als PRs #57 und #58 noch offen waren. Beide PRs wurden inzwischen gemergt; der aktuelle Mainline- und CI-Status steht in [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md). Die damaligen Branch-Tests bleiben historische Evidenz und werden nicht als neue Mainline-Ergebnisse umgedeutet.
@@ -92,33 +92,23 @@ Das Backend verweigert den Start bei fehlenden, ungültigen oder offensichtlich 
 
 ## Module
 
-**Lokal nachgewiesene Phase-11-Pakete:** vollständiger Backendlauf 546/546
-in 35 Suites, einschließlich authentifizierter Berechtigungsmatrix 16/16.
-API-/Sync-Mehrschritttests haben jetzt explizite 30-s-, Patrol 60-s-Budgets;
-die früheren 5-s-/30-s-Fehlläufe und die Abgrenzung zur weiterhin offenen
-Performanceabnahme stehen im Phase-11-Bericht. Keine Assertions wurden entfernt.
-Frontend 184/184 Tests mit zwei Workern und unverändertem Standard-5-s-Budget
-(lange Roster-Szenarien getrennt, ausstehende Einmal-Mocks isoliert);
-Chromium-API-Fixture 1/1 und echte Cookie-/CSRF-authentifizierte
-Express-/PostgreSQL-Browserjourneys 3/3. Dazu gehört der echte SOP-Ablauf mit
-getrenntem Autor, Prüfer, Freigebenden und Mitarbeiter, bewusster Offlinekenntnisnahme,
-Reload und identischem Retry nach verlorener Serverantwort. Leere optionale
-SOP-Felder werden korrekt als `null` übertragen; die Listen liefern die exakte
-Versions-ID. Wachbuchauswahlen bleiben auch bei ersetzten Stammdaten gültig.
-Der Datenlader berücksichtigt Tenant-, Standort- und Eigenrechte statt für
-reine SOP-Konten unberechtigte Basismodule abzurufen. Die Navigation zeigt die
-echte Sitzungsrolle statt einer lokal simulierten Rolle; reale Ladefehler bleiben sichtbar.
-Die Navigation bietet Abmeldung; der echte Backend-Test prüft den Widerruf auch
-mit einer zurückbehaltenen Kopie des alten Cookies.
-Konten-/Mandantenwechsel erhalten die Besitzerbindung offener Mutationen;
-Session-Restore liest jetzt die tatsächliche `userId` der API.
-Die Reportmatrix prüft vier Berichte und Arbeitszeit-CSV mit Tenant-/Site-Grants,
-fehlenden/widerrufenen Rechten, manipulierten Tenant-Hinweisen und direkten IDs.
-Migration 042 erhält bestehende Migrationsprüfsummen; der isolierte
-PostgreSQL-/MinIO-Drill prüft Rollback nach DDL-Fehler und Backup-Health
-(Frische/letzter Fehler, keine Restore-Garantie). Gehostete CI für diese lokalen
-Commits und breite Geräte-/Provider-/Produktionsabnahme bleiben offen.
-Details und konkrete Fortsetzung: [Phase-11-Bericht](./FINAL_PHASE_11_COMPLETION_REPORT.md).
+**Nachgewiesener Entwicklungsumfang:** Die oben revisionsgebundenen CI-Logs
+bestätigen 546 Backendtests in 35 Suites; die authentifizierte
+Berechtigungsmatrix umfasst 16 gezielte Fälle, nicht alle Rollen-/Objektkombinationen.
+Die aktuelle lokale Suite umfasst 212 Frontendtests mit zwei Workern und
+unverändertem Standard-5-s-Budget sowie sieben echte Cookie-/CSRF-/Express-/
+PostgreSQL-Browserjourneys. Sie prüfen Besitzerbindung, kritische Offline-
+Folgeaufgaben, echte verlorene Quittungen, private MinIO-/ClamAV-Fotoabläufe,
+HTTP-415-Ablehnung, getrennte SOP-Konten und echte API-Antworten/HTTP 403.
+Formulare bewahren unbestätigte Entwürfe; Reportergebnisse und verspätete lokale
+Schreibantworten bleiben identitätsgebunden. Migration 042 erhält veröffentlichte
+Prüfsummen; isolierte Restore-Drills prüfen Fehlerpfade, nicht einen externen Provider.
+Vollständige Rollen-/Geräte-/Provider-/Produktionsabnahme bleibt offen.
+Ergebnisse und verbleibende interne Arbeit:
+[Finalisierungsbericht](./FINAL_PROJECT_COMPLETION_REPORT.md),
+[Sicherheitsprüfung](./FINAL_SECURITY_AUDIT.md),
+[Produktionsreife](./PRODUCTION_READINESS_REPORT.md) und
+[Releasecheckliste](./PRODUCTION_RELEASE_CHECKLIST.md).
 
 Die Statusangaben unterscheiden Implementierung und Nachweis: **IMPLEMENTIERT** bedeutet, dass die Funktion im Quellcode vorhanden ist; **IMPLEMENTIERT UND GETESTET** nur, wenn passende Tests für den bezeichneten Umfang nachweislich bestanden sind. **TEILWEISE IMPLEMENTIERT**, **IN ENTWICKLUNG**, **GEPLANT**, **NICHT VERIFIZIERT** und **OFFEN** kennzeichnen Teilumfang, laufende Arbeit, Planung oder ausstehende Evidenz/Abnahme. Kein Status bedeutet Produktionsfreigabe.
 
@@ -128,18 +118,21 @@ Die Statusangaben unterscheiden Implementierung und Nachweis: **IMPLEMENTIERT** 
 | Objekte | IMPLEMENTIERT | Mandantengeschützte CRUD-/Archiv-/Wiederherstellungs- und Sync-Pfade |
 | Mitarbeiter | IMPLEMENTIERT | Stammdaten, Zuordnungen, Qualifikationen, Abwesenheiten und Kontoverknüpfung; Berechtigungen bleiben serverseitig |
 | Schichten | TEILWEISE IMPLEMENTIERT | Konfigurierbare tägliche, wöchentliche und monatliche Arbeitszeitregeln gelten für aktive, freigegebene Profilversionen; keine allgemeine Arbeitszeit-, Ruhezeit-, Tarif- oder Rechtskonformitätsprüfung |
-| Berichte | IMPLEMENTIERT UND GETESTET | Die Report-Endpunkte begrenzen Standort-Grants serverseitig für Arbeitsstunden/CSV, Abdeckung, Qualifikationsangebot/-bedarf und Abwesenheiten samt Aggregaten. Backend-Build und 33 PostgreSQL-gestützte Integrations-/Regressionstests bestanden lokal; Hosted CI für diesen Worktree steht noch aus. |
-| Schlüssel und Aufgaben | IMPLEMENTIERT | CRUD und Sync-Pfade; eine vollständige Offline- und Revisionshistorie ist nicht für alle Aktionen nachgewiesen |
+| Berichte | IMPLEMENTIERT UND GETESTET | Server-seitige Tenant-/Standortgrenzen für vier Berichte und Arbeitszeit-CSV; 16 gezielte authentifizierte PostgreSQL-Berechtigungsfälle im vollständigen 546er-Backendlauf. Frontend-Grants, Identitätsbindung und Kalendertage zusätzlich geprüft; keine vollständige Rollen-/Objektabnahme. |
+| Schlüssel und Aufgaben | IMPLEMENTIERT UND GETESTET | API-/Sync-Pfade und bestätigte Formularpersistenz; kritische Offline-Folgeaufgabe mit echtem Quittungsverlust geprüft. Keine vollständige UI-/Historienabnahme aller Aktionen. |
 | Wachbuch | TEILWEISE IMPLEMENTIERT | Lesen, Erfassung, append-only Korrekturergänzungen und Sync; keine vollständige Abnahme aller Offline-/Auditfälle |
-| Dokumente | TEILWEISE IMPLEMENTIERT | Tenant-scoped API, private Dateispeicherung, Versionen, Kategorien/Ordner, Audit, Beziehungen und ClamAV-Adapter; Offline-Binärdateien fehlen. CI-API-Flows belegen keine Produktionsverfügbarkeit oder -abnahme. |
-| SOPs | TEILWEISE IMPLEMENTIERT | Versionierter Prüf-/Freigabe-Workflow, Zuweisungen, Bestätigungen und Berichte; Details siehe [SOP-API](./frontend/SOP_API.md) |
+| Dokumente | TEILWEISE IMPLEMENTIERT | Tenant-scoped API, private Dateispeicherung, Versionen und ClamAV. Wachbuchfotos haben echten ownergebundenen Offline-Replay-/Ablehnungsnachweis; das ist keine generische DMS-Offline-Binärsynchronisation oder Providerabnahme. |
+| SOPs | IMPLEMENTIERT UND GETESTET | Abgedeckter versionierter Prüf-/Freigabe- und expliziter Offline-Kenntnisnahmepfad mit getrennten Konten; keine vollständige Geräte-/Providerabnahme. Details: [SOP-API](./frontend/SOP_API.md). |
 | Alarme/Notfallpläne | TEILWEISE IMPLEMENTIERT | Versionierte Pläne, Vorfälle, Ereignisse, Offline-Queue und Eskalationsworker; externe E-Mail-/Push-Zustellung ist nicht konfiguriert |
 | Übergaben | TEILWEISE IMPLEMENTIERT | Tenant-scoped Protokolle, getrennte Bestätigungen, Ereignisse, übernommene Aufgaben, DMS-Links und Offline-Sync; keine Produktionsabnahme |
 | Kontrollgänge | TEILWEISE IMPLEMENTIERT | RLS, QR/NFC/manuelle Scans, versionierte Routen, Gruppen, Termin-Vorkommen, Abweichungen und Offline-Sync; externe Benachrichtigung und Offline-Binäranhänge fehlen |
 | Benutzer/Rechte | IMPLEMENTIERT | Tenant-scoped Benutzerverwaltung, Rollen/Grants, Passwort-Reset-Zustellungsschnittstelle und standortbezogene Autorisierung; Online-Adminfunktionen, keine Produktionsfreigabe |
 | Mandantenverwaltung | IMPLEMENTIERT | Systemweite Anlage, Bearbeitung und Deaktivierung durch `is_superadmin`; getrennt von Tenant-Benutzern und Sitzungswechsel, Änderungen werden tenant-scoped auditiert. Details: [Mandantenverwaltungs-API](./frontend/TENANT_ADMINISTRATION_API.md). |
 | API-Rate-Limit | IMPLEMENTIERT | Per-IP-Limit mit gemeinsamem Redis-Store; Redis ist im Produktionsmodus erforderlich |
-| Offline-Sync | TEILWEISE IMPLEMENTIERT | IndexedDB-Outbox und modulbezogene Sync-Pfade; PR [#64](https://github.com/Xonni-star/SecurityOps-2.0/pull/64) ergänzt idempotenten Wachbuch-Anhang-Upload mit Migration 041. Anhänge ohne gespeicherte `userId` bleiben lokal und werden weder angezeigt noch automatisch übertragen; ein sicherer Recovery-Pfad sowie Geräte-/Backendabnahme und Hintergrundausführung bleiben offen. |
+| Offline-Sync | TEILWEISE IMPLEMENTIERT | IndexedDB-Outbox, identitätsgebundenes Replay, Wachbuch-Anhänge und kritische Folgeaufgaben mit echten API-/DB-Nachweisen. Anhänge ohne `userId` bleiben verborgen und lokal; autorisierter Recovery-Pfad, vollständige Geräte-/Rollenabnahme und Hintergrundausführung bleiben offen. |
+| Generische Automationen | TEILWEISE IMPLEMENTIERT | Lokale, nicht persistierte Entwürfe; keine generische Ausführungsengine, Bedingungsauswertung, dauerhafte Historie oder Providerzustellung. |
+| Sicherheits-/Auditansicht | TEILWEISE IMPLEMENTIERT | Lokale/Beispieldaten markiert; kein vollständiger serverseitiger Auditstream, Fernwiderruf oder Datenschutzauskunftsexport. Eigene Abmeldung ist tatsächlich angebunden. |
+| Technik-/Abnahmeansichten | IMPLEMENTIERT UND GETESTET | Echte schreibgeschützte API-Daten/Fehler und manueller Prüfplan statt simulierter Test-/Produktionsfreigaben. Keine Sicherheitszertifizierung. |
 | Dienstplanung | TEILWEISE IMPLEMENTIERT | Backend/UI und weitergehende Workflows einschließlich konfigurierbarer Arbeitszeitlimits aus gemergten PRs [#33](https://github.com/Xonni-star/SecurityOps-2.0/pull/33) und [#36](https://github.com/Xonni-star/SecurityOps-2.0/pull/36); keine Rechtskonformitäts- oder fachliche Produktionsabnahme. Siehe [Mainline-Integrationsbericht](./MAINLINE_INTEGRATION_STATUS.md). |
 
 Eine Produktions-Compose-Konfiguration ist vorhanden: [docker-compose.production.yml](./frontend/deploy/docker-compose.production.yml). Ihre Existenz belegt nicht, dass Services tatsächlich in Produktion deployed oder abgenommen wurden; die Statusangaben oben bleiben maßgeblich.

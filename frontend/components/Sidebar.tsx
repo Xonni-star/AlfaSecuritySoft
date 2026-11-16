@@ -97,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobileMenu }) => {
       title: 'DOKUMENTATION & SCHULUNG',
       items: [
         { id: 'user_guide', label: 'Bebildertes Handbuch', icon: BookOpen, visible: true },
-        { id: 'e2e_acceptance', label: 'E2E-Abnahme & Release 1.0', icon: Award, visible: canAccessAdmin },
+        { id: 'e2e_acceptance', label: 'Abnahme-Prüfplan', icon: Award, visible: canAccessAdmin },
         { id: 'security_audit', label: 'Sicherheits-Audit & DSGVO', icon: ShieldCheck, visible: canAccessAdmin },
         { id: 'architecture', label: 'Backend & DB Blueprint', icon: Code2, visible: canAccessAdmin }
       ]

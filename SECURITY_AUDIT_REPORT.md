@@ -3,6 +3,20 @@
 **Review date:** 2026-11-16
 **Scope:** PR #66 changes, browser-based report CSV export, local legacy-attachment recovery, backend authorization boundaries, PostgreSQL tenant/RLS context, authentication/session handling, and web security configuration. This is not a comprehensive security audit, penetration test, or certification.
 
+**Finalization evidence update, not a new comprehensive security review:**
+`3b9836334690e5b5e2da9ffca518b4b9f63c81a5` passed exact
+[CI 43929519192](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43929519192),
+7/7 jobs; logs confirm frontend 206/206, backend 546/546 and real browser 6/6
+with container cleanup. Subsequent FNL-013 locally passes frontend 212/212,
+strict typecheck, both builds and real browser 7/7. It replaces simulated
+API/Python/acceptance results with real read-only GET data/errors and an honest
+checklist; generic automation remains local drafts without an engine.
+The bounded review reported no confirmed new vulnerability and supplied no
+complete coverage matrix. Current revision boundaries and remaining internal/
+external gates are in [current status](./PROJECT_CURRENT_STATUS.md) and
+[final security report](./FINAL_SECURITY_AUDIT.md). Lower historical test totals
+below remain evidence only for their original review snapshots.
+
 **Earlier Phase 11 review snapshot:** A bounded read-only review of remaining offline/file/production boundaries confirmed no new vulnerability. Its then-current evidence included 534 backend tests, the 215-route unauthenticated matrix, a 041→042 checksum-preserving upgrade, mid-DDL restore rollback, backup failure/freshness healthchecks and real authenticated Chromium/PostgreSQL replay. Later regression/CI results are recorded below; they do not represent another or broader security review. GuardBook reference-ID, fixture-grant and test-archive ownership corrections are functional/test defects, not newly established exploits.
 
 ### New confirmed findings from the bounded Phase 11 review
@@ -13,6 +27,10 @@
 No new confirmed findings in that review scope. Previously confirmed and fixed findings remain recorded below; this does not assert absence of vulnerabilities outside the reviewed paths.
 
 ## Findings
+
+Historical findings and their then-current dispositions follow. “Current
+worktree” in these preserved entries refers to the original review snapshot,
+not an unpublished fix today; current publication/CI evidence is indexed above.
 
 | Finding | Risk | Disposition |
 |---|---|---|

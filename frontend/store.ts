@@ -656,8 +656,6 @@ interface SecurityOpsStore {
   deleteAutomationRule: (id: string) => void;
   duplicateAutomationRule: (id: string) => void;
   toggleAutomationRule: (id: string) => void;
-  testRunRule: (id: string) => { matched: boolean; actions: string[]; durationMs: number };
-  runAutomationsNow: () => number;
 
   // Datasets
   clients: Client[];
@@ -2137,16 +2135,6 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         a.id === id ? { ...a, active: !a.active } : a
       )
     }));
-  },
-
-  testRunRule: (id) => {
-    const rule = get().automations.find((a) => a.id === id);
-    if (!rule) return { matched: false, actions: [], durationMs: 0 };
-    return { matched: true, actions: rule.actions.map((a: any) => a.type), durationMs: 25 };
-  },
-
-  runAutomationsNow: () => {
-    return 2;
   },
 
   clients: initialClients,

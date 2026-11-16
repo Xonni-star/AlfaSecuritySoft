@@ -8,12 +8,34 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
-**Fully hosted-verified code revision:** `3617576a8408002a99e1ed4f66e5a94b17a13cf5`
+**Fully hosted-verified code revision:** `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
-Later documentation-only commits are outside this code-revision identifier.
+Its exact [CI 43929519192](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43929519192)
+passed **7/7 jobs**; downloaded logs confirm frontend **206/206**, backend
+**546/546 in 35 suites**, real browser **6/6** and owned-container cleanup.
+This includes confirmed form writes, report grant/date/identity fixes, durable
+critical-incident follow-ups, truthful audit displays and delayed local-write
+identity isolation. Earlier code `5ef02b3ab0b9f711025405247e711f21d3ee9811`
+also passed exact CI 43928436875, 7/7.
 
-**Rejected-attachment extension — IMPLEMENTIERT UND GETESTET:** The complete real
+**Subsequent FNL-013 worktree — locally IMPLEMENTIERT UND GETESTET:** Genuine
+read-only API console (`/auth/me`, `/customers`, `/logbook`), actual response/error
+display and identity-bound results replace fabricated API/Python/isolation checks.
+Acceptance is a read-only checklist, not a local role-switch or fake release.
+Generic automations are explicitly non-persistent local drafts without an engine;
+fake execution methods are removed. New tests: 60/60 focused, full frontend
+**212/212 in 34 files**, strict typecheck, frontend/backend builds, root structure,
+production Compose configuration and diff check passed. All **7/7 real browser
+journeys** passed with PostgreSQL 16, private MinIO, real ClamAV and cleanup.
+The new case compares UI JSON with actual GET data, checks the exact authorized
+seed customer and a SOP-only reader's real HTTP 403, with no mutation request.
+Two initial test assumptions were corrected: the actual singular/counted log-tab
+name and the customer list's public response shape (no `tenant_id` field).
+No product permission was weakened and no assertion removed. Hosted verification
+of these newer changes is separate from the preceding revision's CI.
+
+**Historical rejected-attachment extension (`3617576`) — IMPLEMENTIERT UND GETESTET:** The complete real
 browser suite passed **5/5** locally and in the hosted root job of
 [CI 43921057411](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43921057411),
 which passed **7/7 jobs** on the exact code revision above. A synthetic invalid
@@ -85,10 +107,10 @@ reference data replaces initial IDs. These three real-browser scenarios also
 passed in the hosted root job of run 43906594339; its two other failing jobs
 still prevented an overall green CI result.
 
-**Latest regression package:** `authorization_boundaries.integration.test.ts`
+**Earlier Phase-11 regression package:** `authorization_boundaries.integration.test.ts`
 passes **16/16** against fresh migrated/seeded PostgreSQL 16: four reports and
 CSV, tenant/site grants, missing/revoked grants, forged tenant hints and direct
-shift IDs. The full frontend suite now passes **184/184** with two workers and
+shift IDs. Its full frontend suite passed **184/184** with two workers and
 unchanged default five-second test/hook budgets. Long Roster scenarios were
 separated; unconsumed one-shot mocks and a selector that refreshed the wrong
 section were corrected. The new full backend run passes **546/546** in **35/35**

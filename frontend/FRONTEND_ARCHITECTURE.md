@@ -11,3 +11,14 @@ The browser application uses React, TypeScript, Vite, and Zustand. Feature modul
 ## Local and offline state
 
 IndexedDB stores tenant/user-partitioned offline data and queued mutations for supported workflows. Offline support is feature-specific; a locally queued change is not considered server-persisted or authorized until the API accepts it. The API remains responsible for authorization, tenant/site scope, validation, and idempotent synchronization.
+
+## Technical and acceptance views
+
+The backend console uses the existing API client for a fixed read-only GET
+allowlist and binds actual data/errors to the current identity. The architecture
+view describes the active Express/TypeScript path, not historical Python code.
+The acceptance view is a read-only checklist, not a release or live RLS test.
+The audit center labels local/example data and unavailable integrations; the
+generic automation editor holds non-persistent local drafts without an execution
+engine. Neither view generates successful security or production-acceptance
+results. Revision-specific test evidence remains in the project status and CI.

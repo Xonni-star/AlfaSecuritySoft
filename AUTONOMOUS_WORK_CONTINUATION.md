@@ -82,26 +82,56 @@ explicitly uncollected IP. Three regression assertions failed before the store
 fix and pass afterwards. Focused 13/13, typecheck and frontend build passed.
 Full follow-up passed **206/206 frontend tests in 32 files** and **6/6 real browser
 journeys** with container cleanup. Frontend typecheck/production build passed.
-This newer code still requires publication and exact-head hosted verification.
+At that preceding snapshot, this code still required publication and hosted verification.
 
-FNL-013 is the next concrete functional audit item: other architectural/demo
-screens still use timer-generated API/isolation/acceptance results and absolute
-isolation badges. Inspect `BackendLiveConsole`, `ArchitectureCenter`,
-`E2EAcceptanceCenter` and `AutomationCenter`; distinguish real local/API actions
-from simulation, remove false claims, do not manufacture a backend or CI pass.
-Then reconcile required final documents, module inventory and GitHub description.
+That previous publication prerequisite is now satisfied:
+`3b9836334690e5b5e2da9ffca518b4b9f63c81a5` passed exact
+[CI 43929519192](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43929519192),
+7/7. Downloaded logs confirm frontend 206/206, backend 546/546 in 35 suites,
+real browser 6/6 and container cleanup. Log:
+`finalization-truthful-audit-hosted-ci.log`.
+
+FNL-013 is implemented and locally verified. `BackendLiveConsole` uses the real
+API client and only existing GET routes `/auth/me`, `/customers`, `/logbook`;
+data/errors and pending responses are identity-bound. No `/clients` alias or
+health-envelope workaround was introduced. `ArchitectureCenter` describes
+Express/TypeScript/PostgreSQL. `E2EAcceptanceCenter` is a read-only checklist;
+its sidebar label is `Abnahme-Prüfplan`. `AutomationCenter` is explicitly a
+local, non-persistent draft editor without an execution engine. Fake run/test
+store methods and simulated Python/API/isolation/production pass badges are gone.
+
+Six new component tests plus existing store tests passed 60/60 focused.
+Full frontend: **212/212 in 34 files**, two workers, unchanged standard budgets.
+Strict typecheck, frontend/backend builds, root structure, Compose configuration
+and diff check passed. All **7/7 real browser journeys** passed, including a new
+real GET/UI JSON comparison, exact allowed customer ID and scoped reader's
+actual HTTP 403 with no mutation. Three owned containers removed.
+Initial test failures were incorrect assumptions about the actual singular/
+counted log-tab name and the customer response shape: it deliberately omits
+`tenant_id`. The corrected case positively requires the sole authorized seeded
+customer `c1111111-1111-1111-1111-111111111111`, not a weaker empty-list check.
+Log: `finalization-genuine-console-browser-final.log`.
+
+Required `FINAL_SECURITY_AUDIT.md`, `PRODUCTION_READINESS_REPORT.md` and
+`PRODUCTION_RELEASE_CHECKLIST.md` now exist and explicitly preserve open
+internal/external boundaries. README/current status, module matrix, changelog,
+tracker, final report and contributor instructions reflect the actual evidence.
+GitHub description was changed and read back: actual React/Express/PostgreSQL,
+in development, not approved for production. Do not repeat this already done work.
 
 ## Remaining work
 
-1. Complete PR review, investigate concrete findings and run their regressions.
-2. Audit and correct remaining contributor/install/API/operations documentation.
-   `CONTRIBUTING.md` still describes the real browser runner as PostgreSQL-only.
-   GitHub description still incorrectly describes the backend as a Node proxy.
-3. Execute available full tests/builds/integrations and CI on the actual resulting
-   revision. No ESLint configuration or script was found; do not claim it ran.
-4. Create/update the requested final security/project/readiness/checklist documents
-   from evidence, not promises. Keep this continuation file and tracker current.
-5. Repeat the repository audit after each fix round. Merge PR #66 only after
+1. Publish the coherent FNL-013/documentation package and verify all hosted jobs
+   on the exact new full SHA; inspect actual logs before updating evidence.
+   The preceding 7/7 does not validate these newer changes.
+2. Repeat a bounded convergence audit for new concrete functional defects,
+   misleading current UI/docs and missing directly relevant regressions.
+   Do not turn actual API 403s or functional test fixture errors into unproven
+   security vulnerabilities. Full roles/objects and generic automation/audit/
+   recovery features remain internal open scope, not externally blocked or done.
+3. Keep the requested final documents/tracker current; no ESLint configuration
+   or script was found, so do not claim lint ran.
+4. Merge PR #66 only after
    functional compatibility, review issues and current CI are verified; the new
    assignment authorizes integration but not a production deployment.
 

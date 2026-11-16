@@ -42,8 +42,6 @@ export const AutomationCenter: React.FC = () => {
     deleteAutomationRule,
     duplicateAutomationRule,
     toggleAutomationRule,
-    testRunRule,
-    runAutomationsNow,
     getTenantEmployees,
     getTenantClients,
     getTenantKeys,
@@ -59,8 +57,6 @@ export const AutomationCenter: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'rules' | 'builder' | 'templates' | 'logs'>('rules');
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
-  const [isTestRunning, setIsTestRunning] = useState<string | null>(null);
-  const [testResultFeedback, setTestResultFeedback] = useState<string | null>(null);
 
   // Visual Rule Builder State
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
@@ -78,20 +74,6 @@ export const AutomationCenter: React.FC = () => {
   const filteredRules = automations.filter(
     (r) => filterCategory === 'ALL' || r.category === filterCategory
   );
-
-  const handleRunNow = () => {
-    runAutomationsNow();
-  };
-
-  const handleTestRun = (ruleId: string) => {
-    setIsTestRunning(ruleId);
-    setTimeout(() => {
-      const result = testRunRule(ruleId);
-      setTestResultFeedback(`Probelauf erfolgreich (${result.durationMs}ms): Aktionen [${result.actions.join(', ')}] ausgewertet.`);
-      setIsTestRunning(null);
-      setTimeout(() => setTestResultFeedback(null), 4000);
-    }, 450);
-  };
 
   const handleOpenBuilderNew = () => {
     setEditingRuleId(null);
@@ -167,20 +149,20 @@ export const AutomationCenter: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <Zap className="w-6 h-6 text-amber-400" />
-            <h1 className="text-xl font-bold text-white">Automatisierungsengine & Intelligente Arbeitsabläufe</h1>
+            <h1 className="text-xl font-bold text-white">Automatisierungsregeln: lokaler Entwurfseditor</h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Deklarative Event-Trigger, konfigurierbare Bedingungen, Idempotenz-Schutz und lückenlose Ausführungsprotokolle für {tenant.name}.
+            Lokale Regelentwürfe und Beispiele für {tenant.name}; keine angebundene Ausführungsengine.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
-            onClick={handleRunNow}
+            disabled
             className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs shadow-lg shadow-amber-600/20 transition flex items-center gap-2 shrink-0 self-start sm:self-auto"
           >
             <Play className="w-4 h-4" />
-            <span>Jetzt Ausführen</span>
+            <span>Ausführung nicht implementiert</span>
           </button>
           <button
             onClick={handleOpenBuilderNew}
@@ -192,13 +174,12 @@ export const AutomationCenter: React.FC = () => {
         </div>
       </div>
 
-      {/* Test Feedback Notice */}
-      {testResultFeedback && (
-        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{testResultFeedback}</span>
-        </div>
-      )}
+      <p role="status" className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+        TEILWEISE IMPLEMENTIERT: Änderungen bleiben nur im Arbeitsspeicher dieser
+        Oberfläche. Keine serverseitige Regelpersistenz, Bedingungsauswertung,
+        Hintergrundausführung oder Zustellung angebunden.
+        Aktionen und Protokolle unten sind Beispieldaten, keine bestätigten Ausführungen.
+      </p>
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
@@ -207,21 +188,21 @@ export const AutomationCenter: React.FC = () => {
           <span className="text-xl font-bold text-slate-100 mt-1 block">
             {automations.filter((a) => a.active).length} / {automations.length}
           </span>
-          <span className="text-[10px] text-emerald-400">100% Mandant isoliert</span>
+          <span className="text-[10px] text-slate-400">Lokale Mandantenfilterung, kein RLS-Nachweis</span>
         </div>
 
         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
-          <span className="text-slate-400 block text-[11px]">Ausgelöste Aktionen</span>
+          <span className="text-slate-400 block text-[11px]">Beispielaktionen</span>
           <span className="text-xl font-bold text-slate-100 mt-1 block">
             {automations.reduce((sum, r) => sum + r.actionsTriggeredCount, 0)} Aktionen
           </span>
-          <span className="text-[10px] text-slate-500">Tasks & Benachrichtigungen</span>
+          <span className="text-[10px] text-slate-500">Keine Zustellbestätigung</span>
         </div>
 
         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
-          <span className="text-slate-400 block text-[11px]">Ausführungsprotokolle</span>
+          <span className="text-slate-400 block text-[11px]">Beispielprotokolle</span>
           <span className="text-xl font-bold text-slate-100 mt-1 block">{executionLogs.length} Einträge</span>
-          <span className="text-[10px] text-blue-400">Idempotent geprüft</span>
+          <span className="text-[10px] text-slate-400">Keine Worker-Anbindung</span>
         </div>
 
         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
@@ -314,19 +295,18 @@ export const AutomationCenter: React.FC = () => {
                     <span>•</span>
                     <span>Aktionen: <strong className="text-slate-300">{rule.actions.map((a) => a.type).join(', ')}</strong></span>
                     <span>•</span>
-                    <span>Ausgelöst: <strong className="text-emerald-400">{rule.actionsTriggeredCount}x</strong></span>
+                    <span>Beispielzähler: <strong className="text-slate-300">{rule.actionsTriggeredCount}x</strong></span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                   <button
-                    onClick={() => handleTestRun(rule.id)}
-                    disabled={isTestRunning === rule.id}
+                    disabled
                     className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1 transition"
-                    title="Testlauf durchführen"
+                    title="Keine Ausführungsengine angebunden"
                   >
-                    <Play className={`w-3 h-3 ${isTestRunning === rule.id ? 'animate-spin' : ''}`} />
-                    <span>Testen</span>
+                    <Play className="w-3 h-3" />
+                    <span>Test nicht implementiert</span>
                   </button>
 
                   <button
@@ -571,7 +551,7 @@ export const AutomationCenter: React.FC = () => {
       {activeTab === 'logs' && (
         <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-sm">
           <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white">Ausführungsverlauf & Idempotenzprotokoll</h2>
+            <h2 className="text-sm font-bold text-white">Beispielprotokolle, nicht serverbestätigt</h2>
             <span className="text-[11px] text-slate-400 font-mono">{executionLogs.length} Protokolle</span>
           </div>
 
@@ -581,7 +561,7 @@ export const AutomationCenter: React.FC = () => {
                 <tr>
                   <th className="p-3">Zeitpunkt</th>
                   <th className="p-3">Regel</th>
-                  <th className="p-3">Status</th>
+                  <th className="p-3">Beispielstatus</th>
                   <th className="p-3">Betroffene Entität</th>
                   <th className="p-3">Aktionen</th>
                   <th className="p-3 text-right">Dauer</th>
