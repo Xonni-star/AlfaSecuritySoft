@@ -36,8 +36,15 @@ not a complete acceptance. Continuation: `AUTONOMOUS_WORK_CONTINUATION.md`.
 | FNL-022 | P1 | IN ARBEIT | Correct handover real-getter render loop, private-context reset and stale server/write completion | Eight initially failing cases corrected; local frontend 356/typecheck/build passed. Published 1a61fb3230ca9406f680c43fbcd98e1c38a55a54 failed CI 43962727353 at 6/7: read logs 356/549 and browser 9/10 plus cleanup. Native select-label mismatch was reproduced in real Chromium and corrected. Subsequent 5f73f976a849dde8ca068e693f670ec2d2a228c8, CI43963628561, again failed 6/7, browser9/10 plus cleanup: the new test expected a GuardBook-only offline banner in Handovers. It now waits for the actual shared offline status button. No assertions/budgets removed; new exact full hosted execution open. Local Docker unavailable. |
 | FNL-023 | P1 | IN ARBEIT | Use explicit participant-account linkage for real handover confirmation eligibility | Four UI/two controller cases initially failed; viewer-only mapping booleans replace email inference without new account IDs or weaker write authorization. Published24a70b85ba7c9dbfd19217bdc007dc9bdcf0e306/CI43964650702 passed frontend360/backend552, including the real three-viewer/denied employee-read/two-confirmation API case. Full7/7 remains pending because the new browser journey failed at a value-dependent form locator; corrected separately. No bypass or complete role matrix claimed. |
 | FNL-024 | P1 | IN ARBEIT | Keep latest handover list/detail/local reads and current query during concurrent completions | Seven originally failing cases: same-owner stale list/detail/outbox success/error after newer reads, filter/selection A-B-A and old write callbacks reloading old filters. Independent monotonic read versions/current-query guard added; current errors remain explicit. Full local frontend367/367 in36 files, typecheck/build passed; backend unchanged from hosted552. Exact full hosted verification/new genuine tenth journey pending. |
+| FNL-025 | P1 | IN ARBEIT | Repair the genuine handover document HTTP500 and require actual detail success | Hosted9b79 exposed nonexistent documents MIME/size columns even for an empty list. Use the tenant-bound current document_versions row; missing version metadata remains explicitly unavailable, archived links excluded. New UI case failed before correction; targeted27/controller11/typecheck/both builds pass. Real PostgreSQL/API empty/current/missing/archive/denied-read case added; new browser demands actual HTTP200/empty documents/no alert. Full hosted verification open. |
+| FNL-026 | P1 | IN ARBEIT | Correct critical incident replay evidence for independently due mutation retries | Actual failed trace shows first batch guardbook+task, then guardbook alone after 1.072s; IndexedDB assigns per-mutation retry deadlines. No product atomic-batch guarantee exists. Preserve genuine first two-mutation lost response; validate exact per-request receipt UUIDs, both replayed UUIDs, all stable server IDs, one real incident/task and empty outbox. New hosted verification open; no timing budget increase. |
 
-Latest published `24a70b85ba7c9dbfd19217bdc007dc9bdcf0e306` passed
+Latest published `9b79a03a4bc119e51f8f7933b3a82953715b6742`,
+CI43966537946, confirms read logs367/552, browser9/10 and cleanup, only6/7.
+The new tenth handover journey actually passed but did not check its HTTP500
+document read. The older incident journey failed on an unsupported fixed
+retry-batch size. FNL-025/026 address both, not a fictional complete success.
+The earlier published `24a70b85ba7c9dbfd19217bdc007dc9bdcf0e306` passed
 frontend360/360 and backend552/552 in exact CI43964650702, including the actual
 handover PostgreSQL/API mapping/confirmation regression. It still failed 6/7:
 browser9/10 with cleanup. Downloaded accessibility state shows the form and
@@ -45,7 +52,7 @@ submit button remained visible, but its test locator depended on an exact
 wrapping-textarea label that changed after filling. Independent real Chromium
 reproduced zero old-form matches versus one stable heading-scoped form and
 exact-role combobox/textbox/submit matches. The journey is corrected without
-removed assertions or larger budgets; ten-case acceptance remains open.
+removed assertions or larger budgets; complete ten-case acceptance remains open.
 
 FNL-007/008/009/010 are published in `5ef02b3ab0b9f711025405247e711f21d3ee9811`.
 Exact [CI 43928436875](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43928436875)

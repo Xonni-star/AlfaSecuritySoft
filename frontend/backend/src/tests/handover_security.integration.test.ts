@@ -28,6 +28,8 @@ const emails = {
 const userIds: Record<keyof typeof emails, string> = {} as Record<keyof typeof emails, string>;
 const employeeIds: string[] = [];
 const handoverIds: string[] = [];
+const documentIds: string[] = [];
+let documentCategoryId: string | undefined;
 let siteId: string | undefined;
 let clientId: string | undefined;
 let confirmerRoleId: string | undefined;
@@ -208,8 +210,14 @@ afterAll(async () => {
       await cleanup.query('DELETE FROM handover_confirmations WHERE tenant_id=$1 AND handover_id=ANY($2::uuid[])', [tenantId, handoverIds]);
       await cleanup.query('DELETE FROM handover_events WHERE tenant_id=$1 AND handover_id=ANY($2::uuid[])', [tenantId, handoverIds]);
       await cleanup.query('DELETE FROM handover_participants WHERE tenant_id=$1 AND handover_id=ANY($2::uuid[])', [tenantId, handoverIds]);
+      await cleanup.query('DELETE FROM handover_documents WHERE tenant_id=$1 AND handover_id=ANY($2::uuid[])', [tenantId, handoverIds]);
       await cleanup.query('DELETE FROM handovers WHERE tenant_id=$1 AND id=ANY($2::uuid[])', [tenantId, handoverIds]);
     }
+    if (documentIds.length) {
+      await cleanup.query('DELETE FROM document_versions WHERE tenant_id=$1 AND document_id=ANY($2::uuid[])', [tenantId, documentIds]);
+      await cleanup.query('DELETE FROM documents WHERE tenant_id=$1 AND id=ANY($2::uuid[])', [tenantId, documentIds]);
+    }
+    if (documentCategoryId) await cleanup.query('DELETE FROM document_categories WHERE tenant_id=$1 AND id=$2', [tenantId, documentCategoryId]);
     if (employeeIds.length) {
       await cleanup.query(
         'DELETE FROM audit_logs WHERE tenant_id=$1 AND target_entity=ANY($2::text[])',
@@ -243,6 +251,53 @@ afterAll(async () => {
 });
 
 describe('Handover authorization and persistence regressions (PostgreSQL/API)', () => {
+  test('document reads use current-version metadata, retain metadata-only links and exclude archived documents', async () => {
+    const handoverId = await createHandover();
+    const path = `/api/v1/handovers/${handoverId}/documents`;
+    const forbidden = await request(app).get(path).set(authHeaders(tokens.outgoing));
+    expect(forbidden.status).toBe(403);
+    const empty = await request(app).get(path).set(authHeaders(tokens.incidentLead));
+    expect(empty.status).toBe(200);
+    expect(empty.body.data).toEqual([]);
+    const category = await migrationPool.query(
+      'INSERT INTO document_categories (tenant_id,name,created_by) VALUES ($1,$2,$3) RETURNING id',
+      [tenantId, `Handover metadata ${suffix}`, userIds.incidentLead]
+    );
+    documentCategoryId = category.rows[0].id;
+    const ids = [randomUUID(), randomUUID(), randomUUID()];
+    documentIds.push(...ids);
+    for (const [index, id] of ids.entries()) {
+      await migrationPool.query(
+        `INSERT INTO documents (id,tenant_id,site_id,title,category_id,current_version,archived_at,created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [id, tenantId, siteId, `Handover document ${index}`, documentCategoryId,
+          index === 0 ? 2 : 1, index === 2 ? new Date() : null, userIds.incidentLead]
+      );
+      await migrationPool.query(
+        `INSERT INTO handover_documents (tenant_id,handover_id,document_id,linked_by_user_id)
+         VALUES ($1,$2,$3,$4)`,
+        [tenantId, handoverId, id, userIds.incidentLead]
+      );
+    }
+    for (const version of [1, 2]) {
+      await migrationPool.query(
+        `INSERT INTO document_versions
+           (tenant_id,document_id,version_number,original_filename,storage_key,content_type,size_bytes,
+            sha256_hash,scan_status,created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'clean',$9)`,
+        [tenantId, ids[0], version, version === 2 ? 'current.pdf' : 'old.txt', randomUUID(),
+          version === 2 ? 'application/pdf' : 'text/plain', version * 10, 'a'.repeat(64), userIds.incidentLead]
+      );
+    }
+    const response = await request(app).get(path).set(authHeaders(tokens.incidentLead));
+    expect(response.status).toBe(200);
+    expect(response.body.data).toHaveLength(2);
+    expect(response.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: ids[0], mime_type: 'application/pdf', size_bytes: 20 }),
+      expect.objectContaining({ id: ids[1], mime_type: null, size_bytes: null })
+    ]));
+  });
+
   test('participant eligibility and confirmations use account linkage without employee-read permission or matching contact email', async () => {
     const handoverId = await createHandover();
     await migrationPool.query('UPDATE employees SET email=$1 WHERE tenant_id=$2 AND id=$3',

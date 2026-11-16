@@ -453,13 +453,18 @@ test('replays a critical offline incident and its durable follow-up once after a
   expect((await readOutbox(page)).map(item => item.id).sort()).toEqual(pending.map(item => item.id).sort());
   const attempts = [];
   const receipts = [];
+  const expectedIds = pending.map(item => item.id).sort();
   await page.route('**/api/v1/sync/push', async route => {
-    attempts.push(route.request().postDataJSON().mutations.map(item => item.clientUuid).sort());
+    const mutationIds = route.request().postDataJSON().mutations.map(item => item.clientUuid).sort();
+    expect(mutationIds.length).toBeGreaterThan(0);
+    expect(mutationIds.every(id => expectedIds.includes(id))).toBe(true);
+    if (attempts.length === 0) expect(mutationIds).toEqual(expectedIds);
+    attempts.push(mutationIds);
     const response = await route.fetch();
     expect(response.status()).toBe(200);
     const body = await response.json();
     expect(body.success).toBe(true);
-    expect(body.data).toHaveLength(2);
+    expect(body.data.map(receipt => receipt.clientUuid).sort()).toEqual(mutationIds);
     expect(body.data.every(receipt => receipt.status === 'SYNCED')).toBe(true);
     receipts.push(body.data);
     if (receipts.length === 1) await route.abort('failed');
@@ -468,9 +473,10 @@ test('replays a critical offline incident and its durable follow-up once after a
   await context.setOffline(false);
   await login(page);
   await expect.poll(async () => (await readOutbox(page)).length, { timeout: 30_000 }).toBe(0);
-  expect(attempts).toEqual([pending.map(item => item.id).sort(), pending.map(item => item.id).sort()]);
-  expect(receipts[1].find(item => item.clientUuid === followUp.id).serverId)
-    .toBe(receipts[0].find(item => item.clientUuid === followUp.id).serverId);
+  expect([...new Set(attempts.slice(1).flat())].sort()).toEqual(expectedIds);
+  for (const receipt of receipts.slice(1).flat()) {
+    expect(receipt.serverId).toBe(receipts[0].find(item => item.clientUuid === receipt.clientUuid).serverId);
+  }
   const entries = await page.request.get('/api/v1/logbook');
   expect(entries.status()).toBe(200);
   expect((await entries.json()).data.filter(item => item.title === title)).toHaveLength(1);
@@ -992,9 +998,16 @@ test('real handover UI restores one offline protocol after a lost server receipt
   });
   await page.unroute('**/api/v1/handovers/sync');
   await page.reload();
+  const documentRead = page.waitForResponse(response =>
+    response.request().method() === 'GET' &&
+    new URL(response.url()).pathname === `/api/v1/handovers/${records[0].id}/documents`);
   await page.getByRole('button', { name: 'Übergabemanagement', exact: true }).click();
   await page.getByLabel('Übergaben durchsuchen', { exact: true }).fill(text);
   await expect(page.getByText(text, { exact: true })).toBeVisible();
   await expect(page.getByText('1 Treffer · Seite 1', { exact: true })).toBeVisible();
   await expect(page.getByText('0 lokale Einträge', { exact: true })).toBeVisible();
+  const documentResponse = await documentRead;
+  expect(documentResponse.status()).toBe(200);
+  expect((await documentResponse.json()).data).toEqual([]);
+  await expect(page.getByRole('alert')).toHaveCount(0);
 });

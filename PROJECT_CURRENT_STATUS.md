@@ -8,6 +8,18 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
+**Latest partial hosted evidence:** `9b79a03a4bc119e51f8f7933b3a82953715b6742`,
+[CI 43966537946](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43966537946):
+read logs confirm **367 frontend / 552 backend**, **9/10 browser**, cleanup,
+and only **6/7 jobs**. The new handover journey passed, but its document read
+returned an unchecked HTTP 500; the older incident journey failed on a fixed
+two-receipt retry assumption. These are not a successful complete acceptance.
+FNL-025 corrects the actual current-version SQL/nullable metadata and adds a
+real API regression plus explicit browser document-response checks. FNL-026
+checks every original/replayed UUID and server ID across independently due
+retry batches. Local targeted UI **27/27**, controller **11/11**, typecheck
+and both builds passed. New complete hosted verification remains open.
+
 **Fully hosted-verified code revision:** `a7af0bcc352f9274b02b7be19c9befeb598a0d05`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.

@@ -393,10 +393,24 @@ unchanged from hosted552. Logs: `finalization-handover-order-red.log`,
 `finalization-handover-order-frontend.log`,
 `finalization-handover-order-build.log`.
 
-1. Publish FNL-024 plus the stable heading/exact-role locator correction.
-   Verify all hosted jobs on the exact full SHA; read actual logs and fix the
-   new browser journey/API regression if either fails. Earlier seven-job
-   success does not validate these changes; the two 9/10 runs remain failures.
+Latest published9b79a03a4bc119e51f8f7933b3a82953715b6742 /
+CI43966537946 read logs confirm367/552, browser9/10 and cleanup, only6/7.
+New tenth handover replay passed but emitted an unchecked document-read500.
+FNL-025 joins current tenant-bound document_versions instead of nonexistent
+documents MIME/size columns. Missing-version metadata is explicitly unavailable;
+archived links remain hidden. A new UI case failed before the fix; targeted27,
+controller11, typecheck/both builds pass. New real PostgreSQL/API coverage checks
+empty/current/missing/archive/denied-read; browser now requires real document
+HTTP200 and no error alert. Its hosted result is not yet known.
+FNL-026 follows the actual incident trace: first guardbook+task request, then
+guardbook alone1.072s later. Failed mutations get independently calculated retry
+deadlines, so every retry need not contain both. The first genuine two-mutation
+receipt is still lost; every request/receipt UUID, both replayed UUIDs, all stable
+server IDs, one real incident/task and empty outbox remain mandatory.
+
+1. Publish FNL-025/026 and verify every hosted job on its exact full SHA.
+   Read actual logs/counts and resolve any new API/browser failure.
+   Earlier seven-job success does not validate these changes.
 2. Repeat a bounded convergence audit for new concrete functional defects,
    misleading current UI/docs and missing directly relevant regressions.
    Do not turn actual API 403s or functional test fixture errors into unproven

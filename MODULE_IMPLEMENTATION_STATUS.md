@@ -10,6 +10,16 @@ Python files in `frontend/backend/*.py`, `frontend/alembic`, and `frontend/tests
 
 ## Module matrix
 
+Latest partial hosted evidence:9b79a03a4bc119e51f8f7933b3a82953715b6742 /
+CI43966537946, read367 frontend/552 backend, browser9/10 and cleanup, only6/7.
+The tenth handover replay passed but its document-read500 was unchecked.
+FNL-025 corrects current-version metadata SQL and explicit missing-file metadata;
+new API and browser detail-success checks await hosted execution. FNL-026
+retains per-UUID lost-receipt/idempotency checks while allowing independently
+due retry batches. Local targeted handover UI27/controller11 and both builds/
+typecheck pass. Earlier pending statements below describe preceding snapshots,
+not the current absence of any tenth-journey execution.
+
 All paths below are relative to `frontend/`. The routes are registered in `backend/src/app.ts`; controllers use the active PostgreSQL transaction layer. Exact hosted CI 43960314043 on `a7af0bcc352f9274b02b7be19c9befeb598a0d05` passed backend 549 tests in 35 suites, frontend 348 in 36 files, real browser 9 and cleanup, all seven jobs. Earlier backend 535/546 runs and local Roster timeouts remain historical failures, not reinterpreted as local success. API/sync budgets are 30 seconds, Patrol 60 seconds, frontend defaults five seconds; higher budgets are not performance acceptance. New FNL-022 passes full local frontend 356, typecheck/build; its new tenth browser case is not yet verified because local Docker became unavailable. Exact hosted follow-up is required. Test existence alone is not evidence that every scenario is covered.
 
 | Module | Active implementation and persistence | Automated evidence | Status and remaining boundary |

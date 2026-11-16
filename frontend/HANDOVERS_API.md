@@ -46,6 +46,14 @@ Recht und Revision erneut serverseitig unter Sperre.
 
 Listenparameter:
 
+Die Dokumentliste liest `mime_type` und `size_bytes` aus der aktuellen
+`document_versions`-Zeile (`version_number = documents.current_version`),
+mandanten- und RLS-gebunden. Archivierte Dokumente bleiben ausgeschlossen.
+Verknüpfte Metadatensätze ohne sichtbare aktuelle Dateiversion bleiben
+aufgelistet; beide Dateifelder sind dann `null`, die UI zeigt ausdrücklich
+„Dateimetadaten nicht verfügbar“. Das behauptet weder vorhandene Originalbytes
+noch einen erfolgreichen Download oder Virenscan.
+
 - `siteId`, `employeeId`, `status`, `from`, `to`, `search`
 - `openTasks=true|false`, `pendingConfirmation=true|false`
 - `sort=occurred_at_desc|occurred_at_asc`

@@ -573,11 +573,13 @@ export async function listHandoverDocuments(req: Request, res: Response, next: N
     const handoverId = uuid.parse(req.params.id);
     const data = await withTenantTransaction(req.user!.tenantId, async db => {
       const result = await db.query(
-        `SELECT d.id,d.title,d.description,d.category_id,d.mime_type,d.size_bytes,
+        `SELECT d.id,d.title,d.description,d.category_id,v.content_type AS mime_type,v.size_bytes::int AS size_bytes,
                 hd.linked_by_user_id,hd.linked_at
          FROM handover_documents hd
          JOIN handovers h ON h.id=hd.handover_id AND h.tenant_id=hd.tenant_id
          JOIN documents d ON d.id=hd.document_id AND d.tenant_id=hd.tenant_id
+         LEFT JOIN document_versions v ON v.document_id=d.id AND v.tenant_id=d.tenant_id
+           AND v.version_number=d.current_version
          WHERE hd.tenant_id=$1 AND hd.handover_id=$2 AND d.archived_at IS NULL
          ORDER BY hd.linked_at DESC`,
         [req.user!.tenantId, handoverId]

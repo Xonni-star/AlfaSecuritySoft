@@ -202,6 +202,24 @@ describe('HandoversModule', () => {
     }));
   });
 
+  test('shows linked current-version metadata and explicitly unavailable file metadata', async () => {
+    mocks.state.isOnline = true;
+    mocks.state.authUser.permissions.push('documents:read');
+    mocks.get.mockImplementation(async (path: string) => {
+      if (path.includes('/dashboard')) return {};
+      if (path.startsWith('/handovers?')) return { items: [persistedHandover()], total: 1 };
+      if (path.includes('/events')) return { items: [] };
+      if (path.endsWith('/documents')) return [
+        { id: 'document-current', title: 'Current version', mime_type: 'application/pdf', size_bytes: 20 },
+        { id: 'document-missing', title: 'Metadata only', mime_type: null, size_bytes: null }
+      ];
+      return [];
+    });
+    await act(async () => root.render(<HandoversModule />));
+    expect(container.textContent).toContain('Current version (application/pdf, 20 Bytes)');
+    expect(container.textContent).toContain('Metadata only (Dateimetadaten nicht verfügbar)');
+  });
+
   test('lists only the current same-tenant owner local queue', async () => {
     const records = [localRecord('user-1'), localRecord('user-2')];
     mocks.getOutbox.mockImplementation(async (_tenant: string, _entity: string, owner?: string) =>

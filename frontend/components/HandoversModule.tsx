@@ -64,8 +64,8 @@ interface HandoverEvent {
 interface HandoverDocument {
   id: string;
   title: string;
-  mime_type: string;
-  size_bytes: number;
+  mime_type: string | null;
+  size_bytes: number | null;
 }
 
 interface HandoverListResponse {
@@ -846,7 +846,7 @@ export const HandoversModule: React.FC = () => {
 
               {canReadDocuments && <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-white"><FileText className="h-4 w-4 text-blue-300" />DMS-Nachweise</h3>
-                {linkedDocuments.map(document => <div key={document.id} className="text-xs text-slate-300">{document.title} <span className="text-slate-600">({document.mime_type}, {document.size_bytes} Bytes)</span></div>)}
+                {linkedDocuments.map(document => <div key={document.id} className="text-xs text-slate-300">{document.title} <span className="text-slate-600">({document.mime_type && document.size_bytes !== null ? `${document.mime_type}, ${document.size_bytes} Bytes` : 'Dateimetadaten nicht verfügbar'})</span></div>)}
                 {!linkedDocuments.length && <div className="text-xs text-slate-500">Keine Dokumente verknüpft.</div>}
                 {canManage && documents.length > 0 && <div className="flex gap-2">
                   <select aria-label="DMS-Dokument auswählen" value={documentId} onChange={event => setDocumentId(event.target.value)} className="min-w-0 flex-1 rounded border border-slate-700 bg-slate-950 p-2 text-xs">
