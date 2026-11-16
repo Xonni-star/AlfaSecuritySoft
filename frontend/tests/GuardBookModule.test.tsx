@@ -104,9 +104,13 @@ describe('GuardBookModule offline capture', () => {
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('IndexedDB quota exceeded');
   });
 
-  test('submits the displayed defaults when reference data arrives after the module mounts', async () => {
-    mocks.state.getTenantSites.mockReturnValueOnce([]);
-    mocks.state.getTenantEmployees.mockReturnValueOnce([]);
+  test.each(['empty', 'replaced'] as const)('submits displayed defaults when %s reference data is loaded after mount', async initial => {
+    mocks.state.getTenantSites.mockReturnValueOnce(initial === 'empty' ? [] : [{
+      id: 'old-site', tenantId: 'tenant-a', name: 'Alter Standort', siteCode: 'OLD'
+    }]);
+    mocks.state.getTenantEmployees.mockReturnValueOnce(initial === 'empty' ? [] : [{
+      id: 'old-employee', firstName: 'Alt', lastName: 'Besetzung', personnelNumber: 'OLD'
+    }]);
     mocks.addGuardBookEntry.mockResolvedValueOnce('late-loaded-entry');
     await act(async () => root.render(<GuardBookModule />));
     await act(async () => root.render(<GuardBookModule />));
@@ -116,6 +120,8 @@ describe('GuardBookModule offline capture', () => {
     const title = container.querySelector<HTMLInputElement>('input[placeholder^="z. B."]');
     const description = container.querySelector<HTMLTextAreaElement>('textarea');
     if (!title || !description) throw new Error('Wachbucheintragsformular fehlt');
+    expect(Array.from(container.querySelectorAll<HTMLSelectElement>('select[required]')).map(select => select.value))
+      .toEqual(['site-a', 'employee-a']);
     await act(async () => {
       setValue(title, 'Spät geladene Stammdaten');
       setValue(description, 'Die angezeigte Auswahl muss tatsächlich gespeichert werden.');

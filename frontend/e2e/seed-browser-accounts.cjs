@@ -21,7 +21,14 @@ async function seedBrowserAccounts() {
        VALUES ($1,$2,'Browser','Other') RETURNING id`,
       ['other@browser.test.invalid', await argon2.hash(process.env.SECOPS_DEMO_USER_PASSWORD)]
     );
-    for (const [tenantId, userId] of [[bavaria, owner.rows[0].id], [frankfurt, other.rows[0].id]]) {
+    const approver = await client.query(
+      `INSERT INTO users (email,password_hash,first_name,last_name)
+       VALUES ($1,$2,'Browser','Approver') RETURNING id`,
+      ['approver@browser.test.invalid', await argon2.hash(process.env.SECOPS_DEMO_USER_PASSWORD)]
+    );
+    for (const [tenantId, userId] of [
+      [bavaria, owner.rows[0].id], [frankfurt, other.rows[0].id], [frankfurt, approver.rows[0].id]
+    ]) {
       await client.query(
         `INSERT INTO tenant_memberships (tenant_id,user_id,first_name,last_name)
          VALUES ($1,$2,'Browser','Test')`,
@@ -43,6 +50,35 @@ async function seedBrowserAccounts() {
         [tenantId, userId]
       );
     }
+    const reader = await client.query(
+      `INSERT INTO users (email,password_hash,first_name,last_name)
+       VALUES ($1,$2,'Browser','Reader') RETURNING id`,
+      ['reader@browser.test.invalid', await argon2.hash(process.env.SECOPS_DEMO_USER_PASSWORD)]
+    );
+    await client.query(
+      `INSERT INTO tenant_memberships (tenant_id,user_id,first_name,last_name)
+       VALUES ($1,$2,'Browser','Reader')`,
+      [frankfurt, reader.rows[0].id]
+    );
+    const readerRole = await client.query(
+      `INSERT INTO tenant_roles (tenant_id,name) VALUES ($1,'BrowserSOPReader') RETURNING id`,
+      [frankfurt]
+    );
+    await client.query(
+      `INSERT INTO tenant_role_permissions (tenant_id,role_id,permission_id,data_scope)
+       SELECT $1,$2,id,'TENANT' FROM permissions WHERE code IN ('sop:read','sop:acknowledge')`,
+      [frankfurt, readerRole.rows[0].id]
+    );
+    await client.query(
+      'INSERT INTO tenant_user_roles (tenant_id,user_id,role_id) VALUES ($1,$2,$3)',
+      [frankfurt, reader.rows[0].id, readerRole.rows[0].id]
+    );
+    await client.query(
+      `INSERT INTO employees
+        (tenant_id,personnel_number,first_name,last_name,email,phone,role,date_of_joining)
+       VALUES ($1,'BROWSER-SOP-READER','Browser','Reader','reader@browser.test.invalid','000','Wache','2026-01-01')`,
+      [frankfurt]
+    );
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');

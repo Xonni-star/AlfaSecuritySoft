@@ -25,6 +25,14 @@ Alle Endpunkte verwenden das Präfix `/api/v1/sops`, eine gültige Sitzung und d
 
 Die Erstellungs- und Versionsrequests enthalten Titel, Dokumentennummer, Beschreibung, Kategorie, strukturierten Inhalt, Kunden-/Objektbezug, Gültigkeitszeitraum und optional die ID eines vorhandenen DMS-Dokuments. Eine SOP-Dateiablage wird nicht dupliziert; Dateianhänge verbleiben im DMS.
 
+`GET /` liefert `version_id` als exakte UUID der angezeigten Version: im
+Verwaltungskontext die aktuelle Entwurfsversion, soweit vorhanden, sonst die
+veröffentlichte Version; in der Mitarbeitersicht ausschließlich die zugewiesene
+veröffentlichte Version. Diese ID ist nicht die sichtbare Versionsnummer.
+Noch nicht eingereichte Erstentwürfe haben keine persistierte Versions-ID.
+Leere optionale Formularwerte für `effectiveFrom`, `effectiveUntil` und
+`dmsDocumentId` werden als `null` übertragen, nicht als ungültige Leerstrings.
+
 ## Workflow und Historie
 
 Der Workflow lautet `draft → in_review → reviewed → approved → published`. Eine Prüfung kann mit Kommentar Änderungen anfordern; der Entwurf kann danach erneut eingereicht werden. Für jede konkrete Version sind Ersteller und Einreicher von Prüfer und Freigebendem getrennt; der Prüfer darf dieselbe Version ebenfalls nicht freigeben. Eine neue Änderung an einer veröffentlichten Anweisung beginnt als neue Version. Veröffentlichte Versionen, Workflowereignisse und bestätigte Zuweisungen werden nicht überschrieben; eine Veröffentlichung oder Archivierung blendet die alte Version aus der aktuellen Mitarbeitersicht aus.
@@ -36,3 +44,19 @@ Offline erfasste Bestätigungen werden vor Anzeige als vorgemerkt transaktionssi
 ## Fristen und Einschränkungen
 
 `GET /reminders` ermittelt fällige und überfällige Einträge beim Abruf. Ohne einen konfigurierten Hintergrundscheduler werden damit keine zeitgesteuerten Push-Nachrichten oder automatischen Eskalationen ausgelöst. Berichte werden als gefilterte JSON-Daten bereitgestellt; CSV-/PDF-Export ist nicht Teil dieser API.
+
+## Lokaler Browsernachweis (Phase 11)
+
+`npm run test:browser:backend --prefix frontend` prüft mit echten Cookie-/CSRF-
+Sitzungen, Express und isoliertem PostgreSQL 16 die Anlage ohne optionale
+Datums-/DMS-Angaben, Zuweisung und Veröffentlichung mit getrennten Konten für
+Erstellung, Prüfung und Freigabe. Ein viertes Konto mit ausschließlich
+`sop:read`/`sop:acknowledge` öffnet die Anweisung ohne automatische Bestätigung,
+bestätigt bewusst offline und lädt offline neu. Nach einer serverseitig
+persistierten, aber im Browser verlorenen Quittung bleibt die Queue erhalten.
+Ein weiterer Reload wiederholt dieselbe Zuweisungs-/Versions-/Mutationsbindung
+und Erfassungszeit; der Server erkennt die vorhandene Bestätigung wieder, erst
+danach wird der lokale Eintrag entfernt. Der erneute Sitzungs-Reload zeigt
+weiterhin den serverbestätigten Status. Die gesamte authentifizierte
+Browsersuite bestand lokal 3/3; dies ersetzt keine Geräte-/Providerabnahme oder
+vollständige Rollen-/Versionswechselmatrix.

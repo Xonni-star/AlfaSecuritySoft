@@ -89,13 +89,20 @@ Das Backend verweigert den Start bei fehlenden, ungültigen oder offensichtlich 
 
 ## Module
 
-**Lokal nachgewiesene Phase-11-Pakete:** letzter vollständiger Backendlauf
-534/534; anschließend erweiterte authentifizierte Berechtigungs-Suite 16/16.
-Frontend 175/175 Tests mit zwei Workern und unverändertem Standard-5-s-Budget
+**Lokal nachgewiesene Phase-11-Pakete:** historischer grüner Backendlauf
+534/534; erweiterte authentifizierte Berechtigungs-Suite 16/16.
+Der aktuelle vollständige Backendlauf ist **nicht grün**: 535/546 bestanden,
+elf Fehler in drei Suites, überwiegend Zeitüberschreitungen mit Folgefehlern.
+Eine unveränderte Wiederholung auf isoliertem PostgreSQL-RAM-Dateisystem läuft;
+dies ist kein erfolgreicher Abschlussnachweis.
+Frontend 179/179 Tests mit zwei Workern und unverändertem Standard-5-s-Budget
 (lange Roster-Szenarien getrennt, ausstehende Einmal-Mocks isoliert);
 Chromium-API-Fixture 1/1 und echte Cookie-/CSRF-authentifizierte
-Express-/PostgreSQL-Browserjourneys 2/2. Ein dabei gefundener
-Wachbuchfehler bei nachgeladener Standort-/Mitarbeiterauswahl ist behoben.
+Express-/PostgreSQL-Browserjourneys 3/3. Dazu gehört der echte SOP-Ablauf mit
+getrenntem Autor, Prüfer, Freigebenden und Mitarbeiter, bewusster Offlinekenntnisnahme,
+Reload und identischem Retry nach verlorener Serverantwort. Leere optionale
+SOP-Felder werden korrekt als `null` übertragen; die Listen liefern die exakte
+Versions-ID. Wachbuchauswahlen bleiben auch bei ersetzten Stammdaten gültig.
 Die Navigation bietet Abmeldung; der echte Backend-Test prüft den Widerruf auch
 mit einer zurückbehaltenen Kopie des alten Cookies.
 Konten-/Mandantenwechsel erhalten die Besitzerbindung offener Mutationen;

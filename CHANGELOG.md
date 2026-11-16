@@ -4,6 +4,7 @@
 
 ### Hinzugefügt
 
+- Echte SOP-Browserjourney: unabhängige Erstellung/Prüfung/Freigabe, reine Mitarbeiterrechte, bewusste Offline-Kenntnisnahme, Offline-Reload und idempotente Wiederholung nach verlorener echter Quittung. Authentifizierte Chromium-Suite lokal 3/3.
 - Erweiterte authentifizierte Report-/Berechtigungsmatrix: vier Berichte und CSV, Tenant-/Site-Grants, sofortiger Rechteentzug, manipulierte Mandantenhinweise, exakte Aggregate und direkte Schicht-IDs; PostgreSQL-Suite 16/16 bestanden.
 - Echte Chromium-/PostgreSQL-Prüfung mit zwei Konten und zwei Mandanten: fremde Offline-Mutationen bleiben unangetastet, erst die ursprüngliche Identität synchronisiert genau einmal.
 - Erreichbare Abmeldung in der Navigation mit sichtbarem Hinweis bei nicht bestätigtem serverseitigem Widerruf; echter Browser-Test weist auch eine zurückbehaltene Kopie des alten Cookies nach erfolgreicher Abmeldung zurück.
@@ -23,6 +24,9 @@
 
 ### Fehlerkorrekturen
 
+- SOP-Formulare senden optionale leere Datums-/DMS-Felder als `null` für Anlage, Entwurfsänderung und neue Versionen; der zuvor reproduzierte HTTP-400-Fehler entfällt.
+- SOP-Listen liefern die exakte `version_id` auch für Mitarbeiter; Offline-Kenntnisnahmen können damit die tatsächlich zugewiesene Version binden. Verwaltungssichten liefern die angezeigte Entwurfs- oder veröffentlichte Versions-ID.
+- Wachbuch-Auswahlwerte werden bei ersetzten Referenzdaten auf vorhandene Defaults aufgelöst, statt nicht mehr vorhandene IDs im Formularzustand zu behalten.
 - Roster-Testisolation: lange Vorlagen-/Identitätsszenarien getrennt, ausstehende Einmal-Mocks zurückgesetzt, doppelte Select-Ereignisse entfernt und falschen Refresh-Selektor korrigiert. Verzögerte Antworten werden nachweislich ausgelöst; vollständige Frontend-Suite 175/175 mit unverändertem Standard-5-s-Budget bestanden.
 - Session-Wiederherstellung liest das tatsächliche `userId`-Feld von `/auth/me`, damit nach Reload keine leere Benutzeridentität und blockierte Synchronisation entstehen.
 - Wachbuchformulare verwenden nachgeladene Standort-/Mitarbeiter-Standardwerte konsistent bei Anzeige und Speicherung, statt leere IDs in die Offline-Outbox zu schreiben.

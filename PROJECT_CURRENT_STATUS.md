@@ -10,20 +10,30 @@
 
 **Current worktree:** branch `xonni-star-phase9-docs-and-status-cleanup` includes Phase 10 fixes plus Phase 11 migration-history preservation (`ef6a2c6`), offline-fixture CI (`55384e6`), module/architecture inventory (`f38499a`), backup generation health (`b3889b6`), a real authenticated Chromium/PostgreSQL replay test with a GuardBook default-selection fix (`840c5bd`), and reachable logout with server-side revocation evidence (`4946d31`). The commits have not been pushed; PR #66 and hosted CI still refer to remote head `785e9eabc9e6ab5f1ce4e726fdff2cbfa49367e4`. This remains the existing isolated PR branch, not a separately created Phase 11 branch.
 
-**Latest functional package:** `8611044` corrects session hydration to consume the
-real `/auth/me.userId` field. The authenticated Chromium suite now passes **2/2**,
-including account/tenant switches, exactly-once owner replay and new creation
-after a session-restoring reload. The frontend suite still passes **172/172**
-in the historical bounded run. These results remain local.
+**Latest functional package:** The authenticated Chromium suite passes **3/3**.
+It includes account/tenant switches, owner-bound replay, session-restoring reload
+and a real SOP journey using distinct author/reviewer/approver accounts and a
+reader with only `sop:read`/`sop:acknowledge`. Opening does not acknowledge;
+offline capture survives reload and a lost server response retries the same
+mutation before clearing IndexedDB. This found and corrected empty optional
+SOP values and missing version UUIDs. GuardBook selections also recover when
+reference data replaces initial IDs. These results remain local.
 
 **Latest regression package:** `authorization_boundaries.integration.test.ts`
 passes **16/16** against fresh migrated/seeded PostgreSQL 16: four reports and
 CSV, tenant/site grants, missing/revoked grants, forged tenant hints and direct
-shift IDs. The full frontend suite now passes **175/175** with two workers and
+shift IDs. The full frontend suite now passes **179/179** with two workers and
 unchanged default five-second test/hook budgets. Long Roster scenarios were
 separated; unconsumed one-shot mocks and a selector that refreshed the wrong
 section were corrected. The previous full backend total remains historical;
 only the extended boundary suite was rerun for these test-only backend changes.
+
+**Current backend regression gate: OFFEN.** The new full run finished with
+32/35 suites and 535/546 tests passing; eleven failures were predominantly
+five-second integration timeouts, one 30-second Patrol timeout and a dependent
+fixture failure. Migration tests passed but took 701 seconds. A repeat with
+unchanged tests/timeouts on an isolated PostgreSQL RAM filesystem is in progress.
+The historical 534/534 result below is not current-worktree acceptance.
 
 This is the current evidence index. Phase reports and dated status sections remain historical snapshots; they have not been rewritten to make their former state appear current. The earlier 20:59 CET entry for `879ae95` and “no open PRs” is historical, not the current GitHub state. See the [Phase 9 completion report](./PHASE_9_COMPLETION_REPORT.md) for the documentation/operations audit and remaining gates.
 
@@ -51,12 +61,12 @@ This is the current evidence index. Phase reports and dated status sections rema
 | Prior backend validation | **IMPLEMENTIERT UND GETESTET** | On an earlier PR revision, migration and seed ran against isolated PostgreSQL 16; backend build and 34 Jest suites / 315 tests passed. These results do not cover the current report-scope change. |
 | Phase 11 backend and migrations | **IMPLEMENTIERT UND GETESTET** | Full local backend suite: 35/35 suites, 534/534 tests, no open-handle warning. A real 041→042 upgrade preserves earlier checksums, rejects GuardBook DELETE/core-field UPDATE and becomes a no-op on rerun. Published 001/004 are restored unchanged; new text correction is additive in 042. |
 | Authenticated report authorization | **IMPLEMENTIERT UND GETESTET** | Extended boundary suite: 16/16, with two tenants/three sites, report-only and site grants, absent/removed permissions, CSV, exact aggregates, forged tenant hints and direct shift IDs. Existing sessions immediately lose removed report grants. No new runtime authorization defect found; other endpoint/object combinations remain open. |
-| Phase 11 frontend and browser | **IMPLEMENTIERT UND GETESTET** | Latest full local frontend suite: 29 files, 175/175 tests with `--maxWorkers=2` and unchanged default 5-s budgets. Previous 172/172 required 30-s budgets. Long Roster scenarios were separated, one-shot mocks reset and stale-response triggers positively verified. Offline retry/teardown waits for background sync completion. Latest typecheck passed; prior build/browser evidence is unchanged: Chromium 1/1 API-fixture and 2/2 real Express/PostgreSQL scenarios covering authenticated offline reload/replay, logout, session restoration and owner isolation across two accounts/two tenants. No physical-device/photo/provider or complete identity-matrix acceptance is inferred. |
+| Phase 11 frontend and browser | **IMPLEMENTIERT UND GETESTET** | Latest full local frontend suite: 29 files, 179/179 tests with `--maxWorkers=2` and unchanged default 5-s budgets; typecheck and production browser build passed. Previous 172/172 required 30-s budgets. Roster isolation and offline retry/teardown races are corrected. Chromium: historical 1/1 API-fixture and current 3/3 real Express/PostgreSQL scenarios covering authenticated offline replay, logout, session restoration, owner isolation across two accounts/two tenants and the four-account SOP publication/acknowledgement journey. No physical-device/photo/provider or complete identity-matrix acceptance is inferred. |
 | API authentication boundary | **IMPLEMENTIERT UND GETESTET** | All 215 currently registered protected method/path pairs return 401 without a session in the local backend suite. Health, login and password-reset completion are explicit public exceptions. Full per-role/site/object matrix remains open. |
 | Module/architecture inventory | **IMPLEMENTIERT** | [13-module evidence matrix](./MODULE_IMPLEMENTATION_STATUS.md) identifies active UI/API/database/test paths and remaining limits. npm and production Docker use Node/TypeScript; historical Python/Alembic files were not validated by these runs. Not a complete product acceptance. |
 | Test-only Linux install | **IMPLEMENTIERT UND GETESTET** | PR #56 merged. The tar/deb installer and lifecycle guidance target isolated testing; they are not production installers. |
 | Backup/restore | **TEILWEISE IMPLEMENTIERT** | Full isolated PostgreSQL/MinIO drill through migration 042 passed, including injected mid-DDL rollback, stopped services on restore/resume failure, backup-error health state and recovery after a successful backup. Archives publish atomically; Compose checks freshness (25 h), nonempty completed files and last-attempt failure. Health is not an integrity/restore check or external alert. Hosted CI, real provider restore and measured RPO/RTO remain open. |
-| Offline and SOP workflows | **TEILWEISE IMPLEMENTIERT** | Ownerless-attachment disclosure UI is removed; legacy attachments stay local without a secure recovery flow. The real authenticated GuardBook browser replay is locally covered as described above; broad SOP/photo/account-switch/physical-device acceptance remains open. Both browser tests are configured in CI source; hosted results for these local commits are pending. |
+| Offline and SOP workflows | **TEILWEISE IMPLEMENTIERT** | Ownerless-attachment disclosure UI is removed; legacy attachments stay local without a secure recovery flow. Real GuardBook and SOP offline replay are locally covered as described above; complete SOP/photo/account-switch/physical-device acceptance remains open. Both browser suites are configured in CI source; hosted results for these local commits are pending. |
 | Security and tenancy | **TEILWEISE IMPLEMENTIERT** | Bounded static reviews of authentication/session/web-security and tenant/RLS/report-scope paths found no confirmed bypass. Report and authorization negative tests passed on isolated PostgreSQL. Full route/migration/deployed-policy coverage, penetration testing, and production acceptance are not established. |
 | Performance | **TEILWEISE IMPLEMENTIERT** | PR #53 adds a bounded local baseline; its workload does not establish production capacity, an SLA, or resource headroom. |
 | Production/provider/device acceptance | **OFFEN** | No evidence establishes production deployment, real-provider behavior, customer acceptance, or physical-device acceptance. |

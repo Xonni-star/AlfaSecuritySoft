@@ -21,8 +21,8 @@ async function logout(page) {
   await expect(page.getByLabel('E-Mail')).toBeVisible();
 }
 
-async function readOutbox(page) {
-  return page.evaluate(async () => {
+async function readOutbox(page, storeName = 'outbox') {
+  return page.evaluate(async name => {
     const db = await new Promise((resolve, reject) => {
       const request = indexedDB.open('SecurityOps2_OfflineVault');
       request.onsuccess = () => resolve(request.result);
@@ -30,14 +30,14 @@ async function readOutbox(page) {
     });
     try {
       return await new Promise((resolve, reject) => {
-        const request = db.transaction('outbox', 'readonly').objectStore('outbox').getAll();
+        const request = db.transaction(name, 'readonly').objectStore(name).getAll();
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       });
     } finally {
       db.close();
     }
-  });
+  }, storeName);
 }
 
 test('real session and PostgreSQL persist one offline mutation after a lost receipt', async ({ page, context }) => {
@@ -104,6 +104,9 @@ test('real session and PostgreSQL persist one offline mutation after a lost rece
   await page.locator('input[placeholder^="z. B."]').fill(restoredTitle);
   await page.locator('textarea').fill('Erfassung nach Wiederherstellung der echten Cookie-Sitzung.');
   await page.unroute('**/api/v1/sync/push');
+  await expect.poll(() => page.locator('form').evaluate(form => Array.from(form.elements)
+    .filter(field => field.willValidate && !field.validity.valid)
+    .map(field => ({ name: field.name, value: field.value, message: field.validationMessage })))).toEqual([]);
   await page.locator('form button[type="submit"]').click();
   await expect(page.getByText(restoredTitle, { exact: true })).toBeVisible();
   await expect.poll(async () => (await readOutbox(page)).length).toBe(0);
@@ -189,5 +192,129 @@ test('preserves an owner mutation across account and tenant switches until the o
     .filter(entry => entry.title === title);
   expect(rows).toHaveLength(1);
   expect(rows[0].client_mutation_id).toBe(pending.id);
+  await logout(page);
+});
+
+test('publishes an independently reviewed SOP and retries one employee acknowledgement after offline reload', async ({ page, context }) => {
+  test.setTimeout(180_000);
+  const title = `SOP-Browser-${randomUUID()}`;
+  const openSOP = async () => {
+    await expect(page.getByText('Mandantendaten werden aus PostgreSQL geladen…')).toBeHidden();
+    await page.getByRole('button', { name: 'Dienstanweisungen & QM', exact: true }).click();
+    const article = page.getByRole('article').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
+    await expect(article).toBeVisible();
+    await article.getByRole('button', { name: 'Details & Verlauf', exact: true }).click();
+    return page.getByRole('dialog', { name: `Details ${title}`, exact: true });
+  };
+  await page.goto('/');
+  await login(page);
+  await expect(page.getByText('Mandantendaten werden aus PostgreSQL geladen…')).toBeHidden();
+  await page.getByRole('button', { name: 'Dienstanweisungen & QM', exact: true }).click();
+  await page.getByRole('button', { name: 'Neue Anweisung', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Anweisungsnummer', exact: true }).fill(`BROWSER-${randomUUID()}`);
+  await page.getByRole('textbox', { name: 'Titel', exact: true }).fill(title);
+  await page.getByRole('textbox', { name: 'Inhalt', exact: true }).fill('Offline gelesen und bewusst bestätigt; echte persistierte SOP-Version.');
+  const creation = page.waitForResponse(response => response.url().endsWith('/api/v1/sops') && response.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Speichern', exact: true }).click();
+  const created = await creation;
+  expect(created.status(), await created.text()).toBe(201);
+  const sopId = (await created.json()).data.id;
+  const authorIdentity = (await (await page.request.get('/api/v1/auth/me')).json()).data;
+  let dialog = await openSOP();
+  await dialog.getByRole('combobox', { name: 'Zuweisungstyp', exact: true }).selectOption('employee');
+  await dialog.getByRole('combobox', { name: 'Ziel', exact: true }).selectOption({ label: 'Browser Reader' });
+  await dialog.getByRole('button', { name: 'Zuweisen', exact: true }).click();
+  await expect(page.getByText('Zuweisung wurde gespeichert.', { exact: true })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Zur Prüfung', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: 'Als geprüft markieren', exact: true })).toBeVisible();
+  const submittedSOP = (await (await page.request.get('/api/v1/sops')).json()).data.find(sop => sop.id === sopId);
+  expect(submittedSOP.version_id).toBe(submittedSOP.draft_version_id);
+  expect(submittedSOP.version_id).toMatch(/^[a-f0-9-]{36}$/);
+  await dialog.getByRole('button', { name: 'Details schließen', exact: true }).click();
+  await logout(page);
+
+  await login(page, 'other@browser.test.invalid');
+  const reviewerIdentity = (await (await page.request.get('/api/v1/auth/me')).json()).data;
+  expect(reviewerIdentity.userId).not.toBe(authorIdentity.userId);
+  dialog = await openSOP();
+  await dialog.getByRole('textbox', { name: 'Prüfkommentar', exact: true }).fill('Unabhängig im echten Browser geprüft.');
+  await dialog.getByRole('button', { name: 'Als geprüft markieren', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: 'Freigeben', exact: true })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Details schließen', exact: true }).click();
+  await logout(page);
+
+  await login(page, 'approver@browser.test.invalid');
+  const approverIdentity = (await (await page.request.get('/api/v1/auth/me')).json()).data;
+  expect([authorIdentity.userId, reviewerIdentity.userId]).not.toContain(approverIdentity.userId);
+  dialog = await openSOP();
+  await dialog.getByRole('button', { name: 'Freigeben', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: 'Veröffentlichen', exact: true })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Veröffentlichen', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: 'Zurückziehen', exact: true })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Details schließen', exact: true }).click();
+  await logout(page);
+
+  await login(page, 'reader@browser.test.invalid');
+  const readerIdentity = (await (await page.request.get('/api/v1/auth/me')).json()).data;
+  expect([...readerIdentity.permissions].sort()).toEqual(['sop:acknowledge', 'sop:read']);
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  dialog = await openSOP();
+  const ownSOP = (await (await page.request.get('/api/v1/sops')).json()).data.find(sop => sop.id === sopId);
+  expect(ownSOP.version_id).toMatch(/^[a-f0-9-]{36}$/);
+  expect(ownSOP.version_id).toBe(submittedSOP.version_id);
+  expect(ownSOP.current_user_acknowledgment).toBe('unacknowledged');
+  expect(ownSOP.acknowledged_at).toBeNull();
+  await dialog.getByRole('button', { name: 'Details schließen', exact: true }).click();
+  const article = page.getByRole('article').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
+  await expect(article.getByRole('button', { name: 'Kenntnisnahme bestätigen', exact: true })).toBeDisabled();
+  await context.setOffline(true);
+  await article.getByRole('checkbox', { name: 'Ich habe diese Dienstanweisung gelesen und zur Kenntnis genommen.', exact: true }).check();
+  await article.getByRole('button', { name: 'Kenntnisnahme bestätigen', exact: true }).click();
+  await expect(article.getByText('Offline vorgemerkt – Synchronisierung ausstehend', { exact: true })).toBeVisible();
+  const [pending] = await readOutbox(page, 'sopAcknowledgements');
+  expect(pending).toMatchObject({
+    sopId, assignmentId: ownSOP.assignment_id, versionId: ownSOP.version_id,
+    tenantId: tenantA, userId: readerIdentity.userId, status: 'pending'
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.getByLabel('E-Mail')).toBeVisible();
+  expect(await readOutbox(page, 'sopAcknowledgements')).toEqual([pending]);
+  const attempts = [];
+  const receipts = [];
+  await page.route(`**/api/v1/sops/assignments/${pending.assignmentId}/acknowledge`, async route => {
+    attempts.push(route.request().postDataJSON());
+    const response = await route.fetch();
+    expect(response.status(), await response.text()).toBe(200);
+    receipts.push((await response.json()).data);
+    if (attempts.length === 1) await route.abort('failed');
+    else await route.fulfill({ response });
+  });
+  const firstFailure = page.waitForEvent('requestfailed', {
+    predicate: failed => failed.url().endsWith(`/sops/assignments/${pending.assignmentId}/acknowledge`)
+  });
+  await context.setOffline(false);
+  await login(page, 'reader@browser.test.invalid');
+  await expect.poll(() => attempts.length).toBe(1);
+  await firstFailure;
+  expect(await readOutbox(page, 'sopAcknowledgements')).toEqual([pending]);
+  await page.reload();
+  await expect.poll(() => attempts.length).toBe(2);
+  await page.getByRole('button', { name: 'Dienstanweisungen & QM', exact: true }).click();
+  await expect.poll(async () => (await readOutbox(page, 'sopAcknowledgements')).length).toBe(0);
+  expect(attempts).toEqual([{
+    confirmed: true, clientMutationId: pending.clientMutationId, capturedAt: pending.capturedAt
+  }, {
+    confirmed: true, clientMutationId: pending.clientMutationId, capturedAt: pending.capturedAt
+  }]);
+  expect(receipts[1]).toEqual({ ...receipts[0], alreadyAcknowledged: true });
+  expect(receipts[0]).toMatchObject({
+    id: pending.assignmentId, version_id: pending.versionId,
+    acknowledged_by_user_id: readerIdentity.userId, client_mutation_id: pending.clientMutationId
+  });
+  await expect(article.getByText(/Serverbestätigt/)).toBeVisible();
+  await page.reload();
+  await page.getByRole('button', { name: 'Dienstanweisungen & QM', exact: true }).click();
+  await expect(article.getByText(/Serverbestätigt/)).toBeVisible();
   await logout(page);
 });

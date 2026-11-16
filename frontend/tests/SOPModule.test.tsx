@@ -135,6 +135,35 @@ describe('SOPModule', () => {
     expect(mocks.post).toHaveBeenCalledWith('/sops/sop-1/submit', {});
   });
 
+  test.each(['create', 'edit', 'version'] as const)('sends null for optional empty dates and DMS references on %s', async mode => {
+    if (mode === 'version') mocks.state.sops = [{ ...draftSOP, status: 'published' }];
+    await act(async () => root.render(<SOPModule />));
+    const actionName = mode === 'create' ? 'Neue Anweisung' : mode === 'edit' ? 'Bearbeiten' : 'Neue Version';
+    const action = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === actionName);
+    if (!action) throw new Error(`Missing action: ${actionName}`);
+    await act(async () => action.click());
+    for (const [label, value] of [
+      ['Anweisungsnummer', 'DA-OPTIONAL'], ['Titel', 'Ohne optionale Felder'], ['Inhalt', 'Bewusst erfasst.'],
+      ['Gültig ab', ''], ['Gültig bis', ''], ['DMS-Dokument', ''],
+      ...(mode === 'version' ? [['Änderungsgrund', 'Optionale Angaben entfernen']] : [])
+    ]) {
+      const field = container.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`[aria-label="${label}"]`);
+      if (!field) throw new Error(`Missing field: ${label}`);
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(Object.getPrototypeOf(field), 'value')?.set?.call(field, value);
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+        field.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    }
+    const save = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Speichern');
+    if (!save) throw new Error('Speichern fehlt');
+    await act(async () => save.click());
+    const endpoint = mode === 'create' ? '/sops' : mode === 'edit' ? '/sops/sop-1' : '/sops/sop-1/versions';
+    expect(mode === 'edit' ? mocks.patch : mocks.post).toHaveBeenCalledWith(endpoint, expect.objectContaining({
+      effectiveFrom: null, effectiveUntil: null, dmsDocumentId: null
+    }));
+  });
+
   test('read-only SOP permission does not expose the manager-only reports tab', async () => {
     mocks.state.authUser = { permissions: ['sop:read'], tenantId: 'tenant-a' };
     await act(async () => root.render(<SOPModule />));

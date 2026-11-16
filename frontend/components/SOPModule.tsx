@@ -193,6 +193,12 @@ export const SOPModule: React.FC = () => {
 
   const saveSOP = async (event: React.FormEvent) => {
     event.preventDefault();
+    const payload = {
+      ...form,
+      effectiveFrom: form.effectiveFrom || null,
+      effectiveUntil: form.effectiveUntil || null,
+      dmsDocumentId: form.dmsDocumentId || null
+    };
     let saved = false;
     if (editingId && normalizeStatus(sops.find((sop) => sop.id === editingId)?.status) !== 'draft') {
       if (!changeReason.trim()) {
@@ -200,13 +206,13 @@ export const SOPModule: React.FC = () => {
         return;
       }
       saved = await runRequest(
-        () => apiClient.post(`/sops/${editingId}/versions`, { ...form, changeReason: changeReason.trim() }),
+        () => apiClient.post(`/sops/${editingId}/versions`, { ...payload, changeReason: changeReason.trim() }),
         'Neue Version wurde gespeichert.'
       );
     } else if (editingId) {
-      saved = await runRequest(() => apiClient.patch(`/sops/${editingId}`, form), 'Entwurf wurde gespeichert.');
+      saved = await runRequest(() => apiClient.patch(`/sops/${editingId}`, payload), 'Entwurf wurde gespeichert.');
     } else {
-      saved = await runRequest(() => apiClient.post('/sops', form), 'Dienstanweisung wurde als Entwurf angelegt.');
+      saved = await runRequest(() => apiClient.post('/sops', payload), 'Dienstanweisung wurde als Entwurf angelegt.');
     }
     if (saved) {
       setEditingId(null);

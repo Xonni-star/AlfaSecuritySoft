@@ -28,9 +28,11 @@ Projektabschluss und keine Produktions-, Sicherheits- oder Rechtsfreigabe.
 | `840c5bd` | Echter Chromium-/Express-/PostgreSQL-Test mit Cookie-/CSRF-Anmeldung, Offline-Erfassung, Offline-Reload, erneuter Anmeldung und bewusst verlorener erster Quittung. Gleiche Mutation-/Server-ID und ein persistierter Eintrag beim Retry. Dabei reproduzierte leere Standort-/Mitarbeiter-IDs im Wachbuchformular behoben und regressionsgetestet. |
 | `4946d31` | Vorhandene serverseitige Abmeldung in Navigation erreichbar gemacht; explizite Warnung bei unbestätigtem Widerruf. Echter Browser-Test prüft Ablehnung einer separat aufbewahrten alten Cookie-Kopie. Offline-Test wartet vor Retry/DB-Schließen auf Sync-Abschluss. Browserbuilds bleiben auch unter `NODE_ENV=test` Produktionsbuilds. |
 | `8611044` | Reale Session-Antwort `userId` statt ausschließlich älterer `sub`-/`id`-Aliasse lesen. Echte Browsererfassung nach Session-Restore und Besitzerbindung einer offenen Mutation über zwei Konten/zwei Mandanten; erst beim ursprünglichen Besitzer genau einmal synchronisiert. |
+| `591bbd2` | Authentifizierte Reportmatrix 16/16 mit fehlenden/entzogenen Rechten, echten Tenant-/Site-Grants, CSV, exakten Aggregaten und direkten IDs. Roster-Tests auf tatsächliche verzögerte Requests und richtige Refreshsection korrigiert; vollständiger Frontendlauf 175/175 mit Standardbudgets. |
+| Aktuelles SOP-/Wachbuchpaket | Echte SOP-Browserjourney mit vier Konten, Veröffentlichung und expliziter Offlinekenntnisnahme, Offline-Reload sowie identischem Retry nach verlorener echter Serverantwort. Nullable Formularwerte und fehlende Versions-UUIDs korrigiert; ersetzte Wachbuchreferenzen bleiben konsistent. Frontend 179/179, reale Browsersuite 3/3, Typcheck und Backendbuild bestanden. |
 
-Die Phase-11-Tabelle im Tracker enthält **18 abgegrenzte Pakete**:
-**14 lokal erledigt**, **1 in Arbeit** (gehostete Browser-CI ausstehend) und
+Die Phase-11-Tabelle im Tracker enthält **21 abgegrenzte Pakete**:
+**16 lokal erledigt**, **2 in Arbeit** (Backendregression und gehostete Browser-CI) und
 **3 extern zu prüfen**. Diese Zahlen sind keine Fertigstellungsquote des Produkts.
 Die ältere breite Audit-/Anforderungsmatrix enthält weiterhin offene Arbeit.
 
@@ -39,13 +41,14 @@ Die ältere breite Audit-/Anforderungsmatrix enthält weiterhin offene Arbeit.
 | Prüfung | Ergebnis | Grenze |
 |---|---|---|
 | Backend-TypeScript-Build | Bestanden | Lokaler Build, kein Produktionsbetrieb |
-| Vollständige PostgreSQL-gestützte Backend-Suite | 35/35 Suites, 534/534 Tests; keine Open-Handle-Warnung | Synthetische isolierte PostgreSQL-16-Datenbank |
+| Historische vollständige Backend-Suite | 35/35 Suites, 534/534 Tests; keine Open-Handle-Warnung | Früherer Revisionsstand; ersetzt den aktuellen fehlgeschlagenen Lauf nicht |
+| Aktuelle vollständige PostgreSQL-gestützte Backend-Suite | **OFFEN:** 32/35 Suites, 535/546 Tests; elf Fehler | Überwiegend 5-s-/30-s-Integrationstimeouts mit abhängigem Fixturefehler; Migrationstests bestanden in 701 s. Unveränderte Wiederholung auf eigener RAM-Dateisystem-Testinstanz läuft |
 | Erweiterte authentifizierte Berechtigungsmatrix | 16/16 Tests | Frische migrierte/geseedete PostgreSQL-16-DB; vier Berichte/CSV, fehlende/entzogene Rechte, Tenant-/Site-Grenzen, manipulierte Hinweise und direkte IDs. Nur erweiterte Suite erneut ausgeführt, vorherige vollständige Backendzahl bleibt historisch |
-| Frontend-Abschlusslauf | 29 Dateien, 175/175 Tests | Zwei Worker, unveränderte Standard-5-s-Zeitlimits; frühere 172/172 benötigten 30 Sekunden |
+| Frontend-Abschlusslauf | 29 Dateien, 179/179 Tests | Zwei Worker, unveränderte Standard-5-s-Zeitlimits; frühere 172/172 benötigten 30 Sekunden |
 | Frontend-Typprüfung | Bestanden | `npm run typecheck --prefix frontend` |
 | Frontend-Produktionsbuild | Bestanden | Durch Browser-Webserver; bestehende Vite-Konfigurations-/Chunkwarnungen sind keine behobenen Aufgaben |
 | Bestehende Chromium-API-Fixture | 1/1 bestanden | In-Memory-API, lokale Fotos bleiben unsynced |
-| Authentifizierte Chromium-/Backendtests | 2/2 bestanden | Echte Cookies, CSRF, Express und PostgreSQL; Konten-/Mandantenwechsel und Session-Restore; keine Fotos, Scanner, Provider oder physischen Geräte |
+| Authentifizierte Chromium-/Backendtests | 3/3 bestanden | Echte Cookies, CSRF, Express und PostgreSQL; Konten-/Mandantenwechsel, Session-Restore und vierkontiger SOP-Ablauf samt Offline-/Lost-receipt-Retry; keine Fotos, Scanner, Provider oder physischen Geräte |
 | Vollständiger PostgreSQL-/MinIO-Drill bis 042 | Bestanden | Lokaler synthetischer Infrastrukturtest, kein externer Provider |
 | Backup-Health-Negativfälle | Bestanden | Fehlend, partiell, leer, veraltet, letzter Fehler und erfolgreicher Folgelauf |
 | Restorefehler und Teilstart | Bestanden | Mid-DDL-Rollback erhält abweichenden Vorzustand; Dienste bleiben gestoppt |
@@ -112,6 +115,20 @@ beschrieben. Der lokale Lauf verwendete für MinIO und MC dieses Testimage:
   Doppelte Select-Change-Ereignisse und nicht verbrauchte Einmal-Mocks wurden
   isoliert. Nach Zwischenfehlern bestand der vollständige Lauf 175/175 mit
   unverändertem Standardbudget; keine vollständige Suite wurde selektiv gekürzt.
+- **Fortsetzung E2E-013/BUG-013:** Der reale SOP-Ablauf reproduzierte HTTP 400
+  durch leere optionale Datums-/DMS-Werte und anschließend eine fehlende
+  Versions-UUID in der Mitarbeiterliste. Formularpayloads und beide Listen sind
+  korrigiert. Der Browser prüft Submit, Review, Approve und Publish mit getrennten
+  Konten und danach die bewusste Offlinekenntnisnahme eines reinen SOP-Mitarbeiters.
+  Nach verlorenem echten Serverergebnis bleiben Mutation und Erfassungszeit über
+  Reload unverändert; erst die bestätigte Wiederholung leert die Queue.
+  Testfixturefehler (IndexedDB-Helperargument, offener Modaldialog, angenommenes
+  `attempts`-Feld und nicht als Toast dargestellte Benachrichtigung) wurden
+  korrigiert, nicht als Produktfehler ausgegeben. Ein Wachbuch-Replay klickte vor
+  gültiger Referenzauswahl; der Test wartet nun auf native Formularvalidität.
+  Der Formularfix berücksichtigt auch ersetzte initiale Referenz-IDs. Kombinierte
+  Modulregressionen 15/15, reale Browsersuite 3/3 und voller Frontendlauf 179/179
+  bestanden; Typcheck und Backendbuild ebenfalls.
 
 ## Begrenztes Security-Review
 
@@ -129,17 +146,19 @@ wurde abgeschlossen.
 
 ## Verbleibende Grenzen und konkrete Fortsetzung
 
-1. **Nächste lokal ausführbare Aufgabe:** Echten Browserfolgeumfang um
-   SOP-Bestätigungen oder Anhang-Replay mit echter isolierter S3-/Scanneranbindung
-   erweitern. Die echten Konten-/Mandantenwechsel sind bereits mit zwei Konten/zwei Mandanten
-   bestanden und nicht erneut zu implementieren. Als separaten Browserfolgeumfang
-   SOP-Bestätigungen oder Anhang-Replay mit echter isolierter S3-/Scanneranbindung
-   priorisieren; keine Fixture-Antworten als Provider-Nachweis ausgeben.
+1. **Nächste lokal ausführbare Aufgabe:** Der reine SOP-Mitarbeiter löst beim
+   allgemeinen Laden sieben unberechtigte Basis-GETs aus. Deren HTTP 403 wird
+   irreführend als „Backend nicht erreichbar“ angezeigt. Vor einem Berechtigungs-
+   Gate den Auth-Vertrag für Tenant-/Site-/Own-Grants über Login und Session-Restore
+   erhalten; nicht ausschließlich Tenantrechte prüfen und dadurch berechtigte
+   Standortnutzer ausschließen. Anschließend Anhang-Replay mit echter isolierter
+   S3-/Scanneranbindung prüfen; keine Fixture-Antworten als Providernachweis ausgeben.
+   SOP-Offlinebestätigung und Konten-/Mandantenwechsel nicht erneut implementieren.
 2. Authentifizierte Rollen-/Standort-/Objektmatrix auf weitere Module ausbauen.
    Report-Lese-/Exportrechte und direkte Schicht-IDs sind unter AUTH-013 bestanden.
    Vorhandene 215 unauthentifizierte
    Routentests nicht fälschlich als diese Matrix zählen oder erneut implementieren.
-3. Default-5-s-Frontendlauf unter QA-012 bestanden (175/175, zwei Worker).
+3. Default-5-s-Frontendlauf bestanden (179/179, zwei Worker).
    Neue reproduzierbare Timer-/Test-Isolationsfehler weiterhin fokussiert beheben;
    frühere 30-s-Läufe bleiben historische Evidenz und werden nicht umgedeutet.
 4. Vor Integration GitHub-/Branch-/CI-Stand erneut prüfen und lokale Commits

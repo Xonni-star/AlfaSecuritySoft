@@ -48,8 +48,8 @@ export const GuardBookModule: React.FC = () => {
   // Form states for new entry
   const [selectedSiteId, setSelectedSiteId] = useState(sites[0]?.id || '');
   const [selectedGuardId, setSelectedGuardId] = useState(employees[0]?.id || '');
-  const activeSiteId = selectedSiteId || sites[0]?.id || '';
-  const activeGuardId = selectedGuardId || employees[0]?.id || '';
+  const activeSiteId = sites.find(site => site.id === selectedSiteId)?.id || sites[0]?.id || '';
+  const activeGuardId = employees.find(employee => employee.id === selectedGuardId)?.id || employees[0]?.id || '';
   const [category, setCategory] = useState<GuardBookEntry['category']>('Vorkommnis');
   const [priority, setPriority] = useState<GuardBookEntry['priority']>('Normal');
   const [title, setTitle] = useState('');

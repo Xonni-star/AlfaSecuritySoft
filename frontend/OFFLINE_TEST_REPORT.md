@@ -1,6 +1,19 @@
 # SecurityOps 2.0 - Phase 6: Offline-Testbericht
 
-> **Erweiterter Phase-11-Nachweis:** Die authentifizierte Chromium-/Express-/PostgreSQL-Suite bestand zuletzt **2/2**. Zusätzlich zum Replay-/Abmeldetest bleibt eine offene Mutation bei Wechsel zu einem anderen Konto desselben Mandanten und zum ursprünglichen Konto in einem anderen Mandanten unangetastet und unsichtbar; erst nach Rückkehr zur ursprünglichen Identität wird sie genau einmal übertragen und persistiert. Der Test fand außerdem, dass `restoreSession` das reale `userId`-Feld von `/auth/me` nicht las; die Korrektur ist durch Unit- und echte Browser-Erfassung nach Reload belegt. Keine Foto-/SOP-/Geräteabnahme.
+> **Aktueller Phase-11-Browsernachweis:** Die echte Chromium-/Express-/PostgreSQL-
+> Suite besteht lokal **3/3**. Zusätzlich zu den beiden Wachbuch-/Identitätsfällen
+> erfolgt eine SOP-Veröffentlichung mit getrennten Erstellungs-, Prüfungs- und
+> Freigabekonten. Ein reines Mitarbeiterkonto öffnet ohne automatische Bestätigung,
+> bestätigt bewusst offline, lädt offline neu und wiederholt nach verlorener echter
+> Serverquittung exakt dieselbe Mutations-/Versions-/Zuweisungsbindung. Die Queue
+> verschwindet erst nach erfolgreicher Wiederholung; ein weiterer Reload zeigt
+> „Serverbestätigt“. Dabei wurden ungültige leere optionale SOP-Formularwerte und
+> fehlende `version_id`-Werte der Mitarbeiterantwort korrigiert. Der Wachbuchtest
+> wartet nach Reload auf tatsächlich valide geladene Formularfelder; ersetzte
+> Referenzdaten verwenden dieselben gültigen Defaults für Anzeige und Submit.
+> Keine Foto-/Scanner-/Provider-/physische Geräteabnahme; Hosted CI bleibt offen.
+
+> **Vorheriger Phase-11-Nachweis:** Die authentifizierte Chromium-/Express-/PostgreSQL-Suite bestand damals **2/2**. Zusätzlich zum Replay-/Abmeldetest bleibt eine offene Mutation bei Wechsel zu einem anderen Konto desselben Mandanten und zum ursprünglichen Konto in einem anderen Mandanten unangetastet und unsichtbar; erst nach Rückkehr zur ursprünglichen Identität wird sie genau einmal übertragen und persistiert. Der Test fand außerdem, dass `restoreSession` das reale `userId`-Feld von `/auth/me` nicht las; die Korrektur ist durch Unit- und echte Browser-Erfassung nach Reload belegt. Keine Foto-/SOP-/Geräteabnahme in diesem damaligen Umfang.
 
 > **Authentifizierter Phase-11-Browsertest (16.11.2026):** `npm run test:browser:backend` bestand lokal **1/1** mit echtem Express-Backend, Cookie-/CSRF-Sitzung, frischer PostgreSQL-16-Datenbank und Migrationen bis 042. Chromium erfasst offline, lädt offline neu und meldet sich nach Wiederverbindung erneut an. Der Test lässt den echten Server die erste Mutation speichern, verwirft ausschließlich die Antwort im Browser und prüft beim Retry dieselbe Mutation-ID, dieselbe Server-ID, eine geleerte Outbox und genau einen über die authentifizierte API nach Reload lesbaren Wachbucheintrag. Keine API-Antworten werden hierfür erfunden. Der Root-CI-Job ist dafür konfiguriert; gehostete Ausführung dieser lokalen Änderung steht aus. Foto-/Scanner-/Providerbetrieb, Konten-/Tenantwechsel und physische Geräte sind nicht Teil dieses Tests.
 >
