@@ -4,6 +4,7 @@
 
 ### Hinzugefügt
 
+- Authentifizierter Chromium-Offline-Test mit echter Express-/PostgreSQL-Anbindung, isolierter Datenbank und kontrolliert verlorener erster Sync-Quittung; eigener Root-CI-Schritt und Fehlerartefakte.
 - Backup-Healthcheck für Archivfrische und letzten Sicherungsfehler; atomare Archivveröffentlichung, private Dateirechte und Regressionen für Fehler/Erholung im isolierten Restore-Drill. Dies ist kein Restore- oder externer Alarmierungsnachweis.
 - Quellcode-/Test-Evidenzmatrix der 13 Projektmodule und Abgrenzung des aktiven Node-Backends vom historischen Python-Pfad.
 - Migration 042 aktualisiert die technische Wachbuch-Fehlermeldung additiv; veröffentlichte Migrationen 001/004 behalten ihre ursprünglichen SHA-256-Prüfsummen.
@@ -19,6 +20,7 @@
 
 ### Fehlerkorrekturen
 
+- Wachbuchformulare verwenden nachgeladene Standort-/Mitarbeiter-Standardwerte konsistent bei Anzeige und Speicherung, statt leere IDs in die Offline-Outbox zu schreiben.
 - Patrol-Integrationstests schließen beide PostgreSQL-Pools nach der Bereinigung; der lange API-Test verwendet ein begrenztes 30-Sekunden-Zeitbudget.
 - Sync-Quittungen weisen die Wiederverwendung einer Mutations-ID mit geändertem Entitätstyp oder Vorgang zurück.
 - Kontrollpunkte sind nach Ablauf des zweiminütigen Duplikatfensters erneut scannbar; Scans innerhalb des Fensters werden abgewiesen.

@@ -48,6 +48,8 @@ export const GuardBookModule: React.FC = () => {
   // Form states for new entry
   const [selectedSiteId, setSelectedSiteId] = useState(sites[0]?.id || '');
   const [selectedGuardId, setSelectedGuardId] = useState(employees[0]?.id || '');
+  const activeSiteId = selectedSiteId || sites[0]?.id || '';
+  const activeGuardId = selectedGuardId || employees[0]?.id || '';
   const [category, setCategory] = useState<GuardBookEntry['category']>('Vorkommnis');
   const [priority, setPriority] = useState<GuardBookEntry['priority']>('Normal');
   const [title, setTitle] = useState('');
@@ -94,19 +96,22 @@ export const GuardBookModule: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
-    const siteObj = sites.find((s) => s.id === selectedSiteId);
-    const guardObj = employees.find((e) => e.id === selectedGuardId);
+    const siteObj = sites.find((s) => s.id === activeSiteId);
+    const guardObj = employees.find((e) => e.id === activeGuardId);
 
     setIsSubmitting(true);
     setSubmissionError('');
     let entryId = savedEntryId;
     try {
       if (!entryId) {
+        if (!siteObj || !guardObj) {
+          throw new Error('Bitte ein verfügbares Sicherheitsobjekt und eine Wachkraft auswählen.');
+        }
         entryId = await addGuardBookEntry({
-          siteId: selectedSiteId,
-          siteName: siteObj?.name || 'Unbekanntes Objekt',
-          guardId: selectedGuardId,
-          guardName: guardObj ? `${guardObj.firstName} ${guardObj.lastName}` : 'Wachkraft',
+          siteId: siteObj.id,
+          siteName: siteObj.name,
+          guardId: guardObj.id,
+          guardName: `${guardObj.firstName} ${guardObj.lastName}`,
           category,
           priority,
           stage: 'Erfasst',
@@ -385,7 +390,7 @@ export const GuardBookModule: React.FC = () => {
                 <div>
                   <label className="block text-slate-400 mb-1 font-medium">Sicherheitsobjekt *</label>
                   <select
-                    value={selectedSiteId}
+                    value={activeSiteId}
                     onChange={(e) => setSelectedSiteId(e.target.value)}
                     disabled={Boolean(savedEntryId)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200"
@@ -400,7 +405,7 @@ export const GuardBookModule: React.FC = () => {
                 <div>
                   <label className="block text-slate-400 mb-1 font-medium">Protokollierende Wachkraft *</label>
                   <select
-                    value={selectedGuardId}
+                    value={activeGuardId}
                     onChange={(e) => setSelectedGuardId(e.target.value)}
                     disabled={Boolean(savedEntryId)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200"

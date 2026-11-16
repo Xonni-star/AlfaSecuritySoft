@@ -104,6 +104,34 @@ describe('GuardBookModule offline capture', () => {
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('IndexedDB quota exceeded');
   });
 
+  test('submits the displayed defaults when reference data arrives after the module mounts', async () => {
+    mocks.state.getTenantSites.mockReturnValueOnce([]);
+    mocks.state.getTenantEmployees.mockReturnValueOnce([]);
+    mocks.addGuardBookEntry.mockResolvedValueOnce('late-loaded-entry');
+    await act(async () => root.render(<GuardBookModule />));
+    await act(async () => root.render(<GuardBookModule />));
+    const openButton = Array.from(container.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Ereignis erfassen'));
+    await act(async () => openButton?.click());
+    const title = container.querySelector<HTMLInputElement>('input[placeholder^="z. B."]');
+    const description = container.querySelector<HTMLTextAreaElement>('textarea');
+    if (!title || !description) throw new Error('Wachbucheintragsformular fehlt');
+    await act(async () => {
+      setValue(title, 'Spät geladene Stammdaten');
+      setValue(description, 'Die angezeigte Auswahl muss tatsächlich gespeichert werden.');
+    });
+    await act(async () => {
+      container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+    expect(mocks.addGuardBookEntry).toHaveBeenCalledWith(expect.objectContaining({
+      siteId: 'site-a',
+      siteName: 'Objekt A',
+      guardId: 'employee-a',
+      guardName: 'Erika Muster'
+    }));
+    expect(container.querySelector('form')).toBeNull();
+  });
+
   test('ignores a second submit while the first entry write is pending', async () => {
     let resolveEntry!: (id: string) => void;
     mocks.addGuardBookEntry.mockReturnValueOnce(new Promise(resolve => {

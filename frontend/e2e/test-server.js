@@ -1,10 +1,11 @@
-import { createServer } from 'node:http';
+import { createServer, request as proxyRequest } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const port = 4173;
 const distRoot = resolve(fileURLToPath(new URL('../dist/', import.meta.url)));
+const backendUrl = process.env.E2E_BACKEND_URL;
 const user = {
   id: '88888888-8888-4888-8888-888888888888',
   tenantId: '99999999-9999-4999-8999-999999999999',
@@ -86,6 +87,26 @@ async function serveFile(request, response, pathname) {
 
 const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? '/', `http://127.0.0.1:${port}`);
+  if (backendUrl && url.pathname.startsWith('/api/v1/')) {
+    const upstream = proxyRequest(new URL(request.url, backendUrl), {
+      method: request.method,
+      headers: request.headers
+    }, (upstreamResponse) => {
+      response.writeHead(upstreamResponse.statusCode, upstreamResponse.headers);
+      upstreamResponse.pipe(response);
+    });
+    upstream.on('error', (error) => {
+      console.error('[BROWSER TEST] Backend proxy failed:', error.message);
+      if (!response.headersSent) {
+        json(response, 502, { success: false, message: 'Test backend unavailable' });
+      } else {
+        response.destroy(error);
+      }
+    });
+    request.pipe(upstream);
+    return;
+  }
+
   if (url.pathname === '/__test/state') {
     json(response, 200, {
       syncAttempts,

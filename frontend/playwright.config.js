@@ -2,6 +2,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
+  testMatch: 'offline-guardbook.spec.js',
   fullyParallel: false,
   reporter: 'list',
   timeout: 60_000,
