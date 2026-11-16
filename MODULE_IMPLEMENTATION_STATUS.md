@@ -10,9 +10,9 @@ Python files in `frontend/backend/*.py`, `frontend/alembic`, and `frontend/tests
 
 ## Module matrix
 
-Latest complete hosted evidence:5ee9f36665616178c331e9c53526b1e35396b7bd /
-CI43972242288, **7/7**, read378 frontend/553 backend in35 suites,10 genuine
-browser journeys and cleanup. FNL-022–028 are verified in the stated scope;
+Post-integration hosted evidence:5c6031e21fc8cba3c8256525c9edc52928564f2b /
+CI43974506659, **7/7**, read378 frontend/553 backend in35 suites,10 genuine
+browser journeys; artifact43974980830 passed2/2. FNL-022–028 are verified in the stated scope;
 the real document empty/current/missing/archive/denied-read API case passed.
 FNL-027 corrects eight reproduced late-write/create draft-loss/owner ABA cases;
 FNL-028 holds sync mutex/Pending through the full snapshot refresh on success

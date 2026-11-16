@@ -2,9 +2,11 @@
 
 **Last verified:** 2026-11-16
 
-**Verified `main` snapshot before integration:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
+**Verified integration commit on `main`:** [`5c6031e21fc8cba3c8256525c9edc52928564f2b`](https://github.com/Xonni-star/SecurityOps-2.0/commit/5c6031e21fc8cba3c8256525c9edc52928564f2b)
 
-**GitHub snapshot before integration:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66) was the only open PR; PRs #50–#65 were merged, including [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62). This document is revision-specific evidence, not live forge state; inspect the linked PR for its current integration status.
+**GitHub integration:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66) merged on 2026-11-16 after exact head `df93a7104365aa8848f46e67aabf6c628ebd37cc` passed CI43973880410 **7/7**. The resulting main tree is identical. Earlier PRs #50–#65 are also merged. This document records revision-specific evidence, not live forge state.
+
+**Post-merge verification:** [Main CI43974506659](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43974506659) passed **7/7**, with downloaded logs confirming **378 frontend /553 backend in35 suites /10 real browser journeys**. [Artifact workflow43974980830](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43974980830) passed **2/2**: exact main commit and source CI-run provenance,40 migration files and clean production dependency installation. Artifact SHA256: `832ce253f9be755d19de300c3dee2b2e2e69b551f75af617ccb18b80388838f9`. No tag, deployment or production acceptance.
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
@@ -20,10 +22,10 @@ checks every original/replayed UUID and server ID across independently due
 retry batches. Local targeted UI **27/27**, controller **11/11**, typecheck
 and both builds passed; the complete hosted result below closes this gap.
 
-**Fully hosted-verified code revision:** `5ee9f36665616178c331e9c53526b1e35396b7bd`
+**Pre-integration runtime-fix baseline:** `5ee9f36665616178c331e9c53526b1e35396b7bd`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
-The Phase 10/11 changes were pushed and checked before integration. No tag or
-deployment is authorized; the current merge status belongs to the linked PR.
+The Phase 10/11 changes were pushed, checked and integrated through PR66.
+No tag or deployment is authorized.
 Its exact [CI 43972242288](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43972242288)
 passed **7/7 jobs**; downloaded logs confirm frontend **378/378**, backend
 **553/553 in 35 suites**, real browser **10/10** and owned-container cleanup.

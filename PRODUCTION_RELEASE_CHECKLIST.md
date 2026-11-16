@@ -59,6 +59,10 @@ Test, ein Merge und ein erfolgreiches Containerimage ersetzen sie nicht.
 - [x] FNL-028-Gesamtprüfung: zwei Sync-Refresh-/Mutexfälle zunächst rot;
       exakte CI43972242288 auf5ee9f36665616178c331e9c53526b1e35396b7bd
       bestand7/7, gelesene378/553/10 und Cleanup.
+- [x] PR66 normal integriert als5c6031e21fc8cba3c8256525c9edc52928564f2b;
+      identischer geprüfter Quellbaum, Main-CI43974506659 7/7 mit378/553/10.
+      Artefakt43974980830 2/2 bestätigt Commit-/CI-Provenienz,40 Migrationen
+      und saubere Backend-Produktionsinstallation, nicht ein Deployment.
 
 Diese Haken bestätigen nur den beschriebenen Entwicklungsnachweis;
 die exakten Revisionen stehen im [Projektstatus](./PROJECT_CURRENT_STATUS.md).
