@@ -1,4 +1,4 @@
-import React, { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { FormEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle, CalendarClock, Check, ClipboardCheck, Clock3, FileText,
   MessageSquareText, Plus, RefreshCw, Search, ShieldAlert, WifiOff, X
@@ -163,7 +163,7 @@ function queueStatusLabel(status: OutboxMutation['status']): string {
 
 export const HandoversModule: React.FC = () => {
   const {
-    authUser, currentTenantId, isOnline, isSyncing, triggerManualSync,
+    authUser, currentTenantId, currentUserId, isOnline, isSyncing, triggerManualSync,
     getTenantSites, getTenantEmployees, getTenantShifts, getTenantDocuments
   } = useSecurityStore();
   const sites = getTenantSites();
@@ -177,6 +177,10 @@ export const HandoversModule: React.FC = () => {
   const canManageTasks = permissions.includes('handovers:tasks');
   const canManage = permissions.includes('handovers:manage');
   const canReadDocuments = permissions.includes('documents:read');
+  const userId = authUser?.id || currentUserId;
+  const identityKey = JSON.stringify([currentTenantId, userId]);
+  const identityRef = useRef(identityKey);
+  identityRef.current = identityKey;
 
   const [handovers, setHandovers] = useState<Handover[]>([]);
   const [total, setTotal] = useState(0);
@@ -207,6 +211,11 @@ export const HandoversModule: React.FC = () => {
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
 
+  useLayoutEffect(() => {
+    setLocalMutations([]);
+    setStorageError('');
+  }, [identityKey]);
+
   const selected = handovers.find(handover => handover.id === selectedId);
   const selectedOutgoingEmployee = employees.find(employee => employee.id === selected?.outgoingEmployeeId);
   const selectedIncomingEmployee = employees.find(employee => employee.id === selected?.incomingEmployeeId);
@@ -227,15 +236,18 @@ export const HandoversModule: React.FC = () => {
   }, [filter, page]);
 
   const refreshLocalMutations = useCallback(async () => {
-    if (!currentTenantId) return;
+    if (!currentTenantId || !userId) return;
+    const requestIdentity = identityKey;
     try {
-      const records = await offlineVault.getOutbox(currentTenantId, 'handover');
+      const records = await offlineVault.getOutbox(currentTenantId, 'handover', userId);
+      if (identityRef.current !== requestIdentity) return;
       setLocalMutations(records.sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)));
       setStorageError('');
     } catch (loadError) {
+      if (identityRef.current !== requestIdentity) return;
       setStorageError(loadError instanceof Error ? loadError.message : 'Lokaler Übergabespeicher ist nicht verfügbar.');
     }
-  }, [currentTenantId]);
+  }, [currentTenantId, userId, identityKey]);
 
   const refreshList = useCallback(async () => {
     if (!permissions.includes('handovers:read')) return;

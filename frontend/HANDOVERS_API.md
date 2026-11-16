@@ -77,6 +77,12 @@ Bei einer späteren Aufgabenänderung wird ein neu gesetzter `assignedEmployeeId
 
 ## Offline-Synchronisierung
 
+Die lokale Warteschlangenansicht liest ausschließlich Mutationen des aktuellen
+Mandanten und angemeldeten Benutzers. Ein Kontenwechsel leert die bisherige
+lokale Anzeige vor dem Paint; verspätete Ergebnisse oder Speicherfehler des
+vorherigen Kontos werden nicht veröffentlicht. Das löscht oder übernimmt keine
+fremden Mutationen und ersetzt nicht die serverseitige Berechtigungsprüfung.
+
 Die Oberfläche speichert eine neue Übergabe zuerst in `SecurityOps2_OfflineVault.outbox` und sendet sie danach an:
 
 ```json

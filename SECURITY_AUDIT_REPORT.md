@@ -21,6 +21,13 @@ new exact hosted validation remains open. This is not a new comprehensive
 security review. Bounded local restore review found cross-owner patrol progress/
 handover metadata contamination (FNL-021), not a confirmed private-payload leak
 or cross-owner server mutation.
+The preceding FNL-020 hosted gap is now closed: exact CI 43958520111 on
+`e3d6f9bd914a3840986d96fc676c3f4997fded49` passed 7/7; read logs
+340 frontend/549 backend/9 actual browser plus cleanup. Subsequent FNL-021
+implements owner-bound local restore, before-paint clearing and stale-storage
+guards. Eight new component cases (six originally failing), combined targeted
+171/171 and typecheck/build passed; new full hosted evidence remains separate.
+No new comprehensive security, device or full role/object acceptance is claimed.
 **Scope:** PR #66 changes, browser-based report CSV export, local legacy-attachment recovery, backend authorization boundaries, PostgreSQL tenant/RLS context, authentication/session handling, and web security configuration. This is not a comprehensive security audit, penetration test, or certification.
 
 **Finalization evidence update, not a new comprehensive security review:**

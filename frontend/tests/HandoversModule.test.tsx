@@ -1,6 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import type { OutboxMutation } from '../services/indexedDbService';
 
 const mocks = vi.hoisted(() => ({
   get: vi.fn(),
@@ -43,6 +44,11 @@ import { HandoversModule } from '../components/HandoversModule';
 describe('HandoversModule', () => {
   let container: HTMLDivElement;
   let root: ReturnType<typeof createRoot>;
+  const localRecord = (userId: string): OutboxMutation => ({
+    id: `local-${userId}`, userId, tenantId: 'tenant-a', deviceId: 'device-1',
+    entityType: 'handover', action: 'CREATE', payload: {}, occurredAt: new Date().toISOString(),
+    baseVersion: 1, retryCount: 1, status: 'FAILED', errorMessage: `error-${userId}`
+  });
 
   beforeEach(() => {
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -71,7 +77,7 @@ describe('HandoversModule', () => {
       })
       : Promise.resolve({ items: [], total: 0, limit: 50, offset: 0 }));
     mocks.enqueueMutation.mockResolvedValue({});
-    mocks.getOutbox.mockResolvedValue([]);
+    mocks.getOutbox.mockReset().mockResolvedValue([]);
     mocks.triggerManualSync.mockResolvedValue({ success: 0, failed: 0, conflicts: 0 });
   });
 
@@ -170,5 +176,48 @@ describe('HandoversModule', () => {
     expect(mocks.post).toHaveBeenCalledWith('/handovers/handover-1/confirm', expect.objectContaining({
       expectedRevisionVersion: 7
     }));
+  });
+
+  test('lists only the current same-tenant owner local queue', async () => {
+    const records = [localRecord('user-1'), localRecord('user-2')];
+    mocks.getOutbox.mockImplementation(async (_tenant: string, _entity: string, owner?: string) =>
+      records.filter(record => !owner || record.userId === owner));
+    await act(async () => root.render(<HandoversModule />));
+    expect(container.textContent).toContain('local-user-1');
+    expect(container.textContent).not.toContain('local-user-2');
+    expect(container.textContent).not.toContain('error-user-2');
+    expect(mocks.getOutbox).toHaveBeenCalledWith('tenant-a', 'handover', 'user-1');
+  });
+
+  test.each(['success', 'failure'] as const)('ignores a previous owner delayed local-read %s', async outcome => {
+    let finish!: (records: OutboxMutation[]) => void;
+    let fail!: (error: Error) => void;
+    mocks.getOutbox.mockReturnValueOnce(new Promise<OutboxMutation[]>((resolve, reject) => {
+      finish = resolve;
+      fail = reject;
+    }));
+    await act(async () => root.render(<HandoversModule />));
+    mocks.state.authUser = { ...mocks.state.authUser, id: 'user-2' };
+    await act(async () => root.render(<HandoversModule />));
+    await act(async () => {
+      if (outcome === 'success') finish([localRecord('user-1')]);
+      else fail(new Error('previous-owner-storage-error'));
+    });
+    expect(container.textContent).not.toContain('local-user-1');
+    expect(container.textContent).not.toContain('previous-owner-storage-error');
+    expect(mocks.getOutbox).toHaveBeenLastCalledWith('tenant-a', 'handover', 'user-2');
+  });
+
+  test('clears the previous owner queue while the new owner read is pending', async () => {
+    mocks.getOutbox.mockResolvedValueOnce([localRecord('user-1')]);
+    await act(async () => root.render(<HandoversModule />));
+    expect(container.textContent).toContain('local-user-1');
+    let finish!: (records: OutboxMutation[]) => void;
+    mocks.getOutbox.mockReturnValueOnce(new Promise<OutboxMutation[]>(resolve => { finish = resolve; }));
+    mocks.state.authUser = { ...mocks.state.authUser, id: 'user-2' };
+    await act(async () => root.render(<HandoversModule />));
+    const displayedPreviousOwner = container.textContent?.includes('local-user-1');
+    await act(async () => finish([]));
+    expect(displayedPreviousOwner).toBe(false);
   });
 });

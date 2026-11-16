@@ -299,7 +299,22 @@ Logs: `finalization-guardbook-completion-backend-focused.log`,
 `finalization-guardbook-frontend-final.log`. No timeout increases, weakened
 assertions or Roster source changes were retained.
 
-1. Publish coherent FNL-020 and verify all hosted jobs
+FNL-020 is now published as `e3d6f9bd914a3840986d96fc676c3f4997fded49`.
+Exact CI 43958520111 passed all seven jobs; downloaded actual logs establish
+frontend 340/340, backend 549/549 in 35 suites, real browser 9/9 and cleanup.
+Log: `finalization-guardbook-hosted-ci.log`. This resolves the hosted full-suite
+gap, not the failed/interrupted local runs or external acceptance.
+
+FNL-021 now owner-filters both local restore reads, clears previous owner data
+before paint and guards stale local success/error and post-cache scan results.
+Missing patrol owner/tenant yields an explicit error, never an unscoped read.
+Eight new controlled component cases include six original red regressions and
+two added pending/missing-owner cases. Combined targeted frontend 171/171,
+typecheck/build passed; backend unchanged. Real device/full authenticated
+patrol/handover acceptance is not established.
+Log: `finalization-owner-restore-red.log` (six original failures).
+
+1. Publish coherent FNL-021 and verify all hosted jobs
    on the exact new full SHA; inspect actual logs before updating evidence.
    The preceding 7/7 does not validate these newer changes.
 2. Repeat a bounded convergence audit for new concrete functional defects,
@@ -312,12 +327,11 @@ assertions or Roster source changes were retained.
    no remaining `throw new Error('offline')` or online-state-based catch fallback
    in the active store/controllers/components; this is not exhaustive coverage.
    Inspect remaining real workflow boundaries, not already corrected handlers.
-   Concrete next task FNL-021: bind MobilePatrolScanner and HandoversModule
-   local outbox reads to the authenticated owner, clear restored state on owner
-   change and prevent stale local-read success/errors from entering the new
-   view. Add same-tenant two-user round/progress and queue regressions.
-   A bounded static review found functional cross-owner local-state adoption,
-   not a confirmed private-payload leak or cross-owner server mutation.
+   Concrete next task FNL-022: reproduce remaining handover list/detail and
+   write-completion publication across identity changes. App does not key this
+   component by identity and these paths do not use the new local-queue guard.
+   Confirm the actual failure with focused regressions before fixing it; no
+   confirmed vulnerability or complete module acceptance is claimed.
 3. Keep the requested final documents/tracker current; no ESLint configuration
    or script was found, so do not claim lint ran.
 4. Merge PR #66 only after

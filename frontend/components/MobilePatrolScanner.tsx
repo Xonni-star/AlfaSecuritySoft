@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   AlertTriangle, Camera, CheckCircle2, LoaderCircle, MapPin, QrCode, Radio, ShieldCheck, VideoOff
 } from 'lucide-react';
@@ -211,6 +211,19 @@ export const MobilePatrolScanner: React.FC = () => {
     return { ...point, scan, late: !scan && Number.isFinite(dueAt) && Date.now() > dueAt + lateTolerance };
   });
 
+  useLayoutEffect(() => {
+    setQueuedScans([]);
+    setActiveRound(null);
+    setCheckpoints([]);
+    setRoutes([]);
+    setSelectedRouteId('');
+    setNotes('');
+    setCompletionNotes('');
+    setScanSuccessMessage(null);
+    setErrorMessage(null);
+    setRoundAttachments([]);
+  }, [currentTenantId, userId]);
+
   useEffect(() => {
     if (!siteId && sites.length) setSiteId(sites[0].id);
   }, [siteId, sites]);
@@ -252,6 +265,11 @@ export const MobilePatrolScanner: React.FC = () => {
 
   useEffect(() => {
     let active = true;
+    if (!currentTenantId || !userId) {
+      setLoadingCheckpoints(false);
+      setErrorMessage('Kontrollgangsdaten benötigen einen angemeldeten Benutzer und Mandanten.');
+      return () => { active = false; };
+    }
     setLoadingCheckpoints(true);
     const loadPatrolData = async () => {
       let cached: Awaited<ReturnType<typeof offlineVault.getPatrolCheckpointCache>> = null;
@@ -262,7 +280,7 @@ export const MobilePatrolScanner: React.FC = () => {
         [cached, localRounds, patrolOutbox] = await Promise.all([
           offlineVault.getPatrolCheckpointCache(currentTenantId, userId),
           offlineVault.getPatrolRounds(currentTenantId, userId),
-          offlineVault.getOutbox(currentTenantId, 'patrol')
+          offlineVault.getOutbox(currentTenantId, 'patrol', userId)
         ]);
       } catch (error) {
         if (active) setErrorMessage(error instanceof Error ? error.message : 'Offline-Kontrollgangsdaten konnten nicht wiederhergestellt werden.');
@@ -365,6 +383,7 @@ export const MobilePatrolScanner: React.FC = () => {
             serverSynced: true
           });
         } else setActiveRound(null);
+        if (!active) return;
         setQueuedScans(queuedScansForSite);
         await offlineVault.savePatrolCheckpointCache(currentTenantId, userId, [
           ...cachedCheckpoints.filter(point => point.siteId !== siteId),
@@ -373,6 +392,7 @@ export const MobilePatrolScanner: React.FC = () => {
           ...cachedRoutes.filter(route => route.siteId !== siteId),
           ...mappedRoutes
         ] as unknown as Array<Record<string, unknown>>);
+        if (!active) return;
         setQueuedScans(previous => {
           const known = new Set(previous.map(scan => `${scan.checkpointId}:${scan.scannedAt}`));
           return [

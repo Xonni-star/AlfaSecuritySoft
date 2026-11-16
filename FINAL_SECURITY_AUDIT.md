@@ -108,6 +108,12 @@ vollständig grün; exakte neue Hosted-Prüfung bleibt offen. Das ist keine neue
 umfassende Sicherheitsprüfung. Die begrenzte Prüfung lokaler Kontrollgangs-/
 Übergabewiederherstellung fand funktionale Owner-Zustandsvermischung (FNL-021),
 aber keinen bestätigten privaten Payload-Abfluss oder fremden Serverzugriff.
+Aktualisierung: FNL-020 `e3d6f9bd914a3840986d96fc676c3f4997fded49`
+bestand die zuvor offene exakte CI 43958520111 7/7; gelesene Logs 340/549/9
+plus Cleanup. FNL-021 korrigiert die lokale Owner-Wiederherstellung und späte
+Speicherergebnisse, mit acht neuen Komponentenfällen (sechs zunächst rot),
+kombiniert 171/171 gezielt und Typprüfung/Build. Neue Gesamt-CI bleibt separat;
+kein neuer umfassender Sicherheits-/Geräte-/Rollenabnahmenachweis.
 
 Unberechtigte Reportanfragen wurden bereits vom Server abgewiesen; das
 Frontend vermeidet sie jetzt. Formularverlust, Zeitzonenvalidierung,

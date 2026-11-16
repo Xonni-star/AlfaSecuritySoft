@@ -8,15 +8,15 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
-**Fully hosted-verified code revision:** `ab961c92e45ad4bc4b0bb53dfb19918393c99ff9`
+**Fully hosted-verified code revision:** `e3d6f9bd914a3840986d96fc676c3f4997fded49`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
-Its exact [CI 43949055729](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43949055729)
-passed **7/7 jobs**; downloaded logs confirm frontend **331/331**, backend
-**546/546 in 35 suites**, real browser **9/9** and owned-container cleanup.
+Its exact [CI 43958520111](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43958520111)
+passed **7/7 jobs**; downloaded logs confirm frontend **340/340**, backend
+**549/549 in 35 suites**, real browser **9/9** and owned-container cleanup.
 This includes confirmed form writes, report grant/date/identity fixes, durable
 critical-incident follow-ups, truthful audit displays and delayed local-write
-identity isolation, plus FNL-013–019 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
+identity isolation, plus FNL-013–020 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
 and `5ef02b3ab0b9f711025405247e711f21d3ee9811` passed their own
 CI 43929519192 and 43928436875, 7/7 each.
 
@@ -37,9 +37,9 @@ Eleven original regressions failed; all **331/331 frontend tests in 36 files**,
 typecheck/build and **9/9 genuine browser journeys** with cleanup now pass.
 The contract journey reads/dismisses a genuine offline-customer notice and
 verifies the actual bell count. Backend sources are unchanged from FNL-018.
-Exact hosted verification is CI 43949055729 above.
+Exact historical hosted verification is CI 43949055729.
 
-**Subsequent FNL-020 — IMPLEMENTIERT; full verification OFFEN:** GuardBook
+**Published FNL-020 — IMPLEMENTIERT UND GETESTET:** GuardBook
 completion now uses the durable owner-bound outbox and existing idempotent
 sync UPDATE. The UI preserves rejected drafts and shows pending, not completed,
 until a genuine server receipt and reload. Stage and `resolved` are updated
@@ -59,15 +59,24 @@ timeouts and a dependent approval failure. The experiment was reverted; no
 budgets or assertions were weakened. Isolated Roster approval passed, but that
 does not establish the full suite. The full local backend run was intentionally
 interrupted; its sync and migration suites passed, including a 534.914-second
-migration suite, but no complete 549/549 result is claimed. The separate fresh
+migration suite, but no complete local 549/549 result is claimed. The separate fresh
 36/36 run and final browser run cleaned up their owned containers.
-Exact new hosted verification remains required. No migration was added.
+The independent exact hosted CI 43958520111 above subsequently passed all seven
+jobs, including frontend 340/340, backend 549/549 and browser 9/9 with cleanup.
+This closes the hosted full-suite prerequisite, without rewriting local failures
+as local success. No migration was added.
 
-**Next concrete FNL-021 — OFFEN:** Mobile patrol restore reads tenant-wide
-outbox data and can adopt another owner's local round/progress; the handover
-local queue also reads tenant-wide metadata. Bind both reads and late results
-to the current owner. A bounded static review established these functional
-defects, not a confirmed private-payload leak or cross-owner server mutation.
+**Subsequent FNL-021 — IMPLEMENTIERT; full verification OFFEN:** Mobile patrol
+and handover local outbox reads now require the current owner. Restored owner
+state clears before paint; delayed old local reads/errors and post-cache scan
+publication cannot contaminate the next identity. Missing patrol owner/tenant
+produces an explicit error instead of an unscoped restore. Eight new component
+cases include six originally failing cases and two additional owner-clear/
+missing-owner cases. Combined targeted frontend **171/171**, typecheck and
+build passed. These are controlled component/IndexedDB tests, not real-device
+or full authenticated patrol/handover acceptance; new exact full CI is separate.
+A bounded static review established the original functional defects, not a
+confirmed private-payload leak or cross-owner server mutation.
 
 **Published FNL-018 — IMPLEMENTIERT UND GETESTET:** Sync
 now checks identity after awaited attachment inspection and post-sync snapshots

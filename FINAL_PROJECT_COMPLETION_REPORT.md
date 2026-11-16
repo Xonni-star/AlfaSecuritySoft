@@ -111,8 +111,15 @@ Gezielt Frontend 155/155, PostgreSQL-Syncsuite 36/36, Typprüfung/beide Builds
 und echte Browser 9/9 mit verlorener Abschlussquittung/Replay/Cleanup bestanden.
 Die abschließenden lokalen Gesamtläufe sind nicht vollständig grün; neue exakte
 Hosted-Prüfung bleibt offen. Kein vollständiger 549er-Backendnachweis behauptet.
-Nächste konkrete interne Aufgabe FNL-021: ownergebundene Wiederherstellung
-lokaler Kontrollgangs-/Übergabeansichten, kein bestätigter Exploit.
+Diese Hosted-Prüfung ist inzwischen erfolgreich: FNL-020
+`e3d6f9bd914a3840986d96fc676c3f4997fded49`, CI 43958520111 7/7,
+gelesene Logs 340/549/9 plus Cleanup. Frühere lokale Fehler bleiben erhalten.
+FNL-021 bindet nun lokale Kontrollgangs-/Übergabewiederherstellung an Owner,
+leert alte Zustände vor dem Paint und ignoriert alte Speicherergebnisse.
+Acht neue Komponentenfälle, sechs ursprünglich rot; kombiniert 171/171
+gezielt, Typprüfung/Build bestanden. Neue Gesamt-CI bleibt separat.
+FNL-022 prüft anschließend verbleibende Übergabe-Server-/Schreibabschlüsse
+bei Identitätswechsel; noch kein bestätigter Exploit.
 
 Verbindliche Details:
 [Tracker](./PROJECT_COMPLETION_TRACKER.md),

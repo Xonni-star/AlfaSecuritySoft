@@ -79,7 +79,14 @@ tatsächliche Nachträge; gezielte Frontendtests 155/155, PostgreSQL-Syncsuite
 36/36, Typprüfung/beide Builds und echte Browser 9/9 mit Cleanup bestanden.
 Die abschließenden lokalen Gesamtprüfungen sind nicht vollständig grün;
 neue exakte Hosted-Prüfung bleibt offen. FNL-021 (ownergebundene lokale
-Kontrollgangs-/Übergabewiederherstellung) bleibt konkrete interne Arbeit.
+Kontrollgangs-/Übergabewiederherstellung) war der nächste interne Schritt.
+Inzwischen ist FNL-020 auf `e3d6f9bd914a3840986d96fc676c3f4997fded49`
+vollständig gehostet bestätigt: CI 43958520111 7/7, gelesene Logs 340/549/9
+plus Cleanup. FNL-021 ist mit acht neuen Komponentenfällen (sechs zunächst rot)
+und kombiniert 171/171 gezielten Tests, Typprüfung/Build implementiert/geprüft;
+die neue exakte Gesamt-CI bleibt offen. Verbleibende Übergabe-Server-/
+Schreibabschlussgrenzen werden als konkrete FNL-022 geprüft, nicht als
+bereits nachgewiesene Schwachstelle oder externe Blockade geführt.
 
 Interne Arbeit bleibt offen: Konvergenz-/Berechtigungsabdeckung erweitern,
 vorhandene Teilmodule fachlich abnehmen und fehlende Produktfunktionen nur
