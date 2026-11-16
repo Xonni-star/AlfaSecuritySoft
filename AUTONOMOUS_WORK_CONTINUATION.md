@@ -338,6 +338,17 @@ runner failed before stack startup because the Docker Unix socket was absent.
 10/10 success or evidence of live-container cleanup. Do not start/reconfigure
 unrelated services to manufacture a local pass; use the isolated hosted runner.
 
+First publication `1a61fb3230ca9406f680c43fbcd98e1c38a55a54` ran in exact
+CI 43962727353: six jobs passed, but the new browser selector failed.
+Downloaded logs confirm frontend 356/356, backend 549/549 and browser **9/10**
+plus owned-container cleanup. Native wrapping-select labels include options:
+an independent real Chromium probe returned zero exact label matches, one
+precise prefix match and the genuine selected value. The three select-label
+locators are now corrected, without removing assertions or raising budgets.
+Full logs: `finalization-handover-context-hosted-ci.log`; failure excerpt:
+`finalization-handover-context-hosted-failure.log`. Re-run exact hosted CI;
+do not describe the failed first run as ten passing journeys.
+
 1. Publish coherent FNL-022 and verify all hosted jobs on the exact new full SHA;
    read actual logs and fix the new browser journey/product if it fails.
    The preceding 7/7 does not validate these newer changes or the tenth journey.

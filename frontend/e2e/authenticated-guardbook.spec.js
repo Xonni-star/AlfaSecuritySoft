@@ -940,9 +940,9 @@ test('real handover UI restores one offline protocol after a lost server receipt
   await page.getByRole('button', { name: 'Übergabemanagement', exact: true }).click();
   await page.getByRole('button', { name: 'Neue Übergabe', exact: true }).click();
   const form = page.locator('form').filter({ has: page.getByLabel('Allgemeiner Übergabetext', { exact: true }) });
-  await expect(form.getByLabel('Objekt *', { exact: true })).not.toHaveValue('');
-  await expect(form.getByLabel('Übergebende Person *', { exact: true })).not.toHaveValue('');
-  await expect(form.getByLabel('Übernehmende Person *', { exact: true })).not.toHaveValue('');
+  await expect(form.getByLabel(/^Objekt \*/)).not.toHaveValue('');
+  await expect(form.getByLabel(/^Übergebende Person \*/)).not.toHaveValue('');
+  await expect(form.getByLabel(/^Übernehmende Person \*/)).not.toHaveValue('');
   await form.getByLabel('Allgemeiner Übergabetext', { exact: true }).fill(text);
   await context.setOffline(true);
   await expect(page.getByText('Offline-Modus aktiv')).toBeVisible();

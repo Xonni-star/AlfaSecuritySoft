@@ -98,6 +98,14 @@ successfully**: the local runner stopped at an unavailable Docker Unix socket
 before starting the isolated stack. No ten-case success or cleanup proof is
 claimed from that failure. Exact hosted execution is required; the nine-case
 hosted result above does not validate this new journey or FNL-022.
+The first hosted attempt on `1a61fb3230ca9406f680c43fbcd98e1c38a55a54`,
+CI 43962727353, passed six jobs but failed the new browser selector:
+read logs establish frontend 356/356, backend 549/549 and browser **9/10**
+with cleanup, not a complete pass. Real Chromium independently reproduces
+zero exact wrapping-select label matches versus one precise prefix match,
+with the actual nonempty selected value preserved. The three select-label
+locators are corrected; every persistence/replay assertion and budget remains.
+Another exact hosted run must establish the new journey's real behavior.
 
 **Published FNL-018 — IMPLEMENTIERT UND GETESTET:** Sync
 now checks identity after awaited attachment inspection and post-sync snapshots
