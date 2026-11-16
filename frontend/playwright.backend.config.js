@@ -13,7 +13,7 @@ export default defineConfig({
     },
     {
       ...fixtureConfig.webServer,
-      env: { E2E_BACKEND_URL: 'http://127.0.0.1:4181', NODE_ENV: 'production' }
+      env: { ...fixtureConfig.webServer.env, E2E_BACKEND_URL: 'http://127.0.0.1:4181' }
     }
   ]
 });

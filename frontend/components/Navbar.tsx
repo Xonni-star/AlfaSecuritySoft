@@ -12,7 +12,8 @@ import {
   Moon,
   Menu,
   Smartphone,
-  Monitor
+  Monitor,
+  LogOut
 } from 'lucide-react';
 import { useSecurityStore } from '../store';
 import { UserRole } from '../types';
@@ -44,7 +45,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     theme,
     toggleTheme,
     activeTab,
-    setActiveTab
+    setActiveTab,
+    logout
   } = useSecurityStore();
 
   const deliveries = typeof getTenantNotificationDeliveries === 'function' ? getTenantNotificationDeliveries() : [];
@@ -200,6 +202,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               {unreadDeliveries}
             </span>
           )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => void logout()}
+          aria-label="Abmelden"
+          title="Abmelden; nicht synchronisierte Einträge bleiben lokal gespeichert"
+          className="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 transition"
+        >
+          <LogOut className="w-4 h-4" />
         </button>
 
         <div className="hidden sm:flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 rounded-lg px-2 py-1">

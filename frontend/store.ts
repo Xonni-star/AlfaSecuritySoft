@@ -973,16 +973,19 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
 
   logout: async () => {
+    let logoutError: string | null = null;
     try {
       await apiClient.post('/auth/logout', {});
-    } catch {
-      // Die lokale Sitzung wird in jedem Fall beendet.
+    } catch (error) {
+      if (!(error instanceof ApiError && error.status === 401)) {
+        logoutError = 'Lokal abgemeldet. Der serverseitige Sitzungswiderruf konnte nicht bestätigt werden; die Sitzung kann weiterhin gültig sein. Bei verfügbarer Verbindung die Seite neu laden und erneut abmelden. Browserprofil bis zur Bestätigung nicht weitergeben.';
+      }
     }
     apiClient.setCsrfToken(null);
     set({
       authUser: null,
       isAuthenticated: false,
-      authError: null,
+      authError: logoutError,
       currentUserId: '',
       isLoadingData: false,
       dataLoadError: null,

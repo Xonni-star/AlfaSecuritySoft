@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { expect, test } from '@playwright/test';
+import { expect, request, test } from '@playwright/test';
 
 async function readOutbox(page) {
   return page.evaluate(async () => {
@@ -85,4 +85,20 @@ test('real session and PostgreSQL persist one offline mutation after a lost rece
   await page.reload();
   await page.getByRole('button', { name: 'Digitales Wachbuch', exact: true }).click();
   await expect(page.getByText(title, { exact: true })).toBeVisible();
+  const sessionCookies = await context.cookies('http://127.0.0.1:4173/api/v1/auth/me');
+  const sessionCookie = sessionCookies.find(cookie => cookie.name === 'secops_session');
+  expect(sessionCookie?.httpOnly).toBe(true);
+  const revokedSessionProbe = await request.newContext({
+    baseURL: 'http://127.0.0.1:4173',
+    extraHTTPHeaders: { Cookie: `secops_session=${sessionCookie.value}` }
+  });
+  try {
+    expect((await revokedSessionProbe.get('/api/v1/auth/me')).status()).toBe(200);
+    await page.getByRole('button', { name: 'Abmelden', exact: true }).click();
+    await expect(page.getByLabel('E-Mail')).toBeVisible();
+    expect((await page.request.get('/api/v1/auth/me')).status()).toBe(401);
+    expect((await revokedSessionProbe.get('/api/v1/auth/me')).status()).toBe(401);
+  } finally {
+    await revokedSessionProbe.dispose();
+  }
 });

@@ -1023,6 +1023,28 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     expect(state.syncQueue).toHaveLength(0);
   });
 
+  test('failed server logout still clears local identity and reports unconfirmed revocation', async () => {
+    mockedApi.post.mockRejectedValueOnce(new ApiError(500, 'Network unavailable', undefined, true));
+    useSecurityStore.setState({
+      isAuthenticated: true,
+      currentUserId: 'user-regression',
+      clients: [{ id: 'private-client' }] as any
+    });
+    await useSecurityStore.getState().logout();
+    const state = useSecurityStore.getState();
+    expect(state.isAuthenticated).toBe(false);
+    expect(state.currentUserId).toBe('');
+    expect(state.clients).toHaveLength(0);
+    expect(state.authError).toContain('Sitzungswiderruf konnte nicht bestätigt werden');
+  });
+
+  test('already expired server session does not show an unconfirmed logout warning', async () => {
+    mockedApi.post.mockRejectedValueOnce(new ApiError(401, 'Session expired'));
+    await useSecurityStore.getState().logout();
+    expect(useSecurityStore.getState().isAuthenticated).toBe(false);
+    expect(useSecurityStore.getState().authError).toBeNull();
+  });
+
   test('failed session restoration removes tenant data from memory', async () => {
     mockedApi.get.mockRejectedValueOnce(new Error('Unauthorized'));
     useSecurityStore.setState({

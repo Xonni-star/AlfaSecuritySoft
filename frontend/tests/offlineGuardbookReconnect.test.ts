@@ -50,7 +50,9 @@ describe('offline guardbook reconnect exercise', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    useSecurityStore.setState({ isAuthenticated: false });
+    await vi.waitFor(() => expect(useSecurityStore.getState().isSyncing).toBe(false));
     offlineVault.close();
     vi.restoreAllMocks();
     if (indexedDBDescriptor) Object.defineProperty(globalThis, 'indexedDB', indexedDBDescriptor);
@@ -150,6 +152,7 @@ describe('offline guardbook reconnect exercise', () => {
       ]);
     });
 
+    await vi.waitFor(() => expect(useSecurityStore.getState().isSyncing).toBe(false));
     const retryResult = await useSecurityStore.getState().triggerManualSync({ retryFailed: true });
     expect(retryResult).toMatchObject({ success: 1, failed: 0, conflicts: 0 });
     expect(post).toHaveBeenCalledTimes(2);
