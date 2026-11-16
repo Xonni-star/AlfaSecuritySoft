@@ -50,7 +50,7 @@ export const initialModules: SecurityModuleManifest[] = [
   {
     id: 'mod-core-dashboard',
     name: 'Zentrales Einsatz-Dashboard',
-    description: 'Echtzeit-Kennzahlen, Schichtstatus, Vorkommnisse und DIN 77200 Erfüllung.',
+    description: 'Echtzeit-Kennzahlen, Schichtstatus und Vorkommnisse.',
     version: '2.0.0',
     category: 'CORE',
     enabled: true,
@@ -961,7 +961,7 @@ export const initialAuditLogs: SecurityAuditEntry[] = [
     actionType: 'DATA_EXPORT',
     severity: 'WARNUNG',
     targetEntity: 'DSGVO / Art. 15 Export',
-    details: 'Audit-Protokoll und Dienstplan für Monat 05/2025 als DIN 77200 PDF exportiert.',
+    details: 'Audit-Protokoll und Dienstplan für Monat 05/2025 exportiert.',
     ipAddress: '194.25.101.44',
     tenantId: 'tenant-frankfurt'
   },

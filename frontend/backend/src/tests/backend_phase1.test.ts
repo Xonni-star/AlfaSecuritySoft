@@ -296,7 +296,7 @@ describe('SecurityOps 2.0 - Schritt 3 Vollständige Sicherheitsprüfung & RLS Te
       withTenantTransaction(testTenantA, async (tx) => {
         return tx.query('DELETE FROM guardbook_entries WHERE id = $1', [entryId]);
       })
-    ).rejects.toThrow(/Löschen von Einträgen in guardbook_entries ist nach DIN 77200 unzulässig|permission denied for table guardbook_entries/);
+    ).rejects.toThrow(/Löschen von Einträgen in guardbook_entries wird durch die technische Append-Only-Regel verhindert|permission denied for table guardbook_entries/);
   });
 
   // Test 10: Revisionen sind unlöschbar und unveränderlich

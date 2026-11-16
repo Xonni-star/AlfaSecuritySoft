@@ -332,7 +332,7 @@ export async function pushSyncMutations(req: Request, res: Response, next: NextF
               serverId: 'none',
               status: 'REJECTED',
               serverVersion: mut.baseVersion,
-              message: 'Löschen von Wachbucheinträgen ist nach DIN 77200 verboten (Append-Only Integrität).'
+              message: 'Das Löschen von Wachbucheinträgen wird durch die technische Append-Only-Regel verhindert.'
             };
           } else if (mut.action === 'CREATE') {
             const siteId = mut.payload.siteId;
@@ -1623,7 +1623,7 @@ export async function resolveSyncConflict(req: Request, res: Response, next: Nex
         }
       }
 
-      // D. GUARDBOOK (DIN 77200 APPEND-ONLY MIT DEDIZIERTEM REVISIONS-BEZEICHNER)
+      // D. GUARDBOOK (technische Append-Only-Regel mit dedizierter Revisionsbehandlung)
       else if (body.entityType === 'guardbook') {
         const entryId = body.localPayload?.id || body.clientUuid;
         const gbCheck = await client.query(

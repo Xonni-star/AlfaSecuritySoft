@@ -10,6 +10,7 @@
 ### Geändert
 
 - Oberflächentexte behaupten keine DIN-77200-/KRITIS-/BSI-Konformität mehr.
+- Wachbuch-Fehlermeldungen beschreiben die technische Append-Only-Regel statt einer unbelegten DIN-77200-Pflicht.
 
 ### Fehlerkorrekturen
 
