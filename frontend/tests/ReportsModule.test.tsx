@@ -4,6 +4,13 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   state: {
+    currentTenantId: 'tenant-a',
+    currentUserId: 'user-a',
+    authUser: {
+      id: 'user-a',
+      permissions: ['planning:reports:read'],
+      sitePermissions: [] as Array<{ code: string; siteId: string }>
+    },
     getTenantReportDefinitions: vi.fn(),
     addReportDefinition: vi.fn(),
     deleteReportDefinition: vi.fn(),
@@ -51,6 +58,9 @@ describe('ReportsModule browser CSV export', () => {
   let downloads: HTMLAnchorElement[];
 
   beforeEach(() => {
+    mocks.state.currentTenantId = 'tenant-a';
+    mocks.state.currentUserId = 'user-a';
+    mocks.state.authUser = { id: 'user-a', permissions: ['planning:reports:read'], sitePermissions: [] };
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-01-15T12:00:00.000Z'));
     planningMocks.workHoursReport.mockReset().mockResolvedValue([]);
@@ -206,5 +216,60 @@ describe('ReportsModule browser CSV export', () => {
   test('requests the current calendar-month range from the work-hours report', async () => {
     await act(async () => root.render(<ReportsModule />));
     expect(planningMocks.workHoursReport).toHaveBeenLastCalledWith('2026-01-01', '2026-01-31');
+  });
+
+  test('does not request an unavailable hours report or display a connection error without its grant', async () => {
+    mocks.state.authUser.permissions = [];
+    await act(async () => root.render(<ReportsModule />));
+    expect(planningMocks.workHoursReport).not.toHaveBeenCalled();
+    expect(container.textContent).toContain('Keine Berechtigung für Arbeitszeitberichte');
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  test('still requests the server-scoped report with a site-only report grant', async () => {
+    mocks.state.authUser.permissions = [];
+    mocks.state.authUser.sitePermissions = [{ code: 'planning:reports:read', siteId: 'site-a' }];
+    await act(async () => root.render(<ReportsModule />));
+    expect(planningMocks.workHoursReport).toHaveBeenCalledWith('2026-01-01', '2026-01-31');
+  });
+
+  test('reloads hours for a new identity and ignores the previous identity’s delayed result', async () => {
+    let resolve!: (rows: unknown[]) => void;
+    planningMocks.workHoursReport.mockReturnValueOnce(new Promise<unknown[]>(done => { resolve = done; }));
+    await act(async () => root.render(<ReportsModule />));
+    mocks.state.currentTenantId = 'tenant-b';
+    mocks.state.currentUserId = 'user-b';
+    mocks.state.authUser.id = 'user-b';
+    planningMocks.workHoursReport.mockResolvedValueOnce([{
+      first_name: 'Current', last_name: 'Employee', planned_hours: 2, actual_hours: null, actual_status: 'missing'
+    }]);
+    await act(async () => root.render(<ReportsModule />));
+    expect(planningMocks.workHoursReport).toHaveBeenCalledTimes(2);
+    await act(async () => resolve([{
+      first_name: 'Previous', last_name: 'Employee', planned_hours: 999, actual_hours: null, actual_status: 'missing'
+    }]));
+    expect(container.textContent).toContain('2.0 h');
+    expect(container.textContent).not.toContain('999.0 h');
+  });
+
+  test('accepts a valid custom date range independently of the local UTC offset', async () => {
+    await act(async () => root.render(<ReportsModule />));
+    const select = container.querySelector('select');
+    if (!select) throw new Error('Zeitraumauswahl fehlt');
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set?.call(select, 'CUSTOM');
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    const from = container.querySelector<HTMLInputElement>('#report-range-from');
+    const to = container.querySelector<HTMLInputElement>('#report-range-to');
+    if (!from || !to) throw new Error('Benutzerdefinierte Datumsfelder fehlen');
+    await act(async () => {
+      for (const [field, value] of [[from, '2028-02-28'], [to, '2028-02-29']] as const) {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(field, value);
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    expect(planningMocks.workHoursReport).toHaveBeenLastCalledWith('2028-02-28', '2028-02-29');
+    expect(container.querySelector('[role="alert"]')).toBeNull();
   });
 });

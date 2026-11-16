@@ -48,6 +48,7 @@ const mockedApi = apiClient as unknown as {
   setTenantId: ReturnType<typeof vi.fn>;
 };
 const durableSOPQueue = new Map<string, StoredSOPAcknowledgement>();
+const syncedTaskId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const readUser: AuthUser = {
   id: 'user-regression', email: 'reader@example.test', fullName: 'Reader', role: '',
   tenantId: 'tenant-frankfurt', tenantName: '',
@@ -354,6 +355,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
       mockedApi.post.mockResolvedValueOnce([{
         clientUuid: mutation.id,
         status: 'SYNCED',
+        serverId: syncedTaskId,
         serverVersion: 1
       }]);
       useSecurityStore.setState({
@@ -596,7 +598,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
         receipt = {
           clientUuid: submitted.clientUuid,
           status: 'SYNCED',
-          serverId: 'server-task-committed-once',
+          serverId: syncedTaskId,
           serverVersion: 1
         };
         storedReceipts.set(idempotencyKey, receipt);
@@ -672,7 +674,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
       expect(storedReceipts.get(idempotencyKey)).toMatchObject({
         clientUuid: mutation.id,
         status: 'SYNCED',
-        serverId: 'server-task-committed-once'
+        serverId: syncedTaskId
       });
       expect(await offlineVault.getOutbox(mutation.tenantId, undefined, mutation.userId)).toEqual([]);
     } finally {
@@ -751,7 +753,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     const markSynced = vi.spyOn(offlineVault, 'markSynced').mockResolvedValue(undefined);
     mockedApi.post
       .mockRejectedValueOnce(new ApiError(503, 'Temporarily unavailable'))
-      .mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED' }]);
+      .mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED', serverId: syncedTaskId }]);
     useSecurityStore.setState({
       isOnline: true,
       isAuthenticated: true,
@@ -799,7 +801,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     const markSynced = vi.spyOn(offlineVault, 'markSynced').mockResolvedValue(undefined);
     mockedApi.post
       .mockRejectedValueOnce(new ApiError(429, 'Too many requests', undefined, false, 'RATE_LIMIT_EXCEEDED', undefined, 60_000))
-      .mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED' }]);
+      .mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED', serverId: syncedTaskId }]);
     useSecurityStore.setState({
       isOnline: true,
       isAuthenticated: true,
@@ -914,8 +916,8 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
       }] as any)
       .mockResolvedValueOnce([]);
     mockedApi.post
-      .mockResolvedValueOnce([{ clientUuid: acknowledgedMutation.id, status: 'SYNCED' }])
-      .mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED' }]);
+      .mockResolvedValueOnce([{ clientUuid: acknowledgedMutation.id, status: 'SYNCED', serverId: syncedTaskId }])
+      .mockResolvedValueOnce([{ clientUuid: mutation.id, status: 'SYNCED', serverId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' }]);
     useSecurityStore.setState({
       isOnline: true,
       isAuthenticated: true,
@@ -1863,6 +1865,40 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
       expect.objectContaining({ status: 'Besetzt' })
     );
     expect(useSecurityStore.getState().shifts[0].status).toBe('Besetzt');
+  });
+
+  test('reports rejected task persistence to its caller without inserting local success', async () => {
+    mockedApi.post.mockRejectedValueOnce(new ApiError(403, 'Keine Berechtigung.'));
+    const result = await useSecurityStore.getState().addTask({
+      title: 'Nicht gespeichert', assignedToName: 'Einsatzleitung', dueDate: '2027-01-10',
+      priority: 'Mittel', status: 'Offen', category: 'Audit'
+    });
+    expect(result).toBeNull();
+    expect(useSecurityStore.getState().tasks).toEqual([]);
+    expect(useSecurityStore.getState().notifications[0].title).toBe('Aufgabe nicht gespeichert');
+  });
+
+  test.each(['tenant', 'user'])('does not insert a delayed task into the next %s context', async changed => {
+    let resolve!: (value: { id: string }) => void;
+    mockedApi.post.mockReturnValueOnce(new Promise<{ id: string }>(done => { resolve = done; }));
+    const pending = useSecurityStore.getState().addTask({
+      title: 'Alter Kontext', assignedToName: 'Einsatzleitung', dueDate: '2027-01-10',
+      priority: 'Mittel', status: 'Offen', category: 'Audit'
+    });
+    useSecurityStore.setState(changed === 'tenant'
+      ? { currentTenantId: 'tenant-next' } : { currentUserId: 'user-next' });
+    resolve({ id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' });
+    expect(await pending).toBeNull();
+    expect(useSecurityStore.getState().tasks).toEqual([]);
+    expect(useSecurityStore.getState().notifications).toEqual([]);
+  });
+
+  test('returns a failed key result instead of an indistinguishable fulfilled promise', async () => {
+    mockedApi.patch.mockRejectedValueOnce(new ApiError(409, 'Schlüssel bereits ausgegeben.'));
+    const result = await useSecurityStore.getState().issueKey('key-a', 'Ada Guard', 'employee-a', '2027-01-10T18:00');
+    expect(result).toBe(false);
+    expect(useSecurityStore.getState().keys).toEqual([]);
+    expect(useSecurityStore.getState().notifications[0].title).toBe('Schlüssel nicht ausgegeben');
   });
 
   test('8. addTask, toggleTaskStatus, issueKey und returnKey persistieren', async () => {

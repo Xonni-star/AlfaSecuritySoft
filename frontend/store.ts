@@ -732,12 +732,12 @@ interface SecurityOpsStore {
   addAlarmAction: (incidentId: string, payload: Record<string, unknown>) => Promise<{ state: 'confirmed' | 'pending'; data?: unknown }>;
   changeAlarmStatus: (incidentId: string, payload: Record<string, unknown>) => Promise<{ state: 'confirmed' | 'pending'; data?: unknown }>;
   syncPendingAlarmMutations: () => Promise<void>;
-  issueKey: (keyId: string, holderName: string, holderId: string, returnDate: string) => Promise<void>;
-  returnKey: (keyId: string) => Promise<void>;
-  addTask: (task: Omit<TaskItem, 'id' | 'tenantId'>) => Promise<void>;
+  issueKey: (keyId: string, holderName: string, holderId: string, returnDate: string) => Promise<boolean>;
+  returnKey: (keyId: string) => Promise<boolean>;
+  addTask: (task: Omit<TaskItem, 'id' | 'tenantId'>) => Promise<TaskItem | null>;
   addPatrolScan: (scan: Omit<PatrolScanEvent, 'id' | 'tenantId' | 'scannedAt' | 'offlineCaptured'>) => Promise<void>;
   submitShiftHandover: (handover: Omit<ShiftHandoverProtocol, 'id' | 'tenantId' | 'handoverTime' | 'offlineCaptured'>) => Promise<void>;
-  toggleTaskStatus: (taskId: string) => Promise<void>;
+  toggleTaskStatus: (taskId: string) => Promise<boolean>;
   addEmergencyPlan: (plan: Omit<EmergencyPlan, 'id' | 'tenantId'>) => void;
   resolveAlarm: (siteId: string) => void;
 }
@@ -1708,6 +1708,31 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
             if (!mutation) continue;
             acknowledgedMutationIds.add(mutation.id);
             if (receipt.status === 'SYNCED') {
+              if (mutation.entityType === 'task' && mutation.action === 'CREATE') {
+                if (typeof receipt.serverId !== 'string' ||
+                    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(receipt.serverId)) {
+                  failedCount++;
+                  await offlineVault.updateMutationStatus(mutation.id, 'FAILED', {
+                    errorMessage: 'Die Aufgabenquittung enthält keine gültige Server-ID.',
+                    retryable: false
+                  });
+                  continue;
+                }
+                if (isCurrentSyncIdentity()) {
+                  const task = mapTaskRow({
+                    ...mutation.payload,
+                    id: receipt.serverId,
+                    assigned_to_name: mutation.payload.assignedToName,
+                    site_name: mutation.payload.siteName,
+                    due_date: mutation.payload.dueDate,
+                    revision_version: receipt.serverVersion
+                  }, currentTenantId);
+                  set(state => ({
+                    tasks: [task, ...state.tasks.filter(item =>
+                      item.id !== mutation.payload.id && item.id !== task.id)]
+                  }));
+                }
+              }
               if (mutation.entityType === 'guardbook' && typeof mutation.payload.id === 'string' &&
                   typeof receipt.serverId === 'string' &&
                   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(receipt.serverId)) {
@@ -2709,7 +2734,8 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
 
   addGuardBookEntry: async (entry) => {
-    const { currentTenantId, isOnline, enqueueOfflineAction, addTask, addNotification, addAuditLog } = get();
+    const identity = currentSOPIdentity(get());
+    const { currentTenantId, isOnline, enqueueOfflineAction, addNotification, addAuditLog } = get();
     const entryId = crypto.randomUUID();
     const newEntry: GuardBookEntry = {
       ...entry,
@@ -2734,11 +2760,12 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       action: 'CREATE',
       payload: newEntry
     });
+    if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return entryId;
 
     if (entry.priority === 'Kritisch' || entry.priority === 'Dringend') {
-      const taskId = `t-inc-${Date.now()}`;
-      newEntry.createdTaskId = taskId;
-      addTask({
+      const followUpTask: TaskItem = {
+        id: crypto.randomUUID(),
+        tenantId: currentTenantId,
         title: `Vorfallsbearbeitung: ${entry.title}`,
         assignedToName: entry.assignedManagerName || 'Objektleiter / Einsatzleiter',
         siteName: entry.siteName,
@@ -2747,15 +2774,29 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         dueDate: new Date(Date.now() + 1000 * 3600 * 24 * 2).toISOString().split('T')[0],
         priority: entry.priority === 'Kritisch' ? 'Hoch' : 'Mittel',
         status: 'Offen',
-        category: 'Vorfallsbearbeitung'
-      });
-
-      addNotification(
-        `Aufgabe für Vorfall erzeugt`,
-        `Automatisierte Maßnahme für "${entry.title}" (${entry.siteName}) an Objektleiter zugewiesen.`,
-        'warning'
-      );
+        category: 'Vorfallsbearbeitung',
+        offlineCreated: !isOnline
+      };
+      try {
+        await enqueueOfflineAction({
+          tenantId: currentTenantId, entityType: 'task', action: 'CREATE', payload: followUpTask
+        });
+        if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return entryId;
+        addNotification(
+          'Folgeaufgabe lokal vorgemerkt',
+          `Die Maßnahme für "${entry.title}" bleibt bis zur berechtigten Serverbestätigung in der Offline-Warteschlange.`,
+          'warning'
+        );
+      } catch (error) {
+        if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return entryId;
+        addNotification(
+          'Folgeaufgabe nicht vorgemerkt',
+          `Der Wachbucheintrag bleibt gespeichert; die Folgeaufgabe muss erneut erfasst werden. ${errorText(error)}`,
+          'alert'
+        );
+      }
     }
+    if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return entryId;
 
     set((state) => ({
       guardBook: [newEntry, ...state.guardBook]
@@ -3018,6 +3059,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
 
   issueKey: async (keyId, holderName, holderId, returnDate) => {
+    const identity = currentSOPIdentity(get());
     const issuedAt = new Date().toISOString().replace('T', ' ').substring(0, 16);
 
     try {
@@ -3027,6 +3069,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         issuedAt,
         expectedReturn: returnDate
       });
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return false;
 
       set((state) => ({
         keys: state.keys.map((k) =>
@@ -3044,16 +3087,20 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         )
       }));
       get().addNotification('Schlüssel ausgegeben', 'Die Ausgabe wurde in PostgreSQL gespeichert.', 'info');
-    } catch (error: any) {
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return false;
       get().addNotification(
         'Schlüssel nicht ausgegeben',
-        error?.message || 'Die API-Anfrage ist fehlgeschlagen.',
+        errorText(error),
         'alert'
       );
+      return false;
     }
   },
 
   returnKey: async (keyId) => {
+    const identity = currentSOPIdentity(get());
     try {
       await apiClient.patch(`/keys/${keyId}`, {
         status: 'Im Tresor',
@@ -3061,6 +3108,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         issuedAt: null,
         expectedReturn: null
       });
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return false;
 
       set((state) => ({
         keys: state.keys.map((k) =>
@@ -3078,20 +3126,23 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         )
       }));
       get().addNotification('Schlüssel zurückgenommen', 'Die Rückgabe wurde in PostgreSQL gespeichert.', 'info');
-    } catch (error: any) {
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return false;
       get().addNotification(
         'Schlüssel nicht zurückgenommen',
-        error?.message || 'Die API-Anfrage ist fehlgeschlagen.',
+        errorText(error),
         'alert'
       );
+      return false;
     }
   },
 
   addTask: async (t) => {
-    const { currentTenantId } = get();
+    const identity = currentSOPIdentity(get());
 
     try {
-      const created = await apiClient.post<any>('/tasks', {
+      const created = await apiClient.post<{ id: string; revision_version?: number }>('/tasks', {
         title: t.title,
         assignedToName: t.assignedToName,
         siteName: t.siteName ?? null,
@@ -3100,6 +3151,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         status: t.status,
         category: t.category
       });
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return null;
 
       const newTask = mapTaskRow(
         {
@@ -3112,38 +3164,49 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
           status: t.status,
           category: t.category
         },
-        currentTenantId
+        identity.tenantId
       );
 
       set((state) => ({ tasks: [newTask, ...state.tasks] }));
       get().addNotification('Aufgabe gespeichert', 'Die Aufgabe wurde in PostgreSQL gespeichert.', 'info');
-    } catch (error: any) {
+      return newTask;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return null;
       get().addNotification(
         'Aufgabe nicht gespeichert',
-        error?.message || 'Die API-Anfrage ist fehlgeschlagen. Es wurde nichts gespeichert.',
+        errorText(error),
         'alert'
       );
+      return null;
     }
   },
 
   toggleTaskStatus: async (taskId) => {
+    const identity = currentSOPIdentity(get());
     const task = get().tasks.find((item) => item.id === taskId);
-    if (!task) return;
+    if (!task) {
+      get().addNotification('Aufgabe nicht aktualisiert', 'Die Aufgabe ist im aktuellen Kontext nicht verfügbar.', 'alert');
+      return false;
+    }
 
     const status: TaskItem['status'] = task.status === 'Erledigt' ? 'In Bearbeitung' : 'Erledigt';
 
     try {
       await apiClient.patch(`/tasks/${taskId}`, { status });
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return false;
       set((state) => ({
         tasks: state.tasks.map((item) => (item.id === taskId ? { ...item, status } : item))
       }));
       get().addNotification('Aufgabe aktualisiert', 'Der Status wurde in PostgreSQL gespeichert.', 'info');
-    } catch (error: any) {
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return false;
       get().addNotification(
         'Aufgabe nicht aktualisiert',
-        error?.message || 'Die API-Anfrage ist fehlgeschlagen.',
+        errorText(error),
         'alert'
       );
+      return false;
     }
   },
 

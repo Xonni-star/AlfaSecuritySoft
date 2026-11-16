@@ -25,7 +25,7 @@ async function login(page, email = ownerEmail, tenantId = tenantA) {
     await page.getByRole('combobox', { name: 'Mandant', exact: true }).selectOption(tenantId);
     await page.getByRole('button', { name: 'Mit Mandanten anmelden', exact: true }).click();
   }
-  await expect(page.getByRole('button', { name: 'Digitales Wachbuch', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Digitales Wachbuch(?: \d+)?$/ })).toBeVisible();
 }
 
 async function logout(page) {
@@ -61,7 +61,7 @@ test('real session and PostgreSQL persist one offline mutation after a lost rece
   await login(page);
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
-  await page.getByRole('button', { name: 'Digitales Wachbuch', exact: true }).click();
+  await page.getByRole('button', { name: /^Digitales Wachbuch(?: \d+)?$/ }).click();
   await page.getByRole('button', { name: 'Ereignis erfassen' }).click();
   await page.locator('input[placeholder^="z. B."]').fill(title);
   await page.locator('textarea').fill('Echter Browser, Cookie-Sitzung, Express-API und isoliertes PostgreSQL.');
@@ -109,9 +109,9 @@ test('real session and PostgreSQL persist one offline mutation after a lost rece
 
   await page.reload();
   await expect(page.getByText('Mandantendaten werden aus PostgreSQL geladen…')).toBeHidden();
-  await page.getByRole('button', { name: 'Digitales Wachbuch', exact: true }).waitFor();
+  await page.getByRole('button', { name: /^Digitales Wachbuch(?: \d+)?$/ }).waitFor();
   const restoredTitle = `${title}-after-reload`;
-  await page.getByRole('button', { name: 'Digitales Wachbuch', exact: true }).click();
+  await page.getByRole('button', { name: /^Digitales Wachbuch(?: \d+)?$/ }).click();
   await page.getByRole('button', { name: 'Ereignis erfassen' }).click();
   await page.locator('input[placeholder^="z. B."]').fill(restoredTitle);
   await page.locator('textarea').fill('Erfassung nach Wiederherstellung der echten Cookie-Sitzung.');
@@ -125,7 +125,7 @@ test('real session and PostgreSQL persist one offline mutation after a lost rece
   const restoredEntries = (await (await page.request.get('/api/v1/logbook')).json()).data
     .filter(entry => entry.title === restoredTitle);
   expect(restoredEntries).toHaveLength(1);
-  await page.getByRole('button', { name: 'Digitales Wachbuch', exact: true }).click();
+  await page.getByRole('button', { name: /^Digitales Wachbuch(?: \d+)?$/ }).click();
   await expect(page.getByText(title, { exact: true })).toBeVisible();
   const sessionCookies = await context.cookies('http://127.0.0.1:4173/api/v1/auth/me');
   const sessionCookie = sessionCookies.find(cookie => cookie.name === 'secops_session');
@@ -144,6 +144,63 @@ test('real session and PostgreSQL persist one offline mutation after a lost rece
   }
 });
 
+test('replays a critical offline incident and its durable follow-up once after a lost receipt', async ({ page, context }) => {
+  test.setTimeout(120_000);
+  const title = `Critical-Followup-${randomUUID()}`;
+  await page.goto('/');
+  await login(page);
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  await page.getByRole('button', { name: /^Digitales Wachbuch(?: \d+)?$/ }).click();
+  await page.getByRole('button', { name: 'Ereignis erfassen' }).click();
+  await page.locator('input[placeholder^="z. B."]').fill(title);
+  await page.locator('textarea').fill('Kritischer Vorfall und Folgeaufgabe müssen den Offline-Neustart gemeinsam überleben.');
+  await page.locator('form select').filter({ has: page.locator('option[value="Kritisch"]') }).selectOption('Kritisch');
+  await expect.poll(() => page.locator('form').evaluate(form => form.checkValidity())).toBe(true);
+  await context.setOffline(true);
+  await expect(page.getByText('Offline-Modus aktiv')).toBeVisible();
+  await page.getByRole('button', { name: 'Offline vormerken' }).click();
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
+  const pending = await readOutbox(page);
+  expect(pending.map(item => item.entityType).sort()).toEqual(['guardbook', 'task']);
+  const followUp = pending.find(item => item.entityType === 'task');
+  expect(followUp.payload).toMatchObject({
+    title: `Vorfallsbearbeitung: ${title}`, priority: 'Hoch', category: 'Vorfallsbearbeitung'
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.getByLabel('E-Mail')).toBeVisible();
+  expect((await readOutbox(page)).map(item => item.id).sort()).toEqual(pending.map(item => item.id).sort());
+  const attempts = [];
+  const receipts = [];
+  await page.route('**/api/v1/sync/push', async route => {
+    attempts.push(route.request().postDataJSON().mutations.map(item => item.clientUuid).sort());
+    const response = await route.fetch();
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveLength(2);
+    expect(body.data.every(receipt => receipt.status === 'SYNCED')).toBe(true);
+    receipts.push(body.data);
+    if (receipts.length === 1) await route.abort('failed');
+    else await route.fulfill({ response });
+  });
+  await context.setOffline(false);
+  await login(page);
+  await expect.poll(async () => (await readOutbox(page)).length, { timeout: 30_000 }).toBe(0);
+  expect(attempts).toEqual([pending.map(item => item.id).sort(), pending.map(item => item.id).sort()]);
+  expect(receipts[1].find(item => item.clientUuid === followUp.id).serverId)
+    .toBe(receipts[0].find(item => item.clientUuid === followUp.id).serverId);
+  const entries = await page.request.get('/api/v1/logbook');
+  expect(entries.status()).toBe(200);
+  expect((await entries.json()).data.filter(item => item.title === title)).toHaveLength(1);
+  const tasks = await page.request.get('/api/v1/tasks');
+  expect(tasks.status()).toBe(200);
+  const matching = (await tasks.json()).data.filter(item => item.title === followUp.payload.title);
+  expect(matching).toHaveLength(1);
+  expect(matching[0].id).toBe(receipts[0].find(item => item.clientUuid === followUp.id).serverId);
+  await logout(page);
+});
+
 test('preserves an owner mutation across account and tenant switches until the owner returns', async ({ page, context }) => {
   test.setTimeout(120_000);
   const title = `Owner-bound-${randomUUID()}`;
@@ -153,7 +210,7 @@ test('preserves an owner mutation across account and tenant switches until the o
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
   const originalIdentity = (await (await page.request.get('/api/v1/auth/me')).json()).data;
-  await page.getByRole('button', { name: 'Digitales Wachbuch', exact: true }).click();
+  await page.getByRole('button', { name: /^Digitales Wachbuch(?: \d+)?$/ }).click();
   await page.getByRole('button', { name: 'Ereignis erfassen' }).click();
   await page.locator('input[placeholder^="z. B."]').fill(title);
   await page.locator('textarea').fill('Nur die ursprüngliche Identität darf diese Mutation synchronisieren.');
@@ -178,7 +235,7 @@ test('preserves an owner mutation across account and tenant switches until the o
   const otherIdentity = (await (await page.request.get('/api/v1/auth/me')).json()).data;
   expect(otherIdentity.tenantId).toBe(tenantA);
   expect(otherIdentity.userId).not.toBe(pending.userId);
-  await page.getByRole('button', { name: 'Digitales Wachbuch', exact: true }).click();
+  await page.getByRole('button', { name: /^Digitales Wachbuch(?: \d+)?$/ }).click();
   await expect(page.getByText(title, { exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Offline-Synchronisierung öffnen. Ausstehende Einträge: 0', exact: true })).toBeVisible();
   expect((await readOutbox(page)).map(item => item.id)).toEqual([pending.id]);
@@ -190,7 +247,7 @@ test('preserves an owner mutation across account and tenant switches until the o
   const otherTenantIdentity = (await (await page.request.get('/api/v1/auth/me')).json()).data;
   expect(otherTenantIdentity.tenantId).toBe(tenantB);
   expect(otherTenantIdentity.userId).toBe(pending.userId);
-  await page.getByRole('button', { name: 'Digitales Wachbuch', exact: true }).click();
+  await page.getByRole('button', { name: /^Digitales Wachbuch(?: \d+)?$/ }).click();
   await expect(page.getByText(title, { exact: true })).toHaveCount(0);
   expect((await readOutbox(page)).map(item => item.id)).toEqual([pending.id]);
   expect(attemptedIds).not.toContain(pending.id);
@@ -216,7 +273,7 @@ test('replays an owner-bound offline photo once through real S3 and ClamAV after
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
   const identity = (await (await page.request.get('/api/v1/auth/me')).json()).data;
-  await page.getByRole('button', { name: 'Digitales Wachbuch', exact: true }).click();
+  await page.getByRole('button', { name: /^Digitales Wachbuch(?: \d+)?$/ }).click();
   await page.getByRole('button', { name: 'Ereignis erfassen' }).click();
   await page.locator('input[placeholder^="z. B."]').fill(title);
   await page.locator('textarea').fill('Synthetisches Bild: echter privater Speicher und verpflichtender Virenscan.');
@@ -260,7 +317,7 @@ test('replays an owner-bound offline photo once through real S3 and ClamAV after
   expect(otherIdentity).toMatchObject({ tenantId: tenantA });
   expect(otherIdentity.userId).not.toBe(identity.userId);
   await expect(page.getByText('Mandantendaten werden aus PostgreSQL geladen…')).toBeHidden();
-  await page.getByRole('button', { name: 'Digitales Wachbuch', exact: true }).click();
+  await page.getByRole('button', { name: /^Digitales Wachbuch(?: \d+)?$/ }).click();
   await expect(page.getByText(title, { exact: true })).toHaveCount(0);
   expect(await readOutbox(page, 'attachments')).toEqual([attachment]);
   expect(keys).toEqual([]);
@@ -331,7 +388,7 @@ test('retains a genuinely rejected attachment across reload and tenant switch wi
     await page.evaluate(() => navigator.serviceWorker.ready);
     await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
     const identity = (await (await page.request.get('/api/v1/auth/me')).json()).data;
-    await page.getByRole('button', { name: 'Digitales Wachbuch', exact: true }).click();
+    await page.getByRole('button', { name: /^Digitales Wachbuch(?: \d+)?$/ }).click();
     await page.getByRole('button', { name: 'Ereignis erfassen' }).click();
     await page.locator('input[placeholder^="z. B."]').fill(title);
     await page.locator('textarea').fill('Echte Dateiprüfung muss ablehnen; lokale Originaldaten bleiben erhalten.');

@@ -46,6 +46,7 @@ describe('offline guardbook reconnect exercise', () => {
       isOnline: true,
       syncQueue: [],
       guardBook: [],
+      tasks: [],
       notifications: []
     });
   });
@@ -59,6 +60,70 @@ describe('offline guardbook reconnect exercise', () => {
     else Reflect.deleteProperty(globalThis, 'indexedDB');
     if (onlineDescriptor) Object.defineProperty(navigator, 'onLine', onlineDescriptor);
     else Reflect.deleteProperty(navigator, 'onLine');
+  });
+
+  test('durably queues a critical incident follow-up and reconciles only a valid server task receipt', async () => {
+    useSecurityStore.setState({ isOnline: false });
+    const post = vi.spyOn(apiClient, 'post');
+    await useSecurityStore.getState().addGuardBookEntry({
+      siteId: 'site-offline-test', siteName: 'Testobjekt',
+      guardId: 'guard-offline-test', guardName: 'Offline Test',
+      category: 'Vorkommnis', priority: 'Kritisch', stage: 'Erfasst',
+      title: 'Kritischer Offline-Vorfall', description: 'Folgeaufgabe darf offline nicht verloren gehen.',
+      policeInvolved: false, resolved: false
+    });
+    const pending = await offlineVault.getOutbox(tenantId, undefined, userId);
+    expect(pending.map(item => item.entityType).sort()).toEqual(['guardbook', 'task']);
+    expect(post).not.toHaveBeenCalled();
+    expect(useSecurityStore.getState().tasks).toEqual([]);
+    expect(useSecurityStore.getState().notifications.some(item => item.title === 'Aufgabe für Vorfall erzeugt')).toBe(false);
+    offlineVault.close();
+    await offlineVault.init();
+    expect((await offlineVault.getOutbox(tenantId, undefined, userId)).map(item => item.id))
+      .toEqual(pending.map(item => item.id));
+    const incident = pending.find(item => item.entityType === 'guardbook')!;
+    const followUp = pending.find(item => item.entityType === 'task')!;
+    const incidentServerId = crypto.randomUUID();
+    post.mockResolvedValueOnce([
+      { clientUuid: incident.id, status: 'SYNCED', serverId: incidentServerId, serverVersion: 1 },
+      { clientUuid: followUp.id, status: 'SYNCED', serverId: 'unknown', serverVersion: 1 }
+    ]);
+    useSecurityStore.setState({ isOnline: true });
+    expect(await useSecurityStore.getState().triggerManualSync()).toMatchObject({ success: 1, failed: 1 });
+    const [remaining] = await offlineVault.getOutbox(tenantId, 'task', userId);
+    expect(remaining).toMatchObject({ id: followUp.id, status: 'FAILED' });
+    expect(useSecurityStore.getState().tasks).toEqual([]);
+    const taskServerId = crypto.randomUUID();
+    post.mockResolvedValueOnce([{
+      clientUuid: followUp.id, status: 'SYNCED', serverId: taskServerId, serverVersion: 1
+    }]);
+    expect(await useSecurityStore.getState().triggerManualSync({ retryFailed: true }))
+      .toMatchObject({ success: 1, failed: 0 });
+    expect(await offlineVault.getOutbox(tenantId, undefined, userId)).toEqual([]);
+    expect(useSecurityStore.getState().tasks).toEqual([expect.objectContaining({
+      id: taskServerId, tenantId, title: 'Vorfallsbearbeitung: Kritischer Offline-Vorfall'
+    })]);
+  });
+
+  test('keeps the durable incident and explicitly reports a follow-up queue failure', async () => {
+    useSecurityStore.setState({ isOnline: false });
+    const enqueue = offlineVault.enqueueMutation.bind(offlineVault);
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(mutation =>
+      mutation.entityType === 'task' ? Promise.reject(new Error('Speicher voll')) : enqueue(mutation));
+    const id = await useSecurityStore.getState().addGuardBookEntry({
+      siteId: 'site-offline-test', siteName: 'Testobjekt',
+      guardId: 'guard-offline-test', guardName: 'Offline Test',
+      category: 'Vorkommnis', priority: 'Kritisch', stage: 'Erfasst',
+      title: 'Kritischer Offline-Vorfall', description: 'Erfassung bleibt trotz Folgefehler erhalten.',
+      policeInvolved: false, resolved: false
+    });
+    expect(await offlineVault.getOutbox(tenantId, 'guardbook', userId))
+      .toEqual([expect.objectContaining({ payload: expect.objectContaining({ id }) })]);
+    expect(await offlineVault.getOutbox(tenantId, 'task', userId)).toEqual([]);
+    expect(useSecurityStore.getState().notifications).toEqual(expect.arrayContaining([
+      expect.objectContaining({ title: 'Folgeaufgabe nicht vorgemerkt', message: expect.stringContaining('Speicher voll') })
+    ]));
+    expect(useSecurityStore.getState().guardBook).toHaveLength(1);
   });
 
   test('persists an offline entry and photo across reopen, then retries an unacknowledged mutation by its original ID', async () => {

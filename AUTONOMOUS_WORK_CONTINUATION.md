@@ -31,17 +31,42 @@ digit patterns and contained a character class invalid under modern HTML rules.
 The new component regression demonstrably failed before the fix. After correction,
 all 30 Roster tests and strict frontend typecheck pass. A separate native Chromium
 check of both actual JSX patterns accepts positive/negative offsets and fractional
-UTC timestamps and rejects malformed/missing-offset values. Full-suite/CI checks
-are still pending. This is a functional defect, not an authentication bypass.
+UTC timestamps and rejects malformed/missing-offset values. Published commit
+`ad3d60422e2c19e93fa1299798c64e7949f6f993` passed exact hosted CI
+[43924841249](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43924841249),
+7/7 jobs. This is a functional defect, not an authentication bypass.
 Logs: session files `finalization-roster-pattern-red.log` (failing original case).
 
-Next concrete action: run full frontend validation, complete the PR functional
-review, correct the contributor/browser prerequisites and GitHub description,
-then address further demonstrated functional issues before the convergence audit.
+The next audit found and corrected FNL-007/008/009: key/task forms now retain
+unconfirmed input and use explicit persistence results; report requests honor
+tenant/site grants and results are bound to identity/scope/dates; calendar dates
+are validated independently of local UTC offset. Critical incident follow-up
+tasks now use the durable existing outbox instead of a direct offline API call.
+There is no invented server task ID or premature database-success claim.
 
-A separate read-only functional review of the remaining PR diff is in progress.
+Current finalization worktree passed frontend **201/201 in 31 files**, strict
+typecheck, frontend/backend builds and all **6/6 real browser journeys** with
+isolated PostgreSQL 16, private MinIO, ClamAV and verified container cleanup.
+The new browser case commits both incident/task, loses the actual first response
+and replays identical mutation/server IDs without duplicate DB rows. Invalid task
+acknowledgements remain local; a failed task enqueue preserves the incident and
+explicitly warns the user. Five older receipt fixtures were missing the actual
+server UUID contract; corrected without removing retry/idempotency assertions.
+
+The first six-case browser run passed 4/6: the critical case passed but two later
+tests required a navigation name without the real critical-incident count badge.
+Anchored optional-badge selectors corrected the test, not the product.
+Fresh rerun: 6/6, cleanup successful. Logs:
+`finalization-critical-followup-browser.log` (initial failure) and
+`finalization-critical-followup-browser-final.log` (complete success).
+
+The read-only functional review is complete; its report-request finding is fixed.
 The security review tool returned no confirmed vulnerability in reviewed changes;
 it did not provide sufficient coverage detail to claim a complete security audit.
+
+Next concrete action: publish the locally verified corrections and obtain CI on
+the exact code SHA, then reconcile the required final documents, contributor
+instructions and repository description and repeat the convergence audit.
 
 ## Remaining work
 

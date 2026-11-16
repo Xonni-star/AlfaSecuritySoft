@@ -65,7 +65,10 @@ export const ReportsModule: React.FC = () => {
     getTenantKeys,
     getTenantTasks,
     getCurrentTenant,
-    currentUserRole
+    currentUserRole,
+    currentTenantId,
+    currentUserId,
+    authUser
   } = useSecurityStore();
 
   const tenant = getCurrentTenant();
@@ -82,24 +85,38 @@ export const ReportsModule: React.FC = () => {
   const [dateRangeFilter, setDateRangeFilter] = useState<ReportPeriod>('THIS_MONTH');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
-  const [hoursReport, setHoursReport] = useState<WorkHoursReportRow[]>([]);
+  const [hoursReportResult, setHoursReportResult] = useState<{ key: string; rows: WorkHoursReportRow[] }>({ key: '', rows: [] });
   const [hoursReportError, setHoursReportError] = useState('');
   const [hoursReportLoading, setHoursReportLoading] = useState(false);
   const dateRange = useMemo(() => getReportDateRange(dateRangeFilter, new Date(), {
     from: customFrom,
     to: customTo
   }), [dateRangeFilter, customFrom, customTo]);
+  const tenantReportGrant = authUser?.permissions.includes('planning:reports:read') ?? false;
+  const reportSites = (authUser?.sitePermissions ?? [])
+    .filter(grant => grant.code === 'planning:reports:read').map(grant => grant.siteId).sort();
+  const canReadHours = tenantReportGrant || reportSites.length > 0;
+  const requestKey = JSON.stringify([
+    currentTenantId || tenant.id, authUser?.id || currentUserId,
+    tenantReportGrant ? 'tenant' : reportSites, dateRange.from, dateRange.to
+  ]);
+  const hoursReport = canReadHours && hoursReportResult.key === requestKey ? hoursReportResult.rows : [];
   const isCalendarDate = (value: string) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-    const parsed = new Date(`${value}T00:00:00`);
+    const parsed = new Date(`${value}T00:00:00Z`);
     return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
   };
   const customRangeValid = dateRangeFilter !== 'CUSTOM' ||
     (isCalendarDate(customFrom) && isCalendarDate(customTo) && customFrom <= customTo);
 
   useEffect(() => {
+    setHoursReportResult({ key: requestKey, rows: [] });
+    if (!canReadHours) {
+      setHoursReportError('');
+      setHoursReportLoading(false);
+      return;
+    }
     if (!customRangeValid) {
-      setHoursReport([]);
       setHoursReportError('Bitte wählen Sie einen gültigen Zeitraum aus.');
       setHoursReportLoading(false);
       return;
@@ -109,15 +126,15 @@ export const ReportsModule: React.FC = () => {
     setHoursReportLoading(true);
     setHoursReportError('');
     planningApi.workHoursReport(dateRange.from, dateRange.to)
-      .then((rows) => { if (active) setHoursReport(rows); })
+      .then((rows) => { if (active) setHoursReportResult({ key: requestKey, rows }); })
       .catch((error: unknown) => {
         if (!active) return;
-        setHoursReport([]);
+        setHoursReportResult({ key: requestKey, rows: [] });
         setHoursReportError(error instanceof Error ? error.message : 'Arbeitszeitbericht konnte nicht geladen werden.');
       })
       .finally(() => { if (active) setHoursReportLoading(false); });
     return () => { active = false; };
-  }, [dateRange.from, dateRange.to, customRangeValid]);
+  }, [dateRange.from, dateRange.to, customRangeValid, canReadHours, requestKey]);
 
   // Generator State
   const [genName, setGenName] = useState('');
@@ -330,7 +347,7 @@ export const ReportsModule: React.FC = () => {
           <span className="text-slate-400 block text-[11px]">Planstunden (zugewiesene Dienste)</span>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-xl font-bold text-slate-100">
-              {hoursReportLoading ? '…' : hoursReportError ? '—' : `${plannedHours.toFixed(1)} h`}
+              {!canReadHours ? '—' : hoursReportLoading ? '…' : hoursReportError ? '—' : `${plannedHours.toFixed(1)} h`}
             </span>
           </div>
           <span className="text-[10px] text-slate-500">Zeitfenster und Pausen aus Dienstplanung</span>
@@ -342,7 +359,7 @@ export const ReportsModule: React.FC = () => {
             <span className="text-xl font-bold text-slate-100">{approvedActualHours === null ? '—' : `${approvedActualHours.toFixed(1)} h`}</span>
           </div>
           <span className="text-[10px] text-slate-500">
-            {hoursReportError ? hoursReportError : actualHoursComplete ? 'Alle zugewiesenen Ist-Zeiten genehmigt' : 'Nicht vollständig genehmigt oder keine Daten'}
+            {!canReadHours ? 'Keine Berechtigung für Arbeitszeitberichte' : hoursReportError ? hoursReportError : actualHoursComplete ? 'Alle zugewiesenen Ist-Zeiten genehmigt' : 'Nicht vollständig genehmigt oder keine Daten'}
           </span>
         </div>
 
@@ -363,6 +380,9 @@ export const ReportsModule: React.FC = () => {
           <span className="text-[10px] text-slate-500">Mandantbezogener Aufgabenbestand</span>
         </div>
       </div>
+      {!canReadHours && <p role="status" className="text-xs text-slate-400">
+        Keine Berechtigung für Arbeitszeitberichte. Andere verfügbare Auswertungen bleiben zugänglich.
+      </p>}
       {hoursReportError && <p role="alert" className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
         Arbeitszeitdaten konnten für {dateRange.from} bis {dateRange.to} nicht geladen werden. Prüfen Sie die Berichtsberechtigung oder die Verbindung.
       </p>}
@@ -412,7 +432,8 @@ export const ReportsModule: React.FC = () => {
             </div>
 
             <div className="h-64 w-full">
-              {hoursReportLoading ? <p role="status" className="pt-12 text-center text-xs text-slate-400">Arbeitszeitbericht wird geladen.</p>
+              {!canReadHours ? <p className="pt-12 text-center text-xs text-slate-400">Keine Berechtigung für Arbeitszeitberichte.</p>
+                : hoursReportLoading ? <p role="status" className="pt-12 text-center text-xs text-slate-400">Arbeitszeitbericht wird geladen.</p>
                 : hoursReportError ? <p className="pt-12 text-center text-xs text-amber-300">Arbeitszeitbericht nicht verfügbar.</p>
                   : shiftHoursComparison.length === 0 ? <p className="pt-12 text-center text-xs text-slate-500">Keine zugewiesenen Schichten im ausgewählten Zeitraum.</p> : (
               <ResponsiveContainer width="100%" height="100%">
