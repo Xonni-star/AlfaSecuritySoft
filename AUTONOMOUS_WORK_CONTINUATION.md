@@ -369,6 +369,18 @@ backend11, typecheck and both builds passed locally. A new genuine PostgreSQL/
 API test verifies three viewers, mismatching/equal contact email, denied employee
 read and both actual confirmations. It is not yet executed: Docker remains
 unavailable locally, so the exact hosted run must establish its result.
+Published `24a70b85ba7c9dbfd19217bdc007dc9bdcf0e306` now has exact
+CI43964650702 evidence: frontend360/360, backend552/552 including the real
+handover API regression, six successful jobs, but browser9/10 with cleanup.
+The third failure occurred before submit because the form locator depended on
+an exact wrapping-textarea label whose text content changed after filling.
+Downloaded real accessibility state still shows the form/submit button.
+A separate Chromium probe confirms zero old-form matches versus one stable
+heading-scoped form with exact accessible-role fields and submit. The new
+journey now uses those stable locators; no persistence assertion/budget removed.
+Log: `finalization-handover-linkage-hosted-ci.log`; accessibility artifact:
+`handover-linkage-browser-diagnostic/.../error-context.md`. The successful API
+case is not proof of ten passing browser journeys or a seven-job run.
 
 1. Publish coherent FNL-023 plus the FNL-022 real shared-status selector correction.
    Verify all hosted jobs on the exact full SHA; read actual logs and fix the

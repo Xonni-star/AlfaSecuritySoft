@@ -939,11 +939,11 @@ test('real handover UI restores one offline protocol after a lost server receipt
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
   await page.getByRole('button', { name: 'Übergabemanagement', exact: true }).click();
   await page.getByRole('button', { name: 'Neue Übergabe', exact: true }).click();
-  const form = page.locator('form').filter({ has: page.getByLabel('Allgemeiner Übergabetext', { exact: true }) });
-  await expect(form.getByLabel(/^Objekt \*/)).not.toHaveValue('');
-  await expect(form.getByLabel(/^Übergebende Person \*/)).not.toHaveValue('');
-  await expect(form.getByLabel(/^Übernehmende Person \*/)).not.toHaveValue('');
-  await form.getByLabel('Allgemeiner Übergabetext', { exact: true }).fill(text);
+  const form = page.locator('form').filter({ has: page.getByRole('heading', { name: 'Übergabe erfassen', exact: true }) });
+  await expect(form.getByRole('combobox', { name: 'Objekt *', exact: true })).not.toHaveValue('');
+  await expect(form.getByRole('combobox', { name: 'Übergebende Person *', exact: true })).not.toHaveValue('');
+  await expect(form.getByRole('combobox', { name: 'Übernehmende Person *', exact: true })).not.toHaveValue('');
+  await form.getByRole('textbox', { name: 'Allgemeiner Übergabetext', exact: true }).fill(text);
   await context.setOffline(true);
   await expect(page.getByRole('button', { name: 'Offline. Verbindung wiederherstellen', exact: true })).toBeVisible();
   await form.getByRole('button', { name: 'Übergabe lokal sichern', exact: true }).click();

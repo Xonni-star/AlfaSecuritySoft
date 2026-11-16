@@ -36,6 +36,16 @@ not a complete acceptance. Continuation: `AUTONOMOUS_WORK_CONTINUATION.md`.
 | FNL-022 | P1 | IN ARBEIT | Correct handover real-getter render loop, private-context reset and stale server/write completion | Eight initially failing cases corrected; local frontend 356/typecheck/build passed. Published 1a61fb3230ca9406f680c43fbcd98e1c38a55a54 failed CI 43962727353 at 6/7: read logs 356/549 and browser 9/10 plus cleanup. Native select-label mismatch was reproduced in real Chromium and corrected. Subsequent 5f73f976a849dde8ca068e693f670ec2d2a228c8, CI43963628561, again failed 6/7, browser9/10 plus cleanup: the new test expected a GuardBook-only offline banner in Handovers. It now waits for the actual shared offline status button. No assertions/budgets removed; new exact full hosted execution open. Local Docker unavailable. |
 | FNL-023 | P1 | IN ARBEIT | Use explicit participant-account linkage for real handover confirmation eligibility | Four UI and two controller cases initially failed: mapped users without employee-read access were blocked; equal contact emails showed incorrect controls. Authenticated list/detail mapping booleans now replace contact-email inference; existing server write authorization unchanged. Targeted frontend26/backend11, typecheck/both builds passed. Added actual PostgreSQL/API regression for three viewers without employees:read and two legitimate confirmations; local Docker unavailable, exact hosted execution pending. No new account IDs exposed or bypass claimed. |
 
+Latest published `24a70b85ba7c9dbfd19217bdc007dc9bdcf0e306` passed
+frontend360/360 and backend552/552 in exact CI43964650702, including the actual
+handover PostgreSQL/API mapping/confirmation regression. It still failed 6/7:
+browser9/10 with cleanup. Downloaded accessibility state shows the form and
+submit button remained visible, but its test locator depended on an exact
+wrapping-textarea label that changed after filling. Independent real Chromium
+reproduced zero old-form matches versus one stable heading-scoped form and
+exact-role combobox/textbox/submit matches. The journey is corrected without
+removed assertions or larger budgets; ten-case acceptance remains open.
+
 FNL-007/008/009/010 are published in `5ef02b3ab0b9f711025405247e711f21d3ee9811`.
 Exact [CI 43928436875](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43928436875)
 passed **7/7** jobs, including real browser/root, frontend, PostgreSQL backend,
