@@ -167,7 +167,7 @@ function setInput(input: HTMLInputElement | HTMLSelectElement, value: string) {
   const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value')?.set;
   setter?.call(input, value);
   input.dispatchEvent(new Event(input instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }));
-  input.dispatchEvent(new Event('change', { bubbles: true }));
+  if (!(input instanceof HTMLSelectElement)) input.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 describe('RosterModule', () => {
@@ -250,7 +250,9 @@ describe('RosterModule', () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     container.remove();
-    vi.clearAllMocks();
+    for (const mock of Object.values(mocks)) {
+      if (vi.isMockFunction(mock)) mock.mockReset();
+    }
     vi.unstubAllGlobals();
   });
 
@@ -453,7 +455,7 @@ describe('RosterModule', () => {
     expect(container.textContent).toContain('1 Schichtentwurf/Entwürfe erstellt; 1 Vorkommen serverseitig abgelehnt');
   });
 
-  test('edits and deactivates templates with their loaded revision', async () => {
+  test.each(['editing', 'availability'] as const)('updates template %s with its loaded revision', async action => {
     const template = {
       id: 'template-a',
       site_id: 'site-a',
@@ -471,35 +473,42 @@ describe('RosterModule', () => {
       active: true,
       revision_version: 6
     };
-    mocks.listTemplates
-      .mockResolvedValueOnce([template])
-      .mockResolvedValueOnce([{ ...template, name: 'Spätdienst', revision_version: 7 }])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([{ ...template, name: 'Spätdienst', active: false, revision_version: 8 }])
-      .mockResolvedValueOnce([{ ...template, name: 'Spätdienst', revision_version: 9 }]);
+    if (action === 'editing') {
+      mocks.listTemplates
+        .mockResolvedValueOnce([template])
+        .mockResolvedValueOnce([{ ...template, name: 'Spätdienst', revision_version: 7 }]);
+    } else {
+      mocks.listTemplates
+        .mockResolvedValueOnce([{ ...template, name: 'Spätdienst', revision_version: 7 }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ ...template, name: 'Spätdienst', active: false, revision_version: 8 }])
+        .mockResolvedValueOnce([{ ...template, name: 'Spätdienst', revision_version: 9 }]);
+    }
     await act(async () => root.render(<RosterModule />));
     const open = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Vorlagen');
     if (!open) throw new Error('Vorlagen-Schaltfläche fehlt');
     await act(async () => open.click());
 
-    const edit = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Bearbeiten');
-    if (!edit) throw new Error('Vorlage bearbeiten fehlt');
-    await act(async () => edit.click());
-    const name = container.querySelector<HTMLInputElement>('input[value="Frühdienst"]');
-    if (!name) throw new Error('Vorlagenname fehlt');
-    await act(async () => setInput(name, 'Spätdienst'));
-    const save = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Änderungen speichern');
-    if (!save) throw new Error('Änderungen speichern fehlt');
-    await act(async () => save.click());
-
-    expect(mocks.updateTemplate).toHaveBeenCalledWith('template-a', expect.objectContaining({
-      expectedVersion: 6,
-      name: 'Spätdienst',
-      breakMinutes: 30,
-      requiredStaffCount: 2,
-      effectiveFrom: '2026-01-01',
-      effectiveUntil: '2026-12-31'
-    }));
+    if (action === 'editing') {
+      const edit = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Bearbeiten');
+      if (!edit) throw new Error('Vorlage bearbeiten fehlt');
+      await act(async () => edit.click());
+      const name = container.querySelector<HTMLInputElement>('input[value="Frühdienst"]');
+      if (!name) throw new Error('Vorlagenname fehlt');
+      await act(async () => setInput(name, 'Spätdienst'));
+      const save = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Änderungen speichern');
+      if (!save) throw new Error('Änderungen speichern fehlt');
+      await act(async () => save.click());
+      expect(mocks.updateTemplate).toHaveBeenCalledWith('template-a', expect.objectContaining({
+        expectedVersion: 6,
+        name: 'Spätdienst',
+        breakMinutes: 30,
+        requiredStaffCount: 2,
+        effectiveFrom: '2026-01-01',
+        effectiveUntil: '2026-12-31'
+      }));
+      return;
+    }
     const deactivate = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Deaktivieren');
     if (!deactivate) throw new Error('Vorlage deaktivieren fehlt');
     await act(async () => deactivate.click());
@@ -567,7 +576,8 @@ describe('RosterModule', () => {
     expect(mocks.assignEmployee).toHaveBeenCalledWith('shift-a', 'employee-candidate', 4);
   });
 
-  test('clears tenant-bound planning data on identity changes and ignores stale template responses', async () => {
+  test.each(['templates', 'covers', 'actuals'] as const)(
+    'clears tenant-bound %s on identity changes and ignores stale responses', async scope => {
     const tenantATemplate = {
       id: 'template-tenant-a',
       site_id: 'site-a',
@@ -656,73 +666,70 @@ describe('RosterModule', () => {
     const staleActual = new Promise<{ current: typeof tenantAActual; history: any[] }>(resolve => {
       resolveStaleActual = resolve;
     });
-    mocks.getActualTime
-      .mockResolvedValueOnce({
-        current: tenantAActual,
-        history: [{
-          id: 'audit-tenant-a',
-          actor_user_id: 'user-a',
-          event_type: 'shift.actual_time.recorded',
-          details: { notes: 'TENANT_A_HISTORY_SECRET' },
-          created_at: tenantAActual.recorded_at
-        }]
-      })
-      .mockReturnValueOnce(staleActual);
+    if (scope === 'actuals') {
+      mocks.getActualTime
+        .mockResolvedValueOnce({
+          current: tenantAActual,
+          history: [{
+            id: 'audit-tenant-a',
+            actor_user_id: 'user-a',
+            event_type: 'shift.actual_time.recorded',
+            details: { notes: 'TENANT_A_HISTORY_SECRET' },
+            created_at: tenantAActual.recorded_at
+          }]
+        })
+        .mockReturnValueOnce(staleActual);
+    }
 
     await act(async () => root.render(<RosterModule />));
-    const openTemplates = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Vorlagen');
-    if (!openTemplates) throw new Error('Vorlagen-Schaltfläche fehlt');
-    await act(async () => openTemplates.click());
-    expect(container.textContent).toContain('TENANT_A_TEMPLATE_SECRET');
-
-    const closeTemplates = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Schließen');
-    if (!closeTemplates) throw new Error('Vorlagen schließen fehlt');
-    await act(async () => closeTemplates.click());
-    const openCovers = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Vertretungsanträge'));
-    if (!openCovers) throw new Error('Vertretungsanträge fehlen');
-    await act(async () => openCovers.click());
-    expect(container.textContent).toContain('TENANT_A_COVER_SECRET');
-    const closeDialog = container.querySelector<HTMLButtonElement>('button[aria-label="Dialog schließen"]');
-    if (!closeDialog) throw new Error('Dialog schließen fehlt');
-    await act(async () => closeDialog.click());
-
-    const eventButton = container.querySelector<HTMLButtonElement>('button[aria-label*="Objekt A"]');
-    if (!eventButton) throw new Error('Kalendereintrag fehlt');
-    await act(async () => eventButton.click());
-    await act(async () => new Promise(resolve => setTimeout(resolve, 0)));
-    const actualNotes = Array.from(container.querySelectorAll('label')).find(label =>
-      label.textContent?.includes('Notiz (optional)')
-    )?.querySelector<HTMLInputElement>('input');
-    expect(container.textContent).toContain('TENANT_A_CANDIDATE_SECRET');
-    expect(container.textContent).toContain('TENANT_A_HISTORY_SECRET');
-    expect(actualNotes?.value).toBe('TENANT_A_ACTUAL_SECRET');
-    const actualStart = container.querySelector<HTMLInputElement>('input[placeholder="2027-01-10T08:03:00+01:00"]');
-    const actualEnd = container.querySelector<HTMLInputElement>('input[placeholder="2027-01-10T16:05:00+01:00"]');
-    const notes = container.querySelectorAll<HTMLInputElement>('input[maxlength="1000"]');
-    if (!actualStart || !actualEnd || notes.length < 2) throw new Error('Ist-Zeitformular fehlt');
-    await act(async () => {
-      setInput(actualStart, '2027-01-10T08:03:00+01:00');
-      setInput(actualEnd, '2027-01-10T16:05:00+01:00');
-      setInput(notes[notes.length - 1], 'TENANT_A_ACTUAL_NOTE_SECRET');
-    });
-    const actualEmployee = Array.from(container.querySelectorAll('label')).find(label =>
-      label.textContent?.includes('Zugewiesene Person')
-    )?.querySelector<HTMLSelectElement>('select');
-    if (!actualEmployee) throw new Error('Ist-Zeitperson fehlt');
-    await act(async () => setInput(actualEmployee, 'employee-b'));
-
-    mocks.listTemplates.mockImplementationOnce(() => staleTemplates);
-    const reopenTemplates = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Vorlagen');
-    if (!reopenTemplates) throw new Error('Vorlagen-Schaltfläche fehlt');
-    await act(async () => reopenTemplates.click());
-    await act(async () => {
-      const templateSection = Array.from(container.querySelectorAll('section')).find(section =>
-        section.querySelector('h2')?.textContent === 'Schichtvorlagen'
-      );
-      const refreshTemplates = Array.from(templateSection?.querySelectorAll('button') ?? []).find(button => button.textContent?.trim() === 'Aktualisieren');
-      if (!refreshTemplates) throw new Error('Vorlagen aktualisieren fehlt');
-      refreshTemplates.click();
-    });
+    if (scope === 'templates') {
+      const openTemplates = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Vorlagen');
+      if (!openTemplates) throw new Error('Vorlagen-Schaltfläche fehlt');
+      await act(async () => openTemplates.click());
+      expect(container.textContent).toContain('TENANT_A_TEMPLATE_SECRET');
+      mocks.listTemplates.mockImplementationOnce(() => staleTemplates);
+      await act(async () => {
+        const templateSection = Array.from(container.querySelectorAll('h2')).find(heading =>
+          heading.textContent === 'Schichtvorlagen'
+        )?.closest('section');
+        const refreshTemplates = Array.from(templateSection?.querySelectorAll('button') ?? []).find(button => button.textContent?.trim() === 'Aktualisieren');
+        if (!refreshTemplates) throw new Error('Vorlagen aktualisieren fehlt');
+        refreshTemplates.click();
+      });
+      expect(mocks.listTemplates).toHaveBeenCalledTimes(2);
+      expect(mocks.listTemplates.mock.results.at(-1)?.value).toBe(staleTemplates);
+    } else if (scope === 'covers') {
+      const openCovers = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Vertretungsanträge'));
+      if (!openCovers) throw new Error('Vertretungsanträge fehlen');
+      await act(async () => openCovers.click());
+      expect(container.textContent).toContain('TENANT_A_COVER_SECRET');
+    } else {
+      const eventButton = container.querySelector<HTMLButtonElement>('button[aria-label*="Objekt A"]');
+      if (!eventButton) throw new Error('Kalendereintrag fehlt');
+      await act(async () => eventButton.click());
+      const actualNotes = Array.from(container.querySelectorAll('label')).find(label =>
+        label.textContent?.includes('Notiz (optional)')
+      )?.querySelector<HTMLInputElement>('input');
+      expect(container.textContent).toContain('TENANT_A_CANDIDATE_SECRET');
+      expect(container.textContent).toContain('TENANT_A_HISTORY_SECRET');
+      expect(actualNotes?.value).toBe('TENANT_A_ACTUAL_SECRET');
+      const actualStart = container.querySelector<HTMLInputElement>('input[placeholder="2027-01-10T08:03:00+01:00"]');
+      const actualEnd = container.querySelector<HTMLInputElement>('input[placeholder="2027-01-10T16:05:00+01:00"]');
+      const notes = container.querySelectorAll<HTMLInputElement>('input[maxlength="1000"]');
+      if (!actualStart || !actualEnd || notes.length < 2) throw new Error('Ist-Zeitformular fehlt');
+      await act(async () => {
+        setInput(actualStart, '2027-01-10T08:03:00+01:00');
+        setInput(actualEnd, '2027-01-10T16:05:00+01:00');
+        setInput(notes[notes.length - 1], 'TENANT_A_ACTUAL_NOTE_SECRET');
+      });
+      const actualEmployee = Array.from(container.querySelectorAll('label')).find(label =>
+        label.textContent?.includes('Zugewiesene Person')
+      )?.querySelector<HTMLSelectElement>('select');
+      if (!actualEmployee) throw new Error('Ist-Zeitperson fehlt');
+      await act(async () => setInput(actualEmployee, 'employee-b'));
+      expect(mocks.getActualTime).toHaveBeenLastCalledWith('shift-a', 'employee-b');
+      expect(mocks.getActualTime.mock.results.at(-1)?.value).toBe(staleActual);
+    }
 
     mocks.storeState.currentTenantId = 'tenant-b';
     mocks.storeState.currentUserId = 'user-b';

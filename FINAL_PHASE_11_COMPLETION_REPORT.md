@@ -29,8 +29,8 @@ Projektabschluss und keine Produktions-, Sicherheits- oder Rechtsfreigabe.
 | `4946d31` | Vorhandene serverseitige Abmeldung in Navigation erreichbar gemacht; explizite Warnung bei unbestätigtem Widerruf. Echter Browser-Test prüft Ablehnung einer separat aufbewahrten alten Cookie-Kopie. Offline-Test wartet vor Retry/DB-Schließen auf Sync-Abschluss. Browserbuilds bleiben auch unter `NODE_ENV=test` Produktionsbuilds. |
 | `8611044` | Reale Session-Antwort `userId` statt ausschließlich älterer `sub`-/`id`-Aliasse lesen. Echte Browsererfassung nach Session-Restore und Besitzerbindung einer offenen Mutation über zwei Konten/zwei Mandanten; erst beim ursprünglichen Besitzer genau einmal synchronisiert. |
 
-Die Phase-11-Tabelle im Tracker enthält **16 abgegrenzte Pakete**:
-**12 lokal erledigt**, **1 in Arbeit** (gehostete Browser-CI ausstehend) und
+Die Phase-11-Tabelle im Tracker enthält **18 abgegrenzte Pakete**:
+**14 lokal erledigt**, **1 in Arbeit** (gehostete Browser-CI ausstehend) und
 **3 extern zu prüfen**. Diese Zahlen sind keine Fertigstellungsquote des Produkts.
 Die ältere breite Audit-/Anforderungsmatrix enthält weiterhin offene Arbeit.
 
@@ -40,7 +40,8 @@ Die ältere breite Audit-/Anforderungsmatrix enthält weiterhin offene Arbeit.
 |---|---|---|
 | Backend-TypeScript-Build | Bestanden | Lokaler Build, kein Produktionsbetrieb |
 | Vollständige PostgreSQL-gestützte Backend-Suite | 35/35 Suites, 534/534 Tests; keine Open-Handle-Warnung | Synthetische isolierte PostgreSQL-16-Datenbank |
-| Frontend-Abschlusslauf | 29 Dateien, 172/172 Tests | Zwei Worker, 30 Sekunden Test-/Hook-Budget; siehe Fehlversuche unten |
+| Erweiterte authentifizierte Berechtigungsmatrix | 16/16 Tests | Frische migrierte/geseedete PostgreSQL-16-DB; vier Berichte/CSV, fehlende/entzogene Rechte, Tenant-/Site-Grenzen, manipulierte Hinweise und direkte IDs. Nur erweiterte Suite erneut ausgeführt, vorherige vollständige Backendzahl bleibt historisch |
+| Frontend-Abschlusslauf | 29 Dateien, 175/175 Tests | Zwei Worker, unveränderte Standard-5-s-Zeitlimits; frühere 172/172 benötigten 30 Sekunden |
 | Frontend-Typprüfung | Bestanden | `npm run typecheck --prefix frontend` |
 | Frontend-Produktionsbuild | Bestanden | Durch Browser-Webserver; bestehende Vite-Konfigurations-/Chunkwarnungen sind keine behobenen Aufgaben |
 | Bestehende Chromium-API-Fixture | 1/1 bestanden | In-Memory-API, lokale Fotos bleiben unsynced |
@@ -54,7 +55,7 @@ Die ältere breite Audit-/Anforderungsmatrix enthält weiterhin offene Arbeit.
 Reproduzierbare lokale Befehle nach vorhandener Abhängigkeits-/Chromium-Installation:
 
 ```bash
-npm test --prefix frontend -- --maxWorkers=2 --testTimeout=30000 --hookTimeout=30000
+npm test --prefix frontend -- --maxWorkers=2
 npm run typecheck --prefix frontend
 NODE_ENV=test npm run test:browser --prefix frontend
 NODE_ENV=test npm run test:browser:backend --prefix frontend
@@ -95,6 +96,22 @@ beschrieben. Der lokale Lauf verwendete für MinIO und MC dieses Testimage:
   30-s-Budget; der abschließende Gesamtlauf bestand 172/172 mit zwei Workern und
   30-s-Test-/Hook-Budget. Die standardmäßige 5-s-Konfiguration wurde nicht global
   geändert, Assertions wurden weder entfernt noch Tests übersprungen.
+- **Fortsetzung AUTH-013:** Die Berechtigungs-Suite wurde auf 16 Fälle erweitert.
+  Der erste Lauf ohne Seed fehlte im Basis-Permissionskatalog; ein UNION-INSERT
+  benötigte explizite UUID-Typen. Der bestehende Zuweisungslisten-Vertrag liefert
+  für nicht sichtbare Schichten 200 mit leerer Liste, nicht 404. Die Tests prüfen
+  diesen Vertrag sowie 404 beim objektauflösenden Vorschlagsendpunkt und echte
+  Zuweisungen als Positivkontrolle. Nach korrigierter Fixture und Seed 16/16.
+  Keine Änderung der Laufzeitberechtigung war erforderlich.
+- **Fortsetzung QA-012:** Der erneute Standardlauf zeigte 171/172, mit einem
+  überladenen Identitäts-Test über 5 Sekunden. Getrennte Vorlagen-/Vertretungs-/
+  Istzeitfälle und Vorlagenbearbeitung/-verfügbarkeit behalten die Assertions.
+  Sie deckten zusätzlich einen falschen Abschnittsselektor auf: Der vermeintliche
+  Vorlagen-Refresh aktualisierte nur den Kalender. Nun wird die nächste Section
+  der passenden Überschrift verwendet und das verzögerte Promise positiv geprüft.
+  Doppelte Select-Change-Ereignisse und nicht verbrauchte Einmal-Mocks wurden
+  isoliert. Nach Zwischenfehlern bestand der vollständige Lauf 175/175 mit
+  unverändertem Standardbudget; keine vollständige Suite wurde selektiv gekürzt.
 
 ## Begrenztes Security-Review
 
@@ -112,18 +129,19 @@ wurde abgeschlossen.
 
 ## Verbleibende Grenzen und konkrete Fortsetzung
 
-1. **Nächste lokal ausführbare Aufgabe:** Authentifizierte Rollen-/Standort-/
-   Objektmatrix erweitern, zuerst Report-Lese-/Exportrechte und direkte IDs.
-   Die echten Konten-/Mandantenwechsel sind bereits mit zwei Konten/zwei Mandanten
+1. **Nächste lokal ausführbare Aufgabe:** Echten Browserfolgeumfang um
+   SOP-Bestätigungen oder Anhang-Replay mit echter isolierter S3-/Scanneranbindung
+   erweitern. Die echten Konten-/Mandantenwechsel sind bereits mit zwei Konten/zwei Mandanten
    bestanden und nicht erneut zu implementieren. Als separaten Browserfolgeumfang
    SOP-Bestätigungen oder Anhang-Replay mit echter isolierter S3-/Scanneranbindung
    priorisieren; keine Fixture-Antworten als Provider-Nachweis ausgeben.
-2. Authentifizierte Rollen-/Standort-/Objektmatrix ausbauen, beginnend mit
-   Report-Lese-/Exportrechten und direkten IDs. Vorhandene 215 unauthentifizierte
+2. Authentifizierte Rollen-/Standort-/Objektmatrix auf weitere Module ausbauen.
+   Report-Lese-/Exportrechte und direkte Schicht-IDs sind unter AUTH-013 bestanden.
+   Vorhandene 215 unauthentifizierte
    Routentests nicht fälschlich als diese Matrix zählen oder erneut implementieren.
-3. Default-5-s-Frontendlauf unter stabiler Last prüfen; neue reproduzierbare
-   Timer-/Test-Isolationsfehler fokussiert beheben statt Assertions abzuschwächen.
-   Den belegten 30-s-Abschlusslauf nicht als unveränderten Standardlauf ausgeben.
+3. Default-5-s-Frontendlauf unter QA-012 bestanden (175/175, zwei Worker).
+   Neue reproduzierbare Timer-/Test-Isolationsfehler weiterhin fokussiert beheben;
+   frühere 30-s-Läufe bleiben historische Evidenz und werden nicht umgedeutet.
 4. Vor Integration GitHub-/Branch-/CI-Stand erneut prüfen und lokale Commits
    gegen veröffentlichten PR-Head abgleichen. Hosted-CI-Gate bleibt offen bis
    tatsächlich ein Run auf dem exakten neuen SHA vorliegt.

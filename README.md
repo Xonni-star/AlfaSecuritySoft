@@ -89,8 +89,10 @@ Das Backend verweigert den Start bei fehlenden, ungültigen oder offensichtlich 
 
 ## Module
 
-**Lokal nachgewiesene Phase-11-Pakete:** Backend 534/534, Frontend 172/172 Tests
-(Frontend-Abschlusslauf mit zwei Workern und 30-s-Test-/Hook-Budget);
+**Lokal nachgewiesene Phase-11-Pakete:** letzter vollständiger Backendlauf
+534/534; anschließend erweiterte authentifizierte Berechtigungs-Suite 16/16.
+Frontend 175/175 Tests mit zwei Workern und unverändertem Standard-5-s-Budget
+(lange Roster-Szenarien getrennt, ausstehende Einmal-Mocks isoliert);
 Chromium-API-Fixture 1/1 und echte Cookie-/CSRF-authentifizierte
 Express-/PostgreSQL-Browserjourneys 2/2. Ein dabei gefundener
 Wachbuchfehler bei nachgeladener Standort-/Mitarbeiterauswahl ist behoben.
@@ -98,6 +100,8 @@ Die Navigation bietet Abmeldung; der echte Backend-Test prüft den Widerruf auch
 mit einer zurückbehaltenen Kopie des alten Cookies.
 Konten-/Mandantenwechsel erhalten die Besitzerbindung offener Mutationen;
 Session-Restore liest jetzt die tatsächliche `userId` der API.
+Die Reportmatrix prüft vier Berichte und Arbeitszeit-CSV mit Tenant-/Site-Grants,
+fehlenden/widerrufenen Rechten, manipulierten Tenant-Hinweisen und direkten IDs.
 Migration 042 erhält bestehende Migrationsprüfsummen; der isolierte
 PostgreSQL-/MinIO-Drill prüft Rollback nach DDL-Fehler und Backup-Health
 (Frische/letzter Fehler, keine Restore-Garantie). Gehostete CI für diese lokalen

@@ -14,7 +14,16 @@
 real `/auth/me.userId` field. The authenticated Chromium suite now passes **2/2**,
 including account/tenant switches, exactly-once owner replay and new creation
 after a session-restoring reload. The frontend suite still passes **172/172**
-with the bounded command below. These results remain local.
+in the historical bounded run. These results remain local.
+
+**Latest regression package:** `authorization_boundaries.integration.test.ts`
+passes **16/16** against fresh migrated/seeded PostgreSQL 16: four reports and
+CSV, tenant/site grants, missing/revoked grants, forged tenant hints and direct
+shift IDs. The full frontend suite now passes **175/175** with two workers and
+unchanged default five-second test/hook budgets. Long Roster scenarios were
+separated; unconsumed one-shot mocks and a selector that refreshed the wrong
+section were corrected. The previous full backend total remains historical;
+only the extended boundary suite was rerun for these test-only backend changes.
 
 This is the current evidence index. Phase reports and dated status sections remain historical snapshots; they have not been rewritten to make their former state appear current. The earlier 20:59 CET entry for `879ae95` and “no open PRs” is historical, not the current GitHub state. See the [Phase 9 completion report](./PHASE_9_COMPLETION_REPORT.md) for the documentation/operations audit and remaining gates.
 
@@ -41,7 +50,8 @@ This is the current evidence index. Phase reports and dated status sections rema
 | Report site-scope correction | **IMPLEMENTIERT UND GETESTET** | This worktree explicitly filters all four report handlers and the work-hours CSV by authenticated site grants. Backend TypeScript build, three scope-helper tests, and `sync_and_roles.test.ts` (33/33) passed against isolated PostgreSQL 16. Hosted CI and production acceptance for this change remain outstanding. |
 | Prior backend validation | **IMPLEMENTIERT UND GETESTET** | On an earlier PR revision, migration and seed ran against isolated PostgreSQL 16; backend build and 34 Jest suites / 315 tests passed. These results do not cover the current report-scope change. |
 | Phase 11 backend and migrations | **IMPLEMENTIERT UND GETESTET** | Full local backend suite: 35/35 suites, 534/534 tests, no open-handle warning. A real 041→042 upgrade preserves earlier checksums, rejects GuardBook DELETE/core-field UPDATE and becomes a no-op on rerun. Published 001/004 are restored unchanged; new text correction is additive in 042. |
-| Phase 11 frontend and browser | **IMPLEMENTIERT UND GETESTET** | Full local frontend suite: 29 files, 172/172 tests with `--maxWorkers=2 --testTimeout=30000 --hookTimeout=30000`; default 5-s runs had Roster timeouts. Offline retry/teardown now waits for background sync completion. Typecheck/build passed. Chromium: 1/1 API-fixture and 2/2 real Express/PostgreSQL scenarios, covering authenticated offline reload/replay, old-cookie rejection after logout, new creation after session restoration and owner isolation across two accounts/two tenants. Real tests found and fixed empty form references and missing restored `userId`. No physical-device/photo/provider or complete identity-matrix acceptance is inferred. |
+| Authenticated report authorization | **IMPLEMENTIERT UND GETESTET** | Extended boundary suite: 16/16, with two tenants/three sites, report-only and site grants, absent/removed permissions, CSV, exact aggregates, forged tenant hints and direct shift IDs. Existing sessions immediately lose removed report grants. No new runtime authorization defect found; other endpoint/object combinations remain open. |
+| Phase 11 frontend and browser | **IMPLEMENTIERT UND GETESTET** | Latest full local frontend suite: 29 files, 175/175 tests with `--maxWorkers=2` and unchanged default 5-s budgets. Previous 172/172 required 30-s budgets. Long Roster scenarios were separated, one-shot mocks reset and stale-response triggers positively verified. Offline retry/teardown waits for background sync completion. Latest typecheck passed; prior build/browser evidence is unchanged: Chromium 1/1 API-fixture and 2/2 real Express/PostgreSQL scenarios covering authenticated offline reload/replay, logout, session restoration and owner isolation across two accounts/two tenants. No physical-device/photo/provider or complete identity-matrix acceptance is inferred. |
 | API authentication boundary | **IMPLEMENTIERT UND GETESTET** | All 215 currently registered protected method/path pairs return 401 without a session in the local backend suite. Health, login and password-reset completion are explicit public exceptions. Full per-role/site/object matrix remains open. |
 | Module/architecture inventory | **IMPLEMENTIERT** | [13-module evidence matrix](./MODULE_IMPLEMENTATION_STATUS.md) identifies active UI/API/database/test paths and remaining limits. npm and production Docker use Node/TypeScript; historical Python/Alembic files were not validated by these runs. Not a complete product acceptance. |
 | Test-only Linux install | **IMPLEMENTIERT UND GETESTET** | PR #56 merged. The tar/deb installer and lifecycle guidance target isolated testing; they are not production installers. |

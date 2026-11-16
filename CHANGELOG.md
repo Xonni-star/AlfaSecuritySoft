@@ -4,6 +4,7 @@
 
 ### Hinzugefügt
 
+- Erweiterte authentifizierte Report-/Berechtigungsmatrix: vier Berichte und CSV, Tenant-/Site-Grants, sofortiger Rechteentzug, manipulierte Mandantenhinweise, exakte Aggregate und direkte Schicht-IDs; PostgreSQL-Suite 16/16 bestanden.
 - Echte Chromium-/PostgreSQL-Prüfung mit zwei Konten und zwei Mandanten: fremde Offline-Mutationen bleiben unangetastet, erst die ursprüngliche Identität synchronisiert genau einmal.
 - Erreichbare Abmeldung in der Navigation mit sichtbarem Hinweis bei nicht bestätigtem serverseitigem Widerruf; echter Browser-Test weist auch eine zurückbehaltene Kopie des alten Cookies nach erfolgreicher Abmeldung zurück.
 - Authentifizierter Chromium-Offline-Test mit echter Express-/PostgreSQL-Anbindung, isolierter Datenbank und kontrolliert verlorener erster Sync-Quittung; eigener Root-CI-Schritt und Fehlerartefakte.
@@ -22,6 +23,7 @@
 
 ### Fehlerkorrekturen
 
+- Roster-Testisolation: lange Vorlagen-/Identitätsszenarien getrennt, ausstehende Einmal-Mocks zurückgesetzt, doppelte Select-Ereignisse entfernt und falschen Refresh-Selektor korrigiert. Verzögerte Antworten werden nachweislich ausgelöst; vollständige Frontend-Suite 175/175 mit unverändertem Standard-5-s-Budget bestanden.
 - Session-Wiederherstellung liest das tatsächliche `userId`-Feld von `/auth/me`, damit nach Reload keine leere Benutzeridentität und blockierte Synchronisation entstehen.
 - Wachbuchformulare verwenden nachgeladene Standort-/Mitarbeiter-Standardwerte konsistent bei Anzeige und Speicherung, statt leere IDs in die Offline-Outbox zu schreiben.
 - Patrol-Integrationstests schließen beide PostgreSQL-Pools nach der Bereinigung; der lange API-Test verwendet ein begrenztes 30-Sekunden-Zeitbudget.
