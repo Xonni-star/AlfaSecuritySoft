@@ -33,6 +33,15 @@ Noch nicht eingereichte Erstentwürfe haben keine persistierte Versions-ID.
 Leere optionale Formularwerte für `effectiveFrom`, `effectiveUntil` und
 `dmsDocumentId` werden als `null` übertragen, nicht als ungültige Leerstrings.
 
+Das allgemeine Frontend-Datenladen ruft Basismodule nur mit den jeweiligen
+Leserechten ab. Ein Konto mit ausschließlich `sop:read`/`sop:acknowledge` benötigt
+keine Kunden-/Standort-/Mitarbeiter-/Wachbuch-/Schicht-/Schlüssel-/Aufgabenrechte,
+um seine SOP-Liste zu laden. Session-Restore erhält Standort- und Eigenrechte
+getrennt von Tenantrechten; diese steuern nur die Requestauswahl. Der Server
+bleibt für jeden Zugriff maßgeblich und tatsächliche API-Fehler bleiben sichtbar.
+Die Navigation zeigt die vom Backend gemeldete Sitzungsrolle. Der echte
+Browserfall prüft null unberechtigte Basis-GETs und dieselbe Rolle nach Reload.
+
 ## Workflow und Historie
 
 Der Workflow lautet `draft → in_review → reviewed → approved → published`. Eine Prüfung kann mit Kommentar Änderungen anfordern; der Entwurf kann danach erneut eingereicht werden. Für jede konkrete Version sind Ersteller und Einreicher von Prüfer und Freigebendem getrennt; der Prüfer darf dieselbe Version ebenfalls nicht freigeben. Eine neue Änderung an einer veröffentlichten Anweisung beginnt als neue Version. Veröffentlichte Versionen, Workflowereignisse und bestätigte Zuweisungen werden nicht überschrieben; eine Veröffentlichung oder Archivierung blendet die alte Version aus der aktuellen Mitarbeitersicht aus.

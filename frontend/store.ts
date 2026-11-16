@@ -79,6 +79,8 @@ export interface AuthUser {
   tenantId: string;
   tenantName: string;
   permissions: string[];
+  sitePermissions?: Array<{ code: string; siteId: string }>;
+  ownPermissions?: string[];
   isSuperAdmin?: boolean;
 }
 
@@ -1005,6 +1007,8 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
           tenantId: me.tenantId ?? '',
           tenantName: me.tenantName ?? '',
           permissions: Array.isArray(me.permissions) ? me.permissions : [],
+          sitePermissions: Array.isArray(me.sitePermissions) ? me.sitePermissions : [],
+          ownPermissions: Array.isArray(me.ownPermissions) ? me.ownPermissions : [],
           isSuperAdmin: me.isSuperAdmin === true
         },
         isAuthenticated: true,
@@ -1078,7 +1082,12 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       });
     }
 
-    const permissions = get().authUser?.permissions || [];
+    const user = get().authUser;
+    const permissions = [
+      ...(user?.permissions ?? []),
+      ...(user?.sitePermissions ?? []).map(grant => grant.code),
+      ...(user?.ownPermissions ?? [])
+    ];
     const canReadDocuments = permissions.includes('documents:read');
     const canReadSOPs = permissions.includes('sop:read') || permissions.includes('sop:manage');
     const canReadAlarms = permissions.includes('alarm:read');
@@ -1097,13 +1106,13 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       emergencyPlansResult,
       alarmIncidentsResult
     ] = await Promise.allSettled([
-      apiClient.get<any[]>('/customers'),
-      apiClient.get<any[]>('/sites'),
-      apiClient.get<any[]>('/employees'),
-      apiClient.get<any[]>('/logbook'),
-      apiClient.get<any[]>('/shifts'),
-      apiClient.get<any[]>('/keys'),
-      apiClient.get<any[]>('/tasks'),
+      permissions.includes('customers:read') ? apiClient.get<any[]>('/customers') : Promise.resolve([]),
+      permissions.includes('sites:read') ? apiClient.get<any[]>('/sites') : Promise.resolve([]),
+      permissions.includes('employees:read') ? apiClient.get<any[]>('/employees') : Promise.resolve([]),
+      permissions.includes('logbook:read') ? apiClient.get<any[]>('/logbook') : Promise.resolve([]),
+      permissions.includes('shifts:read') ? apiClient.get<any[]>('/shifts') : Promise.resolve([]),
+      permissions.includes('keys:read') ? apiClient.get<any[]>('/keys') : Promise.resolve([]),
+      permissions.includes('tasks:read') ? apiClient.get<any[]>('/tasks') : Promise.resolve([]),
       canReadDocuments ? apiClient.get<any[]>('/documents') : Promise.resolve([]),
       canReadSOPs ? apiClient.get<any[]>('/sops') : Promise.resolve([]),
       canReadAlarms ? apiClient.get<any[]>('/alarm-types') : Promise.resolve([]),

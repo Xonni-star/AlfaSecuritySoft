@@ -219,11 +219,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400 block leading-tight">
               Rolle
             </span>
-            <span className="text-xs font-semibold text-blue-300 truncate max-w-[100px] block">
-              {currentUserRole}
+            <span aria-label="Sitzungsrolle" className="text-xs font-semibold text-blue-300 truncate max-w-[100px] block">
+              {authUser ? authUser.role || 'Keine Rolle zugewiesen' : currentUserRole}
             </span>
           </div>
-          <select
+          {!authUser && <select
             value={currentUserRole}
             onChange={(e) => setCurrentUserRole(e.target.value as UserRole)}
             className="bg-transparent text-xs text-slate-200 font-medium focus:outline-none cursor-pointer"
@@ -233,7 +233,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {role}
               </option>
             ))}
-          </select>
+          </select>}
         </div>
       </div>
     </header>

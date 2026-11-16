@@ -11,6 +11,11 @@
 > fehlende `version_id`-Werte der Mitarbeiterantwort korrigiert. Der Wachbuchtest
 > wartet nach Reload auf tatsächlich valide geladene Formularfelder; ersetzte
 > Referenzdaten verwenden dieselben gültigen Defaults für Anzeige und Submit.
+> Der SOP-only-Mitarbeiter erzeugt über Login und Reloads keine unberechtigten
+> Basis-GETs mehr; die Navbar zeigt durchgehend seine tatsächliche Sitzungsrolle.
+> Storetests erhalten Tenant-/Site-/Own-Grants getrennt und zeigen echte
+> Serverablehnungen weiterhin an. Voller Frontendlauf 184/184 mit unverändertem
+> Standard-5-s-Budget; keine Performance- oder vollständige Rollenabnahme.
 > Keine Foto-/Scanner-/Provider-/physische Geräteabnahme; Hosted CI bleibt offen.
 
 > **Vorheriger Phase-11-Nachweis:** Die authentifizierte Chromium-/Express-/PostgreSQL-Suite bestand damals **2/2**. Zusätzlich zum Replay-/Abmeldetest bleibt eine offene Mutation bei Wechsel zu einem anderen Konto desselben Mandanten und zum ursprünglichen Konto in einem anderen Mandanten unangetastet und unsichtbar; erst nach Rückkehr zur ursprünglichen Identität wird sie genau einmal übertragen und persistiert. Der Test fand außerdem, dass `restoreSession` das reale `userId`-Feld von `/auth/me` nicht las; die Korrektur ist durch Unit- und echte Browser-Erfassung nach Reload belegt. Keine Foto-/SOP-/Geräteabnahme in diesem damaligen Umfang.

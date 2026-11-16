@@ -298,7 +298,7 @@ export default function App(): React.ReactNode {
             )}
             {dataLoadError && (
               <div className="mb-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
-                Backend nicht erreichbar: {dataLoadError}
+                Daten nicht vollständig geladen: {dataLoadError}
               </div>
             )}
             <ErrorBoundary>

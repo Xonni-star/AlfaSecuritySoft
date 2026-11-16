@@ -35,7 +35,7 @@ vi.mock('../services/apiClient', () => {
   return { apiClient, ApiError };
 });
 
-import { useSecurityStore } from '../store';
+import { useSecurityStore, type AuthUser } from '../store';
 import { apiClient, ApiError } from '../services/apiClient';
 import { offlineVault, type StoredSOPAcknowledgement } from '../services/indexedDbService';
 import { UserRole, type SOPDocument } from '../types';
@@ -48,6 +48,11 @@ const mockedApi = apiClient as unknown as {
   setTenantId: ReturnType<typeof vi.fn>;
 };
 const durableSOPQueue = new Map<string, StoredSOPAcknowledgement>();
+const readUser: AuthUser = {
+  id: 'user-regression', email: 'reader@example.test', fullName: 'Reader', role: '',
+  tenantId: 'tenant-frankfurt', tenantName: '',
+  permissions: ['customers:read', 'sites:read', 'employees:read', 'logbook:read', 'shifts:read', 'keys:read', 'tasks:read']
+};
 
 function acknowledgementKey(ack: StoredSOPAcknowledgement): string {
   return [ack.tenantId, ack.userId, ack.assignmentId, ack.versionId].join(':');
@@ -220,6 +225,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
 
   test('1. loadTenantData hydratisiert Kunden, Objekte, Mitarbeiter und Wachbuch aus der API', async () => {
     mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
 
     await useSecurityStore.getState().loadTenantData();
 
@@ -407,7 +413,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
       currentUserId: mutation.userId,
       authUser: {
         id: mutation.userId, email: '', fullName: '', role: '',
-        tenantId: mutation.tenantId, tenantName: '', permissions: []
+        tenantId: mutation.tenantId, tenantName: '', permissions: ['logbook:read']
       },
       guardBook: [{
         id: 'local-stale-entry',
@@ -539,6 +545,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
 
   test('preserves the current offline view when a post-sync snapshot endpoint fails', async () => {
     mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
     mockedApi.get.mockImplementation((endpoint: string) => endpoint === '/logbook'
       ? Promise.reject(new Error('Snapshot temporarily unavailable'))
       : readEndpoint(endpoint));
@@ -1088,7 +1095,50 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
 
     await useSecurityStore.getState().loadTenantData();
 
-    expect(mockedApi.get).toHaveBeenCalledWith('/sops');
+    expect(mockedApi.get.mock.calls.map(([endpoint]) => endpoint)).toEqual(['/sops']);
+    expect(useSecurityStore.getState().dataLoadError).toBeNull();
+  });
+
+  test.each([
+    { permissions: ['logbook:read'] },
+    { permissions: [], sitePermissions: [{ code: 'logbook:read', siteId: siteRow.id }] },
+    { permissions: [], ownPermissions: ['logbook:read'] }
+  ])('restores scoped read grants without broadening tenant permissions: %j', async grants => {
+    const identity = { ...readUser, ...grants, userId: readUser.id };
+    mockedApi.get.mockImplementation((endpoint: string) => endpoint === '/auth/me'
+      ? Promise.resolve(identity)
+      : readEndpoint(endpoint));
+    const originalSync = useSecurityStore.getState().triggerManualSync;
+    useSecurityStore.setState({ triggerManualSync: vi.fn().mockResolvedValue(undefined) });
+    try {
+      await useSecurityStore.getState().restoreSession();
+      const state = useSecurityStore.getState();
+      expect(mockedApi.get.mock.calls.map(([endpoint]) => endpoint)).toEqual(['/auth/me', '/logbook']);
+      expect(state.authUser?.permissions).toEqual(grants.permissions);
+      expect(state.authUser?.sitePermissions).toEqual('sitePermissions' in grants ? grants.sitePermissions : []);
+      expect(state.authUser?.ownPermissions).toEqual('ownPermissions' in grants ? grants.ownPermissions : []);
+      expect(state.guardBook.map(entry => entry.id)).toEqual([logbookRow.id]);
+      expect(state.dataLoadError).toBeNull();
+    } finally {
+      useSecurityStore.setState({ triggerManualSync: originalSync });
+    }
+  });
+
+  test('does not request module data for an ungranted administrator', async () => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: { ...readUser, permissions: [], isSuperAdmin: true } });
+    await useSecurityStore.getState().loadTenantData();
+    expect(mockedApi.get).not.toHaveBeenCalled();
+    expect(useSecurityStore.getState().dataLoadError).toBeNull();
+  });
+
+  test('keeps an actual server denial visible when a previously granted read is revoked', async () => {
+    mockedApi.get.mockRejectedValue(new ApiError(403, 'Leserecht wurde entzogen'));
+    useSecurityStore.setState({ authUser: { ...readUser, permissions: ['logbook:read'] } });
+    await useSecurityStore.getState().loadTenantData();
+    expect(mockedApi.get.mock.calls.map(([endpoint]) => endpoint)).toEqual(['/logbook']);
+    expect(useSecurityStore.getState().guardBook).toEqual([]);
+    expect(useSecurityStore.getState().dataLoadError).toContain('Leserecht wurde entzogen');
   });
 
   test('offline capture is durably bound to user, tenant, assignment and exact version before showing pending', async () => {
@@ -1544,6 +1594,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
 
   test('Kundenbearbeitung und Archivierung verwenden die persistente API mit Revisionsstand', async () => {
     mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
     await useSecurityStore.getState().loadTenantData();
     expect(useSecurityStore.getState().clients).toHaveLength(1);
     expect(useSecurityStore.getState().isOnline).toBe(true);

@@ -254,9 +254,16 @@ test('publishes an independently reviewed SOP and retries one employee acknowled
   await dialog.getByRole('button', { name: 'Details schließen', exact: true }).click();
   await logout(page);
 
+  const unauthorizedReads = [];
+  const basePaths = new Set(['/customers', '/sites', '/employees', '/logbook', '/shifts', '/keys', '/tasks']);
+  page.on('request', request => {
+    const path = new URL(request.url()).pathname.replace(/^\/api\/v1/, '');
+    if (request.method() === 'GET' && basePaths.has(path)) unauthorizedReads.push(path);
+  });
   await login(page, 'reader@browser.test.invalid');
   const readerIdentity = (await (await page.request.get('/api/v1/auth/me')).json()).data;
   expect([...readerIdentity.permissions].sort()).toEqual(['sop:acknowledge', 'sop:read']);
+  await expect(page.getByLabel('Sitzungsrolle', { exact: true })).toHaveText('BrowserSOPReader');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
   dialog = await openSOP();
@@ -316,5 +323,8 @@ test('publishes an independently reviewed SOP and retries one employee acknowled
   await page.reload();
   await page.getByRole('button', { name: 'Dienstanweisungen & QM', exact: true }).click();
   await expect(article.getByText(/Serverbestätigt/)).toBeVisible();
+  expect(unauthorizedReads).toEqual([]);
+  await expect(page.getByLabel('Sitzungsrolle', { exact: true })).toHaveText('BrowserSOPReader');
+  await expect(page.getByText(/^Daten nicht vollständig geladen:/)).toBeHidden();
   await logout(page);
 });
