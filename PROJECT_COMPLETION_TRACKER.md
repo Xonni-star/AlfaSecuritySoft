@@ -25,6 +25,12 @@ after correction. Correction CI 43908926864 passed **7/7** on that exact SHA,
 including the Linux restore and both browser suites. Exact evidence is maintained in
 [current status](./PROJECT_CURRENT_STATUS.md).
 
+Documentation-only rerun 43910126170 on `71e9c3f` completed 6/7: all three real
+browser cases passed, but immediate cleanup inspection raced Docker auto-removal.
+The runner now performs at most ten successful container-list checks, preserving
+failure on Docker errors or a remaining container. Two fresh local cycles passed
+3/3 each including cleanup; hosted follow-up is required.
+
 | ID | Bereich | Aufgabe | Priorität | Status | Dateien / Umsetzung | Abnahmekriterien und Nachweis |
 |---|---|---|---|---|---|---|
 | MIG-011 | Datenbank | Veröffentlichte Migrationsprüfsummen erhalten | P0 | ERLEDIGT | `001_initial_schema.sql`, `004_operational_delete_privileges.sql`, neue `042_guardbook_technical_integrity_message.sql`, `migrations.test.ts` | 001/004 entsprechen wieder dem veröffentlichten PR-Head; Textkorrektur erfolgt additiv in 042. Echter Upgrade-Test 041→042 erhält bisherige History/Checksums, prüft erneuten No-op sowie verweigertes DELETE/Kernfeld-UPDATE. Vollständige Backend-Suite: 35/35 Suites, 534/534 Tests bestanden. |

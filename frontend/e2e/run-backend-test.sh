@@ -8,12 +8,18 @@ CONTAINER="$(docker run --rm -d -p 127.0.0.1::5432 --label securityops.browser-t
     -e POSTGRES_DB=securityops_browser -e POSTGRES_USER=secops_admin \
     -e POSTGRES_HOST_AUTH_METHOD=trust postgres:16-alpine)"
 cleanup() {
+    local remaining
     docker stop --time 10 "$CONTAINER" >/dev/null
-    if docker inspect "$CONTAINER" >/dev/null 2>&1; then
-        echo "Fehler: Isolierter Browser-Testcontainer wurde nicht entfernt." >&2
-        exit 1
-    fi
-    echo "[TEST] Isolierter Browser-Testcontainer entfernt."
+    for _ in $(seq 1 10); do
+        remaining="$(docker ps -aq --no-trunc --filter "id=$CONTAINER")"
+        if [ -z "$remaining" ]; then
+            echo "[TEST] Isolierter Browser-Testcontainer entfernt."
+            return
+        fi
+        sleep 1
+    done
+    echo "Fehler: Isolierter Browser-Testcontainer wurde nicht entfernt." >&2
+    exit 1
 }
 trap cleanup EXIT
 

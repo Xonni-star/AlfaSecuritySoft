@@ -8,7 +8,7 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
-**Published code revision:** `4524f121420dd66829feafe7b7aed07aece7a338`
+**Fully hosted-verified code revision:** `4524f121420dd66829feafe7b7aed07aece7a338`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
 Later documentation-only commits are not included in this code-revision identifier.
@@ -27,6 +27,16 @@ on the exact correction SHA completed **7/7 successfully**, including the
 separate fixture, real-browser/root, Linux restore, backend, DMS, ClamAV and
 production-Docker jobs. The failed first run is not reclassified. These are
 isolated automated checks, not provider/device/production acceptance.
+
+**Documentation-only follow-up:** `71e9c3f82f1c66735b92d27a6871305a6194d9af`
+completed [CI 43910126170](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43910126170)
+with **6/7** jobs passing. All three real browser tests passed, but their cleanup
+checked too soon for Docker's asynchronous `--rm` removal. The runner now waits
+for up to ten successful container-list checks instead of treating an immediate
+inspect result as final; Docker command failures cannot count as removal.
+Two fresh isolated local cycles passed **3/3 each**, including cleanup.
+Hosted verification of this follow-up is still required; no application test
+was skipped or assertion removed.
 
 **SOP functional package (`67a1185`):** The authenticated Chromium suite passes **3/3**.
 It includes account/tenant switches, owner-bound replay, session-restoring reload

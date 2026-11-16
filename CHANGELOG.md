@@ -25,6 +25,7 @@
 
 ### Fehlerkorrekturen
 
+- Echter Browser-Runner wartet nach `docker stop` mit höchstens zehn erfolgreichen Containerlisten-Prüfungen auf die asynchrone `--rm`-Entfernung. Docker-Fehler werden nicht als erfolgreiche Bereinigung behandelt; die Ressourcenprüfung bleibt verpflichtend.
 - Offline-Browser-Fixture besitzt explizite Standort-/Mitarbeiter-Leserechte und wartet vor Erfassung auf die erwarteten Referenz-IDs; kein Umgehen des produktiven Rechte-Gatings.
 - Isolierter Restore-Drill erzeugt Archive mit UID/GID des aufrufenden Restore-Benutzers und prüft Besitz, Lesbarkeit sowie weiterhin private `0600`-Rechte. Behebt den Linux-Bindmount-Zugriffsfehler ohne Änderung der Produktionsrechte.
 - Berechtigungsgerechtes Datenladen: reine SOP-Konten rufen keine sieben unberechtigten Basismodule mehr ab; Standort-/Eigenrechte bleiben beim Session-Restore erhalten. Tatsächliche API-Fehler bleiben sichtbar und werden nicht pauschal als unerreichbares Backend bezeichnet.

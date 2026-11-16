@@ -23,6 +23,12 @@ Projektabschluss und keine Produktions-, Sicherheits- oder Rechtsfreigabe.
   `xonni-star-phase9-docs-and-status-cleanup`. Ein zusätzlicher Phase-11-Branch
   wurde nicht angelegt; dies wird nicht als erledigt dargestellt.
 - Die Code-Commits wurden normal gepusht; keine Merges, Tags oder Deployments.
+- Der reine Dokumentations-Nachlauf `71e9c3f` in CI 43910126170 bestand 6/7:
+  alle drei Browserfälle bestanden, ihre sofortige Container-Cleanup-Prüfung
+  traf aber die noch laufende asynchrone Docker-Entfernung. Der Runner wartet
+  nun höchstens zehn positive Containerlisten-Prüfungen ab; Dockerfehler gelten
+  nicht als erfolgreiche Entfernung. Zwei frische lokale Zyklen bestanden
+  jeweils 3/3 samt Cleanup. Neuer gehosteter Nachweis noch erforderlich.
 
 ## Umgesetzte und lokal geprüfte Pakete
 
