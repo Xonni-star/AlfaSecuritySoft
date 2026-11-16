@@ -18,6 +18,7 @@
 - Backend- und Frontend-Regressionstests sichern beide Verhaltensweisen gegen spätere Rückfälle ab.
 - Browserbasierte Berichte quotieren und maskieren CSV-Werte, escapen Anführungszeichen und neutralisieren Formeleingaben.
 - Die Sync-Oberfläche zeigt für ownerlose Altanhänge nur noch einen generischen Hinweis. Dateimetadaten und Inhalte können nicht mehr angezeigt, exportiert oder verworfen werden; die lokalen Daten bleiben erhalten.
+- Der Restore spielt PostgreSQL-Dumps transaktional mit Fehlerabbruch ein; nach fehlgeschlagenem Restore bleiben Dienste gestoppt. Regressionstests decken Restore- und Resume-Fehlerpfade ab.
 - Der Chromium-Offline-Fixture-Test erwartet jetzt den tatsächlich ausgewählten Dateinamen.
 
 ## [2.0.0] – 2026-11-11
