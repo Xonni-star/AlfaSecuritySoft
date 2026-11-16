@@ -12,6 +12,16 @@ Alle Routen sind unter `/api/v1` verfügbar, verwenden die bestehende Session-/C
 
 Die Bestätigung ist an `employees.account_user_id` gebunden; E-Mail-Adressen werden nicht als Identitätsnachweis verwendet. Der Link wird explizit und mandantengeprüft über `PATCH /api/v1/employees/:id/account` hergestellt. Nur die Rolle `Personalverwaltung` erhält `employees:account:link`; ein allgemeines Recht zum Bearbeiten von Mitarbeitern reicht nicht. Benutzer mit `handovers:confirm` dürfen ihr eigenes Konto nicht neu einem Mitarbeiter zuordnen. Bestehende Mitarbeiter werden nicht anhand von E-Mail-Adressen automatisch zugeordnet. Nach der ersten Bestätigung sind die Protokollinhalte gesperrt. Rückfragen und Korrekturen werden als zusätzliche Historienereignisse gespeichert.
 
+Liste und Detail liefern `isOutgoingAccount` und `isIncomingAccount`: Der Server
+vergleicht die expliziten Teilnehmer-Kontozuordnungen mit der authentifizierten
+Benutzer-ID im Mandantenkontext, ohne fremde Konto-IDs zurückzugeben. Die UI
+verknüpft diese Momentaufnahme mit dem Bestätigungsrecht und Protokollstatus;
+sie leitet Teilnahme nicht aus Kontakt-E-Mails oder dem Zugriff auf die
+Mitarbeiterliste ab. Auch bei geänderter Kontaktadresse beziehungsweise ohne
+`employees:read` bleibt ein zugeordnetes Konto bedienbar. Die Flags ersetzen
+keine Schreibautorisierung: Jede Bestätigung prüft Kontozuordnung, Mandant,
+Recht und Revision erneut serverseitig unter Sperre.
+
 ## Routen
 
 | Methode und Pfad | Recht | Zweck |

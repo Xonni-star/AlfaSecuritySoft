@@ -106,6 +106,25 @@ zero exact wrapping-select label matches versus one precise prefix match,
 with the actual nonempty selected value preserved. The three select-label
 locators are corrected; every persistence/replay assertion and budget remains.
 Another exact hosted run must establish the new journey's real behavior.
+Second exact run CI43963628561 on `5f73f976a849dde8ca068e693f670ec2d2a228c8`
+also passed six jobs and browser 9/10 with cleanup. Downloaded logs again
+confirm frontend356/backend549. After passing the native selectors it failed
+on a GuardBook-only offline banner; the new journey now waits for the genuine
+shared offline status button. Full hosted acceptance is still open.
+
+**Subsequent FNL-023 — IMPLEMENTIERT; full verification OFFEN:** Four UI cases
+and two controller cases initially failed: legitimate mapped participants
+without employee-list access could not confirm, while equal contact emails
+displayed misleading actions. List/detail responses now expose only the
+authenticated viewer's `isOutgoingAccount`/`isIncomingAccount` mapping flags.
+The UI combines them with existing permission/status checks, not employee
+contact addresses. The actual confirmation endpoint's tenant/account/version
+authorization is unchanged; no account IDs are newly disclosed.
+Targeted frontend26/backend11, typecheck and both builds passed locally.
+A new real PostgreSQL/API case exercises all three viewers, differing/equal
+contact email, denied employee-list access and both actual confirmations;
+it has not run locally because Docker is unavailable. New exact hosted
+verification is required; this is not a new exploit or complete role matrix.
 
 **Published FNL-018 — IMPLEMENTIERT UND GETESTET:** Sync
 now checks identity after awaited attachment inspection and post-sync snapshots

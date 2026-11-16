@@ -356,9 +356,24 @@ waits for the existing shared `Offline. Verbindung wiederherstellen` status
 button, as the real customer journey already does. No behavior assertions or
 budgets were removed. Job log: `finalization-handover-context-hosted-root-rerun.log`.
 
-1. Publish coherent FNL-022 and verify all hosted jobs on the exact new full SHA;
-   read actual logs and fix the new browser journey/product if it fails.
-   The preceding 7/7 does not validate these newer changes or the tenth journey.
+FNL-023 found a concrete functional confirmation mismatch: UI inferred participant
+identity from employee contact email and employee-list access, whereas the
+existing server correctly requires explicit `employee.account_user_id`.
+Four UI and two controller cases failed before correction (red logs
+`finalization-handover-linkage-frontend-red.log` and
+`finalization-handover-linkage-backend-red.log`).
+Server list/detail now return authenticated-viewer mapping booleans only,
+not linked account IDs; UI combines them with existing permission and status.
+No server confirmation authorization was loosened. Targeted frontend26,
+backend11, typecheck and both builds passed locally. A new genuine PostgreSQL/
+API test verifies three viewers, mismatching/equal contact email, denied employee
+read and both actual confirmations. It is not yet executed: Docker remains
+unavailable locally, so the exact hosted run must establish its result.
+
+1. Publish coherent FNL-023 plus the FNL-022 real shared-status selector correction.
+   Verify all hosted jobs on the exact full SHA; read actual logs and fix the
+   new browser journey/API regression if either fails. Earlier seven-job
+   success does not validate these changes; the two 9/10 runs remain failures.
 2. Repeat a bounded convergence audit for new concrete functional defects,
    misleading current UI/docs and missing directly relevant regressions.
    Do not turn actual API 403s or functional test fixture errors into unproven
@@ -369,11 +384,9 @@ budgets were removed. Job log: `finalization-handover-context-hosted-root-rerun.
    no remaining `throw new Error('offline')` or online-state-based catch fallback
    in the active store/controllers/components; this is not exhaustive coverage.
    Inspect remaining real workflow boundaries, not already corrected handlers.
-   The FNL-022 render/context defects above are now corrected, not a remaining
-   reproduction task. Next inspect actual handover confirmation eligibility:
-   current UI matches employee email, whereas the backend uses explicit
-   employee account linkage. Establish a real user-visible mismatch before
-   adding a correction; this is not a reported authorization bypass.
+   FNL-022 render/context defects and FNL-023 confirmation eligibility are now
+   corrected with the precise hosted gaps above, not fresh reproduction tasks.
+   No authorization bypass or complete module acceptance is claimed.
 3. Keep the requested final documents/tracker current; no ESLint configuration
    or script was found, so do not claim lint ran.
 4. Merge PR #66 only after

@@ -150,8 +150,10 @@ describe('HandoversModule', () => {
       createdByName: 'Test',
       outgoingEmployeeId: 'employee-1',
       outgoingEmployeeName: 'Alex Alt',
+      isOutgoingAccount: true,
       incomingEmployeeId: 'employee-2',
       incomingEmployeeName: 'Sam Neu',
+      isIncomingAccount: false,
       openTasksCount: 0,
       createdTasksCount: 0,
       documentCount: 0
@@ -350,5 +352,49 @@ describe('HandoversModule', () => {
     await act(async () => create.click());
     expect(container.querySelector<HTMLSelectElement>('form select')?.value).toBe('site-1');
     expect(reads).toBeLessThan(12);
+  });
+
+  test.each([
+    ['pending_handover_confirmation', 'isOutgoingAccount', 'Übergabe bestätigen', 'confirm'],
+    ['pending_takeover_acknowledgement', 'isIncomingAccount', 'Übernahme bestätigen', 'acknowledge']
+  ])('uses the mapped account for %s without employee-list visibility', async (status, accountFlag, label, action) => {
+    mocks.state.authUser.permissions = ['handovers:read', 'handovers:confirm'];
+    mocks.state.isOnline = true;
+    mocks.state.getTenantEmployees.mockReturnValue([]);
+    const handover = { ...persistedHandover(), status, [accountFlag]: true };
+    mocks.get.mockImplementation((path: string) => {
+      if (path.startsWith('/handovers?')) return Promise.resolve({ items: [handover], total: 1 });
+      if (path.endsWith('/tasks')) return Promise.resolve([]);
+      return Promise.resolve({ items: [] });
+    });
+    mocks.post.mockResolvedValue({});
+    await act(async () => root.render(<HandoversModule />));
+    const button = Array.from(container.querySelectorAll('button')).find(item => item.textContent === label);
+    expect(button).toBeDefined();
+    await act(async () => button!.click());
+    expect(mocks.post).toHaveBeenCalledWith(`/handovers/${handover.id}/${action}`, expect.objectContaining({
+      expectedRevisionVersion: 7
+    }));
+  });
+
+  test.each([
+    ['pending_handover_confirmation', 'Übergabe bestätigen'],
+    ['pending_takeover_acknowledgement', 'Übernahme bestätigen']
+  ])('does not infer %s eligibility from equal contact emails', async (status, label) => {
+    mocks.state.authUser.permissions = ['handovers:read', 'handovers:confirm'];
+    mocks.state.isOnline = true;
+    mocks.state.getTenantEmployees.mockReturnValue([
+      { id: 'employee-1', email: mocks.state.authUser.email },
+      { id: 'employee-2', email: mocks.state.authUser.email }
+    ]);
+    const handover = { ...persistedHandover(), status, isOutgoingAccount: false, isIncomingAccount: false };
+    mocks.get.mockImplementation((path: string) => {
+      if (path.startsWith('/handovers?')) return Promise.resolve({ items: [handover], total: 1 });
+      if (path.endsWith('/tasks')) return Promise.resolve([]);
+      return Promise.resolve({ items: [] });
+    });
+    await act(async () => root.render(<HandoversModule />));
+    expect(Array.from(container.querySelectorAll('button')).some(item => item.textContent === label)).toBe(false);
+    expect(mocks.post).not.toHaveBeenCalled();
   });
 });

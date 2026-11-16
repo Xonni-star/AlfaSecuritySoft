@@ -243,6 +243,42 @@ afterAll(async () => {
 });
 
 describe('Handover authorization and persistence regressions (PostgreSQL/API)', () => {
+  test('participant eligibility and confirmations use account linkage without employee-read permission or matching contact email', async () => {
+    const handoverId = await createHandover();
+    await migrationPool.query('UPDATE employees SET email=$1 WHERE tenant_id=$2 AND id=$3',
+      [emails.outsider, tenantId, employeeIds[0]]);
+    try {
+      for (const viewer of ['outgoing', 'incoming', 'outsider'] as const) {
+        const employees = await request(app).get('/api/v1/employees').set(authHeaders(tokens[viewer]));
+        expect(employees.status).toBe(403);
+        for (const path of [`/api/v1/handovers?siteId=${siteId}`, `/api/v1/handovers/${handoverId}`]) {
+          const response = await request(app).get(path).set(authHeaders(tokens[viewer]));
+          expect(response.status).toBe(200);
+          const handover = path.includes('?')
+            ? response.body.data.items.find((item: { id: string }) => item.id === handoverId)
+            : response.body.data;
+          expect(handover).toMatchObject({
+            isOutgoingAccount: viewer === 'outgoing',
+            isIncomingAccount: viewer === 'incoming'
+          });
+        }
+      }
+      const confirmed = await request(app).post(`/api/v1/handovers/${handoverId}/confirm`)
+        .set(authHeaders(tokens.outgoing))
+        .send({ clientMutationId: randomUUID(), expectedRevisionVersion: 1 });
+      expect(confirmed.status).toBe(200);
+      expect(confirmed.body.data.status).toBe('pending_takeover_acknowledgement');
+      const acknowledged = await request(app).post(`/api/v1/handovers/${handoverId}/acknowledge`)
+        .set(authHeaders(tokens.incoming))
+        .send({ clientMutationId: randomUUID(), expectedRevisionVersion: 1 });
+      expect(acknowledged.status).toBe(200);
+      expect(acknowledged.body.data.status).toBe('completed');
+    } finally {
+      await migrationPool.query('UPDATE employees SET email=$1 WHERE tenant_id=$2 AND id=$3',
+        [emails.outgoing, tenantId, employeeIds[0]]);
+    }
+  });
+
   test('account linking requires its dedicated permission and rejects confirmer self-linking', async () => {
     const grantedRoles = await migrationPool.query(
       `SELECT r.name FROM role_permissions rp

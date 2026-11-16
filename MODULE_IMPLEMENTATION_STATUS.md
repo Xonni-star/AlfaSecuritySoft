@@ -33,6 +33,7 @@ All paths below are relative to `frontend/`. The routes are registered in `backe
 
 ## Verification boundaries
 
+- FNL-023 replaces handover contact-email inference with authenticated list/detail participant flags. Four UI/two controller regressions initially failed; targeted frontend26/backend11 and typecheck/both builds passed. A new real PostgreSQL/API mapping/limited-role/two-confirmation case is added but not yet run because Docker is unavailable locally. Exact hosted execution is required; server write guards remain unchanged.
 - FNL-022 corrects the actual getter-array handover render loop, private-context reset and stale list/detail/write completion. Eight original regressions failed; full frontend 356/356, typecheck/build passed locally. A new tenth real handover offline/lost-receipt journey is added but not yet passed; the local runner failed before stack startup because Docker was unavailable. Do not attribute this work to the preceding CI.
 - FNL-021 is now hosted-verified: `a7af0bcc352f9274b02b7be19c9befeb598a0d05`, CI 43960314043 7/7, read logs 348/549/9 with cleanup. This resolves its historical hosted prerequisite below, not FNL-022.
 - FNL-021 adds eight controlled component cases (six originally failing) for owner-bound local patrol/handover restore, immediate clearing, late completion/errors and missing owner. Combined targeted frontend 171/171, typecheck/build passed; new exact hosted full verification remains separate. These are not physical-device or full authenticated patrol/handover evidence.

@@ -30,8 +30,10 @@ interface Handover {
   createdByName: string;
   outgoingEmployeeId: string;
   outgoingEmployeeName: string;
+  isOutgoingAccount: boolean;
   incomingEmployeeId: string;
   incomingEmployeeName: string;
+  isIncomingAccount: boolean;
   openTasksCount: number;
   createdTasksCount: number;
   documentCount: number;
@@ -242,12 +244,8 @@ export const HandoversModule: React.FC = () => {
   }, [identityKey]);
 
   const selected = handovers.find(handover => handover.id === selectedId);
-  const selectedOutgoingEmployee = employees.find(employee => employee.id === selected?.outgoingEmployeeId);
-  const selectedIncomingEmployee = employees.find(employee => employee.id === selected?.incomingEmployeeId);
-  const canConfirmHandover = Boolean(canConfirm && selectedOutgoingEmployee?.email &&
-    selectedOutgoingEmployee.email.toLowerCase() === authUser?.email.toLowerCase());
-  const canAcknowledgeHandover = Boolean(canConfirm && selectedIncomingEmployee?.email &&
-    selectedIncomingEmployee.email.toLowerCase() === authUser?.email.toLowerCase());
+  const canConfirmHandover = Boolean(canConfirm && selected?.isOutgoingAccount);
+  const canAcknowledgeHandover = Boolean(canConfirm && selected?.isIncomingAccount);
 
   const listQuery = useMemo(() => {
     const params = new URLSearchParams({ limit: '50', offset: String(page * 50) });
