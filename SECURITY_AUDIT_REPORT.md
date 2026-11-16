@@ -29,12 +29,15 @@ guards. Eight new component cases (six originally failing), combined targeted
 171/171 and typecheck/build passed. Its exact CI 43960314043 on
 `a7af0bcc352f9274b02b7be19c9befeb598a0d05` now passed 7/7; read logs
 348 frontend/549 backend/9 actual browser and cleanup.
-Subsequent FNL-022 corrects eight reproduced handover render/context defects:
-actual fresh-getter render loop, private draft reset and stale read/write
-completion. Local full frontend 356/356 and typecheck/build passed. A tenth
-genuine offline handover/lost-receipt case is added but has not run successfully:
-local Docker was unavailable before stack startup; exact hosted execution is
-open. This functional correction is not a new exploit finding or security review.
+FNL-022–026 now passed exact CI43968759380 on
+`aa1d7738f9074393533fca74d0914ab2a3ab1a9d`, **7/7**;
+read logs **368 frontend/553 backend/10 genuine browser journeys** plus cleanup.
+This covers actual account-linked confirmation, current document metadata and
+per-mutation replay evidence; prior failed runs remain historical failures.
+Subsequent FNL-027 corrects eight reproduced late-write/create draft-loss and
+owner-activation ABA cases. Targeted42/typecheck/build passed; its own hosted
+verification remains open. This is functional evidence, not a new exploit
+finding or security review. Local Docker remains unavailable.
 No new comprehensive security, device or full role/object acceptance is claimed.
 **Scope:** PR #66 changes, browser-based report CSV export, local legacy-attachment recovery, backend authorization boundaries, PostgreSQL tenant/RLS context, authentication/session handling, and web security configuration. This is not a comprehensive security audit, penetration test, or certification.
 

@@ -120,13 +120,16 @@ Acht neue Komponentenfälle, sechs ursprünglich rot; kombiniert 171/171
 gezielt, Typprüfung/Build bestanden. Inzwischen hat die exakte CI 43960314043
 auf `a7af0bcc352f9274b02b7be19c9befeb598a0d05` alle 7/7 Jobs bestanden;
 gelesene Logs 348/549/9 plus Cleanup.
-FNL-022 korrigiert acht reproduzierte Übergabe-Render-/Kontextfehler:
-Render-Schleife mit echten Getter-Arrays, private Entwurfsrücksetzung sowie
-alte Listen-/Detail-/Schreibabschlüsse. Lokal Frontend 356/356 in 36 Dateien,
-Typprüfung/Build bestanden. Eine zehnte echte Offline-Übergabe-Browserjourney
-mit verlorener echter Quittung ist ergänzt, aber noch nicht erfolgreich
-ausgeführt: Docker war lokal schon vor Stackstart nicht erreichbar.
-Exakte neue Hosted-Prüfung offen; kein bestätigter neuer Exploit oder Gesamtabschluss.
+FNL-022–026 sind auf `aa1d7738f9074393533fca74d0914ab2a3ab1a9d`
+durch CI43968759380 **7/7** bestätigt: gelesene Logs **368 Frontend/553 Backend/
+10 echte Browserjourneys** plus Cleanup. Das umfasst tatsächliche Konto-
+zuordnung/Bestätigungen, aktuelle Dokumentversionen statt Dokument-HTTP500
+und echte verlorene Quittungen mit vollständigen UUID-/Server-ID-Prüfungen.
+Frühere9/10-Fehlläufe bleiben historische Fehler, keine umgedeuteten Erfolge.
+Danach reproduzierte FNL-027 acht Entwurfsverlust-/Besitzeraktivierungsfälle;
+gezielt42, Typprüfung/Build bestanden, eigene Gesamt-CI noch offen.
+Kein bestätigter neuer Exploit oder Gesamtabschluss; Docker bleibt lokal
+nicht erreichbar, die erfolgreichen Integrationsprüfungen liefen gehostet.
 
 Verbindliche Details:
 [Tracker](./PROJECT_COMPLETION_TRACKER.md),

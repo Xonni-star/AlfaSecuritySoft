@@ -8,7 +8,7 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
-**Latest partial hosted evidence:** `9b79a03a4bc119e51f8f7933b3a82953715b6742`,
+**Historical partial hosted evidence:** `9b79a03a4bc119e51f8f7933b3a82953715b6742`,
 [CI 43966537946](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43966537946):
 read logs confirm **367 frontend / 552 backend**, **9/10 browser**, cleanup,
 and only **6/7 jobs**. The new handover journey passed, but its document read
@@ -18,17 +18,23 @@ FNL-025 corrects the actual current-version SQL/nullable metadata and adds a
 real API regression plus explicit browser document-response checks. FNL-026
 checks every original/replayed UUID and server ID across independently due
 retry batches. Local targeted UI **27/27**, controller **11/11**, typecheck
-and both builds passed. New complete hosted verification remains open.
+and both builds passed; the complete hosted result below closes this gap.
 
-**Fully hosted-verified code revision:** `a7af0bcc352f9274b02b7be19c9befeb598a0d05`
+**Fully hosted-verified code revision:** `aa1d7738f9074393533fca74d0914ab2a3ab1a9d`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
-Its exact [CI 43960314043](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43960314043)
-passed **7/7 jobs**; downloaded logs confirm frontend **348/348**, backend
-**549/549 in 35 suites**, real browser **9/9** and owned-container cleanup.
+Its exact [CI 43968759380](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43968759380)
+passed **7/7 jobs**; downloaded logs confirm frontend **368/368**, backend
+**553/553 in 35 suites**, real browser **10/10** and owned-container cleanup.
+This closes the historical FNL-022–026 hosted gaps below, including real
+participant confirmation, current document metadata and per-UUID replay checks.
+Subsequent FNL-027 reproduced eight write/creation-draft loss and owner-activation
+A-B-A cases. Independent draft revisions and monotonic owner activations now
+preserve newer drafts and pending operations; unchanged submissions still clear
+normally. Targeted42/42, typecheck/build pass; its exact hosted execution is open.
 This includes confirmed form writes, report grant/date/identity fixes, durable
 critical-incident follow-ups, truthful audit displays and delayed local-write
-identity isolation, plus FNL-013–021 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
+identity isolation, plus FNL-013–026 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
 and `5ef02b3ab0b9f711025405247e711f21d3ee9811` passed their own
 CI 43929519192 and 43928436875, 7/7 each.
 

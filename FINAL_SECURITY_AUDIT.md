@@ -115,13 +115,14 @@ Speicherergebnisse, mit acht neuen Komponentenfällen (sechs zunächst rot),
 kombiniert 171/171 gezielt und Typprüfung/Build. Die exakte CI 43960314043 auf
 `a7af0bcc352f9274b02b7be19c9befeb598a0d05` bestand inzwischen 7/7;
 gelesene Logs 348/549/9 plus Cleanup.
-FNL-022 korrigiert acht reproduzierte Übergabe-Render-/Kontextfehler:
-echte Getter-Render-Schleife, private Entwurfsrücksetzung und alte Lese-/
-Schreibabschlüsse. Lokal Frontend 356/356, Typprüfung/Build bestanden.
-Eine zehnte echte Offline-Übergabe-/Quittungs-Browserjourney ist ergänzt,
-aber noch ungeprüft, da Docker lokal vor Stackstart nicht erreichbar war.
-Neue exakte Hosted-Ausführung offen; kein neuer Exploitbefund oder
-umfassender Sicherheits-/Geräte-/Rollenabnahmenachweis.
+FNL-022–026 sind auf `aa1d7738f9074393533fca74d0914ab2a3ab1a9d`
+durch CI43968759380 **7/7** bestätigt; gelesene Logs **368/553/10** plus
+Cleanup. Echte Rollen-/Kontozuordnungsbestätigung, aktuelle DMS-Dateimetadaten
+und echte verlorene Quittungen sind im getesteten Umfang nachgewiesen.
+FNL-027 korrigiert danach acht tatsächlich reproduzierte Entwurfsverlust-/
+Besitzeraktivierungsfehler; gezielt42/Typprüfung/Build grün, eigene Gesamt-CI
+offen. Funktionale Evidenznachführung, kein neuer Securityreview oder
+Exploitbefund und kein umfassender Sicherheits-/Geräte-/Rollennachweis.
 
 Unberechtigte Reportanfragen wurden bereits vom Server abgewiesen; das
 Frontend vermeidet sie jetzt. Formularverlust, Zeitzonenvalidierung,

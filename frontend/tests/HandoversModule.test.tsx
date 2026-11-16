@@ -72,6 +72,38 @@ describe('HandoversModule', () => {
     field.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
+  function fieldValue(selector: string, value: string) {
+    const field = container.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(selector);
+    if (!field) throw new Error(`Missing field: ${selector}`);
+    const prototype = field instanceof HTMLSelectElement ? HTMLSelectElement.prototype
+      : field instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(prototype, 'value')?.set?.call(field, value);
+    field.dispatchEvent(new Event(field instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }));
+  }
+
+  function button(label: string) {
+    const result = Array.from(container.querySelectorAll('button')).find(item => item.textContent?.trim() === label);
+    if (!result) throw new Error(`Missing button: ${label}`);
+    return result;
+  }
+
+  async function renderDetailWrites() {
+    mocks.state.isOnline = true;
+    mocks.state.authUser.permissions.push('handovers:update', 'handovers:tasks', 'handovers:confirm', 'handovers:manage', 'documents:read');
+    mocks.state.getTenantDocuments.mockReturnValue([
+      { id: 'document-1', title: 'Document one' }, { id: 'document-2', title: 'Document two' }
+    ]);
+    mocks.get.mockImplementation(async (path: string) => {
+      if (path.includes('/dashboard')) return {};
+      if (path.startsWith('/handovers?')) return {
+        items: [persistedHandover(), persistedHandover('handover-2', 'Objekt Süd')], total: 2
+      };
+      if (path.includes('/events')) return { items: [] };
+      return [];
+    });
+    await act(async () => root.render(<HandoversModule />));
+  }
+
   beforeEach(() => {
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
     container = document.createElement('div');
@@ -218,6 +250,97 @@ describe('HandoversModule', () => {
     await act(async () => root.render(<HandoversModule />));
     expect(container.textContent).toContain('Current version (application/pdf, 20 Bytes)');
     expect(container.textContent).toContain('Metadata only (Dateimetadaten nicht verfügbar)');
+  });
+
+  test.each(['edited', 'reopened'] as const)('a delayed local create cannot close or clear an %s creation draft', async change => {
+    let finish!: (value: object) => void;
+    mocks.enqueueMutation.mockReturnValueOnce(new Promise<object>(resolve => { finish = resolve; }));
+    await act(async () => root.render(<HandoversModule />));
+    await act(async () => button('Neue Übergabe').click());
+    await act(async () => setDraft('submitted create'));
+    await act(async () => button('Übergabe lokal sichern').click());
+    if (change === 'reopened') {
+      await act(async () => button('Neue Übergabe').click());
+      await act(async () => button('Neue Übergabe').click());
+    } else await act(async () => setDraft('new creation draft'));
+    await act(async () => finish({}));
+    expect(container.querySelector<HTMLTextAreaElement>('form textarea')?.value)
+      .toBe(change === 'reopened' ? 'submitted create' : 'new creation draft');
+    await act(async () => button('Übergabe lokal sichern').click());
+    expect(container.querySelector('form')).toBeNull();
+    expect(mocks.enqueueMutation).toHaveBeenCalledTimes(2);
+  });
+
+  test.each(['edit', 'task', 'note', 'document'] as const)('a delayed %s success retains a newer draft, which can then be saved normally', async kind => {
+    await renderDetailWrites();
+    let finish!: (value: object) => void;
+    const pending = new Promise<object>(resolve => { finish = resolve; });
+    if (kind === 'edit') mocks.patch.mockReturnValueOnce(pending);
+    else mocks.post.mockReturnValueOnce(pending);
+    if (kind === 'edit') await act(async () => button('Entwurf bearbeiten').click());
+    const selector = kind === 'edit' ? 'form textarea'
+      : kind === 'task' ? '[aria-label="Aufgabenbezeichnung"]'
+        : kind === 'note' ? '[aria-label="Rückfrage oder Korrekturtext"]' : '[aria-label="DMS-Dokument auswählen"]';
+    await act(async () => {
+      fieldValue(selector, kind === 'document' ? 'document-1' : 'submitted draft');
+      if (kind === 'task') fieldValue('[aria-label="Aufgabenzuständige Person"]', 'employee-1');
+    });
+    const submit = () => {
+      if (kind === 'note' || kind === 'document') button(kind === 'note' ? 'Rückfrage' : 'Verknüpfen').click();
+      else container.querySelector(selector)!.closest('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    };
+    await act(async () => submit());
+    if (kind === 'edit') {
+      await act(async () => Array.from(container.querySelectorAll('button')).find(item => item.textContent?.includes('Objekt Süd'))!.click());
+      await act(async () => button('Entwurf bearbeiten').click());
+    }
+    const newer = kind === 'document' ? 'document-2' : 'newer private draft';
+    await act(async () => fieldValue(selector, newer));
+    await act(async () => finish({}));
+    expect(container.querySelector<HTMLInputElement>(selector)?.value).toBe(newer);
+    expect(button('Hinzufügen').disabled).toBe(false);
+    mocks.post.mockReset().mockResolvedValue({});
+    mocks.patch.mockReset().mockResolvedValue({});
+    await act(async () => submit());
+    if (kind === 'edit') expect(container.querySelector(selector)).toBeNull();
+    else expect(container.querySelector<HTMLInputElement>(selector)?.value).toBe('');
+  });
+
+  test('a note edited away and back remains a new draft after the old write completes', async () => {
+    await renderDetailWrites();
+    let finish!: (value: object) => void;
+    mocks.post.mockReturnValueOnce(new Promise<object>(resolve => { finish = resolve; }));
+    const selector = '[aria-label="Rückfrage oder Korrekturtext"]';
+    await act(async () => fieldValue(selector, 'same text'));
+    await act(async () => button('Rückfrage').click());
+    await act(async () => fieldValue(selector, 'different text'));
+    await act(async () => fieldValue(selector, 'same text'));
+    await act(async () => finish({}));
+    expect(container.querySelector<HTMLInputElement>(selector)?.value).toBe('same text');
+  });
+
+  test('a write from an earlier owner activation cannot clear a returned owner draft or release its pending write', async () => {
+    await renderDetailWrites();
+    let finishOld!: (value: object) => void;
+    let finishNew!: (value: object) => void;
+    mocks.post.mockReturnValueOnce(new Promise<object>(resolve => { finishOld = resolve; }))
+      .mockReturnValueOnce(new Promise<object>(resolve => { finishNew = resolve; }));
+    const selector = '[aria-label="Rückfrage oder Korrekturtext"]';
+    await act(async () => fieldValue(selector, 'old activation draft'));
+    await act(async () => button('Rückfrage').click());
+    mocks.state.authUser = { ...mocks.state.authUser, id: 'user-2' };
+    await act(async () => root.render(<HandoversModule />));
+    mocks.state.authUser = { ...mocks.state.authUser, id: 'user-1' };
+    await act(async () => root.render(<HandoversModule />));
+    await act(async () => fieldValue(selector, 'returned owner draft'));
+    await act(async () => button('Rückfrage').click());
+    await act(async () => finishOld({}));
+    const observed = {
+      draft: container.querySelector<HTMLInputElement>(selector)?.value,
+      busy: button('Hinzufügen').disabled
+    };
+    await act(async () => finishNew({}));
+    expect(observed).toEqual({ draft: 'returned owner draft', busy: true });
   });
 
   test('lists only the current same-tenant owner local queue', async () => {

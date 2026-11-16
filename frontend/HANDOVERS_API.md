@@ -44,8 +44,6 @@ Recht und Revision erneut serverseitig unter Sperre.
 | `POST /handovers/:id/documents` | `handovers:manage`, `documents:read` | Vorhandenes DMS-Dokument ohne Dateiduplikat verknüpfen |
 | `POST /handovers/sync` | `handovers:create` (legacy `handover:create` ebenfalls akzeptiert) | Idempotente Übergabe-Outbox-Mutationen synchronisieren |
 
-Listenparameter:
-
 Die Dokumentliste liest `mime_type` und `size_bytes` aus der aktuellen
 `document_versions`-Zeile (`version_number = documents.current_version`),
 mandanten- und RLS-gebunden. Archivierte Dokumente bleiben ausgeschlossen.
@@ -53,6 +51,8 @@ Verknüpfte Metadatensätze ohne sichtbare aktuelle Dateiversion bleiben
 aufgelistet; beide Dateifelder sind dann `null`, die UI zeigt ausdrücklich
 „Dateimetadaten nicht verfügbar“. Das behauptet weder vorhandene Originalbytes
 noch einen erfolgreichen Download oder Virenscan.
+
+Listenparameter:
 
 - `siteId`, `employeeId`, `status`, `from`, `to`, `search`
 - `openTasks=true|false`, `pendingConfirmation=true|false`
@@ -94,6 +94,14 @@ Eine spätere Entwurfsänderung benötigt `expectedVersion`. Aufgabenänderungen
 Bei einer späteren Aufgabenänderung wird ein neu gesetzter `assignedEmployeeId` serverseitig gegen Mitarbeiter desselben Mandanten geprüft. Nicht vorhandene oder fremdmandantige Mitarbeiterzuordnungen werden abgewiesen; ein nicht übermittelter Wert lässt die bisherige Zuweisung unverändert.
 
 ## Offline-Synchronisierung
+
+Schreib-/Speicherabschlüsse leeren oder schließen nur den tatsächlich
+übermittelten Entwurfsstand. Neuere Änderungen an Erfassung, Protokoll,
+Aufgabe, Notiz oder Dokumentauswahl bleiben erhalten, auch nach erneutem
+Öffnen beziehungsweise Auswahlwechsel. Jede erneute Besitzeraktivierung
+besitzt einen neuen internen Kontext, auch bei A-B-A; alte Abschlüsse lösen
+keine aktuelle Pending-Operation. Das macht lokale Speicherung weiterhin
+nicht zur Serverbestätigung.
 
 Die lokale Warteschlangenansicht liest ausschließlich Mutationen des aktuellen
 Mandanten und angemeldeten Benutzers. Ein Kontenwechsel leert die bisherige

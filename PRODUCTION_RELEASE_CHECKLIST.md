@@ -48,10 +48,13 @@ Test, ein Merge und ein erfolgreiches Containerimage ersetzen sie nicht.
       kombiniert 171/171 gezielt und Typprüfung/Build bestanden. Exakte CI
       43960314043 auf a7af0bcc352f9274b02b7be19c9befeb598a0d05 bestand 7/7;
       gelesene Logs 348/549/9 plus Cleanup.
-- [ ] FNL-022-Gesamtprüfung: acht Übergabe-Render-/Kontextfehler reproduziert und
-      korrigiert; lokal Frontend 356/356, Typprüfung/Build bestanden. Neue zehnte
-      Browserjourney ist noch nicht erfolgreich gelaufen: Docker lokal vor
-      Stackstart nicht erreichbar. Exakte Hosted-Ausführung bleibt erforderlich.
+- [x] FNL-022–026-Gesamtprüfung: exakte CI43968759380 auf
+      aa1d7738f9074393533fca74d0914ab2a3ab1a9d bestand7/7; gelesene Logs
+      368 Frontend/553 Backend/10 echte Browser plus Cleanup, einschließlich
+      realer Bestätigungen, Dokument-HTTP200 und UUID-genauem Quittungs-Replay.
+- [ ] FNL-027-Gesamtprüfung: acht Entwurfsverlust-/Besitzeraktivierungsfälle
+      tatsächlich zunächst rot; gezielt42/Typprüfung/Build grün. Eigene
+      exakte Hosted-Ausführung bleibt erforderlich.
 
 Diese Haken bestätigen nur den beschriebenen Entwicklungsnachweis;
 die exakten Revisionen stehen im [Projektstatus](./PROJECT_CURRENT_STATUS.md).

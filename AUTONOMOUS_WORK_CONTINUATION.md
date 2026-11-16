@@ -408,9 +408,26 @@ deadlines, so every retry need not contain both. The first genuine two-mutation
 receipt is still lost; every request/receipt UUID, both replayed UUIDs, all stable
 server IDs, one real incident/task and empty outbox remain mandatory.
 
-1. Publish FNL-025/026 and verify every hosted job on its exact full SHA.
-   Read actual logs/counts and resolve any new API/browser failure.
-   Earlier seven-job success does not validate these changes.
+FNL-022–026 are now fully hosted-verified on
+aa1d7738f9074393533fca74d0914ab2a3ab1a9d, CI43968759380 **7/7**.
+Read actual logs368 frontend,553 backend in35 suites,10 real browser journeys
+and owned-container cleanup. The added document PostgreSQL/API case passed;
+the browser now explicitly checks its real document200/empty list/no alert.
+
+Next FNL-027 actually reproduced eight write/creation draft-loss cases:
+old edit closes a newly selected editor, task/note/document successes clear
+newer fields, equal-text note A-B-A is erased, edited/reopened create closes
+after a delayed IndexedDB completion, and owner A-B-A lets the old activation
+clear a new draft/release its pending write. Independent draft revisions and
+monotonic owner activations correct these; current successful submissions
+still clear normally. Targeted42/typecheck/build pass. Logs:
+`finalization-handover-write-drafts-red.log`,
+`finalization-handover-create-drafts-red.log`,
+`finalization-handover-write-drafts-build.log`.
+
+1. Publish FNL-027 and verify every hosted job on its exact full SHA.
+   Read actual logs/counts and resolve any API/browser failure.
+   Earlier seven-job success does not validate these subsequent changes.
 2. Repeat a bounded convergence audit for new concrete functional defects,
    misleading current UI/docs and missing directly relevant regressions.
    Do not turn actual API 403s or functional test fixture errors into unproven

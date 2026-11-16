@@ -180,7 +180,13 @@ export const HandoversModule: React.FC = () => {
   const canManage = permissions.includes('handovers:manage');
   const canReadDocuments = permissions.includes('documents:read');
   const userId = authUser?.id || currentUserId;
-  const identityKey = JSON.stringify([currentTenantId, userId]);
+  const ownerKey = JSON.stringify([currentTenantId, userId]);
+  // Returning to the same owner must not reactivate an earlier request.
+  const ownerActivation = useRef({ ownerKey, version: 0 });
+  if (ownerActivation.current.ownerKey !== ownerKey) {
+    ownerActivation.current = { ownerKey, version: ownerActivation.current.version + 1 };
+  }
+  const identityKey = ownerActivation.current.version;
   const identityRef = useRef(identityKey);
   identityRef.current = identityKey;
   const readVersions = useRef({ local: 0, list: 0, details: 0 });
@@ -215,6 +221,19 @@ export const HandoversModule: React.FC = () => {
   const [storageError, setStorageError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const draftVersions = useRef({ create: 0, edit: 0, task: 0, note: 0, document: 0 });
+  const previousDrafts = useRef({ selectedId, createOpen: isCreateOpen, create: form, edit: editFields, task: taskForm, note: noteText, document: documentId });
+  useLayoutEffect(() => {
+    const next = { selectedId, createOpen: isCreateOpen, create: form, edit: editFields, task: taskForm, note: noteText, document: documentId };
+    for (const kind of ['create', 'edit', 'task', 'note', 'document'] as const) {
+      const contextChanged = kind === 'create'
+        ? previousDrafts.current.createOpen !== isCreateOpen : previousDrafts.current.selectedId !== selectedId;
+      if (contextChanged || previousDrafts.current[kind] !== next[kind]) {
+        draftVersions.current[kind] += 1;
+      }
+    }
+    previousDrafts.current = next;
+  }, [selectedId, isCreateOpen, form, editFields, taskForm, noteText, documentId]);
 
   useLayoutEffect(() => {
     setHandovers([]);
@@ -350,6 +369,7 @@ export const HandoversModule: React.FC = () => {
   const submitHandover = async (event: FormEvent) => {
     event.preventDefault();
     const requestIdentity = identityKey;
+    const requestDraftVersion = draftVersions.current.create;
     if (!authUser || !form.siteId || !form.outgoingEmployeeId || !form.incomingEmployeeId) {
       setError('Objekt und beide beteiligten Mitarbeitenden müssen ausgewählt sein.');
       return;
@@ -400,8 +420,10 @@ export const HandoversModule: React.FC = () => {
       setNotice(isOnline
         ? 'Lokal gespeichert. Die Serverbestätigung steht noch aus.'
         : 'Offline in der IndexedDB gespeichert. Die Serverbestätigung steht noch aus.');
-      setForm({ ...emptyForm, siteId: form.siteId, occurredAt: new Date().toISOString().slice(0, 16) });
-      setIsCreateOpen(false);
+      if (draftVersions.current.create === requestDraftVersion) {
+        setForm({ ...emptyForm, siteId: form.siteId, occurredAt: new Date().toISOString().slice(0, 16) });
+        setIsCreateOpen(false);
+      }
       await refreshLocalMutations();
       if (identityRef.current !== requestIdentity) return;
       if (isOnline) {
@@ -445,6 +467,7 @@ export const HandoversModule: React.FC = () => {
     event.preventDefault();
     if (!selected) return;
     const requestIdentity = identityKey;
+    const requestDraftVersion = draftVersions.current.edit;
     setBusy(true);
     setError('');
     try {
@@ -457,7 +480,7 @@ export const HandoversModule: React.FC = () => {
         safetyInformation: editFields.safetyInformation
       });
       if (identityRef.current !== requestIdentity) return;
-      setIsEditing(false);
+      if (draftVersions.current.edit === requestDraftVersion) setIsEditing(false);
       setNotice('Übergabeänderung wurde als neue Revision gespeichert.');
       await refreshList();
       await refreshDetails(selected.id);
@@ -473,6 +496,7 @@ export const HandoversModule: React.FC = () => {
     event.preventDefault();
     if (!selected || !taskForm.title.trim() || !taskForm.assignedEmployeeId) return;
     const requestIdentity = identityKey;
+    const requestDraftVersion = draftVersions.current.task;
     setBusy(true);
     setError('');
     try {
@@ -484,7 +508,9 @@ export const HandoversModule: React.FC = () => {
         dueAt: taskForm.dueAt ? new Date(taskForm.dueAt).toISOString() : null
       });
       if (identityRef.current !== requestIdentity) return;
-      setTaskForm({ title: '', description: '', assignedEmployeeId: '', priority: 'normal', dueAt: '' });
+      if (draftVersions.current.task === requestDraftVersion) {
+        setTaskForm({ title: '', description: '', assignedEmployeeId: '', priority: 'normal', dueAt: '' });
+      }
       setNotice('Aufgabe wurde serverseitig angelegt und bleibt objektbezogen offen.');
       await refreshList();
       await refreshDetails(selected.id);
@@ -521,12 +547,13 @@ export const HandoversModule: React.FC = () => {
   const addNote = async (type: 'questions' | 'corrections') => {
     if (!selected || !noteText.trim()) return;
     const requestIdentity = identityKey;
+    const requestDraftVersion = draftVersions.current.note;
     setBusy(true);
     setError('');
     try {
       await apiClient.post(`/handovers/${selected.id}/${type}`, { text: noteText.trim() });
       if (identityRef.current !== requestIdentity) return;
-      setNoteText('');
+      if (draftVersions.current.note === requestDraftVersion) setNoteText('');
       setNotice(type === 'questions' ? 'Rückfrage wurde in der Historie dokumentiert.' : 'Korrektur wurde in der Historie dokumentiert; bestätigte Inhalte bleiben unverändert.');
       await refreshDetails(selected.id);
     } catch (noteError) {
@@ -540,12 +567,13 @@ export const HandoversModule: React.FC = () => {
   const linkDocument = async () => {
     if (!selected || !documentId) return;
     const requestIdentity = identityKey;
+    const requestDraftVersion = draftVersions.current.document;
     setBusy(true);
     setError('');
     try {
       await apiClient.post(`/handovers/${selected.id}/documents`, { documentId });
       if (identityRef.current !== requestIdentity) return;
-      setDocumentId('');
+      if (draftVersions.current.document === requestDraftVersion) setDocumentId('');
       setNotice('Bestehendes DMS-Dokument wurde ohne Dateiduplikat verknüpft.');
       await refreshList();
       await refreshDetails(selected.id);
