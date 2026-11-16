@@ -19,8 +19,8 @@ The project’s broader history and evidence are summarized in [PROJECT_COMPLETI
 
 ### In development
 
-- PR #66 remains open. Its current hosted revision `4214824` passed 7/7 in CI run [43768608510](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43768608510). The separate Chromium fixture passed locally but is not part of hosted CI.
-- The current worktree adds tenant-authorized work-hour reporting, functional calendar filters, and removes unsupported shift-hour and certification/audit-readiness claims. Frontend typecheck, production build, and all 169 tests across 29 files passed locally; these new changes are not included in the hosted CI run yet. Backend build/tests and production Compose validation belong to the earlier revision and were not repeated for this frontend-only work.
+- PR #66 remains open. Its reporting changes passed all 7 hosted jobs in run [43843101598](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43843101598) on head `7fc57d9`. The separate Chromium fixture passed locally but is not part of hosted CI.
+- The PR uses tenant-authorized work-hour reporting, applies calendar filters to reports/exports, and removes unsupported shift-hour and certification/audit-readiness claims. Frontend typecheck, production build, and all 169 tests across 29 files passed locally. No backend code changed in this reporting update; backend tests and production Compose checks are from the prior revision.
 
 ### Open
 
@@ -49,6 +49,6 @@ The project’s broader history and evidence are summarized in [PROJECT_COMPLETI
 | Main CI | **7/7 passed** on `9df02aa` | Post-merge run [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) on exact current SHA. |
 | PR #62 hosted CI | **7/7 passed** | Run 43761213396 on head `6c8a52c`; PR since merged. |
 | Artifact validation | **2/2 passed** on `9df02aa` | Run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834). Not a release approval. |
-| Current PR #66 | **7/7 passed** | Run [43768608510](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43768608510) validates `4214824`; the standalone Chromium fixture was executed locally. |
-| New reporting worktree changes | **Local checks passed** | 169 frontend tests, TypeScript check, and production build. Not yet covered by hosted CI. |
+| Current PR #66 | **7/7 passed** | Run [43843101598](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43843101598) validates `7fc57d9`; the standalone Chromium fixture was executed locally. |
+| Reporting update | **Local and hosted checks passed** | 169 frontend tests, TypeScript check, production build, and the 7-job hosted workflow. |
 | Production acceptance | **Not performed / not established** | No deployment or production approval is claimed. |
