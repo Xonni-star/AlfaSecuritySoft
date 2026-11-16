@@ -1,6 +1,21 @@
-# SecurityOps 2.0 - Phase 6: Gerätesicherheit & Datenschutz
+# SecurityOps 2.0 - Grenzen der Gerätesicherheit
 
-## 1. Grenzen lokaler Datenspeicherung
-- IndexedDB unterliegt der Same-Origin Policy des Browsers.
-- Bei Gerätewiderruf im Leitstellen-Dashboard wird das Gerät serverseitig auf `REVOKED` gesetzt. Alle nachfolgenden Sync-Aufrufe schlagen fehl.
-- Beim Logout wird die lokale Session bereinigt.
+**Aktiver Express-/Browser-Pfad; keine Geräte- oder Datenschutzfreigabe.**
+
+- **IMPLEMENTIERT:** Die Oberfläche filtert dauerhafte lokale Mutationen und
+  Anhänge nach Mandant und Besitzer. IndexedDB unterliegt der Same-Origin Policy;
+  das ist weder eine Verschlüsselungszusage noch eine Betriebssystem-Benutzertrennung.
+- **IMPLEMENTIERT UND GETESTET im beschriebenen Umfang:** Erfolgreiche
+  API-Abmeldung widerruft die Serversitzung. Lokale Sitzungs-/Ansichtsdaten
+  werden bereinigt; persistierte Outbox-Einträge bleiben ihrem ursprünglichen
+  Besitzer zugeordnet und werden nicht als fremdes Konto wiedergegeben.
+- **OFFEN:** Registrierung, vertrauenswürdiger Gerätefingerprint und
+  gerätebasierte Sync-Sperrung. Der aktive Sync-Controller validiert `deviceId`
+  als String, prüft aber keinen Gerätewiderruf. Ein Sitzungswiderruf ist kein
+  implementierter Gerätewiderruf. Frühere gegenteilige Beschreibungen waren
+  für diesen aktiven Backend-Pfad nicht belegt.
+- **NICHT VERIFIZIERT:** Physische Geräte, gemeinsam genutzte Browserprofile,
+  MDM, lokale Verschlüsselung und produktive Datenschutz-/Löschvorgaben.
+
+Details: [aktives Sync-Protokoll](./SYNC_PROTOCOL.md) und
+[Projektstatus](../PROJECT_CURRENT_STATUS.md).

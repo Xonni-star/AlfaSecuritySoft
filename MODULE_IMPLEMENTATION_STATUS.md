@@ -10,12 +10,13 @@ Python files in `frontend/backend/*.py`, `frontend/alembic`, and `frontend/tests
 
 ## Module matrix
 
-Latest complete hosted evidence:aa1d7738f9074393533fca74d0914ab2a3ab1a9d /
-CI43968759380, **7/7**, read368 frontend/553 backend in35 suites,10 genuine
-browser journeys and cleanup. FNL-022–026 are verified in the stated scope;
+Latest complete hosted evidence:5ee9f36665616178c331e9c53526b1e35396b7bd /
+CI43972242288, **7/7**, read378 frontend/553 backend in35 suites,10 genuine
+browser journeys and cleanup. FNL-022–028 are verified in the stated scope;
 the real document empty/current/missing/archive/denied-read API case passed.
-FNL-027 now corrects eight reproduced late-write/create draft-loss/owner ABA
-cases; targeted42/typecheck/build pass, its own hosted result remains open.
+FNL-027 corrects eight reproduced late-write/create draft-loss/owner ABA cases;
+FNL-028 holds sync mutex/Pending through the full snapshot refresh on success
+and failure. Their complete hosted results passed, not only targeted tests.
 The following paragraphs preserve preceding evidence snapshots.
 
 Earlier partial hosted evidence:9b79a03a4bc119e51f8f7933b3a82953715b6742 /
@@ -28,10 +29,11 @@ due retry batches. Local targeted handover UI27/controller11 and both builds/
 typecheck pass. Earlier pending statements below describe preceding snapshots,
 not the current absence of any tenth-journey execution.
 
-All paths below are relative to `frontend/`. Routes are registered in `backend/src/app.ts`; controllers use the active PostgreSQL transaction layer. Exact hosted CI43968759380 on `aa1d7738f9074393533fca74d0914ab2a3ab1a9d` passed backend553 in35 suites, frontend368 in36 files, real browser10 and cleanup, all seven jobs. Prior failed runs remain historical failures, not reinterpreted as local success. API/sync budgets are30 seconds, Patrol/Handover60, frontend defaults five seconds; budgets are not performance acceptance. Subsequent FNL-027 passes targeted42/typecheck/build and awaits its own hosted result. Test existence alone does not establish complete scenario coverage.
+All paths below are relative to `frontend/`. Routes are registered in `backend/src/app.ts`; controllers use the active PostgreSQL transaction layer. Exact hosted CI43972242288 on `5ee9f36665616178c331e9c53526b1e35396b7bd` passed backend553 in35 suites, frontend378 in36 files, real browser10 and cleanup, all seven jobs. Prior failed runs remain historical failures, not reinterpreted as local success. API/sync budgets are30 seconds, Patrol/Handover60, frontend defaults five seconds; budgets are not performance acceptance. Test existence alone does not establish complete scenario coverage.
 
 | Module | Active implementation and persistence | Automated evidence | Status and remaining boundary |
 |---|---|---|---|
+| Device registration and sequence delta pull | No registered-device validation or `/sync/pull` route in the active Express stack; `deviceId` is client metadata and refresh uses module GETs | Active route/schema/controller comparison; legacy reports are not current implementation evidence | **GEPLANT / OFFEN**. Session revocation and runtime sync serialization do not implement device revocation or cross-device replication. |
 | Tenants, users, roles | `components/TenantAdministration.tsx`, `UserAdministration.tsx`; tenant/user administration controllers; memberships, tenant roles and grants in migrations 033–034 | `TenantAdministration.test.tsx`, `UserAdministration.test.tsx`; `tenantAdministration.integration.test.ts`, controller and authorization-boundary suites | **IMPLEMENTIERT UND GETESTET** for covered create/update/status/grant paths. All deployed roles and endpoint/object combinations are **OFFEN**. |
 | Customers and sites | `components/ClientsModule.tsx`, `SitesModule.tsx`; `clientController.ts`, `resourceController.ts`; composite tenant FKs, archive/revision fields. Actual customer number, calendar contract dates, renewal/notice and staffing/equipment/access/IANA timezone are editable/persisted; omitted SLA is preserved in PATCH/sync. | API persistence/tenant/archive/sync cases plus `ResourceForms.test.tsx`, store API/offline/identity/ordered-revision regressions and ninth genuine browser journey through offline customer replay, contract reload/update and site create/update/reload/archival | **IMPLEMENTIERT UND GETESTET** for covered cases, with no fictional manager/alarm model/SOP count. Complete resource/role browser acceptance remains **OFFEN**; local offline confirmation is not server persistence. |
 | Employees | `components/EmployeesModule.tsx`; `employeeController.ts`; account linking, qualifications, absence and site-assignment tables. Joining/issue/expiry/absence DATE fields are API calendar strings, not timezone-shifted timestamps. | `EmployeesModule.test.tsx`, `ResourceForms.test.tsx`, store confirmation/identity/offline/partial-failure cases, `employeeController.test.ts`; eighth real browser journey covers persistence/reload, nullable proof edits, true HTTP 409, retained draft and expired proof classification | **IMPLEMENTIERT UND GETESTET** for covered paths. Offline proof validity remains pending server acknowledgement. HR/legal retention policies, full role/object acceptance and complete history requirements remain open; no general compliance claim. |

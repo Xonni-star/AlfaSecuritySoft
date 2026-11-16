@@ -86,13 +86,14 @@ plus Cleanup. FNL-021 ist mit acht neuen Komponentenfällen (sechs zunächst rot
 und kombiniert 171/171 gezielten Tests, Typprüfung/Build implementiert/geprüft.
 Inzwischen bestätigt CI 43960314043 auf a7af0bcc352f9274b02b7be19c9befeb598a0d05
 FNL-021 mit 7/7; gelesene Logs 348/549/9 plus Cleanup.
-FNL-022–026 sind auf `aa1d7738f9074393533fca74d0914ab2a3ab1a9d`
-durch CI43968759380 **7/7** bestätigt; gelesene Logs **368 Frontend/553 Backend/
+FNL-022–028 sind auf `5ee9f36665616178c331e9c53526b1e35396b7bd`
+durch CI43972242288 **7/7** bestätigt; gelesene Logs **378 Frontend/553 Backend/
 10 echte Browserjourneys** samt Cleanup. Das schließt die konkreten
 Konto-/Lese-/Dokumentfehler und den unzutreffenden Retry-Batch-Nachweis.
-FNL-027 korrigiert danach acht reproduzierte Schreib-/Erfassungsentwurfs-
-und Besitzeraktivierungsfehler: gezielt42/Typprüfung/Build bestanden,
-eigene Gesamt-CI noch offen. Keine vollständige Rollen-/Geräteabnahme;
+FNL-027 korrigiert acht reproduzierte Schreib-/Erfassungsentwurfs-
+und Besitzeraktivierungsfehler; FNL-028 hält Sync-Sperre/Pending bis zum
+Zyklusende. Beide bestanden die obige Gesamt-CI. Gerätewiderruf und Delta-Pull
+bleiben ausdrücklich OFFEN. Keine vollständige Rollen-/Geräteabnahme;
 lokaler Docker weiterhin nicht erreichbar, Integration gehostet geprüft.
 
 Interne Arbeit bleibt offen: Konvergenz-/Berechtigungsabdeckung erweitern,

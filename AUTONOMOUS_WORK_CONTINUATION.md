@@ -1,6 +1,16 @@
 # Autonomous finalization continuation
 
-## Current round and baseline
+## Latest verified development state
+
+Code5ee9f36665616178c331e9c53526b1e35396b7bd passed exact
+CI43972242288 **7/7**; read378 frontend/553 backend in35 suites/10 genuine
+browser journeys and owned-container cleanup. FNL-022–028 are complete in their
+stated scope. Later documentation corrects absent device revocation/delta pull
+and distinguishes snapshots from live forge state; no runtime source changed.
+On resumption first inspect live main/PR/CI, not these historical open-PR counts.
+Never repeat an already completed merge or reimplement closed findings.
+
+## Historical starting baseline
 
 - Assignment: the 652-line autonomous finalization request of 2026-11-16,
   including repeated audits after fixes rather than stopping at an intermediate report.
@@ -441,9 +451,16 @@ Active SYNC_PROTOCOL also falsely claimed device revocation and sequence pull:
 the active controller only validates deviceId as a string and Express registers
 no sync/pull route. Docs now state these are OFFEN, not a new exploit finding.
 
-1. Publish FNL-028 and verify every hosted job on its exact full SHA.
-   Read actual logs/counts and resolve any API/browser failure.
-   Earlier seven-job success does not validate these subsequent changes.
+FNL-028 is now fully hosted-verified on
+5ee9f36665616178c331e9c53526b1e35396b7bd, CI43972242288 **7/7**:
+read378/553/10 and cleanup in `finalization-sync-refresh-mutex-hosted-ci.log`.
+FNL-029 also reconciles device/security/legacy scenario descriptions against
+actual route registration and schema, without implementing missing features.
+
+1. Verify the final documentation-only head CI and current PR/main state.
+   If PR66 is still open, integrate only its compatible verified exact head;
+   if it is already merged, inspect post-merge CI/artifact results instead.
+   Resolve any actual regression, never relabel a failed run.
 2. Repeat a bounded convergence audit for new concrete functional defects,
    misleading current UI/docs and missing directly relevant regressions.
    Do not turn actual API 403s or functional test fixture errors into unproven
@@ -454,14 +471,17 @@ no sync/pull route. Docs now state these are OFFEN, not a new exploit finding.
    no remaining `throw new Error('offline')` or online-state-based catch fallback
    in the active store/controllers/components; this is not exhaustive coverage.
    Inspect remaining real workflow boundaries, not already corrected handlers.
-   FNL-022/023/024 render/context, account eligibility and read-order defects
-   are now corrected with the precise hosted gaps above, not fresh reproduction tasks.
+   FNL-022–028 render/context, account eligibility, reads/writes, document
+   metadata and sync-cycle defects are now corrected and hosted-verified,
+   not fresh reproduction tasks.
    No authorization bypass or complete module acceptance is claimed.
 3. Keep the requested final documents/tracker current; no ESLint configuration
    or script was found, so do not claim lint ran.
-4. Merge PR #66 only after
-   functional compatibility, review issues and current CI are verified; the new
-   assignment authorizes integration but not a production deployment.
+4. Subsequent product work must use the actual OFFEN module/acceptance matrix,
+   especially complete role/site/object coverage and explicitly missing
+   automation/audit/privacy/device features. Do not invent a successful
+   independent review, legal approval or external provider/device result.
+   The assignment permits compatible verified integration, not deployment.
 
 ## External boundaries
 

@@ -29,14 +29,16 @@ guards. Eight new component cases (six originally failing), combined targeted
 171/171 and typecheck/build passed. Its exact CI 43960314043 on
 `a7af0bcc352f9274b02b7be19c9befeb598a0d05` now passed 7/7; read logs
 348 frontend/549 backend/9 actual browser and cleanup.
-FNL-022–026 now passed exact CI43968759380 on
-`aa1d7738f9074393533fca74d0914ab2a3ab1a9d`, **7/7**;
-read logs **368 frontend/553 backend/10 genuine browser journeys** plus cleanup.
+FNL-022–028 now passed exact CI43972242288 on
+`5ee9f36665616178c331e9c53526b1e35396b7bd`, **7/7**;
+read logs **378 frontend/553 backend/10 genuine browser journeys** plus cleanup.
 This covers actual account-linked confirmation, current document metadata and
 per-mutation replay evidence; prior failed runs remain historical failures.
-Subsequent FNL-027 corrects eight reproduced late-write/create draft-loss and
-owner-activation ABA cases. Targeted42/typecheck/build passed; its own hosted
-verification remains open. This is functional evidence, not a new exploit
+FNL-027 corrects eight reproduced late-write/create draft-loss and
+owner-activation ABA cases; FNL-028 corrects two premature sync-refresh lock
+releases. Both passed the complete hosted verification above. Device revocation
+and delta pull are explicitly absent from the active stack, not verified
+security features. This is functional evidence, not a new exploit
 finding or security review. Local Docker remains unavailable.
 No new comprehensive security, device or full role/object acceptance is claimed.
 **Scope:** PR #66 changes, browser-based report CSV export, local legacy-attachment recovery, backend authorization boundaries, PostgreSQL tenant/RLS context, authentication/session handling, and web security configuration. This is not a comprehensive security audit, penetration test, or certification.

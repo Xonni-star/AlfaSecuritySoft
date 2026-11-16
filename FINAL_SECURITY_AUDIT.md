@@ -115,13 +115,15 @@ Speicherergebnisse, mit acht neuen Komponentenfällen (sechs zunächst rot),
 kombiniert 171/171 gezielt und Typprüfung/Build. Die exakte CI 43960314043 auf
 `a7af0bcc352f9274b02b7be19c9befeb598a0d05` bestand inzwischen 7/7;
 gelesene Logs 348/549/9 plus Cleanup.
-FNL-022–026 sind auf `aa1d7738f9074393533fca74d0914ab2a3ab1a9d`
-durch CI43968759380 **7/7** bestätigt; gelesene Logs **368/553/10** plus
+FNL-022–028 sind auf `5ee9f36665616178c331e9c53526b1e35396b7bd`
+durch CI43972242288 **7/7** bestätigt; gelesene Logs **378/553/10** plus
 Cleanup. Echte Rollen-/Kontozuordnungsbestätigung, aktuelle DMS-Dateimetadaten
 und echte verlorene Quittungen sind im getesteten Umfang nachgewiesen.
-FNL-027 korrigiert danach acht tatsächlich reproduzierte Entwurfsverlust-/
-Besitzeraktivierungsfehler; gezielt42/Typprüfung/Build grün, eigene Gesamt-CI
-offen. Funktionale Evidenznachführung, kein neuer Securityreview oder
+FNL-027 korrigiert acht tatsächlich reproduzierte Entwurfsverlust-/
+Besitzeraktivierungsfehler; FNL-028 zwei vorzeitig freigegebene Sync-Refreshs.
+Beide sind durch obige Gesamt-CI bestätigt. Gerätewiderruf und Delta-Pull
+bleiben im aktiven Stack OFFEN, keine behaupteten Sicherheitsmaßnahmen.
+Funktionale Evidenznachführung, kein neuer Securityreview oder
 Exploitbefund und kein umfassender Sicherheits-/Geräte-/Rollennachweis.
 
 Unberechtigte Reportanfragen wurden bereits vom Server abgewiesen; das

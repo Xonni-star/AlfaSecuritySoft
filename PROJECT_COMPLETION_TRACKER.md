@@ -5,18 +5,19 @@ This tracker is the working source of truth for the current audit. Statuses appl
 ## Autonomous finalization audit (2026-11-16)
 
 Starting revision `24b7a7199f8cfae5a4d6a19399315856fa1c0922` is clean and
-published; exact CI 43921891610 passed 7/7. `main` remains `9df02aaa5ef01de78e0fe5d53be446b2037db24d`.
-PR #66 is the only open PR, mergeable, with no submitted reviews or requested
-reviewers. There are no open GitHub issues. These observations are a snapshot,
-not a complete acceptance. Continuation: `AUTONOMOUS_WORK_CONTINUATION.md`.
+published; exact CI 43921891610 passed 7/7. Before integration, `main` was
+`9df02aaa5ef01de78e0fe5d53be446b2037db24d` and PR #66 was the only open PR,
+mergeable with no submitted/requested reviews; no open issues were returned.
+This is a pre-integration snapshot, not live forge state or complete acceptance.
+Continuation: `AUTONOMOUS_WORK_CONTINUATION.md`.
 
 | ID | Priority | Status | Scope and concrete action | Evidence / remaining prerequisite |
 |---|---|---|---|---|
-| FNL-001 | P1 | IN ARBEIT | Re-audit repository, open work, active modules, tests, CI and documentation after previous packages | Refreshed main/PR/issues/CI; 104-file PR diff inventoried. Marker matches are predominantly input placeholders, not unimplemented functions; full convergence check pending. |
+| FNL-001 | P1 | ERLEDIGT | Re-audit repository, open work, active modules, tests, CI and documentation after previous packages | Repeated trace/test/docs rounds closed FNL003 and007–029. Final pre-integration diff covers137 files; live main/PR/reviews/CI refreshed. Active component/backend/store TODO/FIXME/NotImplementedError scan returned no matches; route/schema/document comparison closed remaining false device/delta-pull assurances. This bounded audit is not exhaustive security, role/device or production acceptance. |
 | FNL-002 | P1 | IN ARBEIT | Review PR66 functional changes and integrate only a compatible verified head | Read-only functional review identified an unauthorized report request, corrected under FNL-008. Baseline CI green; resulting revision still needs hosted CI, documentation reconciliation and convergence review. No merge yet. |
 | FNL-003 | P2 | ERLEDIGT | Correct native actual-time timestamp validation and add a real-form regression | Invalid JSX escaping and HTML Unicode-set character class corrected in both inputs. New regression fails before the fix and passes after it; all 30 Roster tests and frontend typecheck pass. Real Chromium accepts offset/UTC/fractional values and rejects malformed/missing-offset values in both actual patterns. Full-suite/CI follow-up remains FNL-005. Not a security finding. |
 | FNL-004 | P1 | ERLEDIGT | Reconcile required final/continuation/readiness/checklist docs, contributor instructions and GitHub description | Required final security/readiness/checklist and continuation documents created; project report, README/current status, module matrix and contributor runner instructions reconciled with actual evidence. GitHub description corrected from Node proxy to React/Express/PostgreSQL and explicitly not production-approved. Future CI/merge changes require a fresh snapshot, not altered historical results. |
-| FNL-005 | P1 | IN ARBEIT | Execute full available validation and repeat audit after corrections | FNL-021 a7af passed exact CI43960314043 7/7, read logs348/549/9+cleanup. Later24a70b85ba7c9dbfd19217bdc007dc9bdcf0e306/CI43964650702 passed frontend360/backend552, but only6/7 and browser9/10; three test locator assumptions are corrected with real diagnosis, no removed assertions/budget changes. New FNL-024 passes full local frontend367/typecheck/build. New exact complete hosted execution and convergence audit remain open. Local Docker unavailable; no ESLint setup or invented lint result. |
+| FNL-005 | P1 | IN ARBEIT | Execute full available validation and repeat audit after corrections | Exact5ee9f36665616178c331e9c53526b1e35396b7bd/CI43972242288 passed7/7, read378 frontend/553 backend/10 genuine browser journeys and cleanup. Earlier failed runs remain historical failures below. Final documentation-only head and any authorized post-merge CI/artifact checks remain integration prerequisites. Local Docker unavailable; no ESLint setup or invented lint result. |
 | FNL-006 | P0 | EXTERN ZU PRÜFEN | Provider/device/production, independent security and legal acceptance | Requires approved provider/off-host environment, devices, agreed RPO/RTO and independent/legal reviewers; not substituted by local Docker tests. |
 | FNL-007 | P1 | ERLEDIGT | Preserve key/task form data until server confirmation and bind delayed writes to identity | Explicit store results, pending/error UI and guarded callbacks replace premature success/clearing. No preset obsolete key date or fictional task assignee. Delayed employee hydration selects a real key recipient. Focused store/UI regressions and full frontend 201/201 passed. |
 | FNL-008 | P1 | ERLEDIGT | Gate work-hours reports, bind results to identity/grants/range and accept valid local calendar dates | Tenant/site report grants control requests, not server authorization. Unauthorized request, stale identity response and positive-UTC-offset date regressions failed before correction; Berlin Reports 11/11 and full frontend passed. No new server bypass established. |
@@ -39,13 +40,17 @@ not a complete acceptance. Continuation: `AUTONOMOUS_WORK_CONTINUATION.md`.
 | FNL-025 | P1 | ERLEDIGT | Repair the genuine handover document HTTP500 and require actual detail success | Current tenant-bound document_versions metadata replaces nonexistent document columns; missing metadata stays explicit and archived links excluded. UI case failed before correction. Actual PostgreSQL/API empty/current/missing/archive/denied-read and strict real browser document200/no-alert checks passed. Exact aa1d773/CI43968759380 passed7/7, read368/553/10 and cleanup. |
 | FNL-026 | P1 | ERLEDIGT | Correct critical incident replay evidence for independently due mutation retries | Actual failed trace showed guardbook+task, then guardbook alone1.072s later, matching per-mutation deadlines. Genuine initial two-mutation lost receipt, exact per-request UUID matching, both replayed UUIDs, stable server IDs, one real incident/task and empty outbox now pass. Exact aa1d773/CI43968759380 passed7/7, read368/553/10 and cleanup; no larger budgets. |
 | FNL-027 | P1 | ERLEDIGT | Preserve newer write/creation drafts and owner-activation ABA context | Eight reproduced red cases cover four detail writes, edited/reopened create dialog, equal-text note ABA and old owner activation releasing a newer pending operation. Independent draft revisions/current owner activation guard cleanup; current submissions still clear normally. Exact6486a17/CI43970970744 passed7/7; read376/553/10 and cleanup. |
-| FNL-028 | P1 | IN ARBEIT | Hold generic sync mutex/Pending through the full snapshot refresh | Two initial red cases proved a new API push starts during an unfinished empty-cycle refresh. Central finally is the sole lock/Pending release; queued rerun and explicit failure preserved. Targeted148/typecheck/build pass; own hosted verification open. Protocol docs corrected: actual camelCase receipts/endpoints, no implemented device-revocation or delta-pull guarantee. |
+| FNL-028 | P1 | ERLEDIGT | Hold generic sync mutex/Pending through the full snapshot refresh | Two initial red cases proved a new API push starts during an unfinished empty-cycle refresh. Central finally is the sole lock/Pending release; queued rerun and explicit failure preserved. Exact5ee9f36/CI43972242288 passed7/7; read378/553/10 and cleanup. No dependency, migration, budget or backend authorization change. |
+| FNL-029 | P2 | ERLEDIGT | Remove remaining unverified active device/delta-pull assurances | Compared active app route registration, push schema/handler and local ownership/logout behavior. deviceId is a string, not registered-device authorization; no sync/pull route exists. Protocol/device docs and legacy matrix now mark absent features OFFEN, module-wide clock evidence NICHT VERIFIZIERT. Historical Python/E2E reports remain explicitly historical, not current proofs. Documentation-only correction, not a new exploit review. |
 
-**Latest complete hosted verification:** `6486a1798249dcd9c068d73b9bf333ab45668984`,
-CI43970970744 **7/7**; read logs376 frontend,553 backend in35 suites,
+**Latest complete hosted verification:** `5ee9f36665616178c331e9c53526b1e35396b7bd`,
+CI43972242288 **7/7**; read logs378 frontend,553 backend in35 suites,
 10 genuine browser journeys and owned-container cleanup. This closes
 FNL-022–026, including the real document API regression and stricter document
-browser checks. FNL-027 is also verified; subsequent FNL-028 still needs its CI.
+browser checks. FNL-027/028 are also verified. Subsequent documentation-only
+updates do not extend role/device/provider/production acceptance.
+
+**Historical intermediate evidence below, superseded by the verified result above:**
 
 Earlier published `9b79a03a4bc119e51f8f7933b3a82953715b6742`,
 CI43966537946, confirms read logs367/552, browser9/10 and cleanup, only6/7.

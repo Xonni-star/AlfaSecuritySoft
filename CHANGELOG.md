@@ -4,6 +4,8 @@
 
 ### Hinzugefügt
 
+- FNL-028 ist auf `5ee9f36665616178c331e9c53526b1e35396b7bd` gehostet bestätigt: CI43972242288 **7/7**, gelesene Logs **378 Frontend/553 Backend/10 echte Browser** plus Cleanup. Das schließt die folgenden historischen Pending-Angaben; keine Produktionsfreigabe.
+- Abschließender Dokumentabgleich kennzeichnet die tatsächlich fehlende Gerätewiderrufsprüfung und den nicht registrierten Delta-Pull auch in Gerätesicherheit und alter Offline-Szenariomatrix als OFFEN. Keine verifizierte Gerätezeit-/Sequenzgarantie für alle Module; keine neue Sicherheitsprüfung behauptet.
 - FNL-028 gibt generische Sync-Sperre/Pending erst im zentralen `finally` frei, einschließlich Snapshot-Refresh nach leerer Queue. Zwei Fälle zunächst rot; gezielt148/Typprüfung/Build grün. Neue Auslöser bleiben vorgemerkt, Fehler sichtbar; eigene Gesamt-CI offen. Aktives Protokoll korrigiert falsche Gerätewiderrufs-/Delta-Pull-Aussagen statt fehlende Funktionen als vorhanden zu beschreiben.
 - FNL-027 ist auf `6486a1798249dcd9c068d73b9bf333ab45668984` gehostet bestätigt: CI43970970744 **7/7**, gelesene Logs **376 Frontend/553 Backend/10 echte Browser** plus Cleanup.
 - FNL-027 erhält neuere Übergabe-/Aufgaben-/Notiz-/Dokumententwürfe und erneut geöffnete Erfassungsformulare trotz verspäteter Schreib-/IndexedDB-Abschlüsse. Neue Besitzeraktivierungen erhalten auch bei A-B-A einen eigenen Kontext; alte Abschlüsse lösen keine aktuelle Pending-Operation. Acht Fälle tatsächlich zunächst rot; gezielt42/Typprüfung/Build grün, eigene Gesamt-CI offen.

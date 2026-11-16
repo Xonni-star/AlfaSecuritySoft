@@ -2,9 +2,9 @@
 
 **Last verified:** 2026-11-16
 
-**Verified `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
+**Verified `main` snapshot before integration:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
 
-**GitHub pull requests:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66) is the only open PR; PRs #50–#65 are merged, including [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62).
+**GitHub snapshot before integration:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66) was the only open PR; PRs #50–#65 were merged, including [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62). This document is revision-specific evidence, not live forge state; inspect the linked PR for its current integration status.
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
@@ -20,11 +20,12 @@ checks every original/replayed UUID and server ID across independently due
 retry batches. Local targeted UI **27/27**, controller **11/11**, typecheck
 and both builds passed; the complete hosted result below closes this gap.
 
-**Fully hosted-verified code revision:** `6486a1798249dcd9c068d73b9bf333ab45668984`
+**Fully hosted-verified code revision:** `5ee9f36665616178c331e9c53526b1e35396b7bd`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
-The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
-Its exact [CI 43970970744](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43970970744)
-passed **7/7 jobs**; downloaded logs confirm frontend **376/376**, backend
+The Phase 10/11 changes were pushed and checked before integration. No tag or
+deployment is authorized; the current merge status belongs to the linked PR.
+Its exact [CI 43972242288](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43972242288)
+passed **7/7 jobs**; downloaded logs confirm frontend **378/378**, backend
 **553/553 in 35 suites**, real browser **10/10** and owned-container cleanup.
 This closes the historical FNL-022–026 hosted gaps below, including real
 participant confirmation, current document metadata and per-UUID replay checks.
@@ -33,10 +34,11 @@ A-B-A cases. Independent draft revisions and monotonic owner activations now
 preserve newer drafts and pending operations; unchanged submissions still clear
 normally. Its exact hosted result above closes FNL-027.
 Subsequent FNL-028 reproduced two empty-cycle refresh overlaps and centralizes
-mutex/Pending release in `finally`. Targeted148/148/typecheck/build pass;
-its own complete hosted execution is open. Active protocol documentation now
+mutex/Pending release in `finally`. Targeted148/148/typecheck/build and its
+complete hosted execution above passed. Active protocol/device documentation now
 explicitly marks device revocation and sequence-based delta pull unimplemented,
-instead of claiming them from the unrelated historical backend.
+instead of claiming them from the unrelated historical backend. The old
+offline scenario matrix no longer labels these absent active features passed.
 This includes confirmed form writes, report grant/date/identity fixes, durable
 critical-incident follow-ups, truthful audit displays and delayed local-write
 identity isolation, plus FNL-013–026 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`

@@ -3,8 +3,10 @@
 ## Aktuelle Finalisierungsrunde, 16.11.2026
 
 **Status: IN ENTWICKLUNG / OFFEN — keine Gesamtfertigstellung oder Produktionsfreigabe.**
-Der erneute Audit wird nach jeder Korrekturrunde fortgesetzt. PR #66 ist zum
-letzten geprüften Snapshot weiterhin offen; kein Merge/Tag/Deployment ausgeführt.
+Die Korrekturrunden und Prüfgrenzen stehen im Tracker. Der letzte Main-/PR-
+Snapshot wurde vor Integration erstellt; der aktuelle Zustand steht in
+[PR #66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66).
+Keine Produktionsfreigabe, kein Tag oder Deployment.
 
 Veröffentlicht:
 `ad3d60422e2c19e93fa1299798c64e7949f6f993` korrigiert native Ist-Zeitvalidierung
@@ -120,14 +122,16 @@ Acht neue Komponentenfälle, sechs ursprünglich rot; kombiniert 171/171
 gezielt, Typprüfung/Build bestanden. Inzwischen hat die exakte CI 43960314043
 auf `a7af0bcc352f9274b02b7be19c9befeb598a0d05` alle 7/7 Jobs bestanden;
 gelesene Logs 348/549/9 plus Cleanup.
-FNL-022–026 sind auf `aa1d7738f9074393533fca74d0914ab2a3ab1a9d`
-durch CI43968759380 **7/7** bestätigt: gelesene Logs **368 Frontend/553 Backend/
+FNL-022–028 sind auf `5ee9f36665616178c331e9c53526b1e35396b7bd`
+durch CI43972242288 **7/7** bestätigt: gelesene Logs **378 Frontend/553 Backend/
 10 echte Browserjourneys** plus Cleanup. Das umfasst tatsächliche Konto-
 zuordnung/Bestätigungen, aktuelle Dokumentversionen statt Dokument-HTTP500
 und echte verlorene Quittungen mit vollständigen UUID-/Server-ID-Prüfungen.
 Frühere9/10-Fehlläufe bleiben historische Fehler, keine umgedeuteten Erfolge.
-Danach reproduzierte FNL-027 acht Entwurfsverlust-/Besitzeraktivierungsfälle;
-gezielt42, Typprüfung/Build bestanden, eigene Gesamt-CI noch offen.
+FNL-027 reproduzierte acht Entwurfsverlust-/Besitzeraktivierungsfälle;
+FNL-028 zwei vorzeitig freigegebene Sync-Refreshs. Auch diese Korrekturen
+bestanden die obige Gesamtprüfung. Die Dokumentation kennzeichnet fehlende
+Gerätewiderrufs-/Delta-Pull-Funktionen ausdrücklich OFFEN, nicht als getestet.
 Kein bestätigter neuer Exploit oder Gesamtabschluss; Docker bleibt lokal
 nicht erreichbar, die erfolgreichen Integrationsprüfungen liefen gehostet.
 

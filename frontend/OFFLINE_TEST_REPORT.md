@@ -1,5 +1,14 @@
 # SecurityOps 2.0 - Phase 6: Offline-Testbericht
 
+> **Aktueller verifizierter Code:** `5ee9f36665616178c331e9c53526b1e35396b7bd`,
+> [CI43972242288](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43972242288)
+> **7/7**, gelesene Logs **378 Frontend/553 Backend/10 echte Browserjourneys**
+> und Containerbereinigung. Das umfasst echte Quittungsverluste und erneute
+> Übertragung, Dokumentantworten, Entwurfs-/Besitzeraktivierungen und
+> serialisierte Sync-Refreshs im jeweils getesteten Umfang.
+> Die älteren Nachweise unten sind historische Teilstände. Gerätewiderruf und
+> sequenzbasierter Delta-Pull sind im aktiven Express-Pfad nicht implementiert.
+
 > **Aktueller Anhang-Fehlernachweis:** Die echte Suite besteht lokal und gehostet
 > **5/5** auf `3617576a8408002a99e1ed4f66e5a94b17a13cf5`;
 > [CI 43921057411](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43921057411)
@@ -84,11 +93,11 @@
 | 8 | Wachbuch nicht still überschreibbar | **BESTANDEN** | Append-Only `LogbookRevisionEntry` greift |
 | 9 | Revisionshistorie nachvollziehbar | **BESTANDEN** | Dialog zeigt vollständigen Audit-Trail |
 | 10 | Mandantentrennung bei Sync | **BESTANDEN** | Tenant A kann keine Mutationen für Tenant B pushen/pullen |
-| 11 | Widerruf eines Gerätes | **BESTANDEN** | `DeviceStatus.REVOKED` blockiert Sync sofort |
+| 11 | Widerruf eines Gerätes | **OFFEN (aktiver Stack)** | Historisch als BESTANDEN bezeichnet; aktiver Push-Controller prüft keinen Gerätewiderruf. Kein aktueller Nachweis. |
 | 12 | Große Anhänge (>5 MB) | **BESTANDEN** | Validierung wirft verständliche Fehlermeldung |
-| 13 | Veraltete Sync-Cursor | **BESTANDEN** | Incremental Pull liefert alle Änderungen ab `since_sequence` |
+| 13 | Veraltete Sync-Cursor | **OFFEN (aktiver Stack)** | Historisch als BESTANDEN bezeichnet; kein registrierter Delta-Pull-Endpunkt im aktiven Express-Backend. |
 | 14 | Teilweise fehlgeschlagene Batches | **BESTANDEN** | Erfolgreiche Einträge quittiert, fehlerhafte bleiben in Outbox |
-| 15 | Falsche Gerätezeit | **BESTANDEN** | `received_at` und Sequenznummer steuern Reihenfolge |
+| 15 | Falsche Gerätezeit | **NICHT VERIFIZIERT für alle Module** | Historische Sequenzzusage nicht auf den aktiven Stack übertragbar; Zeitprüfungen sind modulabhängig. |
 | 16 | IndexedDB Migrationen | **BESTANDEN** | Schema-Upgrade auf DB_VERSION 2 erfolgreich |
 | 17 | Wiederherstellung nach Absturz | **BESTANDEN** | Outbox bleibt persistent erhalten |
 | 18 | Background Sync & Fallback | **BESTANDEN** | Service Worker sync Event + manueller Fallback |

@@ -52,9 +52,13 @@ Test, ein Merge und ein erfolgreiches Containerimage ersetzen sie nicht.
       aa1d7738f9074393533fca74d0914ab2a3ab1a9d bestand7/7; gelesene Logs
       368 Frontend/553 Backend/10 echte Browser plus Cleanup, einschließlich
       realer Bestätigungen, Dokument-HTTP200 und UUID-genauem Quittungs-Replay.
-- [ ] FNL-027-Gesamtprüfung: acht Entwurfsverlust-/Besitzeraktivierungsfälle
-      tatsächlich zunächst rot; gezielt42/Typprüfung/Build grün. Eigene
-      exakte Hosted-Ausführung bleibt erforderlich.
+- [x] FNL-027-Gesamtprüfung: acht Entwurfsverlust-/Besitzeraktivierungsfälle
+      tatsächlich zunächst rot; exakte CI43970970744 auf
+      6486a1798249dcd9c068d73b9bf333ab45668984 bestand7/7,
+      gelesene376/553/10 und Cleanup.
+- [x] FNL-028-Gesamtprüfung: zwei Sync-Refresh-/Mutexfälle zunächst rot;
+      exakte CI43972242288 auf5ee9f36665616178c331e9c53526b1e35396b7bd
+      bestand7/7, gelesene378/553/10 und Cleanup.
 
 Diese Haken bestätigen nur den beschriebenen Entwicklungsnachweis;
 die exakten Revisionen stehen im [Projektstatus](./PROJECT_CURRENT_STATUS.md).
