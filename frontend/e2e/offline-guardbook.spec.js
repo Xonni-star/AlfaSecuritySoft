@@ -7,7 +7,7 @@ const user = {
   email: 'offline@test.invalid',
   fullName: 'Offline Test',
   role: 'Wachdienstmitarbeiter',
-  permissions: ['logbook:create', 'logbook:read']
+  permissions: ['logbook:create', 'logbook:read', 'sites:read', 'employees:read']
 };
 
 async function readOfflineState(page) {
@@ -45,6 +45,8 @@ test('captures offline, survives reload, and replays one mutation after reconnec
 
   await page.getByRole('button', { name: 'Digitales Wachbuch' }).click();
   await page.getByRole('button', { name: 'Ereignis erfassen' }).click();
+  await expect(page.locator('select[required]').first()).toHaveValue('11111111-1111-4111-8111-111111111111');
+  await expect(page.locator('select[required]').last()).toHaveValue('33333333-3333-4333-8333-333333333333');
   await page.locator('input[placeholder^="z. B."]').fill('Offline-Browser-Vorfall');
   await page.locator('textarea').fill('Während der realen Browser-Offline-Simulation erfasst.');
   await page.locator('input[type="file"]').setInputFiles({

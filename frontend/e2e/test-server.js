@@ -13,7 +13,7 @@ const user = {
   email: 'offline@test.invalid',
   fullName: 'Offline Test',
   role: 'Wachdienstmitarbeiter',
-  permissions: ['logbook:create', 'logbook:read']
+  permissions: ['logbook:create', 'logbook:read', 'sites:read', 'employees:read']
 };
 const site = {
   id: '11111111-1111-4111-8111-111111111111',

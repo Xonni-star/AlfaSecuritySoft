@@ -211,6 +211,10 @@ Der manuelle Befehl erzeugt nur einen unverschlüsselten PostgreSQL-Dump auf dem
 
 Die folgende Anleitung stellt Datenbank und Dienste über `restore.sh` wieder her:
 
+Das private Archiv bleibt im Modus `0600`. Den Restore als Archivbesitzer oder
+entsprechend berechtigten Betriebsbenutzer ausführen; Leserechte nicht pauschal
+für andere Benutzer erweitern.
+
 ```bash
 ./restore.sh /pfad/zu/secops_backup_YYYYMMDD_HHMMSS.tar.gz.enc
 ```
@@ -228,6 +232,12 @@ npm run test:backup-restore --prefix frontend/backend
 Der Test verwendet ein zufällig benanntes, isoliertes Compose-Projekt, zufällige Testzugangsdaten, zwei synthetische Mandanten, Benutzer, DMS-Dokumente, Versionen und Auditereignisse. Er baut den Backend-Migrationsrunner aus dem Repository und prüft den vollständigen angewendeten Migrationssatz `001`–`007`, `009`, `011`–`042`, dessen Historie sowie `ENABLE`/`FORCE ROW LEVEL SECURITY` für neun DMS-Tabellen. Danach erstellt er mit `backup_cron.sh` ein verschlüsseltes Backup, prüft den Healthcheck einschließlich fehlgeschlagenem Sicherungsversuch und erfolgreichem Folgelauf, mutiert DMS-Metadaten, entfernt beide synthetischen Objekte, stellt DB und Objektsnapshot wieder her und verifiziert Versions-/Auditdaten, SHA-256, benutzerdefinierte Objektmetadaten und Tenant-RLS einschließlich eines abgewiesenen Fremdtenant-Schreibversuchs. Ein injizierter DDL-Fehler nach der Clean-Phase muss einen abweichenden Vor-Restore-Datenstand unverändert erhalten; Restore-/Resume-Fehler lassen Dienste gestoppt. Der Lauf hat begrenzte Wartezeiten und räumt ausschließlich Ressourcen seines eindeutigen Testprojekts auf.
 
 Die Testzugangsdaten liegen in einer lokalen temporären Datei. Der MC-Container erhält ausschließlich das Fixture-Verzeichnis schreibgeschützt. Produktions-Compose, Produktionsdaten, Produktionszugangsdaten und externe Anbieterendpunkte werden nicht verwendet. `--database-only` überspringt den S3-Objektschritt; der Standardlauf testet MinIO lokal, optional kann `RESTORE_TEST_S3_BACKEND=seaweedfs` einen lokalen SeaweedFS-Dienst verwenden.
+
+Nur im Test läuft der Backup-Container mit UID/GID des aufrufenden
+Restore-Benutzers. Der Drill prüft Dateibesitz, Modus `0600` und tatsächliche
+Lesbarkeit vor dem Restore. Damit bleibt das private Bindmount-Archiv auch auf
+Linux ohne Rechteaufweitung lesbar; das Produktions-Benutzermodell wird nicht
+verändert.
 
 ### Einordnung der Restore-Nachweise
 

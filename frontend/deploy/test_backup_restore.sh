@@ -146,6 +146,8 @@ DMS_S3_FORCE_PATH_STYLE=true
 MINIO_API_PORT="$(free_port)"
 MINIO_CONSOLE_PORT="$(free_port)"
 RESTORE_TEST_TMPDIR="$TEMP_DIR"
+RESTORE_TEST_UID="$(id -u)"
+RESTORE_TEST_GID="$(id -g)"
 RESTORE_TEST_BACKUP_IMAGE="${RESTORE_TEST_BACKUP_IMAGE:-postgres:16-bookworm}"
 RESTORE_TEST_MINIO_IMAGE="${RESTORE_TEST_MINIO_IMAGE:-quay.io/minio/minio:RELEASE.2025-02-07T23-21-09Z}"
 RESTORE_TEST_MC_IMAGE="${RESTORE_TEST_MC_IMAGE:-quay.io/minio/mc:RELEASE.2025-02-08T19-14-21Z}"
@@ -208,6 +210,8 @@ RESTORE_TEST_S3_IMAGE=$RESTORE_TEST_S3_IMAGE
 MINIO_API_PORT=$MINIO_API_PORT
 MINIO_CONSOLE_PORT=$MINIO_CONSOLE_PORT
 RESTORE_TEST_TMPDIR="$RESTORE_TEST_TMPDIR"
+RESTORE_TEST_UID=$RESTORE_TEST_UID
+RESTORE_TEST_GID=$RESTORE_TEST_GID
 RESTORE_TEST_DATA_DIR="$TEST_DATA_DIR"
 RESTORE_TEST_BACKUP_IMAGE=$RESTORE_TEST_BACKUP_IMAGE
 RESTORE_TEST_MINIO_IMAGE=$RESTORE_TEST_MINIO_IMAGE
@@ -419,6 +423,20 @@ if [ "$ARCHIVE_COUNT" != 1 ]; then
     exit 1
 fi
 BACKUP_ARCHIVE="$(find "$BACKUP_DIR" -type f -name 'secops_backup_*.tar.gz.enc' -print)"
+python3 - "$BACKUP_ARCHIVE" <<'PY'
+import os
+import stat
+import sys
+
+archive = sys.argv[1]
+metadata = os.stat(archive)
+if metadata.st_uid != os.getuid() or stat.S_IMODE(metadata.st_mode) != 0o600:
+    raise SystemExit("Fehler: Testarchiv muss dem aufrufenden Benutzer gehören und Modus 0600 behalten.")
+with open(archive, "rb") as stream:
+    if not stream.read(1):
+        raise SystemExit("Fehler: Testarchiv ist leer.")
+print("[TEST] Privates Archiv (0600) gehört dem Restore-Benutzer und ist lesbar.")
+PY
 compose run --rm --no-deps --entrypoint /bin/bash backup /usr/local/bin/backup_healthcheck.sh
 echo "[TEST] Prüfe, dass ein fehlgeschlagenes Backup trotz vorhandenem Archiv ungesund ist."
 if compose run --rm --no-deps -e POSTGRES_USER=restore_test_missing backup; then

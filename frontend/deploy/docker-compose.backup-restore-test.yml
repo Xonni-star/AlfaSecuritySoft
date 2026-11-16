@@ -47,6 +47,7 @@ services:
 
   backup:
     image: ${RESTORE_TEST_BACKUP_IMAGE:-postgres:16-bookworm}
+    user: "${RESTORE_TEST_UID:?Set invoking test user ID}:${RESTORE_TEST_GID:?Set invoking test group ID}"
     depends_on:
       db:
         condition: service_healthy

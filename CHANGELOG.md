@@ -25,6 +25,8 @@
 
 ### Fehlerkorrekturen
 
+- Offline-Browser-Fixture besitzt explizite Standort-/Mitarbeiter-Leserechte und wartet vor Erfassung auf die erwarteten Referenz-IDs; kein Umgehen des produktiven Rechte-Gatings.
+- Isolierter Restore-Drill erzeugt Archive mit UID/GID des aufrufenden Restore-Benutzers und prüft Besitz, Lesbarkeit sowie weiterhin private `0600`-Rechte. Behebt den Linux-Bindmount-Zugriffsfehler ohne Änderung der Produktionsrechte.
 - Berechtigungsgerechtes Datenladen: reine SOP-Konten rufen keine sieben unberechtigten Basismodule mehr ab; Standort-/Eigenrechte bleiben beim Session-Restore erhalten. Tatsächliche API-Fehler bleiben sichtbar und werden nicht pauschal als unerreichbares Backend bezeichnet.
 - Navigation zeigt für angemeldete Konten die tatsächliche Sitzungsrolle statt der lokal simulierten „Einsatzleitung“; der lokale Rollenumschalter wird dort nicht mehr angeboten.
 - SOP-Formulare senden optionale leere Datums-/DMS-Felder als `null` für Anlage, Entwurfsänderung und neue Versionen; der zuvor reproduzierte HTTP-400-Fehler entfällt.
