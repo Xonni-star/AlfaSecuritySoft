@@ -112,8 +112,16 @@ Aktualisierung: FNL-020 `e3d6f9bd914a3840986d96fc676c3f4997fded49`
 bestand die zuvor offene exakte CI 43958520111 7/7; gelesene Logs 340/549/9
 plus Cleanup. FNL-021 korrigiert die lokale Owner-Wiederherstellung und späte
 Speicherergebnisse, mit acht neuen Komponentenfällen (sechs zunächst rot),
-kombiniert 171/171 gezielt und Typprüfung/Build. Neue Gesamt-CI bleibt separat;
-kein neuer umfassender Sicherheits-/Geräte-/Rollenabnahmenachweis.
+kombiniert 171/171 gezielt und Typprüfung/Build. Die exakte CI 43960314043 auf
+`a7af0bcc352f9274b02b7be19c9befeb598a0d05` bestand inzwischen 7/7;
+gelesene Logs 348/549/9 plus Cleanup.
+FNL-022 korrigiert acht reproduzierte Übergabe-Render-/Kontextfehler:
+echte Getter-Render-Schleife, private Entwurfsrücksetzung und alte Lese-/
+Schreibabschlüsse. Lokal Frontend 356/356, Typprüfung/Build bestanden.
+Eine zehnte echte Offline-Übergabe-/Quittungs-Browserjourney ist ergänzt,
+aber noch ungeprüft, da Docker lokal vor Stackstart nicht erreichbar war.
+Neue exakte Hosted-Ausführung offen; kein neuer Exploitbefund oder
+umfassender Sicherheits-/Geräte-/Rollenabnahmenachweis.
 
 Unberechtigte Reportanfragen wurden bereits vom Server abgewiesen; das
 Frontend vermeidet sie jetzt. Formularverlust, Zeitzonenvalidierung,

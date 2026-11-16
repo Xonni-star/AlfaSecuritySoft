@@ -189,6 +189,8 @@ export const HandoversModule: React.FC = () => {
     open_handovers: 0, open_tasks: 0, overdue_tasks: 0
   });
   const [selectedId, setSelectedId] = useState('');
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
   const [tasks, setTasks] = useState<HandoverTask[]>([]);
   const [events, setEvents] = useState<HandoverEvent[]>([]);
   const [linkedDocuments, setLinkedDocuments] = useState<HandoverDocument[]>([]);
@@ -212,8 +214,31 @@ export const HandoversModule: React.FC = () => {
   const [busy, setBusy] = useState(false);
 
   useLayoutEffect(() => {
+    setHandovers([]);
+    setTotal(0);
+    setCounts({
+      today: 0, waiting_handover_confirmation: 0, waiting_takeover_acknowledgement: 0,
+      open_handovers: 0, open_tasks: 0, overdue_tasks: 0
+    });
+    setSelectedId('');
+    selectedIdRef.current = '';
+    setTasks([]);
+    setEvents([]);
+    setLinkedDocuments([]);
     setLocalMutations([]);
+    setFilter({ search: '', siteId: '', status: '', openTasks: '', from: '', to: '' });
+    setPage(0);
+    setForm({ ...emptyForm, occurredAt: new Date().toISOString().slice(0, 16) });
+    setIsCreateOpen(false);
+    setIsEditing(false);
+    setEditFields({ area: '', generalText: '', incidents: '', importantNotes: '', safetyInformation: '' });
+    setTaskForm({ title: '', description: '', assignedEmployeeId: '', priority: 'normal', dueAt: '' });
+    setNoteText('');
+    setDocumentId('');
+    setError('');
     setStorageError('');
+    setNotice('');
+    setBusy(false);
   }, [identityKey]);
 
   const selected = handovers.find(handover => handover.id === selectedId);
@@ -250,7 +275,7 @@ export const HandoversModule: React.FC = () => {
   }, [currentTenantId, userId, identityKey]);
 
   const refreshList = useCallback(async () => {
-    if (!permissions.includes('handovers:read')) return;
+    if (identityRef.current !== identityKey || !permissions.includes('handovers:read')) return;
     setError('');
     const siteQuery = filter.siteId ? `?siteId=${encodeURIComponent(filter.siteId)}` : '';
     try {
@@ -258,16 +283,19 @@ export const HandoversModule: React.FC = () => {
         apiClient.get<HandoverListResponse>(`/handovers?${listQuery}`),
         apiClient.get<DashboardCounts>(`/handovers/dashboard${siteQuery}`)
       ]);
+      if (identityRef.current !== identityKey) return;
       setHandovers(list.items);
       setTotal(list.total);
       setCounts(dashboard);
       setSelectedId(current => list.items.some(item => item.id === current) ? current : (list.items[0]?.id || ''));
     } catch (loadError) {
+      if (identityRef.current !== identityKey) return;
       setError(loadError instanceof Error ? loadError.message : 'Übergaben konnten nicht geladen werden.');
     }
-  }, [filter.siteId, listQuery, permissions]);
+  }, [filter.siteId, listQuery, permissions, identityKey]);
 
   const refreshDetails = useCallback(async (handoverId: string) => {
+    if (identityRef.current !== identityKey || selectedIdRef.current !== handoverId) return;
     if (!handoverId) {
       setTasks([]);
       setEvents([]);
@@ -280,13 +308,15 @@ export const HandoversModule: React.FC = () => {
         apiClient.get<{ items: HandoverEvent[] }>(`/handovers/${handoverId}/events?limit=50`),
         canReadDocuments ? apiClient.get<HandoverDocument[]>(`/handovers/${handoverId}/documents`) : Promise.resolve([])
       ]);
+      if (identityRef.current !== identityKey || selectedIdRef.current !== handoverId) return;
       setTasks(taskResult);
       setEvents(eventResult.items);
       setLinkedDocuments(documentResult);
     } catch (loadError) {
+      if (identityRef.current !== identityKey || selectedIdRef.current !== handoverId) return;
       setError(loadError instanceof Error ? loadError.message : 'Details zur Übergabe konnten nicht geladen werden.');
     }
-  }, [canReadDocuments]);
+  }, [canReadDocuments, identityKey]);
 
   useEffect(() => {
     void refreshList();
@@ -298,17 +328,24 @@ export const HandoversModule: React.FC = () => {
   }, [refreshDetails, selectedId, isSyncing]);
 
   useEffect(() => {
-    setForm(current => ({
-      ...current,
-      siteId: current.siteId || sites[0]?.id || '',
-      outgoingEmployeeId: current.outgoingEmployeeId || employees[0]?.id || '',
-      incomingEmployeeId: current.incomingEmployeeId || employees.find(item => item.id !== employees[0]?.id)?.id || '',
-      taskAssignee: current.taskAssignee || employees[0]?.id || ''
-    }));
+    setForm(current => {
+      const next = {
+        ...current,
+        siteId: current.siteId || sites[0]?.id || '',
+        outgoingEmployeeId: current.outgoingEmployeeId || employees[0]?.id || '',
+        incomingEmployeeId: current.incomingEmployeeId || employees.find(item => item.id !== employees[0]?.id)?.id || '',
+        taskAssignee: current.taskAssignee || employees[0]?.id || ''
+      };
+      return next.siteId === current.siteId &&
+        next.outgoingEmployeeId === current.outgoingEmployeeId &&
+        next.incomingEmployeeId === current.incomingEmployeeId &&
+        next.taskAssignee === current.taskAssignee ? current : next;
+    });
   }, [employees, sites]);
 
   const submitHandover = async (event: FormEvent) => {
     event.preventDefault();
+    const requestIdentity = identityKey;
     if (!authUser || !form.siteId || !form.outgoingEmployeeId || !form.incomingEmployeeId) {
       setError('Objekt und beide beteiligten Mitarbeitenden müssen ausgewählt sein.');
       return;
@@ -355,26 +392,31 @@ export const HandoversModule: React.FC = () => {
         occurredAt: capturedAt,
         baseVersion: 1
       });
+      if (identityRef.current !== requestIdentity) return;
       setNotice(isOnline
         ? 'Lokal gespeichert. Die Serverbestätigung steht noch aus.'
         : 'Offline in der IndexedDB gespeichert. Die Serverbestätigung steht noch aus.');
       setForm({ ...emptyForm, siteId: form.siteId, occurredAt: new Date().toISOString().slice(0, 16) });
       setIsCreateOpen(false);
       await refreshLocalMutations();
+      if (identityRef.current !== requestIdentity) return;
       if (isOnline) {
         await triggerManualSync();
+        if (identityRef.current !== requestIdentity) return;
         await refreshList();
         await refreshLocalMutations();
       }
     } catch (saveError) {
+      if (identityRef.current !== requestIdentity) return;
       setError(saveError instanceof Error ? saveError.message : 'Übergabe konnte nicht sicher lokal gespeichert werden.');
     } finally {
-      setBusy(false);
+      if (identityRef.current === requestIdentity) setBusy(false);
     }
   };
 
   const confirm = async (type: 'confirm' | 'acknowledge') => {
     if (!selected) return;
+    const requestIdentity = identityKey;
     setBusy(true);
     setError('');
     try {
@@ -383,19 +425,22 @@ export const HandoversModule: React.FC = () => {
         expectedRevisionVersion: selected.revisionVersion,
         capturedAt: new Date().toISOString()
       });
+      if (identityRef.current !== requestIdentity) return;
       setNotice(type === 'confirm' ? 'Übergabe wurde vom Server bestätigt.' : 'Übernahme wurde vom Server bestätigt.');
       await refreshList();
       await refreshDetails(selected.id);
     } catch (actionError) {
+      if (identityRef.current !== requestIdentity) return;
       setError(actionError instanceof Error ? actionError.message : 'Bestätigung konnte nicht gespeichert werden.');
     } finally {
-      setBusy(false);
+      if (identityRef.current === requestIdentity) setBusy(false);
     }
   };
 
   const saveEdit = async (event: FormEvent) => {
     event.preventDefault();
     if (!selected) return;
+    const requestIdentity = identityKey;
     setBusy(true);
     setError('');
     try {
@@ -407,20 +452,23 @@ export const HandoversModule: React.FC = () => {
         importantNotes: editFields.importantNotes,
         safetyInformation: editFields.safetyInformation
       });
+      if (identityRef.current !== requestIdentity) return;
       setIsEditing(false);
       setNotice('Übergabeänderung wurde als neue Revision gespeichert.');
       await refreshList();
       await refreshDetails(selected.id);
     } catch (editError) {
+      if (identityRef.current !== requestIdentity) return;
       setError(editError instanceof Error ? editError.message : 'Änderung konnte nicht gespeichert werden.');
     } finally {
-      setBusy(false);
+      if (identityRef.current === requestIdentity) setBusy(false);
     }
   };
 
   const addTask = async (event: FormEvent) => {
     event.preventDefault();
     if (!selected || !taskForm.title.trim() || !taskForm.assignedEmployeeId) return;
+    const requestIdentity = identityKey;
     setBusy(true);
     setError('');
     try {
@@ -431,20 +479,23 @@ export const HandoversModule: React.FC = () => {
         priority: taskForm.priority,
         dueAt: taskForm.dueAt ? new Date(taskForm.dueAt).toISOString() : null
       });
+      if (identityRef.current !== requestIdentity) return;
       setTaskForm({ title: '', description: '', assignedEmployeeId: '', priority: 'normal', dueAt: '' });
       setNotice('Aufgabe wurde serverseitig angelegt und bleibt objektbezogen offen.');
       await refreshList();
       await refreshDetails(selected.id);
     } catch (taskError) {
+      if (identityRef.current !== requestIdentity) return;
       setError(taskError instanceof Error ? taskError.message : 'Aufgabe konnte nicht gespeichert werden.');
     } finally {
-      setBusy(false);
+      if (identityRef.current === requestIdentity) setBusy(false);
     }
   };
 
   const updateTask = async (task: HandoverTask) => {
     const nextStatus = task.status === 'open' ? 'in_progress' : task.status === 'in_progress' ? 'done' : null;
     if (!selected || !nextStatus) return;
+    const requestIdentity = identityKey;
     setBusy(true);
     setError('');
     try {
@@ -452,56 +503,70 @@ export const HandoversModule: React.FC = () => {
         expectedVersion: task.revision_version,
         status: nextStatus
       });
+      if (identityRef.current !== requestIdentity) return;
       await refreshList();
       await refreshDetails(selected.id);
     } catch (taskError) {
+      if (identityRef.current !== requestIdentity) return;
       setError(taskError instanceof Error ? taskError.message : 'Aufgabenstatus konnte nicht aktualisiert werden.');
     } finally {
-      setBusy(false);
+      if (identityRef.current === requestIdentity) setBusy(false);
     }
   };
 
   const addNote = async (type: 'questions' | 'corrections') => {
     if (!selected || !noteText.trim()) return;
+    const requestIdentity = identityKey;
     setBusy(true);
     setError('');
     try {
       await apiClient.post(`/handovers/${selected.id}/${type}`, { text: noteText.trim() });
+      if (identityRef.current !== requestIdentity) return;
       setNoteText('');
       setNotice(type === 'questions' ? 'Rückfrage wurde in der Historie dokumentiert.' : 'Korrektur wurde in der Historie dokumentiert; bestätigte Inhalte bleiben unverändert.');
       await refreshDetails(selected.id);
     } catch (noteError) {
+      if (identityRef.current !== requestIdentity) return;
       setError(noteError instanceof Error ? noteError.message : 'Eintrag konnte nicht dokumentiert werden.');
     } finally {
-      setBusy(false);
+      if (identityRef.current === requestIdentity) setBusy(false);
     }
   };
 
   const linkDocument = async () => {
     if (!selected || !documentId) return;
+    const requestIdentity = identityKey;
     setBusy(true);
     setError('');
     try {
       await apiClient.post(`/handovers/${selected.id}/documents`, { documentId });
+      if (identityRef.current !== requestIdentity) return;
       setDocumentId('');
       setNotice('Bestehendes DMS-Dokument wurde ohne Dateiduplikat verknüpft.');
       await refreshList();
       await refreshDetails(selected.id);
     } catch (linkError) {
+      if (identityRef.current !== requestIdentity) return;
       setError(linkError instanceof Error ? linkError.message : 'DMS-Verknüpfung konnte nicht gespeichert werden.');
     } finally {
-      setBusy(false);
+      if (identityRef.current === requestIdentity) setBusy(false);
     }
   };
 
   const retrySync = async () => {
+    const requestIdentity = identityKey;
     setBusy(true);
     try {
       await triggerManualSync();
+      if (identityRef.current !== requestIdentity) return;
       await refreshList();
       await refreshLocalMutations();
+    } catch (syncError) {
+      if (identityRef.current === requestIdentity) {
+        setError(syncError instanceof Error ? syncError.message : 'Übergaben konnten nicht synchronisiert werden.');
+      }
     } finally {
-      setBusy(false);
+      if (identityRef.current === requestIdentity) setBusy(false);
     }
   };
 

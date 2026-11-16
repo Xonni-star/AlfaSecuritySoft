@@ -10,7 +10,7 @@ Python files in `frontend/backend/*.py`, `frontend/alembic`, and `frontend/tests
 
 ## Module matrix
 
-All paths below are relative to `frontend/`. The routes are registered in `backend/src/app.ts`; controllers use the active PostgreSQL transaction layer. Exact hosted CI 43958520111 on `e3d6f9bd914a3840986d96fc676c3f4997fded49` passed backend 549 tests in 35 suites, frontend 340 in 36 files, real browser 9 and cleanup, all seven jobs. Earlier backend 535/546 runs and local Roster timeouts remain historical failures, not reinterpreted as local success. API/sync budgets are 30 seconds, Patrol 60 seconds, frontend defaults five seconds; higher budgets are not performance acceptance. New FNL-021 has targeted evidence only until its exact hosted follow-up. Test existence alone is not evidence that every scenario is covered.
+All paths below are relative to `frontend/`. The routes are registered in `backend/src/app.ts`; controllers use the active PostgreSQL transaction layer. Exact hosted CI 43960314043 on `a7af0bcc352f9274b02b7be19c9befeb598a0d05` passed backend 549 tests in 35 suites, frontend 348 in 36 files, real browser 9 and cleanup, all seven jobs. Earlier backend 535/546 runs and local Roster timeouts remain historical failures, not reinterpreted as local success. API/sync budgets are 30 seconds, Patrol 60 seconds, frontend defaults five seconds; higher budgets are not performance acceptance. New FNL-022 passes full local frontend 356, typecheck/build; its new tenth browser case is not yet verified because local Docker became unavailable. Exact hosted follow-up is required. Test existence alone is not evidence that every scenario is covered.
 
 | Module | Active implementation and persistence | Automated evidence | Status and remaining boundary |
 |---|---|---|---|
@@ -33,6 +33,8 @@ All paths below are relative to `frontend/`. The routes are registered in `backe
 
 ## Verification boundaries
 
+- FNL-022 corrects the actual getter-array handover render loop, private-context reset and stale list/detail/write completion. Eight original regressions failed; full frontend 356/356, typecheck/build passed locally. A new tenth real handover offline/lost-receipt journey is added but not yet passed; the local runner failed before stack startup because Docker was unavailable. Do not attribute this work to the preceding CI.
+- FNL-021 is now hosted-verified: `a7af0bcc352f9274b02b7be19c9befeb598a0d05`, CI 43960314043 7/7, read logs 348/549/9 with cleanup. This resolves its historical hosted prerequisite below, not FNL-022.
 - FNL-021 adds eight controlled component cases (six originally failing) for owner-bound local patrol/handover restore, immediate clearing, late completion/errors and missing owner. Combined targeted frontend 171/171, typecheck/build passed; new exact hosted full verification remains separate. These are not physical-device or full authenticated patrol/handover evidence.
 - FNL-020 is now fully hosted-verified: `e3d6f9bd914a3840986d96fc676c3f4997fded49`, CI 43958520111 7/7, read logs 340/549/9 and cleanup. This resolves the historical hosted prerequisite below without changing failed/interrupted local results.
 - FNL-020 targeted frontend 155/155, affected PostgreSQL 36/36, typecheck/both builds and real browser 9/9 with cleanup passed. Final local full frontend attempts failed in Roster; the full backend run was interrupted, not a complete 549/549 pass. See current status for exact limits. No fictional initial revision remains.

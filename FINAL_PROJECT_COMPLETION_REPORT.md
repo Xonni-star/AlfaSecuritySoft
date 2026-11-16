@@ -117,9 +117,16 @@ gelesene Logs 340/549/9 plus Cleanup. Frühere lokale Fehler bleiben erhalten.
 FNL-021 bindet nun lokale Kontrollgangs-/Übergabewiederherstellung an Owner,
 leert alte Zustände vor dem Paint und ignoriert alte Speicherergebnisse.
 Acht neue Komponentenfälle, sechs ursprünglich rot; kombiniert 171/171
-gezielt, Typprüfung/Build bestanden. Neue Gesamt-CI bleibt separat.
-FNL-022 prüft anschließend verbleibende Übergabe-Server-/Schreibabschlüsse
-bei Identitätswechsel; noch kein bestätigter Exploit.
+gezielt, Typprüfung/Build bestanden. Inzwischen hat die exakte CI 43960314043
+auf `a7af0bcc352f9274b02b7be19c9befeb598a0d05` alle 7/7 Jobs bestanden;
+gelesene Logs 348/549/9 plus Cleanup.
+FNL-022 korrigiert acht reproduzierte Übergabe-Render-/Kontextfehler:
+Render-Schleife mit echten Getter-Arrays, private Entwurfsrücksetzung sowie
+alte Listen-/Detail-/Schreibabschlüsse. Lokal Frontend 356/356 in 36 Dateien,
+Typprüfung/Build bestanden. Eine zehnte echte Offline-Übergabe-Browserjourney
+mit verlorener echter Quittung ist ergänzt, aber noch nicht erfolgreich
+ausgeführt: Docker war lokal schon vor Stackstart nicht erreichbar.
+Exakte neue Hosted-Prüfung offen; kein bestätigter neuer Exploit oder Gesamtabschluss.
 
 Verbindliche Details:
 [Tracker](./PROJECT_COMPLETION_TRACKER.md),

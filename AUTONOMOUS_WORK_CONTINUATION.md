@@ -314,9 +314,33 @@ typecheck/build passed; backend unchanged. Real device/full authenticated
 patrol/handover acceptance is not established.
 Log: `finalization-owner-restore-red.log` (six original failures).
 
-1. Publish coherent FNL-021 and verify all hosted jobs
-   on the exact new full SHA; inspect actual logs before updating evidence.
-   The preceding 7/7 does not validate these newer changes.
+FNL-021 is now published as `a7af0bcc352f9274b02b7be19c9befeb598a0d05`.
+Exact CI 43960314043 passed 7/7; downloaded actual logs establish frontend
+348/348, backend 549/549 in 35 suites, real browser 9/9 and cleanup.
+Log: `finalization-owner-restore-hosted-ci.log`.
+
+FNL-022 reproduces eight initially failing cases: late list/detail success and
+error, old local enqueue success/error clobbering a new owner's draft, uncleared
+private draft and a real render loop caused by fresh filtered getter arrays.
+Identity/selected-record guards and before-paint resets now protect private UI;
+unchanged form defaults preserve object identity rather than scheduling an
+endless render. All asynchronous write completions retain their identity.
+Full frontend 356/356 in 36 files, typecheck and production build passed locally
+without budget increases or removed assertions.
+Logs: `finalization-handover-context-red.log`,
+`finalization-handover-context-frontend.log`.
+
+A tenth genuine browser case was added for real handover offline create/reload,
+lost first genuine server receipt, identical replay, one stored record and
+actual general text/participants after reload. It has not yet run: the local
+runner failed before stack startup because the Docker Unix socket was absent.
+`finalization-handover-context-browser.log` is that blocked attempt, **not** a
+10/10 success or evidence of live-container cleanup. Do not start/reconfigure
+unrelated services to manufacture a local pass; use the isolated hosted runner.
+
+1. Publish coherent FNL-022 and verify all hosted jobs on the exact new full SHA;
+   read actual logs and fix the new browser journey/product if it fails.
+   The preceding 7/7 does not validate these newer changes or the tenth journey.
 2. Repeat a bounded convergence audit for new concrete functional defects,
    misleading current UI/docs and missing directly relevant regressions.
    Do not turn actual API 403s or functional test fixture errors into unproven
@@ -327,11 +351,11 @@ Log: `finalization-owner-restore-red.log` (six original failures).
    no remaining `throw new Error('offline')` or online-state-based catch fallback
    in the active store/controllers/components; this is not exhaustive coverage.
    Inspect remaining real workflow boundaries, not already corrected handlers.
-   Concrete next task FNL-022: reproduce remaining handover list/detail and
-   write-completion publication across identity changes. App does not key this
-   component by identity and these paths do not use the new local-queue guard.
-   Confirm the actual failure with focused regressions before fixing it; no
-   confirmed vulnerability or complete module acceptance is claimed.
+   The FNL-022 render/context defects above are now corrected, not a remaining
+   reproduction task. Next inspect actual handover confirmation eligibility:
+   current UI matches employee email, whereas the backend uses explicit
+   employee account linkage. Establish a real user-visible mismatch before
+   adding a correction; this is not a reported authorization bypass.
 3. Keep the requested final documents/tracker current; no ESLint configuration
    or script was found, so do not claim lint ran.
 4. Merge PR #66 only after

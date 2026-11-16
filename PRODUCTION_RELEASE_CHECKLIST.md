@@ -43,10 +43,15 @@ Test, ein Merge und ein erfolgreiches Containerimage ersetzen sie nicht.
       Exakte CI 43958520111 auf e3d6f9bd914a3840986d96fc676c3f4997fded49
       bestand 7/7, gelesene Logs 340/549/9 plus Cleanup. Vorherige lokale
       Fehlläufe werden dadurch nicht zu lokalen Erfolgen oder Produktionsabnahme.
-- [ ] FNL-021-Gesamtprüfung: lokale Kontrollgangs-/Übergabewiederherstellung
+- [x] FNL-021-Gesamtprüfung: lokale Kontrollgangs-/Übergabewiederherstellung
       ownergebunden implementiert; acht neue Komponentenfälle, sechs zunächst rot,
-      kombiniert 171/171 gezielt und Typprüfung/Build bestanden. Neue CI separat.
-- [ ] FNL-022: verbleibende Übergabe-Server-/Schreibabschlüsse bei Identitätswechsel prüfen.
+      kombiniert 171/171 gezielt und Typprüfung/Build bestanden. Exakte CI
+      43960314043 auf a7af0bcc352f9274b02b7be19c9befeb598a0d05 bestand 7/7;
+      gelesene Logs 348/549/9 plus Cleanup.
+- [ ] FNL-022-Gesamtprüfung: acht Übergabe-Render-/Kontextfehler reproduziert und
+      korrigiert; lokal Frontend 356/356, Typprüfung/Build bestanden. Neue zehnte
+      Browserjourney ist noch nicht erfolgreich gelaufen: Docker lokal vor
+      Stackstart nicht erreichbar. Exakte Hosted-Ausführung bleibt erforderlich.
 
 Diese Haken bestätigen nur den beschriebenen Entwicklungsnachweis;
 die exakten Revisionen stehen im [Projektstatus](./PROJECT_CURRENT_STATUS.md).

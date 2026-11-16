@@ -49,6 +49,22 @@ describe('HandoversModule', () => {
     entityType: 'handover', action: 'CREATE', payload: {}, occurredAt: new Date().toISOString(),
     baseVersion: 1, retryCount: 1, status: 'FAILED', errorMessage: `error-${userId}`
   });
+  const persistedHandover = (id = 'handover-1', siteName = 'Objekt Nord') => ({
+    id, siteId: 'site-1', siteName, occurredAt: '2026-11-13T06:00:00.000Z',
+    generalText: '', incidents: '', importantNotes: '', safetyInformation: '',
+    status: 'pending_handover_confirmation', revisionVersion: 7,
+    clientMutationId: `create-${id}`, createdByUserId: 'creator-1', createdByName: 'Test',
+    outgoingEmployeeId: 'employee-1', outgoingEmployeeName: 'Alex Alt',
+    incomingEmployeeId: 'employee-2', incomingEmployeeName: 'Sam Neu',
+    openTasksCount: 0, createdTasksCount: 0, documentCount: 0
+  });
+
+  function setDraft(value: string) {
+    const field = container.querySelector<HTMLTextAreaElement>('form textarea');
+    if (!field) throw new Error('Übergabeentwurf fehlt');
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(field, value);
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  }
 
   beforeEach(() => {
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -219,5 +235,120 @@ describe('HandoversModule', () => {
     const displayedPreviousOwner = container.textContent?.includes('local-user-1');
     await act(async () => finish([]));
     expect(displayedPreviousOwner).toBe(false);
+  });
+
+  test.each(['success', 'failure'] as const)('ignores a previous tenant delayed server list %s', async outcome => {
+    let finish!: (value: { items: ReturnType<typeof persistedHandover>[]; total: number }) => void;
+    let fail!: (error: Error) => void;
+    const oldList = new Promise<{ items: ReturnType<typeof persistedHandover>[]; total: number }>((resolve, reject) => {
+      finish = resolve;
+      fail = reject;
+    });
+    const normalGet = mocks.get.getMockImplementation()!;
+    mocks.get.mockImplementation((path: string) => {
+      if (path.startsWith('/handovers?')) return mocks.state.currentTenantId === 'tenant-a'
+        ? oldList : Promise.resolve({ items: [], total: 0 });
+      if (path.endsWith('/tasks')) return Promise.resolve([]);
+      return normalGet(path);
+    });
+    await act(async () => root.render(<HandoversModule />));
+    mocks.state.currentTenantId = 'tenant-b';
+    mocks.state.authUser = { ...mocks.state.authUser, id: 'user-2', tenantId: 'tenant-b' };
+    await act(async () => root.render(<HandoversModule />));
+    await act(async () => {
+      if (outcome === 'success') finish({ items: [persistedHandover('old-a', 'OLD_PRIVATE_SITE')], total: 1 });
+      else fail(new Error('old-list-error'));
+    });
+    expect(container.textContent).not.toContain('OLD_PRIVATE_SITE');
+    expect(container.textContent).not.toContain('old-list-error');
+  });
+
+  test.each(['success', 'failure'] as const)('ignores a previous tenant delayed detail %s', async outcome => {
+    const foreignIdRequests: string[] = [];
+    let finish!: (value: Array<{ id: string; title: string; status: string; priority: string }>) => void;
+    let fail!: (error: Error) => void;
+    const oldTasks = new Promise<Array<{ id: string; title: string; status: string; priority: string }>>((resolve, reject) => {
+      finish = resolve;
+      fail = reject;
+    });
+    const normalGet = mocks.get.getMockImplementation()!;
+    mocks.get.mockImplementation((path: string) => {
+      if (path.startsWith('/handovers?')) return Promise.resolve({
+        items: [persistedHandover(mocks.state.currentTenantId === 'tenant-a' ? 'old-a' : 'new-b', 'Current Site')], total: 1
+      });
+      if (path === '/handovers/old-a/tasks') {
+        if (mocks.state.currentTenantId === 'tenant-a') return oldTasks;
+        foreignIdRequests.push(path);
+        return Promise.resolve([]);
+      }
+      if (path.endsWith('/tasks')) return Promise.resolve([]);
+      return normalGet(path);
+    });
+    await act(async () => root.render(<HandoversModule />));
+    mocks.state.currentTenantId = 'tenant-b';
+    mocks.state.authUser = { ...mocks.state.authUser, id: 'user-2', tenantId: 'tenant-b' };
+    await act(async () => root.render(<HandoversModule />));
+    await act(async () => {
+      if (outcome === 'success') finish([{ id: 'old-task', title: 'OLD_PRIVATE_TASK', status: 'open', priority: 'normal' }]);
+      else fail(new Error('old-details-error'));
+    });
+    expect(container.textContent).not.toContain('OLD_PRIVATE_TASK');
+    expect(container.textContent).not.toContain('old-details-error');
+    expect(foreignIdRequests).toEqual([]);
+  });
+
+  test.each(['success', 'failure'] as const)('preserves the current owner draft after an old enqueue %s', async outcome => {
+    let finish!: () => void;
+    let fail!: (error: Error) => void;
+    mocks.enqueueMutation.mockReturnValueOnce(new Promise<void>((resolve, reject) => {
+      finish = resolve;
+      fail = reject;
+    }));
+    await act(async () => root.render(<HandoversModule />));
+    const create = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Neue Übergabe'))!;
+    await act(async () => create.click());
+    const submit = container.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    await act(async () => submit.click());
+    expect(mocks.enqueueMutation).toHaveBeenCalledOnce();
+
+    mocks.state.authUser = { ...mocks.state.authUser, id: 'user-2' };
+    await act(async () => root.render(<HandoversModule />));
+    const close = container.querySelector<HTMLButtonElement>('button[aria-label="Formular schließen"]');
+    if (close) await act(async () => close.click());
+    await act(async () => create.click());
+    await act(async () => setDraft('CURRENT_OWNER_DRAFT'));
+    await act(async () => {
+      if (outcome === 'success') finish();
+      else fail(new Error('old-enqueue-error'));
+    });
+    expect(container.querySelector<HTMLTextAreaElement>('form textarea')?.value).toBe('CURRENT_OWNER_DRAFT');
+    expect(container.textContent).not.toContain('old-enqueue-error');
+    expect(container.textContent).not.toContain('Offline in der IndexedDB gespeichert.');
+  });
+
+  test('clears an open private draft when the owner changes', async () => {
+    await act(async () => root.render(<HandoversModule />));
+    const create = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Neue Übergabe'))!;
+    await act(async () => create.click());
+    await act(async () => setDraft('OLD_OWNER_PRIVATE_DRAFT'));
+    mocks.state.authUser = { ...mocks.state.authUser, id: 'user-2' };
+    await act(async () => root.render(<HandoversModule />));
+    expect(container.querySelector('form')).toBeNull();
+    await act(async () => create.click());
+    expect(container.querySelector<HTMLTextAreaElement>('form textarea')?.value).toBe('');
+  });
+
+  test('renders a stable populated form with real store-style fresh getter arrays', async () => {
+    const sites = mocks.state.getTenantSites();
+    let reads = 0;
+    mocks.state.getTenantSites.mockImplementation(() => {
+      if (++reads > 12) throw new Error('Repeated handover form render loop');
+      return [...sites];
+    });
+    await act(async () => root.render(<HandoversModule />));
+    const create = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Neue Übergabe'))!;
+    await act(async () => create.click());
+    expect(container.querySelector<HTMLSelectElement>('form select')?.value).toBe('site-1');
+    expect(reads).toBeLessThan(12);
   });
 });

@@ -8,15 +8,15 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
-**Fully hosted-verified code revision:** `e3d6f9bd914a3840986d96fc676c3f4997fded49`
+**Fully hosted-verified code revision:** `a7af0bcc352f9274b02b7be19c9befeb598a0d05`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
-Its exact [CI 43958520111](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43958520111)
-passed **7/7 jobs**; downloaded logs confirm frontend **340/340**, backend
+Its exact [CI 43960314043](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43960314043)
+passed **7/7 jobs**; downloaded logs confirm frontend **348/348**, backend
 **549/549 in 35 suites**, real browser **9/9** and owned-container cleanup.
 This includes confirmed form writes, report grant/date/identity fixes, durable
 critical-incident follow-ups, truthful audit displays and delayed local-write
-identity isolation, plus FNL-013–020 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
+identity isolation, plus FNL-013–021 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
 and `5ef02b3ab0b9f711025405247e711f21d3ee9811` passed their own
 CI 43929519192 and 43928436875, 7/7 each.
 
@@ -61,12 +61,12 @@ does not establish the full suite. The full local backend run was intentionally
 interrupted; its sync and migration suites passed, including a 534.914-second
 migration suite, but no complete local 549/549 result is claimed. The separate fresh
 36/36 run and final browser run cleaned up their owned containers.
-The independent exact hosted CI 43958520111 above subsequently passed all seven
+The independent exact historical hosted CI 43958520111 subsequently passed all seven
 jobs, including frontend 340/340, backend 549/549 and browser 9/9 with cleanup.
 This closes the hosted full-suite prerequisite, without rewriting local failures
 as local success. No migration was added.
 
-**Subsequent FNL-021 — IMPLEMENTIERT; full verification OFFEN:** Mobile patrol
+**Published FNL-021 — IMPLEMENTIERT UND GETESTET:** Mobile patrol
 and handover local outbox reads now require the current owner. Restored owner
 state clears before paint; delayed old local reads/errors and post-cache scan
 publication cannot contaminate the next identity. Missing patrol owner/tenant
@@ -74,9 +74,30 @@ produces an explicit error instead of an unscoped restore. Eight new component
 cases include six originally failing cases and two additional owner-clear/
 missing-owner cases. Combined targeted frontend **171/171**, typecheck and
 build passed. These are controlled component/IndexedDB tests, not real-device
-or full authenticated patrol/handover acceptance; new exact full CI is separate.
+or full authenticated patrol/handover acceptance. Exact CI 43960314043 above
+now passed 7/7, read logs frontend 348/348, backend 549/549 and browser 9/9
+with cleanup; this closes its earlier hosted prerequisite.
 A bounded static review established the original functional defects, not a
 confirmed private-payload leak or cross-owner server mutation.
+
+**Subsequent FNL-022 — IMPLEMENTIERT; full verification OFFEN:** Eight new
+initially failing cases reproduced late handover list/detail success/errors,
+old local enqueue completion/error overwriting a current owner's draft, an
+uncleared private form and a render loop with actual store-style fresh getter
+arrays. Private list/detail/form/filter/status state now resets before paint;
+all handover write-completion paths guard their original identity. Detail
+results also remain bound to the selected record, and form seeding returns
+the current object when nothing changes, preventing the real getter loop.
+Full local frontend **356/356 in 36 files**, typecheck and production build
+passed without larger budgets or removed assertions.
+
+A tenth genuine browser journey now exercises real handover creation, offline
+reload, actual lost first server receipt, identical replay, one stored record,
+authenticated creator/participants and text after reload. It has **not yet run
+successfully**: the local runner stopped at an unavailable Docker Unix socket
+before starting the isolated stack. No ten-case success or cleanup proof is
+claimed from that failure. Exact hosted execution is required; the nine-case
+hosted result above does not validate this new journey or FNL-022.
 
 **Published FNL-018 — IMPLEMENTIERT UND GETESTET:** Sync
 now checks identity after awaited attachment inspection and post-sync snapshots

@@ -83,10 +83,15 @@ Kontrollgangs-/Übergabewiederherstellung) war der nächste interne Schritt.
 Inzwischen ist FNL-020 auf `e3d6f9bd914a3840986d96fc676c3f4997fded49`
 vollständig gehostet bestätigt: CI 43958520111 7/7, gelesene Logs 340/549/9
 plus Cleanup. FNL-021 ist mit acht neuen Komponentenfällen (sechs zunächst rot)
-und kombiniert 171/171 gezielten Tests, Typprüfung/Build implementiert/geprüft;
-die neue exakte Gesamt-CI bleibt offen. Verbleibende Übergabe-Server-/
-Schreibabschlussgrenzen werden als konkrete FNL-022 geprüft, nicht als
-bereits nachgewiesene Schwachstelle oder externe Blockade geführt.
+und kombiniert 171/171 gezielten Tests, Typprüfung/Build implementiert/geprüft.
+Inzwischen bestätigt CI 43960314043 auf a7af0bcc352f9274b02b7be19c9befeb598a0d05
+FNL-021 mit 7/7; gelesene Logs 348/549/9 plus Cleanup.
+FNL-022 korrigiert acht reproduzierte Übergabe-Render-/Kontextfehler:
+idempotente Vorbelegung, private Zustandsrücksetzung und identitäts-/
+auswahlgebundene Lese-/Schreibabschlüsse. Lokal Frontend 356/356,
+Typprüfung/Build bestanden. Neue zehnte echte Offline-Übergabe-Browserjourney
+ist ergänzt, aber wegen lokal nicht erreichbarem Docker noch ungeprüft;
+exakte Hosted-Prüfung offen. Keine vollständige Rollen-/Geräteabnahme.
 
 Interne Arbeit bleibt offen: Konvergenz-/Berechtigungsabdeckung erweitern,
 vorhandene Teilmodule fachlich abnehmen und fehlende Produktfunktionen nur

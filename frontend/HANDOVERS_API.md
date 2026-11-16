@@ -82,6 +82,11 @@ Mandanten und angemeldeten Benutzers. Ein Kontenwechsel leert die bisherige
 lokale Anzeige vor dem Paint; verspätete Ergebnisse oder Speicherfehler des
 vorherigen Kontos werden nicht veröffentlicht. Das löscht oder übernimmt keine
 fremden Mutationen und ersetzt nicht die serverseitige Berechtigungsprüfung.
+Listen, Details, Filter und private Formularentwürfe werden beim Identitätswechsel
+ebenfalls zurückgesetzt. Späte Server-/Schreibabschlüsse dürfen den neuen Kontext
+nicht überschreiben oder dessen Pending-Zustand beenden; Detailergebnisse bleiben
+zusätzlich an die aktuell ausgewählte Übergabe gebunden. Vorbelegung aus frisch
+gefilterten Store-Arrays ändert den Formularzustand nur bei tatsächlichen Änderungen.
 
 Die Oberfläche speichert eine neue Übergabe zuerst in `SecurityOps2_OfflineVault.outbox` und sendet sie danach an:
 

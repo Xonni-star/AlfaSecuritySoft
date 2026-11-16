@@ -929,3 +929,72 @@ test('publishes an independently reviewed SOP and retries one employee acknowled
   await expect(page.getByText(/^Daten nicht vollständig geladen:/)).toBeHidden();
   await logout(page);
 });
+
+test('real handover UI restores one offline protocol after a lost server receipt', async ({ page, context }) => {
+  test.setTimeout(120_000);
+  const text = `Genuine handover ${randomUUID()}`;
+  await page.goto('/');
+  await login(page);
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  await page.getByRole('button', { name: 'Übergabemanagement', exact: true }).click();
+  await page.getByRole('button', { name: 'Neue Übergabe', exact: true }).click();
+  const form = page.locator('form').filter({ has: page.getByLabel('Allgemeiner Übergabetext', { exact: true }) });
+  await expect(form.getByLabel('Objekt *', { exact: true })).not.toHaveValue('');
+  await expect(form.getByLabel('Übergebende Person *', { exact: true })).not.toHaveValue('');
+  await expect(form.getByLabel('Übernehmende Person *', { exact: true })).not.toHaveValue('');
+  await form.getByLabel('Allgemeiner Übergabetext', { exact: true }).fill(text);
+  await context.setOffline(true);
+  await expect(page.getByText('Offline-Modus aktiv')).toBeVisible();
+  await form.getByRole('button', { name: 'Übergabe lokal sichern', exact: true }).click();
+  await expect(page.getByText('Offline in der IndexedDB gespeichert. Die Serverbestätigung steht noch aus.', { exact: true })).toBeVisible();
+  const pending = await readOutbox(page);
+  expect(pending).toHaveLength(1);
+  expect(pending[0].entityType).toBe('handover');
+  expect(pending[0].payload.generalText).toBe(text);
+  expect(pending[0].payload.outgoingEmployeeId).not.toBe(pending[0].payload.incomingEmployeeId);
+  await expect(page.getByText(`Client-ID ${pending[0].id} · Versuch 0`, { exact: true })).toBeVisible();
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.getByLabel('E-Mail')).toBeVisible();
+  expect((await readOutbox(page)).map(item => item.id)).toEqual([pending[0].id]);
+
+  const attempts = [];
+  const receipts = [];
+  await page.route('**/api/v1/handovers/sync', async route => {
+    attempts.push(route.request().postDataJSON().mutations.map(item => item.clientUuid));
+    const response = await route.fetch();
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    receipts.push(body.data);
+    if (attempts.length === 1) await route.abort('failed');
+    else await route.fulfill({ response });
+  });
+  await context.setOffline(false);
+  await login(page);
+  await expect.poll(() => attempts.length, { timeout: 30_000 }).toBe(2);
+  await expect.poll(async () => (await readOutbox(page)).length).toBe(0);
+  expect(attempts).toEqual([[pending[0].id], [pending[0].id]]);
+  expect(receipts[0][0].status).toBe('SYNCED');
+  expect(receipts[1][0].serverId).toBe(receipts[0][0].serverId);
+
+  const response = await page.request.get(`/api/v1/handovers?search=${encodeURIComponent(text)}`);
+  expect(response.status()).toBe(200);
+  const records = (await response.json()).data.items;
+  expect(records).toHaveLength(1);
+  expect(records[0]).toMatchObject({
+    id: receipts[0][0].serverId, clientMutationId: pending[0].id,
+    generalText: text, siteId: pending[0].payload.siteId,
+    createdByUserId: pending[0].userId,
+    outgoingEmployeeId: pending[0].payload.outgoingEmployeeId,
+    incomingEmployeeId: pending[0].payload.incomingEmployeeId
+  });
+  await page.unroute('**/api/v1/handovers/sync');
+  await page.reload();
+  await page.getByRole('button', { name: 'Übergabemanagement', exact: true }).click();
+  await page.getByLabel('Übergaben durchsuchen', { exact: true }).fill(text);
+  await expect(page.getByText(text, { exact: true })).toBeVisible();
+  await expect(page.getByText('1 Treffer · Seite 1', { exact: true })).toBeVisible();
+  await expect(page.getByText('0 lokale Einträge', { exact: true })).toBeVisible();
+});
