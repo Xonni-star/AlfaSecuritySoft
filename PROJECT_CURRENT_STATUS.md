@@ -8,7 +8,7 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
-**Current worktree:** branch `xonni-star-phase9-docs-and-status-cleanup` has local commits `e1ba7d9` (report site-scope enforcement/offline-attachment privacy), `1fc2021` (initial Phase 10 audit evidence), and `a55ac4b` (restore failure-path hardening and regression tests). These commits have not been pushed; PR #66 and hosted CI still refer to remote head `785e9eabc9e6ab5f1ce4e726fdff2cbfa49367e4`.
+**Current worktree:** branch `xonni-star-phase9-docs-and-status-cleanup` includes local report-scope/offline-privacy work, Phase 10 evidence, restore failure-path hardening and tests (`a55ac4b`), and updated audit/status wording through `1f3adbd`. The commits have not been pushed; PR #66 and hosted CI still refer to remote head `785e9eabc9e6ab5f1ce4e726fdff2cbfa49367e4`.
 
 This is the current evidence index. Phase reports and dated status sections remain historical snapshots; they have not been rewritten to make their former state appear current. The earlier 20:59 CET entry for `879ae95` and “no open PRs” is historical, not the current GitHub state. See the [Phase 9 completion report](./PHASE_9_COMPLETION_REPORT.md) for the documentation/operations audit and remaining gates.
 
