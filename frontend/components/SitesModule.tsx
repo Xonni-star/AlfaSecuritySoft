@@ -26,7 +26,6 @@ export const SitesModule: React.FC = () => {
   const {
     getTenantSites,
     getTenantClients,
-    getTenantEmployees,
     getTenantShifts,
     getTenantGuardBook,
     getTenantKeys,
@@ -37,7 +36,6 @@ export const SitesModule: React.FC = () => {
 
   const sites = getTenantSites();
   const clients = getTenantClients();
-  const employees = getTenantEmployees();
   const shifts = getTenantShifts();
   const guardBook = getTenantGuardBook();
   const keys = getTenantKeys();
@@ -61,6 +59,11 @@ export const SitesModule: React.FC = () => {
   const [newAddress, setNewAddress] = useState('');
   const [selectedClientId, setSelectedClientId] = useState(clients[0]?.id || '');
   const [securityLevel, setSecurityLevel] = useState<Site['securityLevel']>('Hoch (KRITIS / BSI)');
+  const [requiredGuardsDay, setRequiredGuardsDay] = useState(0);
+  const [requiredGuardsNight, setRequiredGuardsNight] = useState(0);
+  const [alarmSystem, setAlarmSystem] = useState('');
+  const [accessRules, setAccessRules] = useState('');
+  const [timeZone, setTimeZone] = useState('UTC');
   const activeClientId = clients.some(client => client.id === selectedClientId)
     ? selectedClientId : editingSiteId ? '' : clients[0]?.id || '';
 
@@ -68,10 +71,25 @@ export const SitesModule: React.FC = () => {
     setIsModalOpen(false); setEditingSiteId(null); setNewSiteCode('');
     setNewSiteName(''); setNewAddress(''); setSelectedClientId('');
     setSelectedSiteId(null); setIsSiteActionPending(false); setSaveError('');
+    setRequiredGuardsDay(0); setRequiredGuardsNight(0); setAlarmSystem('');
+    setAccessRules(''); setTimeZone('UTC');
   }, [identity]);
 
-  const openCreate = () => { setSaveError(''); setEditingSiteId(null); setNewSiteCode(''); setNewSiteName(''); setNewAddress(''); setSelectedClientId(clients[0]?.id || ''); setSecurityLevel('Hoch (KRITIS / BSI)'); setIsModalOpen(true); };
-  const openEdit = (site: Site) => { setSaveError(''); setEditingSiteId(site.id); setNewSiteCode(site.siteCode); setNewSiteName(site.name); setNewAddress(site.address); setSelectedClientId(site.clientId); setSecurityLevel(site.securityLevel); setIsModalOpen(true); };
+  const openCreate = () => {
+    if (isSiteActionPending) return;
+    setSaveError(''); setEditingSiteId(null); setNewSiteCode(''); setNewSiteName(''); setNewAddress('');
+    setSelectedClientId(clients[0]?.id || ''); setSecurityLevel('Hoch (KRITIS / BSI)');
+    setRequiredGuardsDay(0); setRequiredGuardsNight(0); setAlarmSystem(''); setAccessRules('');
+    setTimeZone('UTC'); setIsModalOpen(true);
+  };
+  const openEdit = (site: Site) => {
+    if (isSiteActionPending) return;
+    setSaveError(''); setEditingSiteId(site.id); setNewSiteCode(site.siteCode);
+    setNewSiteName(site.name); setNewAddress(site.address); setSelectedClientId(site.clientId);
+    setSecurityLevel(site.securityLevel); setRequiredGuardsDay(site.requiredGuardsDay);
+    setRequiredGuardsNight(site.requiredGuardsNight); setAlarmSystem(site.alarmSystem);
+    setAccessRules(site.accessRules); setTimeZone(site.timeZone ?? 'UTC'); setIsModalOpen(true);
+  };
   const handleCreateSite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSiteActionPending) return;
@@ -88,13 +106,14 @@ export const SitesModule: React.FC = () => {
       name: newSiteName,
       address: newAddress,
       securityLevel,
-      siteManagerId: employees[0]?.id || 'e-1',
-      siteManagerName: `${employees[0]?.firstName || 'Alexander'} ${employees[0]?.lastName || 'Schmidt'}`,
-      requiredGuardsDay: 2,
-      requiredGuardsNight: 2,
-      alarmSystem: 'Siemens Sinteso / Telenot BMA',
-      instructionsCount: 2,
-      accessRules: 'Ausweispflicht & Taschenkontrolle',
+      siteManagerId: '',
+      siteManagerName: 'Nicht zugewiesen',
+      requiredGuardsDay,
+      requiredGuardsNight,
+      alarmSystem,
+      instructionsCount: 0,
+      accessRules,
+      timeZone,
       activeAlarms: 0,
       checkpoints: []
     };
@@ -388,7 +407,7 @@ export const SitesModule: React.FC = () => {
       {/* Modal: New Site */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0f172a] border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
+          <div className="bg-[#0f172a] border border-slate-700 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <h3 className="text-base font-bold text-white">{editingSiteId ? 'Sicherheitsobjekt bearbeiten' : 'Neues Sicherheitsobjekt erfassen'}</h3>
               <button disabled={isSiteActionPending} onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
@@ -400,6 +419,7 @@ export const SitesModule: React.FC = () => {
                 <label className="block text-slate-400 mb-1 font-medium">Zugeordneter Mandanten-Kunde *</label>
                 <select
                   value={activeClientId}
+                  aria-label="Zugeordneter Kunde"
                   onChange={(e) => setSelectedClientId(e.target.value)}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200"
                   required
@@ -417,6 +437,7 @@ export const SitesModule: React.FC = () => {
                   <input
                     type="text"
                     value={newSiteCode}
+                    aria-label="Objektcode"
                     onChange={(e) => setNewSiteCode(e.target.value)}
                     placeholder="z. B. OBJ-FFM-03"
                     required
@@ -443,6 +464,7 @@ export const SitesModule: React.FC = () => {
                 <input
                   type="text"
                   value={newSiteName}
+                  aria-label="Objektname"
                   onChange={(e) => setNewSiteName(e.target.value)}
                   placeholder="z. B. Rechenzentrum Alpha"
                   required
@@ -455,6 +477,7 @@ export const SitesModule: React.FC = () => {
                 <input
                   type="text"
                   value={newAddress}
+                  aria-label="Standortadresse"
                   onChange={(e) => setNewAddress(e.target.value)}
                   placeholder="Straße, PLZ, Stadt"
                   required
@@ -462,6 +485,23 @@ export const SitesModule: React.FC = () => {
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <label className="text-slate-400">Wachkräfte tagsüber
+                  <input aria-label="Wachkräfte tagsüber" type="number" required min="0" max="50" value={requiredGuardsDay} onChange={event => setRequiredGuardsDay(Number(event.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200" />
+                </label>
+                <label className="text-slate-400">Wachkräfte nachts
+                  <input aria-label="Wachkräfte nachts" type="number" required min="0" max="50" value={requiredGuardsNight} onChange={event => setRequiredGuardsNight(Number(event.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200" />
+                </label>
+                <label className="text-slate-400 col-span-2">Alarmanlage
+                  <input aria-label="Alarmanlage" maxLength={150} value={alarmSystem} onChange={event => setAlarmSystem(event.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200" />
+                </label>
+                <label className="text-slate-400 col-span-2">Zutrittsregeln
+                  <textarea aria-label="Zutrittsregeln" value={accessRules} onChange={event => setAccessRules(event.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200" />
+                </label>
+                <label className="text-slate-400 col-span-2">Zeitzone (IANA, z. B. Europe/Berlin)
+                  <input aria-label="Zeitzone" required maxLength={100} value={timeZone} onChange={event => setTimeZone(event.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200" />
+                </label>
+              </div>
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
                 <button
                   type="button"

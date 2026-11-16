@@ -256,6 +256,55 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     { name: 'update employee', write: () => useSecurityStore.getState().updateEmployee(employeeRow.id, { firstName: 'Updated employee' }) }
   ];
 
+  const actualSiteMetadata = {
+    requiredGuardsDay: 4, requiredGuardsNight: 3, alarmSystem: 'Actual equipment',
+    accessRules: 'Actual access rules', timeZone: 'Europe/Berlin'
+  };
+  test('successive offline customer edits retain the next actual revision for ordered replay', async () => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    useSecurityStore.setState({ isOnline: false });
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => ({
+      ...mutation, deviceId: 'actual-customer-device', retryCount: 0, status: 'PENDING'
+    }));
+    expect(await useSecurityStore.getState().updateClient(customerRow.id, { noticePeriodMonths: 6 })).toBe(true);
+    expect(await useSecurityStore.getState().updateClient(customerRow.id, { noticePeriodMonths: 9 })).toBe(true);
+    expect(vi.mocked(offlineVault.enqueueMutation).mock.calls.map(([mutation]) => mutation.baseVersion)).toEqual([1, 2]);
+    expect(useSecurityStore.getState().clients[0]).toMatchObject({ noticePeriodMonths: 9, revisionVersion: 3 });
+  });
+  test.each([true, false])('site edits preserve explicit operational metadata in requests and visible state (online=%s)', async online => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    useSecurityStore.setState({ isOnline: online });
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => ({
+      ...mutation, deviceId: 'actual-site-device', retryCount: 0, status: 'PENDING'
+    }));
+    mockedApi.patch.mockResolvedValueOnce({
+      ...siteRow, required_guards_day: 4, required_guards_night: 3, alarm_system: 'Actual equipment',
+      access_rules: 'Actual access rules', time_zone: 'Europe/Berlin', revision_version: 2
+    });
+    expect(await useSecurityStore.getState().updateSite(siteRow.id, actualSiteMetadata)).toBe(true);
+    if (online) expect(mockedApi.patch).toHaveBeenCalledWith(`/sites/${siteRow.id}`, expect.objectContaining(actualSiteMetadata));
+    else expect(useSecurityStore.getState().syncQueue[0].payload).toMatchObject(actualSiteMetadata);
+    expect(useSecurityStore.getState().sites[0]).toMatchObject(actualSiteMetadata);
+  });
+
+  test('offline site creation displays the same genuine requirements and equipment as the durably queued request', async () => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    useSecurityStore.setState({ isOnline: false });
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => ({
+      ...mutation, deviceId: 'actual-site-device', retryCount: 0, status: 'PENDING'
+    }));
+    expect(await useSecurityStore.getState().addSite({
+      ...useSecurityStore.getState().sites[0], ...actualSiteMetadata
+    })).toBe(true);
+    expect(useSecurityStore.getState().sites[0]).toMatchObject(actualSiteMetadata);
+  });
+
   test.each(resourceWrites)('$name reports a real rejected write instead of a success-shaped void result', async ({ write }) => {
     mockReadEndpoints();
     useSecurityStore.setState({ authUser: readUser });

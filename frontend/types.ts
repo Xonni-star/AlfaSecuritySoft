@@ -139,6 +139,7 @@ export interface Site {
   name: string;
   address: string;
   securityLevel: 'Niedrig' | 'Mittel' | 'Hoch (KRITIS / BSI)' | 'Höchste Sicherheitsstufe';
+  timeZone?: string;
   siteManagerId: string;
   siteManagerName: string;
   requiredGuardsDay: number;

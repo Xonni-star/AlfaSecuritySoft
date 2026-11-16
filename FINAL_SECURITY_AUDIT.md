@@ -62,6 +62,14 @@ historischen Kontext im [Sicherheitsbericht](./SECURITY_AUDIT_REPORT.md).
   Dies sind Funktions-/Datenintegritätsregressionen, kein neu belegter Exploit.
   Die frühere begrenzte Sicherheitsprüfung wird nicht als Review dieser
   nachfolgenden Änderungen ausgegeben.
+  FNL-015 ist inzwischen veröffentlicht als
+  `fcafebd134d3b1e5530b1e4ae0f46b32b72065d4`, CI 43938567434 7/7;
+  Logs bestätigen Frontend 262, Backend 546 und Browser 8 mit Cleanup.
+- Nachfolgendes FNL-016 korrigiert tatsächliche Kunden-/Objektmetadaten,
+  ignorierte Vertragsfelder, partielle SLA-Rücksetzung und Offline-Revisionsfolge.
+  Lokal Frontend 270/270, gezielte echte PostgreSQL-Fälle 3/3 und Browser 9/9
+  mit Cleanup. Keine neu bestätigte Schwachstelle oder zusätzliche vollständige
+  Sicherheitsprüfung wird aus diesen Funktionsnachweisen abgeleitet.
 
 ## Fachliche Fehler sind keine behaupteten Exploits
 

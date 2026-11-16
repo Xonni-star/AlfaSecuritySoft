@@ -743,6 +743,8 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
         address: 'Teststraße 1, 60311 Frankfurt',
         contractStart: '2026-01-01',
         contractEnd: '2028-12-31',
+        contractAutoRenew: false,
+        noticePeriodMonths: 6,
         slaLevel: 'Gold (24/7 Vor-Ort)'
       });
 
@@ -759,7 +761,11 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
       expect.arrayContaining([
         expect.objectContaining({
           client_number: clientNumber,
-          company_name: 'API Persistenz GmbH'
+          company_name: 'API Persistenz GmbH',
+          contract_auto_renew: false,
+          notice_period_months: 6,
+          contract_start: '2026-01-01',
+          contract_end: '2028-12-31'
         })
       ])
     );
@@ -783,7 +789,8 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
     const token = await login(SEED_USER_EMAIL);
     const create = await request(app).post('/api/v1/customers').set(authHeaders(token)).send({
       clientNumber: `${clientNumber}-ARCH`, companyName: 'Archiv Test GmbH', contactPerson: 'Test Person', email: 'archiv@test.de',
-      phone: '+49 30 123', address: 'Testweg 2', contractStart: '2026-01-01', contractEnd: '2028-12-31'
+      phone: '+49 30 123', address: 'Testweg 2', contractStart: '2026-01-01', contractEnd: '2028-12-31',
+      slaLevel: 'Silber (Revierdienst)'
     });
     expect(create.status).toBe(201);
     const id = create.body.data.id as string;
@@ -792,6 +799,7 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
     const update = await request(app).patch(`/api/v1/customers/${id}`).set(authHeaders(token)).send({ companyName: 'Aktualisiert GmbH', revisionVersion: 1 });
     expect(update.status).toBe(200);
     expect(update.body.data.revision_version).toBe(2);
+    expect(update.body.data.sla_level).toBe('Silber (Revierdienst)');
     const stale = await request(app).patch(`/api/v1/customers/${id}`).set(authHeaders(token)).send({ companyName: 'Veraltet', revisionVersion: 1 });
     expect(stale.status).toBe(409);
     const foreign = await request(app).patch(`/api/v1/customers/${id}`).set(authHeaders(await login(BAVARIA_USER_EMAIL))).send({ companyName: 'Fremd', revisionVersion: 2 });
@@ -808,15 +816,30 @@ describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
   test('Offline-Kundenerstellung ist mandantengebunden und bei Wiederholung idempotent', async () => {
     const token = await login(SEED_USER_EMAIL);
     const mutationId = `client-offline-${Date.now()}`;
-    const payload = { id: crypto.randomUUID(), clientNumber: `${clientNumber}-OFF`, companyName: 'Offline Kunde GmbH', contactPerson: 'Offline Test', email: 'offline@test.de', phone: '+49 40 123', address: 'Offlineweg 1', contractStart: '2026-01-01', contractEnd: '2028-12-31', slaLevel: 'Gold (24/7 Vor-Ort)' };
+    const payload = { id: crypto.randomUUID(), clientNumber: `${clientNumber}-OFF`, companyName: 'Offline Kunde GmbH', contactPerson: 'Offline Test', email: 'offline@test.de', phone: '+49 40 123', address: 'Offlineweg 1', contractStart: '2026-01-01', contractEnd: '2028-12-31', contractAutoRenew: false, noticePeriodMonths: 6, slaLevel: 'Silber (Revierdienst)' };
     const send = () => request(app).post('/api/v1/customers/sync').set(authHeaders(token)).send({ mutations: [{ clientUuid: mutationId, action: 'CREATE', baseVersion: 1, payload }] });
     const first = await send();
     const second = await send();
     expect(first.status).toBe(200);
     expect(first.body.data[0].status).toBe('SYNCED');
     expect(second.body.data).toEqual(first.body.data);
-    const stored = await migrationPool.query('SELECT id FROM clients WHERE tenant_id = $1 AND client_mutation_id = $2', ['11111111-1111-1111-1111-111111111111', mutationId]);
+    const stored = await migrationPool.query('SELECT id, contract_auto_renew, notice_period_months FROM clients WHERE tenant_id = $1 AND client_mutation_id = $2', ['11111111-1111-1111-1111-111111111111', mutationId]);
     expect(stored.rows).toHaveLength(1);
+    expect(stored.rows[0]).toMatchObject({ contract_auto_renew: false, notice_period_months: 6 });
+    const updatePayload = { id: payload.id, contractAutoRenew: true, noticePeriodMonths: 9 };
+    const sendUpdate = () => request(app).post('/api/v1/customers/sync').set(authHeaders(token)).send({
+      mutations: [{ clientUuid: `${mutationId}-update`, action: 'UPDATE', baseVersion: 1, payload: updatePayload }]
+    });
+    const updated = await sendUpdate();
+    expect(updated.status).toBe(200);
+    expect(updated.body.data[0]).toMatchObject({ status: 'SYNCED', serverVersion: 2 });
+    expect((await sendUpdate()).body.data).toEqual(updated.body.data);
+    const afterUpdate = await migrationPool.query(
+      'SELECT contract_auto_renew, notice_period_months, sla_level, revision_version FROM clients WHERE id=$1', [payload.id]
+    );
+    expect(afterUpdate.rows[0]).toMatchObject({
+      contract_auto_renew: true, notice_period_months: 9, sla_level: 'Silber (Revierdienst)', revision_version: 2
+    });
     await migrationPool.query('DELETE FROM clients WHERE id = $1', [payload.id]);
   });
 

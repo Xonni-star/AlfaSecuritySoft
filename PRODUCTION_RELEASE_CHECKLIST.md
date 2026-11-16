@@ -16,6 +16,9 @@ Test, ein Merge und ein erfolgreiches Containerimage ersetzen sie nicht.
 - [x] Achte echte Browserjourney für bestätigte Mitarbeiter-/Nachweis-/Abwesenheitsdaten,
       nullable Nachweisbearbeitung, echten Konflikt mit erhaltenem Entwurf und
       Kalendertage/abgelaufenen Nachweisstatus nach Reload.
+- [x] Neunte echte Browserjourney für Offline-Kundenanlage, tatsächliche Vertragswerte
+      und Objektanforderungen nach Änderung/Reload; realer API-/Sync-Nachweis
+      für Verlängerung/Kündigungsfrist und unveränderte SLA bei Teiländerung.
 - [x] Gefundene simulierte Audit-/Technik-/Abnahmeergebnisse entfernt;
       lokale Automationsentwürfe und fehlende Engine ausdrücklich gekennzeichnet.
 - [x] Privaten lokalen S3-/ClamAV-Ablauf, Originalbytes und echte Dateiablehnung geprüft.

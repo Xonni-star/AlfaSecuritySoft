@@ -18,6 +18,12 @@ Subsequent FNL-015 locally passes frontend 262 and browser 8, including genuine
 employee persistence, nullable proof editing, reload calendar dates/expired
 classification and a real overlap conflict with retained input. These functional
 changes are not presented as newly security-reviewed or complete role coverage.
+FNL-015 is now hosted-verified as
+`fcafebd134d3b1e5530b1e4ae0f46b32b72065d4`, CI 43938567434 7/7,
+with frontend 262, backend 546 and browser 8 plus cleanup. Subsequent
+FNL-016 locally passes frontend 270 and browser 9, and three genuine
+PostgreSQL API cases verify contract fields, idempotency and preserved SLA.
+These are functional/data-integrity corrections, not additional security findings.
 The bounded review reported no confirmed new vulnerability and supplied no
 complete coverage matrix. Current revision boundaries and remaining internal/
 external gates are in [current status](./PROJECT_CURRENT_STATUS.md) and

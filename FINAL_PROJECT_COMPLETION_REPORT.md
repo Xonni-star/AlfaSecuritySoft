@@ -56,6 +56,23 @@ Nachweisstatus. Nach Korrektur: Frontend 262/262 in 35 Dateien, Typprüfung,
 beide Builds, isolierter Controller 6/6 und echte Browser 8/8 mit Cleanup.
 Der vollständige Backend-Lauf auf frischem PostgreSQL 16 besteht ebenfalls
 546/546 in 35 Suites. Neue Hosted-Ergebnisse werden getrennt nachgetragen.
+Veröffentlichter Code `fcafebd134d3b1e5530b1e4ae0f46b32b72065d4` bestand
+CI 43938567434, 7/7; Logs bestätigen Frontend 262, Backend 546 und Browser 8
+mit Cleanup.
+
+FNL-016 beseitigt erfundene Vertrags-/Objektwerte: tatsächliche Kundennummer,
+Vertragsdaten, Verlängerung/Kündigungsfrist und Besetzung/Alarmanlage/
+Zutrittsregeln/Zeitzone sind explizite Eingaben und werden persistiert.
+API/Offline-Sync erhalten bisher ignorierte Vertragswerte; Teiländerungen
+setzen die SLA nicht mehr still auf Gold zurück. Offline-Folgeänderungen
+führen die Revision fort; Objektmapping entspricht eingegebenen Werten.
+Acht neue Frontendregressionen und zwei zusätzlich rote echte API-Fälle
+belegen die Fehler. Danach Frontend 270/270, Typprüfung/beide Builds,
+gezielte PostgreSQL-API-Fälle 3/3 und echte Browser 9/9 mit Cleanup.
+Neue vollständige Backend-/Hosted-Evidenz bleibt revisionsgebunden separat.
+Der abschließende lokale Backend-Lauf mit den erweiterten Vertrags-/SLA-/
+Sync-Assertions besteht ebenfalls 546/546 in 35 Suites auf frischem PostgreSQL 16.
+Neue Hosted-Prüfung bleibt offen.
 
 Noch interne Arbeit: vollständige Rollen-/Objektmatrix und offene Teilmodule
 abnehmen; erforderliche Prüfung vor autorisierter PR-Integration abschließen.

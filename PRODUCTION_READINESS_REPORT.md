@@ -10,7 +10,8 @@ unabhängige Sicherheitsabnahme.
 |---|---|---|
 | Aktiver Anwendungspfad | IMPLEMENTIERT UND GETESTET | React/Vite, Express/TypeScript, PostgreSQL 16; Migrationen bis 042. Python/Alembic ist ein historischer, hier nicht mitvalidierter Pfad. |
 | Berichte und Rechte | IMPLEMENTIERT UND GETESTET | Abgedeckte Tenant-/Site-Berichte, CSV und gezielte authentifizierte Regressionen. Keine vollständige Rollen-/Objektmatrix oder Rechtsabnahme. |
-| Offline, SOP und Anhänge | TEILWEISE IMPLEMENTIERT | Acht echte Chromium-Journeys auf synthetischen Daten mit PostgreSQL, privatem MinIO und ClamAV; einschließlich API-Konsole und Mitarbeiterdetails. Keine vollständige Geräte-/Datei-/Recovery-Abnahme; ownerlose Anhänge bleiben verborgen. |
+| Offline, SOP und Anhänge | TEILWEISE IMPLEMENTIERT | Neun echte Chromium-Journeys auf synthetischen Daten mit PostgreSQL, privatem MinIO und ClamAV; einschließlich API-Konsole, Mitarbeiterdetails und Kunden-/Objektmetadaten. Keine vollständige Geräte-/Datei-/Recovery-Abnahme; ownerlose Anhänge bleiben verborgen. |
+| Kunden-/Objektmetadaten | IMPLEMENTIERT UND GETESTET | Tatsächliche Vertrags-/Verlängerungs-/Kündigungswerte, Besetzung, Alarmanlage, Zutrittsregeln und IANA-Zeitzone. Reales Offline-Replay, unveränderte SLA bei Teiländerung und Daten nach Reload belegt. Keine vollständige Vertrags-/Rollenabnahme. |
 | Mitarbeiterdetails | IMPLEMENTIERT UND GETESTET | Bestätigte Nachweis-/Abwesenheitsänderung, nullable Ablaufdatum, erhaltene Konfliktentwürfe und unveränderte API-Kalendertage nach Reload. Offline-Nachweise bleiben unbestätigt; Teilfehler werden gemeldet. Keine vollständige Rollen-/Personalabnahme. |
 | Build und CI | IMPLEMENTIERT UND GETESTET | Exakter Code-SHA, Jobstatus und Historie stehen im Projektstatus. Historische Ergebnisse gelten nicht für ungeprüfte Nachfolgeänderungen. |
 | Backup und Restore | IMPLEMENTIERT UND GETESTET | Isolierter transaktionaler PostgreSQL-/MinIO-Drill einschließlich Fehler-/Resume-Pfaden und Archivfrische. Kein produktionsgleicher Provider-/Off-host-Nachweis. |
@@ -40,6 +41,11 @@ Browser 7/7. Veröffentlicht als `64c9ee953dfd3241de0678e482eb1fc19f4d0f13`,
 [CI 43934545176](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43934545176)
 7/7; Logs bestätigen Frontend 242, Backend 546 und Browser 7.
 FNL-015 besteht lokal Frontend 262/262, Typprüfung/Build und Browser 8/8.
+Veröffentlicht als `fcafebd134d3b1e5530b1e4ae0f46b32b72065d4`;
+[CI 43938567434](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43938567434)
+7/7, Logs: Frontend 262, Backend 546, Browser 8 und Cleanup.
+FNL-016 besteht lokal Frontend 270/270, Typprüfung/beide Builds,
+gezielte PostgreSQL-API-Fälle 3/3 und Browser 9/9 mit Cleanup.
 Spätere Hosted-Ergebnisse sind getrennt im
 [Projektstatus](./PROJECT_CURRENT_STATUS.md) zu prüfen.
 

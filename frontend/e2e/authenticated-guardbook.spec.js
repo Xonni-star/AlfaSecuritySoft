@@ -52,6 +52,104 @@ async function readOutbox(page, storeName = 'outbox') {
   }, storeName);
 }
 
+test('genuine customer contract terms and site requirements survive offline replay, edits and reload', async ({ page, context }) => {
+  const suffix = randomUUID().slice(0, 8);
+  const customerName = `Browser contract ${suffix}`;
+  const siteName = `Browser operational site ${suffix}`;
+  await page.goto('/');
+  await login(page);
+  await page.getByRole('button', { name: 'Kunden & Verträge', exact: true }).click();
+  await context.setOffline(true);
+  await expect(page.getByRole('button', { name: 'Offline. Verbindung wiederherstellen', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Mandant hinzufügen', exact: true }).click();
+  const customerForm = page.locator('form').filter({ has: page.getByLabel('Kundennummer', { exact: true }) });
+  await customerForm.getByLabel('Firmenname', { exact: true }).fill(customerName);
+  await customerForm.getByLabel('Ansprechpartner', { exact: true }).fill('Browser Contact');
+  await customerForm.getByLabel('Kunden-E-Mail', { exact: true }).fill(`${suffix}@browser.test.invalid`);
+  await customerForm.getByLabel('Kunden-Telefon', { exact: true }).fill('069123456');
+  await customerForm.getByLabel('Kundenanschrift', { exact: true }).fill('Browser Teststrasse 1');
+  await customerForm.getByLabel('Kundennummer', { exact: true }).fill(`CONTRACT-${suffix}`);
+  await customerForm.getByLabel('Vertragsbeginn', { exact: true }).fill('2026-02-14');
+  await customerForm.getByLabel('Vertragsende', { exact: true }).fill('2027-03-15');
+  await customerForm.getByLabel('Kündigungsfrist in Monaten', { exact: true }).fill('6');
+  await expect(customerForm.getByLabel('Automatische Vertragsverlängerung', { exact: true })).not.toBeChecked();
+  await customerForm.getByRole('button', { name: 'Kunde anlegen', exact: true }).click();
+  await expect(customerForm).toHaveCount(0);
+  const [queued] = (await readOutbox(page)).filter(mutation => mutation.entityType === 'client');
+  expect(queued.payload).toMatchObject({
+    clientNumber: `CONTRACT-${suffix}`, contractAutoRenew: false, noticePeriodMonths: 6,
+    contractStart: '2026-02-14', contractEnd: '2027-03-15'
+  });
+  const replay = page.waitForResponse(response => response.url().endsWith('/customers/sync') && response.request().method() === 'POST');
+  await context.setOffline(false);
+  expect((await replay).status()).toBe(200);
+  await expect.poll(async () => (await readOutbox(page)).filter(mutation => mutation.entityType === 'client')).toHaveLength(0);
+  await page.reload();
+  await page.getByRole('button', { name: 'Kunden & Verträge', exact: true }).click();
+  const customerCard = page.getByRole('heading', { name: customerName, exact: true }).locator('..').locator('..');
+  await customerCard.getByRole('button', { name: 'Bearbeiten', exact: true }).click();
+  await expect(customerForm.getByLabel('Vertragsbeginn', { exact: true })).toHaveValue('2026-02-14');
+  await expect(customerForm.getByLabel('Vertragsende', { exact: true })).toHaveValue('2027-03-15');
+  await expect(customerForm.getByLabel('Kündigungsfrist in Monaten', { exact: true })).toHaveValue('6');
+  await expect(customerForm.getByLabel('Automatische Vertragsverlängerung', { exact: true })).not.toBeChecked();
+  await customerForm.getByLabel('Kündigungsfrist in Monaten', { exact: true }).fill('9');
+  await customerForm.getByLabel('Automatische Vertragsverlängerung', { exact: true }).check();
+  const customerUpdate = page.waitForResponse(response =>
+    response.url().endsWith(`/customers/${queued.payload.id}`) && response.request().method() === 'PATCH'
+  );
+  await customerForm.getByRole('button', { name: 'Änderungen speichern', exact: true }).click();
+  const updatedCustomer = await customerUpdate;
+  expect(updatedCustomer.status()).toBe(200);
+  expect((await updatedCustomer.json()).data).toMatchObject({
+    contract_auto_renew: true, notice_period_months: 9, contract_start: '2026-02-14', contract_end: '2027-03-15'
+  });
+
+  await page.getByRole('button', { name: 'Objektverwaltung (Detail-Tabs)', exact: true }).click();
+  await page.getByRole('button', { name: 'Objekt anlegen', exact: true }).click();
+  const siteForm = page.locator('form').filter({ has: page.getByLabel('Objektcode', { exact: true }) });
+  await siteForm.getByLabel('Zugeordneter Kunde', { exact: true }).selectOption(queued.payload.id);
+  await siteForm.getByLabel('Objektcode', { exact: true }).fill(`SITE-${suffix}`);
+  await siteForm.getByLabel('Objektname', { exact: true }).fill(siteName);
+  await siteForm.getByLabel('Standortadresse', { exact: true }).fill('Browser Teststrasse 2');
+  await siteForm.getByLabel('Wachkräfte tagsüber', { exact: true }).fill('4');
+  await siteForm.getByLabel('Wachkräfte nachts', { exact: true }).fill('3');
+  await siteForm.getByLabel('Alarmanlage', { exact: true }).fill('Actual browser alarm');
+  await siteForm.getByLabel('Zutrittsregeln', { exact: true }).fill('Actual browser access rules');
+  await siteForm.getByLabel('Zeitzone', { exact: true }).fill('Europe/Berlin');
+  const siteCreation = page.waitForResponse(response => response.url().endsWith('/sites') && response.request().method() === 'POST');
+  await siteForm.getByRole('button', { name: 'Objekt anlegen', exact: true }).click();
+  const createdSiteResponse = await siteCreation;
+  expect(createdSiteResponse.status()).toBe(201);
+  const { data: createdSite } = await createdSiteResponse.json();
+  await page.reload();
+  await page.getByRole('button', { name: 'Objektverwaltung (Detail-Tabs)', exact: true }).click();
+  await page.getByRole('heading', { name: siteName, level: 3, exact: true }).click();
+  await page.getByRole('button', { name: 'Bearbeiten', exact: true }).click();
+  await expect(siteForm.getByLabel('Wachkräfte tagsüber', { exact: true })).toHaveValue('4');
+  await expect(siteForm.getByLabel('Wachkräfte nachts', { exact: true })).toHaveValue('3');
+  await expect(siteForm.getByLabel('Alarmanlage', { exact: true })).toHaveValue('Actual browser alarm');
+  await expect(siteForm.getByLabel('Zutrittsregeln', { exact: true })).toHaveValue('Actual browser access rules');
+  await expect(siteForm.getByLabel('Zeitzone', { exact: true })).toHaveValue('Europe/Berlin');
+  await siteForm.getByLabel('Wachkräfte tagsüber', { exact: true }).fill('5');
+  const siteUpdate = page.waitForResponse(response =>
+    response.url().endsWith(`/sites/${createdSite.id}`) && response.request().method() === 'PATCH'
+  );
+  await siteForm.getByRole('button', { name: 'Änderungen speichern', exact: true }).click();
+  expect((await siteUpdate).status()).toBe(200);
+  await page.reload();
+  await page.getByRole('button', { name: 'Objektverwaltung (Detail-Tabs)', exact: true }).click();
+  await page.getByRole('heading', { name: siteName, level: 3, exact: true }).click();
+  await expect(page.getByText('5 Tag / 3 Nacht', { exact: true })).toBeVisible();
+  const siteArchive = page.waitForResponse(response => response.url().endsWith(`/sites/${createdSite.id}/archive`));
+  await page.getByRole('button', { name: 'Archivieren', exact: true }).click();
+  expect((await siteArchive).status()).toBe(200);
+  await page.getByRole('button', { name: 'Kunden & Verträge', exact: true }).click();
+  page.once('dialog', dialog => dialog.accept());
+  const customerArchive = page.waitForResponse(response => response.url().endsWith(`/customers/${queued.payload.id}/archive`));
+  await customerCard.getByRole('button', { name: 'Archivieren', exact: true }).click();
+  expect((await customerArchive).status()).toBe(200);
+});
+
 test('employee qualifications and absences confirm real persistence and retain a genuine conflict draft', async ({ page }) => {
   await page.goto('/');
   await login(page);

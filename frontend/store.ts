@@ -300,15 +300,16 @@ function mapSiteRow(row: any, tenantId: string): Site {
     name: asString(row.name),
     address: asString(row.address),
     securityLevel: (row.security_level ?? row.securityLevel ?? 'Hoch (KRITIS / BSI)') as unknown as Site['securityLevel'],
+    timeZone: asString(row.time_zone ?? row.timeZone, 'UTC'),
     siteManagerId: '',
     siteManagerName: asString(row.site_manager_name, 'Nicht zugewiesen'),
-    requiredGuardsDay: asNumber(row.required_guards_day, 1),
-    requiredGuardsNight: asNumber(row.required_guards_night, 1),
+    requiredGuardsDay: asNumber(row.required_guards_day ?? row.requiredGuardsDay, 1),
+    requiredGuardsNight: asNumber(row.required_guards_night ?? row.requiredGuardsNight, 1),
     checkpoints: [],
     assessments: [],
-    alarmSystem: asString(row.alarm_system),
+    alarmSystem: asString(row.alarm_system ?? row.alarmSystem),
     instructionsCount: 0,
-    accessRules: asString(row.access_rules),
+    accessRules: asString(row.access_rules ?? row.accessRules),
     activeAlarms: 0,
     revisionVersion: asNumber(row.revision_version ?? row.revisionVersion, 1),
     archivedAt: row.archived_at ?? row.archivedAt ?? null
@@ -2350,7 +2351,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       if (!get().isOnline) {
         await get().enqueueOfflineAction({ tenantId, entityType: 'client', action: 'UPDATE', payload: { id, ...updates }, baseVersion: revisionVersion });
         if (!isCurrentSOPIdentity(tenantId, userId)) return false;
-        set((s) => ({ clients: s.clients.map((c) => c.id === id ? { ...c, ...updates } : c) }));
+        set((s) => ({ clients: s.clients.map((c) => c.id === id ? { ...c, ...updates, revisionVersion: revisionVersion + 1 } : c) }));
       } else {
         const saved = await apiClient.patch<any>(`/customers/${id}`, { ...updates, revisionVersion });
         if (!isCurrentSOPIdentity(tenantId, userId)) return false;
@@ -2392,7 +2393,8 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         requiredGuardsDay: s.requiredGuardsDay,
         requiredGuardsNight: s.requiredGuardsNight,
         alarmSystem: s.alarmSystem,
-        accessRules: s.accessRules
+        accessRules: s.accessRules,
+        timeZone: s.timeZone ?? 'UTC'
       };
       if (!get().isOnline) {
         const id = newMutationEntityId();
@@ -2412,6 +2414,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
           name: s.name,
           address: s.address,
           security_level: s.securityLevel,
+          time_zone: s.timeZone ?? 'UTC',
           required_guards_day: s.requiredGuardsDay,
           required_guards_night: s.requiredGuardsNight,
           alarm_system: s.alarmSystem,
@@ -2442,7 +2445,16 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       return false;
     }
     const revisionVersion = site.revisionVersion || 1;
-    const changes = { clientId: updates.clientId ?? site.clientId, siteCode: updates.siteCode ?? site.siteCode, name: updates.name ?? site.name, address: updates.address ?? site.address, securityLevel: updates.securityLevel ?? site.securityLevel };
+    const changes = {
+      clientId: updates.clientId ?? site.clientId, siteCode: updates.siteCode ?? site.siteCode,
+      name: updates.name ?? site.name, address: updates.address ?? site.address,
+      securityLevel: updates.securityLevel ?? site.securityLevel,
+      requiredGuardsDay: updates.requiredGuardsDay ?? site.requiredGuardsDay,
+      requiredGuardsNight: updates.requiredGuardsNight ?? site.requiredGuardsNight,
+      alarmSystem: updates.alarmSystem ?? site.alarmSystem,
+      accessRules: updates.accessRules ?? site.accessRules,
+      timeZone: updates.timeZone ?? site.timeZone ?? 'UTC'
+    };
     try {
       if (!get().isOnline) {
         await get().enqueueOfflineAction({ tenantId, entityType: 'site', action: 'UPDATE', payload: { id, ...changes }, baseVersion: revisionVersion });

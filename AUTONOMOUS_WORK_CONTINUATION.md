@@ -155,10 +155,41 @@ containers removed. The journey proves core/proof writes, nullable proof editing
 real overlap HTTP 409, retained input and reload persistence/expired status.
 Full backend on a fresh PostgreSQL 16 also passed **546/546 in 35 suites**.
 Exact hosted follow-up is separate, not inferred from FNL-014.
+That hosted prerequisite is now satisfied: FNL-015 is published as
+`fcafebd134d3b1e5530b1e4ae0f46b32b72065d4`;
+[CI 43938567434](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43938567434)
+passed 7/7. Downloaded logs verify frontend 262, backend 546, browser 8 and
+cleanup (`finalization-employee-details-hosted-ci.log`).
 Logs: `finalization-employee-details-red.log`,
 `finalization-employee-details-browser.log` (initial 7/8),
 `finalization-employee-details-browser-final.log` (8/8),
 `finalization-employee-details-backend.log`.
+
+FNL-016 is locally verified: explicit customer number/contract dates and
+renewal/notice inputs replace hidden 2025/2028 values. Existing DB renewal/notice
+columns now persist through normal API and offline create/update. Calendar dates
+remain strings. Sites expose genuine staffing/equipment/access/IANA timezone;
+updates preserve existing values and the offline mapper no longer replaces them
+with defaults. No invented manager or SOP count is sent.
+Seven frontend cases failed before correction; an eighth proved successive local
+customer edits reused the same revision. Queue calls now advance revisions.
+Two genuine PostgreSQL regressions also exposed Zod's nested create default
+silently resetting omitted Silver SLA to Gold in PATCH/sync; update schema
+now preserves omitted SLA.
+Final frontend **270/270 in 35 files**, typecheck/both builds, targeted genuine
+PostgreSQL API **3/3** and real browser **9/9** passed with cleanup.
+Initial browser 8/9 was a wrong test-only offline action label; product label
+unchanged. Two subsequent complete runs passed 9/9. One intermediate unit
+expectation confused newest-first preview order with enqueue order; it now
+checks actual durable enqueue calls, without weakening revision assertions.
+Full backend/exact hosted follow-up is separate from the preceding CI.
+Final local full backend also passed **546/546 in 35 suites** on fresh
+PostgreSQL 16, including the strengthened contract/SLA/sync assertions.
+Logs: `finalization-resource-metadata-red.log`,
+`finalization-resource-contract-api-red.log`,
+`finalization-resource-contract-api-final.log`,
+`finalization-resource-metadata-browser-verified.log`,
+`finalization-resource-metadata-backend-final.log`.
 
 Required `FINAL_SECURITY_AUDIT.md`, `PRODUCTION_READINESS_REPORT.md` and
 `PRODUCTION_RELEASE_CHECKLIST.md` now exist and explicitly preserve open
@@ -169,7 +200,7 @@ in development, not approved for production. Do not repeat this already done wor
 
 ## Remaining work
 
-1. Publish the coherent FNL-015 package and verify all hosted jobs
+1. Publish coherent FNL-016 and verify all hosted jobs
    on the exact new full SHA; inspect actual logs before updating evidence.
    The preceding 7/7 does not validate these newer changes.
 2. Repeat a bounded convergence audit for new concrete functional defects,
@@ -177,10 +208,10 @@ in development, not approved for production. Do not repeat this already done wor
    Do not turn actual API 403s or functional test fixture errors into unproven
    security vulnerabilities. Full roles/objects and generic automation/audit/
    recovery features remain internal open scope, not externally blocked or done.
-   Concrete next trace: client/site creation still supplies hidden fictional
-   contract dates, site managers, alarm equipment and staffing metadata. Inspect
-   active API schemas before replacing them with explicit user input or genuine
-   unavailable values; do not silently send invalid nulls.
+   The concrete client/site metadata trace is corrected under FNL-016, not an
+   outstanding task. Next narrow trace: older archive/restore actions still
+   use void results and offline fallbacks; inspect actual error/identity/
+   durable-persistence behavior before claiming those paths safe or complete.
 3. Keep the requested final documents/tracker current; no ESLint configuration
    or script was found, so do not claim lint ran.
 4. Merge PR #66 only after

@@ -8,15 +8,15 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
-**Fully hosted-verified code revision:** `64c9ee953dfd3241de0678e482eb1fc19f4d0f13`
+**Fully hosted-verified code revision:** `fcafebd134d3b1e5530b1e4ae0f46b32b72065d4`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
-Its exact [CI 43934545176](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43934545176)
-passed **7/7 jobs**; downloaded logs confirm frontend **242/242**, backend
-**546/546 in 35 suites**, real browser **7/7** and owned-container cleanup.
+Its exact [CI 43938567434](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43938567434)
+passed **7/7 jobs**; downloaded logs confirm frontend **262/262**, backend
+**546/546 in 35 suites**, real browser **8/8** and owned-container cleanup.
 This includes confirmed form writes, report grant/date/identity fixes, durable
 critical-incident follow-ups, truthful audit displays and delayed local-write
-identity isolation, plus FNL-013/014 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
+identity isolation, plus FNL-013/014/015 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
 and `5ef02b3ab0b9f711025405247e711f21d3ee9811` passed their own
 CI 43929519192 and 43928436875, 7/7 each.
 
@@ -46,9 +46,9 @@ Seventeen assertions failed before correction. Focused 74/74 passed, followed by
 full frontend **242/242 in 35 files** including twelve additional offline
 durability/failure cases. Typecheck/build, real browser **7/7** and owned-container
 cleanup passed. This is not complete resource-browser acceptance. Its exact hosted
-verification is the 64c9ee9 revision above, not the preceding 3110bbb CI.
+verification is `64c9ee9` / CI 43934545176, not the preceding 3110bbb CI.
 
-**Subsequent FNL-015 worktree — locally IMPLEMENTIERT UND GETESTET:** Four
+**Published FNL-015 — IMPLEMENTIERT UND GETESTET:** Four
 qualification/absence actions explicitly confirm API or durable offline storage,
 preserve failures and isolate delayed identities. Captured forms reset only after
 confirmation; optional qualification expiry remains nullable. Partially stored
@@ -63,8 +63,28 @@ confirmed. It proves real create/update, nullable expiry, genuine overlap HTTP 4
 retained failure input and persisted dates/expiry status after reload.
 Full frontend **262/262 in 35 files**, typecheck, frontend/backend builds and
 isolated employee-controller **6/6** passed. Full backend on fresh PostgreSQL 16
-also passed **546/546 in 35 suites**. Exact hosted follow-up remains separate;
-no complete employee/role acceptance claimed.
+also passed **546/546 in 35 suites**. Exact hosted verification is
+`fcafebd` / CI 43938567434 above; no complete employee/role acceptance claimed.
+
+**Subsequent FNL-016 worktree — locally IMPLEMENTIERT UND GETESTET:** Customers
+require explicit numbers/start/end dates and show renewal/notice controls.
+Existing DB renewal/notice columns now survive API create/update/read and offline
+create/update replay instead of being silently stripped. Contract calendar
+strings remain native-date compatible. Site staffing, equipment, access rules
+and IANA timezone are editable, preserved across changes and mapped identically
+online/offline; no fictional manager, alarm model or SOP count is submitted.
+Eight frontend regressions cover these paths and ordered local customer revision
+increments. Strengthened genuine API cases exposed partial updates resetting
+Silver SLA to the create default Gold; both normal PATCH and sync now preserve
+omitted SLA. Three targeted PostgreSQL cases pass, including idempotent replay.
+Full frontend **270/270 in 35 files**, typecheck/both builds and real browser
+**9/9** with cleanup passed. The new journey verifies offline customer creation,
+actual contract reload/update, site create/update/reload and real fixture
+archival. Its first run was 8/9 due to an incorrect test-only offline-button name;
+the actual accessible label was retained and both subsequent runs passed 9/9.
+Final full backend on fresh PostgreSQL 16 passed **546/546 in 35 suites**,
+including the strengthened contract/SLA/sync cases. New hosted follow-up
+remains separate from FNL-015 evidence.
 
 **Historical rejected-attachment extension (`3617576`) — IMPLEMENTIERT UND GETESTET:** The complete real
 browser suite passed **5/5** locally and in the hosted root job of
