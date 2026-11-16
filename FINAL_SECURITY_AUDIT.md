@@ -52,7 +52,16 @@ historischen Kontext im [Sicherheitsbericht](./SECURITY_AUDIT_REPORT.md).
   API-/Offline-Bestätigung und schützt Entwürfe/verspätete Identitätsantworten.
   Lokal: Frontend 242/242 in 35 Dateien, Typprüfung/Build und Browser 7/7.
   Das ist eine Funktionskorrektur, keine neue bestätigte Schwachstelle oder
-  vollständige Rollen-/Objektprüfung. Neue Hosted-Evidenz bleibt separat.
+  vollständige Rollen-/Objektprüfung. Exakt veröffentlicht als
+  `64c9ee953dfd3241de0678e482eb1fc19f4d0f13`, CI 43934545176 7/7;
+  Logs bestätigen Frontend 242, Backend 546 und Browser 7 mit Cleanup.
+- Nachfolgendes FNL-015 schützt Nachweis-/Abwesenheitsentwürfe und deren
+  Identitätsbindung, meldet tatsächliche Teilfehler und bewahrt API-Kalendertage.
+  Lokal Frontend 262/262 und Browser 8/8 einschließlich echtem HTTP 409,
+  nullable Nachweisbearbeitung und erneut geladenem Ablaufstatus.
+  Dies sind Funktions-/Datenintegritätsregressionen, kein neu belegter Exploit.
+  Die frühere begrenzte Sicherheitsprüfung wird nicht als Review dieser
+  nachfolgenden Änderungen ausgegeben.
 
 ## Fachliche Fehler sind keine behaupteten Exploits
 

@@ -41,7 +41,21 @@ Fehler erhalten Eingaben; Pendingzustand verhindert doppelte Übertragung.
 Siebzehn Assertions waren vorher rot. Nach Korrektur: fokussiert 74/74,
 anschließend vollständig 242/242 in 35 Dateien einschließlich zusätzlicher
 Offline-Dauerhaftigkeits-/Fehlerfälle, Typprüfung/Build und Browser 7/7.
-Neue exakte Hosted-Prüfung steht für diese Nachfolgeänderung separat aus.
+Veröffentlicht als `64c9ee953dfd3241de0678e482eb1fc19f4d0f13`;
+CI 43934545176 bestand 7/7. Gelesene Logs bestätigen Frontend 242,
+Backend 546 und Browser 7 mit Cleanup.
+
+FNL-015 korrigiert Mitarbeiter-Nachweise/Abwesenheiten: echte API-/dauerhafte
+Offline-Bestätigung, erhaltene Fehlerentwürfe, identitätsgebundene Rückmeldungen
+und vor dem Await erfasste Abwesenheitsform. Unbefristete Nachweise bleiben
+bearbeitbar; Teilfehler erhalten tatsächlich gespeicherte Stammdaten mit Warnung.
+Offline-Nachweise behaupten keine bestätigte Gültigkeit. Ein echter neuer
+Browserlauf (zunächst 7/8) fand zusätzlich verschobene PostgreSQL-Kalendertage
+beim Reload. Scoped API-Textprojektionen erhalten Datumswerte und abgelaufenen
+Nachweisstatus. Nach Korrektur: Frontend 262/262 in 35 Dateien, Typprüfung,
+beide Builds, isolierter Controller 6/6 und echte Browser 8/8 mit Cleanup.
+Der vollständige Backend-Lauf auf frischem PostgreSQL 16 besteht ebenfalls
+546/546 in 35 Suites. Neue Hosted-Ergebnisse werden getrennt nachgetragen.
 
 Noch interne Arbeit: vollständige Rollen-/Objektmatrix und offene Teilmodule
 abnehmen; erforderliche Prüfung vor autorisierter PR-Integration abschließen.

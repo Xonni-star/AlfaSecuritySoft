@@ -52,6 +52,101 @@ async function readOutbox(page, storeName = 'outbox') {
   }, storeName);
 }
 
+test('employee qualifications and absences confirm real persistence and retain a genuine conflict draft', async ({ page }) => {
+  await page.goto('/');
+  await login(page);
+  await page.getByRole('button', { name: 'Personal & § 34a GewO', exact: true }).click();
+  await page.getByRole('button', { name: 'Mitarbeiter anlegen', exact: true }).click();
+  const personnelNumber = `DETAIL-${randomUUID().slice(0, 8)}`;
+  const employeeForm = page.locator('form').filter({ has: page.getByLabel('Personalnummer', { exact: true }) });
+  await employeeForm.getByLabel('Personalnummer', { exact: true }).fill(personnelNumber);
+  await employeeForm.getByLabel('Vorname', { exact: true }).fill('Browser');
+  await employeeForm.getByLabel('Nachname', { exact: true }).fill('Mitarbeiterdetails');
+  await employeeForm.getByLabel('E-Mail', { exact: true }).fill(`${personnelNumber.toLowerCase()}@browser.test.invalid`);
+  await employeeForm.getByLabel('Telefon', { exact: true }).fill('069123456');
+  await employeeForm.getByLabel('Eintritt', { exact: true }).fill('2026-02-14');
+  const creation = page.waitForResponse(response =>
+    response.url().endsWith('/employees') && response.request().method() === 'POST'
+  );
+  await employeeForm.getByRole('button', { name: 'Speichern', exact: true }).click();
+  const creationResponse = await creation;
+  expect(creationResponse.status()).toBe(201);
+  const { data: employee } = await creationResponse.json();
+  expect(employee.date_of_joining).toBe('2026-02-14');
+  await expect(employeeForm).toHaveCount(0);
+  const card = page.locator('article').filter({ hasText: personnelNumber });
+  await expect(card).toBeVisible();
+  await card.getByLabel('Qualifikation Mitarbeiter', { exact: true }).selectOption({ index: 1 });
+  await card.getByPlaceholder('Nachweis-Nr.', { exact: true }).fill('Browser-Nachweis-ohne-Ablauf');
+  await card.getByLabel('Ausstellungsdatum', { exact: true }).fill('2020-01-01');
+  const qualification = page.waitForResponse(response =>
+    response.url().endsWith(`/employees/${employee.id}/qualifications`) && response.request().method() === 'POST'
+  );
+  await card.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+  const qualificationResponse = await qualification;
+  expect(qualificationResponse.status()).toBe(201);
+  expect(qualificationResponse.request().postDataJSON().expiryDate).toBeNull();
+  expect((await qualificationResponse.json()).data.issue_date).toBe('2020-01-01');
+  await expect(card.getByPlaceholder('Nachweis-Nr.', { exact: true })).toHaveCount(0);
+  await expect(card.getByText('Browser-Nachweis-ohne-Ablauf', { exact: false })).toBeVisible();
+
+  const absenceForm = card.locator('form').filter({ has: page.locator('input[name="employeeId"]') });
+  const start = absenceForm.locator('input[name="startDate"]');
+  const end = absenceForm.locator('input[name="endDate"]');
+  await absenceForm.locator('select[name="type"]').selectOption('Sonstige');
+  await start.fill('2030-07-01');
+  await end.fill('2030-07-02');
+  const absence = page.waitForResponse(response =>
+    response.url().endsWith(`/employees/${employee.id}/absences`) && response.request().method() === 'POST'
+  );
+  await absenceForm.getByRole('button', { name: 'Abwesenheit beantragen', exact: true }).click();
+  expect((await absence).status()).toBe(201);
+  await expect(start).toHaveValue('');
+  await expect(end).toHaveValue('');
+  await expect(card.getByText('Sonstige: 2030-07-01 – 2030-07-02 · PENDING', { exact: true })).toBeVisible();
+
+  await start.fill('2030-07-01');
+  await end.fill('2030-07-02');
+  const conflict = page.waitForResponse(response =>
+    response.url().endsWith(`/employees/${employee.id}/absences`) && response.request().method() === 'POST'
+  );
+  await absenceForm.getByRole('button', { name: 'Abwesenheit beantragen', exact: true }).click();
+  expect((await conflict).status()).toBe(409);
+  await expect(start).toHaveValue('2030-07-01');
+  await expect(end).toHaveValue('2030-07-02');
+  await expect(page.getByRole('alert').filter({ hasText: 'Die Speicherung wurde nicht bestätigt' })).toBeVisible();
+  await page.reload();
+  await page.getByRole('button', { name: 'Personal & § 34a GewO', exact: true }).click();
+  await expect(card.getByText('Browser-Nachweis-ohne-Ablauf', { exact: false })).toBeVisible();
+  await expect(card.getByText('Sonstige: 2030-07-01 – 2030-07-02 · PENDING', { exact: true })).toBeVisible();
+  await card.getByTitle('Bearbeiten', { exact: true }).click();
+  await expect(page.getByLabel('Eintritt', { exact: true })).toHaveValue('2026-02-14');
+  await page.getByRole('button', { name: '✕', exact: true }).click();
+  const qualifications = card.locator('section').filter({
+    has: page.getByRole('heading', { name: 'Qualifikationen & Nachweise', exact: true })
+  });
+  await qualifications.getByRole('button', { name: 'Bearbeiten', exact: true }).click();
+  await expect(card.getByLabel('Ausstellungsdatum bearbeiten', { exact: true })).toHaveValue('2020-01-01');
+  const nullableUpdate = page.waitForResponse(response =>
+    response.url().includes(`/employees/${employee.id}/qualifications/`) && response.request().method() === 'PATCH'
+  );
+  await qualifications.getByRole('button', { name: 'Speichern', exact: true }).click();
+  expect((await nullableUpdate).status()).toBe(200);
+  await qualifications.getByRole('button', { name: 'Bearbeiten', exact: true }).click();
+  await card.getByLabel('Ablaufdatum bearbeiten', { exact: true }).fill('2020-02-01');
+  await card.getByLabel('Nachweis geprüft', { exact: true }).check();
+  const expiredUpdate = page.waitForResponse(response =>
+    response.url().includes(`/employees/${employee.id}/qualifications/`) && response.request().method() === 'PATCH'
+  );
+  await qualifications.getByRole('button', { name: 'Speichern', exact: true }).click();
+  const expiredResponse = await expiredUpdate;
+  expect(expiredResponse.status()).toBe(200);
+  expect((await expiredResponse.json()).data.status).toBe('EXPIRED');
+  await page.reload();
+  await page.getByRole('button', { name: 'Personal & § 34a GewO', exact: true }).click();
+  await expect(qualifications.getByText('ABGELAUFEN · 2020-02-01', { exact: false })).toBeVisible();
+});
+
 test('real session and PostgreSQL persist one offline mutation after a lost receipt', async ({ page, context }) => {
   test.setTimeout(120_000);
   const password = process.env.SECOPS_DEMO_USER_PASSWORD;

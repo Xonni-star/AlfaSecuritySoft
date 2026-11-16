@@ -13,6 +13,9 @@ Test, ein Merge und ein erfolgreiches Containerimage ersetzen sie nicht.
       kritischem Offline-Vorfall mit Folgeaufgabe und verlorenem Serverbeleg.
 - [x] Siebte echte Browserjourney für schreibgeschützte API-Daten, exakt erlaubten
       Kunden, echte Reader-Ablehnung und keine Mutationsanforderung.
+- [x] Achte echte Browserjourney für bestätigte Mitarbeiter-/Nachweis-/Abwesenheitsdaten,
+      nullable Nachweisbearbeitung, echten Konflikt mit erhaltenem Entwurf und
+      Kalendertage/abgelaufenen Nachweisstatus nach Reload.
 - [x] Gefundene simulierte Audit-/Technik-/Abnahmeergebnisse entfernt;
       lokale Automationsentwürfe und fehlende Engine ausdrücklich gekennzeichnet.
 - [x] Privaten lokalen S3-/ClamAV-Ablauf, Originalbytes und echte Dateiablehnung geprüft.

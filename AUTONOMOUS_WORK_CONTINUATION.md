@@ -131,7 +131,34 @@ and real browser **7/7** with cleanup. Twelve additional offline cases verify
 that confirmation waits for storage and errors never change resource/queue state.
 Logs: `finalization-resource-forms-red.log`,
 `finalization-resource-forms-browser.log`.
-This subsequent package still needs publication and exact-head CI.
+This publication prerequisite is satisfied: FNL-014 is
+`64c9ee953dfd3241de0678e482eb1fc19f4d0f13`;
+[CI 43934545176](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43934545176)
+passed 7/7. Downloaded logs confirm frontend 242, backend 546 and browser 7,
+including container cleanup (`finalization-resource-forms-hosted-ci.log`).
+
+FNL-015 is now locally verified: four qualification/absence actions confirm
+actual API/durable-local results and preserve failures/identity isolation.
+Captured absence forms avoid React's cleared currentTarget. Private uncontrolled
+drafts remount across identities; optional qualification expiry stays nullable.
+Employee-core success survives proof failure with an explicit partial-error
+notice and no unpersisted/duplicated offline proofs. Offline qualifications do
+not claim validity before the server confirms.
+Original focused run: 14 failures, 80 passes and an unhandled reset rejection.
+The new eighth real browser journey initially passed 7/8 and exposed a genuine
+calendar-date defect after reload: node-postgres DATE objects became shifted ISO
+timestamps. Scoped SQL calendar-string projections preserve joining, issue,
+expiry and absence dates and correct expired-proof classification.
+Final local result: frontend **262/262 in 35 files**, typecheck, frontend/backend
+builds, isolated employee controller **6/6**, real browser **8/8** and all three
+containers removed. The journey proves core/proof writes, nullable proof editing,
+real overlap HTTP 409, retained input and reload persistence/expired status.
+Full backend on a fresh PostgreSQL 16 also passed **546/546 in 35 suites**.
+Exact hosted follow-up is separate, not inferred from FNL-014.
+Logs: `finalization-employee-details-red.log`,
+`finalization-employee-details-browser.log` (initial 7/8),
+`finalization-employee-details-browser-final.log` (8/8),
+`finalization-employee-details-backend.log`.
 
 Required `FINAL_SECURITY_AUDIT.md`, `PRODUCTION_READINESS_REPORT.md` and
 `PRODUCTION_RELEASE_CHECKLIST.md` now exist and explicitly preserve open
@@ -142,7 +169,7 @@ in development, not approved for production. Do not repeat this already done wor
 
 ## Remaining work
 
-1. Publish the coherent FNL-014/documentation package and verify all hosted jobs
+1. Publish the coherent FNL-015 package and verify all hosted jobs
    on the exact new full SHA; inspect actual logs before updating evidence.
    The preceding 7/7 does not validate these newer changes.
 2. Repeat a bounded convergence audit for new concrete functional defects,
@@ -150,6 +177,10 @@ in development, not approved for production. Do not repeat this already done wor
    Do not turn actual API 403s or functional test fixture errors into unproven
    security vulnerabilities. Full roles/objects and generic automation/audit/
    recovery features remain internal open scope, not externally blocked or done.
+   Concrete next trace: client/site creation still supplies hidden fictional
+   contract dates, site managers, alarm equipment and staffing metadata. Inspect
+   active API schemas before replacing them with explicit user input or genuine
+   unavailable values; do not silently send invalid nulls.
 3. Keep the requested final documents/tracker current; no ESLint configuration
    or script was found, so do not claim lint ran.
 4. Merge PR #66 only after

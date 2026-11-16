@@ -8,15 +8,15 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
-**Fully hosted-verified code revision:** `3110bbbda1655e804cba35c89ccbda5174e84444`
+**Fully hosted-verified code revision:** `64c9ee953dfd3241de0678e482eb1fc19f4d0f13`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
-Its exact [CI 43932552825](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43932552825)
-passed **7/7 jobs**; downloaded logs confirm frontend **212/212**, backend
+Its exact [CI 43934545176](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43934545176)
+passed **7/7 jobs**; downloaded logs confirm frontend **242/242**, backend
 **546/546 in 35 suites**, real browser **7/7** and owned-container cleanup.
 This includes confirmed form writes, report grant/date/identity fixes, durable
 critical-incident follow-ups, truthful audit displays and delayed local-write
-identity isolation, plus FNL-013 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
+identity isolation, plus FNL-013/014 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
 and `5ef02b3ab0b9f711025405247e711f21d3ee9811` passed their own
 CI 43929519192 and 43928436875, 7/7 each.
 
@@ -34,9 +34,9 @@ seed customer and a SOP-only reader's real HTTP 403, with no mutation request.
 Two initial test assumptions were corrected: the actual singular/counted log-tab
 name and the customer list's public response shape (no `tenant_id` field).
 No product permission was weakened and no assertion removed. Exact hosted
-verification is the 3110bbb revision above, not inferred from its predecessor.
+verification is `3110bbb` / CI 43932552825, not inferred from its predecessor.
 
-**Subsequent FNL-014 worktree — locally IMPLEMENTIERT UND GETESTET:** Six customer,
+**Published FNL-014 — IMPLEMENTIERT UND GETESTET:** Six customer,
 site and employee create/update methods now return explicit confirmation only
 after API success or durable offline storage. Failures retain drafts; pending
 submits are blocked and completions/errors remain identity-bound. Site creation
@@ -45,8 +45,26 @@ another customer when the original is unavailable.
 Seventeen assertions failed before correction. Focused 74/74 passed, followed by
 full frontend **242/242 in 35 files** including twelve additional offline
 durability/failure cases. Typecheck/build, real browser **7/7** and owned-container
-cleanup passed. This is not complete resource-browser acceptance. Newer hosted
-verification remains separate from the 3110bbb CI.
+cleanup passed. This is not complete resource-browser acceptance. Its exact hosted
+verification is the 64c9ee9 revision above, not the preceding 3110bbb CI.
+
+**Subsequent FNL-015 worktree — locally IMPLEMENTIERT UND GETESTET:** Four
+qualification/absence actions explicitly confirm API or durable offline storage,
+preserve failures and isolate delayed identities. Captured forms reset only after
+confirmation; optional qualification expiry remains nullable. Partially stored
+employees keep their genuine core record but explicitly report missing proofs;
+unpersisted proofs are never prefilled or duplicated. Offline proof validity
+remains pending genuine server confirmation.
+The new real browser case exposed PostgreSQL DATE values being serialized as
+shifted timestamps after reload. Employee joining/qualification/absence dates
+now leave the API as calendar strings, preserving native date editing and expired
+proof classification. Initial browser run: 7/8; corrected rerun: **8/8**, cleanup
+confirmed. It proves real create/update, nullable expiry, genuine overlap HTTP 409,
+retained failure input and persisted dates/expiry status after reload.
+Full frontend **262/262 in 35 files**, typecheck, frontend/backend builds and
+isolated employee-controller **6/6** passed. Full backend on fresh PostgreSQL 16
+also passed **546/546 in 35 suites**. Exact hosted follow-up remains separate;
+no complete employee/role acceptance claimed.
 
 **Historical rejected-attachment extension (`3617576`) — IMPLEMENTIERT UND GETESTET:** The complete real
 browser suite passed **5/5** locally and in the hosted root job of

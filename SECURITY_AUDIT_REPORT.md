@@ -11,6 +11,13 @@ with container cleanup. Subsequent FNL-013 locally passes frontend 212/212,
 strict typecheck, both builds and real browser 7/7. It replaces simulated
 API/Python/acceptance results with real read-only GET data/errors and an honest
 checklist; generic automation remains local drafts without an engine.
+FNL-014 is published in `64c9ee953dfd3241de0678e482eb1fc19f4d0f13`;
+[CI 43934545176](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43934545176)
+passed 7/7, with frontend 242, backend 546 and browser 7.
+Subsequent FNL-015 locally passes frontend 262 and browser 8, including genuine
+employee persistence, nullable proof editing, reload calendar dates/expired
+classification and a real overlap conflict with retained input. These functional
+changes are not presented as newly security-reviewed or complete role coverage.
 The bounded review reported no confirmed new vulnerability and supplied no
 complete coverage matrix. Current revision boundaries and remaining internal/
 external gates are in [current status](./PROJECT_CURRENT_STATUS.md) and

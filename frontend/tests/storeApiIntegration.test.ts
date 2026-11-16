@@ -38,7 +38,7 @@ vi.mock('../services/apiClient', () => {
 import { useSecurityStore, type AuthUser } from '../store';
 import { apiClient, ApiError } from '../services/apiClient';
 import { offlineVault, type StoredSOPAcknowledgement } from '../services/indexedDbService';
-import { UserRole, type SOPDocument } from '../types';
+import { QualificationType, UserRole, type SOPDocument } from '../types';
 
 const mockedApi = apiClient as unknown as {
   get: ReturnType<typeof vi.fn>;
@@ -321,6 +321,129 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     expect(await write()).toBe(false);
     expect(useSecurityStore.getState()).toMatchObject({ clients, sites, employees, syncQueue: [] });
     expect(useSecurityStore.getState().notifications.at(-1)?.message).toContain('Local quota exceeded');
+  });
+
+  const qualificationInput = {
+    type: QualificationType.GEWO_34A_SACHKUNDE, certificateNumber: 'Certificate-1',
+    issueDate: '2026-01-01', expiryDate: null, verified: false
+  };
+  const absenceInput = { type: 'Urlaub' as const, startDate: '2026-12-01', endDate: '2026-12-02' };
+  const employeeDetailWrites = [
+    { name: 'create qualification', action: 'QUALIFICATION_CREATE', write: () => useSecurityStore.getState().addQualification(employeeRow.id, qualificationInput) },
+    { name: 'update qualification', action: 'QUALIFICATION_UPDATE', write: () => useSecurityStore.getState().updateQualification(employeeRow.id, 'qualification-1', { certificateNumber: 'Updated certificate' }) },
+    { name: 'create absence', action: 'ABSENCE_CREATE', write: () => useSecurityStore.getState().addAbsence(employeeRow.id, absenceInput) },
+    { name: 'review absence', action: 'ABSENCE_REVIEW', write: () => useSecurityStore.getState().reviewAbsence(employeeRow.id, 'absence-1', 'APPROVED') }
+  ];
+
+  async function prepareEmployeeDetails() {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    useSecurityStore.setState({
+      employees: useSecurityStore.getState().employees.map(employee => ({
+        ...employee,
+        qualifications: [{ ...qualificationInput, id: 'qualification-1', revisionVersion: 1 }],
+        absences: [{ ...absenceInput, id: 'absence-1', approved: false, status: 'PENDING', revisionVersion: 1 }]
+      }))
+    });
+  }
+
+  test.each(employeeDetailWrites)('$name explicitly reports API failure without changing employee details', async ({ write }) => {
+    await prepareEmployeeDetails();
+    const employees = useSecurityStore.getState().employees;
+    mockedApi.post.mockRejectedValueOnce(new ApiError(403, 'Detail write denied'));
+    mockedApi.patch.mockRejectedValueOnce(new ApiError(403, 'Detail write denied'));
+    expect(await write()).toBe(false);
+    expect(useSecurityStore.getState().employees).toEqual(employees);
+    expect(useSecurityStore.getState().notifications.at(-1)?.message).toContain('Detail write denied');
+  });
+
+  test.each(employeeDetailWrites)('$name isolates a delayed old-identity completion', async ({ write }) => {
+    await prepareEmployeeDetails();
+    let resolve!: (value: unknown) => void;
+    const response = new Promise(done => { resolve = done; });
+    mockedApi.post.mockReturnValueOnce(response);
+    mockedApi.patch.mockReturnValueOnce(response);
+    const pending = write();
+    useSecurityStore.setState({ authUser: { ...readUser, id: 'other-user' }, employees: [], notifications: [] });
+    resolve({ id: 'new-detail', status: 'PENDING', revision_version: 2 });
+    expect(await pending).toBe(false);
+    expect(useSecurityStore.getState()).toMatchObject({ employees: [], notifications: [] });
+  });
+
+  test.each(employeeDetailWrites)('$name retains offline failure and confirms only a durably stored retry', async ({ write, action }) => {
+    await prepareEmployeeDetails();
+    const employees = useSecurityStore.getState().employees;
+    useSecurityStore.setState({ isOnline: false });
+    const enqueue = vi.spyOn(offlineVault, 'enqueueMutation').mockRejectedValueOnce(new Error('Detail storage unavailable'));
+    expect(await write()).toBe(false);
+    expect(useSecurityStore.getState()).toMatchObject({ employees, syncQueue: [] });
+    let release!: () => void;
+    const stored = new Promise<void>(resolve => { release = resolve; });
+    enqueue.mockImplementation(async mutation => {
+      await stored;
+      return { ...mutation, deviceId: 'detail-test-device', retryCount: 0, status: 'PENDING' };
+    });
+    let settled = false;
+    const pending = write().then(result => { settled = true; return result; });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    expect(useSecurityStore.getState().syncQueue).toEqual([]);
+    release();
+    expect(await pending).toBe(true);
+    expect(useSecurityStore.getState().syncQueue).toEqual([
+      expect.objectContaining({ action, tenantId: readUser.tenantId, userId: readUser.id, status: 'pending' })
+    ]);
+    expect(mockedApi.post).not.toHaveBeenCalled();
+    expect(mockedApi.patch).not.toHaveBeenCalled();
+  });
+
+  test.each([true, false])('employee creation keeps a confirmed core record but explicitly reports missing qualification details (online=%s)', async online => {
+    await prepareEmployeeDetails();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    useSecurityStore.setState({ isOnline: online });
+    mockedApi.post.mockResolvedValueOnce({ id: '55555555-5555-4555-8555-555555555555' })
+      .mockRejectedValueOnce(new ApiError(403, 'Qualification denied'));
+    vi.spyOn(offlineVault, 'enqueueMutation')
+      .mockImplementationOnce(async mutation => ({ ...mutation, deviceId: 'partial-employee-device', retryCount: 0, status: 'PENDING' }))
+      .mockRejectedValueOnce(new Error('Qualification storage failed'));
+    const input = {
+      ...useSecurityStore.getState().employees[0], personnelNumber: 'NEW-DETAIL',
+      qualifications: [{ ...qualificationInput, id: 'draft-qualification' }]
+    };
+    expect(await useSecurityStore.getState().addEmployee(input)).toBe(true);
+    const created = useSecurityStore.getState().employees.filter(employee => employee.personnelNumber === 'NEW-DETAIL');
+    expect(created).toHaveLength(1);
+    expect(created[0].qualifications).toEqual([]);
+    expect(useSecurityStore.getState().notifications.find(notification =>
+      notification.title === (online ? 'Mitarbeiter gespeichert' : 'Mitarbeiter vorgemerkt')
+    )).toMatchObject({
+      type: 'alert', message: expect.stringContaining('Nachweis wurde nicht übernommen')
+    });
+    if (!online) expect(useSecurityStore.getState().syncQueue).toHaveLength(1);
+  });
+
+  test.each(['create', 'update'])('offline qualification %s remains pending until genuine server confirmation', async action => {
+    await prepareEmployeeDetails();
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => ({
+      ...mutation, deviceId: 'qualification-device', retryCount: 0, status: 'PENDING'
+    }));
+    const employee = useSecurityStore.getState().employees[0];
+    useSecurityStore.setState({
+      isOnline: false,
+      employees: [{
+        ...employee,
+        qualifications: employee.qualifications.map(qualification => ({ ...qualification, verified: true, status: 'GÜLTIG' }))
+      }]
+    });
+    const saved = action === 'create'
+      ? await useSecurityStore.getState().addQualification(employee.id, { ...qualificationInput, verified: true })
+      : await useSecurityStore.getState().updateQualification(employee.id, employee.qualifications[0].id, { verified: false });
+    expect(saved).toBe(true);
+    expect(useSecurityStore.getState().employees[0].qualifications[0].status).toBe('AUSSTEHEND');
+    expect(useSecurityStore.getState().syncQueue).toHaveLength(1);
+    expect(mockedApi.post).not.toHaveBeenCalled();
+    expect(mockedApi.patch).not.toHaveBeenCalled();
   });
 
   test('replays the authenticated outbox after restoring a session while already online', async () => {

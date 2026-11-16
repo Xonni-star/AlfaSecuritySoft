@@ -51,7 +51,7 @@ export interface Qualification {
 
 export interface AbsenceRecord {
   id: string;
-  type: 'Urlaub' | 'Krankheit' | 'Fortbildung' | 'Sonderurlaub';
+  type: 'Urlaub' | 'Krankheit' | 'Sonstige';
   startDate: string;
   endDate: string;
   approved: boolean;

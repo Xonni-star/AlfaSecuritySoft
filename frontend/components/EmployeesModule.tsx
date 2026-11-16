@@ -5,6 +5,7 @@ import { Employee, QualificationType, UserRole } from '../types';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const field = 'w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200';
+const absenceTypes = ['Urlaub', 'Krankheit', 'Sonstige'] as const;
 
 export const EmployeesModule: React.FC = () => {
   const { employees, sites: allSites, addEmployee, updateEmployee, archiveEmployee, restoreEmployee, addQualification, updateQualification, addAbsence, reviewAbsence, getTenantDocuments, currentTenantId, currentUserId, authUser } = useSecurityStore();
@@ -14,6 +15,8 @@ export const EmployeesModule: React.FC = () => {
   const [modal, setModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [detailPending, setDetailPending] = useState(false);
+  const [detailError, setDetailError] = useState('');
   const identity = `${currentTenantId}:${authUser?.id || currentUserId}`;
   const identityRef = useRef(identity);
   identityRef.current = identity;
@@ -43,7 +46,8 @@ export const EmployeesModule: React.FC = () => {
     setLastName(''); setEmail(''); setPhone(''); setAssignedSiteIds([]);
     setQualEmployee(''); setQualCert(''); setQualExpiry('');
     setEditingQualificationId(null); setEditCertificateNumber('');
-    setIsSaving(false); setSaveError('');
+    setQualIssue(today()); setEditIssueDate(''); setEditExpiryDate(''); setEditVerified(false);
+    setIsSaving(false); setSaveError(''); setDetailPending(false); setDetailError('');
   }, [identity]);
 
   const visible = useMemo(() => employees.filter(e => Boolean(e.archivedAt) === showArchived && `${e.firstName} ${e.lastName} ${e.personnelNumber}`.toLowerCase().includes(search.toLowerCase())), [employees, showArchived, search]);
@@ -51,11 +55,11 @@ export const EmployeesModule: React.FC = () => {
   const employeeDocuments = getTenantDocuments();
   const expiring = employees.flatMap(e => (e.qualifications || []).filter(q => q.expiryDate && new Date(q.expiryDate).getTime() <= Date.now() + 30 * 86400000 && new Date(q.expiryDate).getTime() >= Date.now()).map(q => `${e.firstName} ${e.lastName}: ${q.type} (${q.expiryDate})`));
 
-  const openCreate = () => { if (isSaving) return; setSaveError(''); setEditing(null); setPersonnelNumber(''); setFirstName(''); setLastName(''); setEmail(''); setPhone(''); setRole(UserRole.GUARD); setWeeklyHours(40); setHourlyRate(18.5); setDateOfJoining(today()); setAssignedSiteIds([]); setModal(true); };
-  const openEdit = (e: Employee) => { if (isSaving) return; setSaveError(''); setEditing(e); setPersonnelNumber(e.personnelNumber); setFirstName(e.firstName); setLastName(e.lastName); setEmail(e.email); setPhone(e.phone); setRole(e.role); setWeeklyHours(e.weeklyHours); setHourlyRate(e.hourlyRate); setDateOfJoining(e.dateOfJoining); setAssignedSiteIds(e.assignedSiteIds || []); setModal(true); };
+  const openCreate = () => { if (isSaving || detailPending) return; setSaveError(''); setEditing(null); setPersonnelNumber(''); setFirstName(''); setLastName(''); setEmail(''); setPhone(''); setRole(UserRole.GUARD); setWeeklyHours(40); setHourlyRate(18.5); setDateOfJoining(today()); setAssignedSiteIds([]); setModal(true); };
+  const openEdit = (e: Employee) => { if (isSaving || detailPending) return; setSaveError(''); setEditing(e); setPersonnelNumber(e.personnelNumber); setFirstName(e.firstName); setLastName(e.lastName); setEmail(e.email); setPhone(e.phone); setRole(e.role); setWeeklyHours(e.weeklyHours); setHourlyRate(e.hourlyRate); setDateOfJoining(e.dateOfJoining); setAssignedSiteIds(e.assignedSiteIds || []); setModal(true); };
   const saveEmployee = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (isSaving) return;
+    if (isSaving || detailPending) return;
     setSaveError('');
     setIsSaving(true);
     try {
@@ -71,23 +75,72 @@ export const EmployeesModule: React.FC = () => {
       if (identityRef.current === identity) setIsSaving(false);
     }
   };
-  const createQualification = async (event: React.FormEvent) => { event.preventDefault(); await addQualification(qualEmployee, { type: qualType, certificateNumber: qualCert, issueDate: qualIssue, expiryDate: qualExpiry, verified: false, status: 'AUSSTEHEND' }); setQualEmployee(''); setQualCert(''); setQualIssue(today()); setQualExpiry(''); };
-  const saveQualification = async (event: React.FormEvent, employeeId: string) => { event.preventDefault(); if (!editingQualificationId) return; await updateQualification(employeeId, editingQualificationId, { certificateNumber: editCertificateNumber, issueDate: editIssueDate, expiryDate: editExpiryDate, verified: editVerified }); setEditingQualificationId(null); };
-  const createAbsence = async (event: React.FormEvent) => { event.preventDefault(); const fd = new FormData(event.currentTarget as HTMLFormElement); await addAbsence(String(fd.get('employeeId')), { type: fd.get('type') as any, startDate: String(fd.get('startDate')), endDate: String(fd.get('endDate')), notes: String(fd.get('notes') || '') }); (event.currentTarget as HTMLFormElement).reset(); };
+  const submitDetail = async (action: () => Promise<boolean>, onSuccess?: () => void) => {
+    if (detailPending || isSaving) return;
+    setDetailError('');
+    setDetailPending(true);
+    try {
+      const saved = await action();
+      if (identityRef.current !== identity) return;
+      if (saved) onSuccess?.();
+      else setDetailError('Die Speicherung wurde nicht bestätigt. Die Eingaben bleiben erhalten.');
+    } catch (error) {
+      if (identityRef.current === identity) setDetailError(error instanceof Error ? error.message : 'Änderung nicht gespeichert.');
+    } finally {
+      if (identityRef.current === identity) setDetailPending(false);
+    }
+  };
+  const createQualification = async (event: React.FormEvent) => {
+    event.preventDefault();
+    await submitDetail(
+      () => addQualification(qualEmployee, { type: qualType, certificateNumber: qualCert, issueDate: qualIssue, expiryDate: qualExpiry || null, verified: false, status: 'AUSSTEHEND' }),
+      () => { setQualEmployee(''); setQualCert(''); setQualIssue(today()); setQualExpiry(''); }
+    );
+  };
+  const saveQualification = async (event: React.FormEvent, employeeId: string) => {
+    event.preventDefault();
+    if (!editingQualificationId) return;
+    await submitDetail(
+      () => updateQualification(employeeId, editingQualificationId, { certificateNumber: editCertificateNumber, issueDate: editIssueDate, expiryDate: editExpiryDate || null, verified: editVerified }),
+      () => setEditingQualificationId(null)
+    );
+  };
+  const createAbsence = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const type = absenceTypes.find(value => value === data.get('type'));
+    if (!type) {
+      setDetailError('Bitte eine gültige Abwesenheitsart auswählen.');
+      return;
+    }
+    await submitDetail(
+      () => addAbsence(String(data.get('employeeId')), { type, startDate: String(data.get('startDate')), endDate: String(data.get('endDate')), notes: String(data.get('notes') || '') }),
+      () => form.reset()
+    );
+  };
 
   return <div className="space-y-6">
-    <header className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="flex items-center gap-2 text-xl font-bold text-white"><Users className="w-6 h-6 text-blue-400"/>Mitarbeiterverwaltung</h1><p className="mt-1 text-xs text-slate-400">Stammdaten, Qualifikationen und Abwesenheiten. Änderungen bleiben revisionsgeschützt.</p></div><div className="flex gap-2"><button onClick={() => setShowArchived(v => !v)} className="px-3 py-2 rounded-lg bg-slate-800 text-xs text-slate-200">{showArchived ? 'Aktive anzeigen' : 'Archiv anzeigen'}</button>{!showArchived && <button onClick={openCreate} className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold flex items-center gap-2"><Plus className="w-4 h-4"/>Mitarbeiter anlegen</button>}</div></header>
+    <header className="flex flex-wrap items-center justify-between gap-3">
+      <div><h1 className="flex items-center gap-2 text-xl font-bold text-white"><Users className="w-6 h-6 text-blue-400"/>Mitarbeiterverwaltung</h1><p className="mt-1 text-xs text-slate-400">Stammdaten, Qualifikationen und Abwesenheiten.</p></div>
+      <div className="flex gap-2">
+        <button disabled={detailPending || isSaving} onClick={() => setShowArchived(v => !v)} className="px-3 py-2 rounded-lg bg-slate-800 text-xs text-slate-200">{showArchived ? 'Aktive anzeigen' : 'Archiv anzeigen'}</button>
+        {!showArchived && <button disabled={detailPending || isSaving} onClick={openCreate} className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold flex items-center gap-2"><Plus className="w-4 h-4"/>Mitarbeiter anlegen</button>}
+      </div>
+    </header>
     {expiring.length > 0 && <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200"><AlertTriangle className="inline w-4 h-4 mr-2"/>Nachweise laufen innerhalb von 30 Tagen ab: {expiring.join(' · ')}</div>}
-    <div className="relative max-w-md"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/><input className={`${field} pl-9`} value={search} onChange={e => setSearch(e.target.value)} placeholder="Name oder Personalnummer suchen"/></div>
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">{visible.map(emp => <article key={emp.id} className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+    {detailError && <p role="alert" className="text-sm text-rose-300">{detailError}</p>}
+    {detailPending && <p role="status" className="text-xs text-slate-400">Änderung wird gespeichert…</p>}
+    <div className="relative max-w-md"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/><input disabled={detailPending || isSaving} className={`${field} pl-9`} value={search} onChange={e => setSearch(e.target.value)} placeholder="Name oder Personalnummer suchen"/></div>
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">{visible.map(emp =>     <article key={`${identity}:${emp.id}`} className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4"><fieldset disabled={detailPending || isSaving} className="space-y-4">
       <div className="flex justify-between gap-3"><div><h2 className="font-bold text-slate-100">{emp.firstName} {emp.lastName} <span className="text-xs text-slate-400 font-mono">{emp.personnelNumber}</span></h2><p className="text-xs text-blue-300">{emp.role} · Revision {emp.revisionVersion || 1}</p><p className="mt-1 text-xs text-slate-400">{emp.email} · {emp.phone} · {emp.weeklyHours} Std./Woche</p></div><div className="flex gap-2">{emp.archivedAt ? <button onClick={() => restoreEmployee(emp.id)} title="Wiederherstellen" className="text-emerald-300"><RotateCcw/></button> : <><button onClick={() => openEdit(emp)} title="Bearbeiten" className="text-blue-300"><Pencil/></button><button onClick={() => archiveEmployee(emp.id)} title="Archivieren" className="text-amber-300"><Archive/></button></>}</div></div>
-      <section className="border-t border-slate-800 pt-3"><h3 className="text-xs font-semibold text-slate-300"><Award className="inline w-4 h-4 mr-1"/>Qualifikationen & Nachweise</h3><div className="mt-2 space-y-2">{(emp.qualifications || []).map(q => editingQualificationId === q.id ? <form key={q.id} onSubmit={e => saveQualification(e, emp.id)} className="flex flex-wrap gap-2 items-center"><span className="text-xs text-slate-300">{q.type}</span><input required aria-label="Nachweisnummer bearbeiten" className={`${field} w-32`} value={editCertificateNumber} onChange={e => setEditCertificateNumber(e.target.value)}/><input required aria-label="Ausstellungsdatum bearbeiten" type="date" className={`${field} w-36`} value={editIssueDate} onChange={e => setEditIssueDate(e.target.value)}/><input required aria-label="Ablaufdatum bearbeiten" type="date" className={`${field} w-36`} value={editExpiryDate} onChange={e => setEditExpiryDate(e.target.value)}/><label className="text-xs text-slate-300"><input type="checkbox" checked={editVerified} onChange={e => setEditVerified(e.target.checked)}/> Nachweis geprüft</label><button className="text-xs text-blue-300">Speichern</button></form> : <div key={q.id} className="flex justify-between gap-2 text-xs text-slate-400"><span>{q.type} · {q.certificateNumber || 'ohne Nummer'}{q.documentReference ? ` · Dokument ${q.documentReference}` : ''} · ausgestellt {q.issueDate || 'unbekannt'}</span><span>{q.status || (q.verified ? 'GÜLTIG' : 'AUSSTEHEND')} {q.expiryDate ? `· ${q.expiryDate}` : ''} {!emp.archivedAt && <button className="ml-2 text-blue-300" onClick={() => { setEditingQualificationId(q.id); setEditCertificateNumber(q.certificateNumber || ''); setEditIssueDate(q.issueDate || ''); setEditExpiryDate(q.expiryDate || ''); setEditVerified(q.verified); }}>Bearbeiten</button>}</span></div>)}{!emp.qualifications?.length && <p className="text-xs text-slate-500">Noch keine Nachweise erfasst.</p>}</div></section>
+      <section className="border-t border-slate-800 pt-3"><h3 className="text-xs font-semibold text-slate-300"><Award className="inline w-4 h-4 mr-1"/>Qualifikationen & Nachweise</h3><div className="mt-2 space-y-2">{(emp.qualifications || []).map(q => editingQualificationId === q.id ? <form key={q.id} onSubmit={e => saveQualification(e, emp.id)} className="flex flex-wrap gap-2 items-center"><span className="text-xs text-slate-300">{q.type}</span><input required aria-label="Nachweisnummer bearbeiten" className={`${field} w-32`} value={editCertificateNumber} onChange={e => setEditCertificateNumber(e.target.value)}/><input required aria-label="Ausstellungsdatum bearbeiten" type="date" className={`${field} w-36`} value={editIssueDate} onChange={e => setEditIssueDate(e.target.value)}/>      <input aria-label="Ablaufdatum bearbeiten" type="date" className={`${field} w-36`} value={editExpiryDate} onChange={e => setEditExpiryDate(e.target.value)}/><label className="text-xs text-slate-300"><input type="checkbox" checked={editVerified} onChange={e => setEditVerified(e.target.checked)}/> Nachweis geprüft</label><button className="text-xs text-blue-300">Speichern</button></form> : <div key={q.id} className="flex justify-between gap-2 text-xs text-slate-400"><span>{q.type} · {q.certificateNumber || 'ohne Nummer'}{q.documentReference ? ` · Dokument ${q.documentReference}` : ''} · ausgestellt {q.issueDate || 'unbekannt'}</span><span>{q.status || (q.verified ? 'GÜLTIG' : 'AUSSTEHEND')} {q.expiryDate ? `· ${q.expiryDate}` : ''} {!emp.archivedAt && <button className="ml-2 text-blue-300" onClick={() => { setEditingQualificationId(q.id); setEditCertificateNumber(q.certificateNumber || ''); setEditIssueDate(q.issueDate || ''); setEditExpiryDate(q.expiryDate || ''); setEditVerified(q.verified); }}>Bearbeiten</button>}</span></div>)}{!emp.qualifications?.length && <p className="text-xs text-slate-500">Noch keine Nachweise erfasst.</p>}</div></section>
       <section className="border-t border-slate-800 pt-3"><h3 className="text-xs font-semibold text-slate-300">Zugeordnete Standorte</h3><div className="mt-2 flex flex-wrap gap-2">{(emp.assignedSiteIds || []).map(id => { const site = allSites.find(s => s.id === id); return site ? <span key={id} className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-300">{site.name}</span> : null; })}{!emp.assignedSiteIds?.length && <p className="text-xs text-slate-500">Noch keinem Standort zugeordnet.</p>}</div></section>
       <section className="border-t border-slate-800 pt-3"><h3 className="text-xs font-semibold text-slate-300">Dokumente</h3><div className="mt-2 space-y-1">{employeeDocuments.filter(d => d.linkedEntityType === 'employee' && d.linkedEntityId === emp.id).map(d => <div key={d.id} className="text-xs text-slate-400">{d.title} · {d.fileName}</div>)}{!employeeDocuments.some(d => d.linkedEntityType === 'employee' && d.linkedEntityId === emp.id) && <p className="text-xs text-slate-500">Keine verknüpften Dokumente. Im Dokumentenmanagement können Nachweise mit diesem Mitarbeiter verknüpft werden.</p>}</div></section>
-      <section className="border-t border-slate-800 pt-3"><h3 className="text-xs font-semibold text-slate-300"><CalendarDays className="inline w-4 h-4 mr-1"/>Abwesenheiten</h3><div className="mt-2 space-y-1">{(emp.absences || []).map(a => <div key={a.id} className="flex justify-between gap-2 text-xs text-slate-400"><span>{a.type}: {a.startDate} – {a.endDate} · {a.status || (a.approved ? 'APPROVED' : 'PENDING')}</span>{a.status === 'PENDING' && <span className="flex gap-2"><button onClick={() => reviewAbsence(emp.id,a.id,'APPROVED')} className="text-emerald-300">Freigeben</button><button onClick={() => reviewAbsence(emp.id,a.id,'REJECTED')} className="text-rose-300">Ablehnen</button></span>}</div>)}{!emp.absences?.length && <p className="text-xs text-slate-500">Keine Abwesenheiten eingetragen.</p>}</div></section>
+      <section className="border-t border-slate-800 pt-3"><h3 className="text-xs font-semibold text-slate-300"><CalendarDays className="inline w-4 h-4 mr-1"/>Abwesenheiten</h3><div className="mt-2 space-y-1">{(emp.absences || []).map(a => <div key={a.id} className="flex justify-between gap-2 text-xs text-slate-400"><span>{a.type}: {a.startDate} – {a.endDate} · {a.status || (a.approved ? 'APPROVED' : 'PENDING')}</span>{a.status === 'PENDING' && <span className="flex gap-2"><button onClick={() => void submitDetail(() => reviewAbsence(emp.id,a.id,'APPROVED'))} className="text-emerald-300">Freigeben</button><button onClick={() => void submitDetail(() => reviewAbsence(emp.id,a.id,'REJECTED'))} className="text-rose-300">Ablehnen</button></span>}</div>)}{!emp.absences?.length && <p className="text-xs text-slate-500">Keine Abwesenheiten eingetragen.</p>}</div></section>
       {!emp.archivedAt && <div className="flex flex-wrap gap-2 border-t border-slate-800 pt-3"><form onSubmit={createQualification} className="flex flex-wrap gap-2 items-center"><input type="hidden" value={qualEmployee === emp.id ? emp.id : ''} onChange={() => {}}/><select aria-label="Qualifikation Mitarbeiter" value={qualEmployee === emp.id ? qualType : ''} onChange={e => {setQualEmployee(emp.id);setQualType(e.target.value as QualificationType)}} className={`${field} w-auto`}><option value="">Nachweis hinzufügen…</option>{Object.values(QualificationType).map(q => <option key={q} value={q}>{q}</option>)}</select>{qualEmployee === emp.id && <><input className={`${field} w-32`} placeholder="Nachweis-Nr." value={qualCert} onChange={e=>setQualCert(e.target.value)}/><input className={`${field} w-36`} type="date" aria-label="Ausstellungsdatum" value={qualIssue} onChange={e=>setQualIssue(e.target.value)}/><input className={`${field} w-36`} type="date" aria-label="Ablaufdatum" value={qualExpiry} onChange={e=>setQualExpiry(e.target.value)}/><button className="text-xs text-blue-300">Hinzufügen</button></>}</form>
-        <form onSubmit={createAbsence} className="flex flex-wrap gap-2 items-center"><input type="hidden" name="employeeId" value={emp.id}/><select name="type" className={`${field} w-auto`}><option>Urlaub</option><option>Krankheit</option><option>Sonstige</option></select><input name="startDate" type="date" required className={`${field} w-36`}/><input name="endDate" type="date" required className={`${field} w-36`}/><button type="submit" className="text-xs text-blue-300">Abwesenheit beantragen</button></form></div>}
-    </article>)}</div>
+        <form onSubmit={createAbsence} className="flex flex-wrap gap-2 items-center"><input type="hidden" name="employeeId" value={emp.id}/><select name="type" className={`${field} w-auto`}>        {absenceTypes.map(type => <option key={type}>{type}</option>)}</select><input name="startDate" type="date" required className={`${field} w-36`}/><input name="endDate" type="date" required className={`${field} w-36`}/><button type="submit" className="text-xs text-blue-300">Abwesenheit beantragen</button></form></div>}
+    </fieldset></article>)}</div>
     {modal && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
         <form onSubmit={saveEmployee} className="w-full max-w-lg space-y-3 rounded-2xl border border-slate-700 bg-[#0f172a] p-6">
