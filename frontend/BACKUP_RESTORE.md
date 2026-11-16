@@ -10,7 +10,7 @@ Für die Wiederherstellbarkeit des DMS müssen Betreiber zusätzlich S3-Versioni
 
 ## 2. Wiederherstellung
 
-Mit `frontend/deploy/restore.sh <archiv.tar.gz.enc>` wird der Backend-Schreibzugriff gestoppt, der Datenbankdump restauriert und danach Backend/Proxy gestartet. S3-Objekte müssen über den Anbieter separat auf einen mit den Metadaten konsistenten Stand wiederhergestellt werden. Nach einem Restore müssen Scanner und S3-Zugriff geprüft werden; nicht wiederhergestellte Objekte können nicht heruntergeladen werden.
+Mit `frontend/deploy/restore.sh <archiv.tar.gz.enc>` wird der Backend-Schreibzugriff gestoppt und der PostgreSQL-Dump mit `--single-transaction --exit-on-error` restauriert. Scheitert der Restore, bleiben Backend und Proxy gestoppt; PostgreSQL rollt die Restore-Transaktion zurück. Schlägt das Wiederanlaufen fehl, versucht das Skript, alle Resume-Dienste erneut zu stoppen. S3-Objekte müssen über den Anbieter separat auf einen mit den Metadaten konsistenten Stand wiederhergestellt werden. Nach einem Restore müssen Scanner und S3-Zugriff geprüft werden; nicht wiederhergestellte Objekte können nicht heruntergeladen werden.
 
 ## 3. Datenträgerverschlüsselung und Aufbewahrung
 
@@ -21,6 +21,8 @@ Die Verschlüsselung ruhender S3-Objekte und die Aufbewahrung müssen beim Anbie
 Der frühere CI-Lauf auf `main` (`77fdb0955e3bbbef01690edc93dc630e443bfbe8`) führte den isolierten vollständigen Schema- und DMS-Objektsnapshot-Restore erfolgreich aus: [Run 43702382063](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702382063). Das prüfte synthetische Daten in einer Testumgebung und ist kein Restore eines Produktionssystems oder eines Produktions-S3-Anbieters. Der aktuelle Post-Merge-Lauf ist oben verlinkt.
 
 Der lokale PostgreSQL-only-Test `time npm run test:backup-restore --prefix frontend/backend -- --database-only` bestand auf dem Phase-4-Stand in 40,363 Sekunden und auf dem Phase-5-Stand mit Migration 039 erneut in 44,43 Sekunden. Diese Dauern beschreiben isolierte Testläufe und sind kein Produktions-RTO. Ein früherer lokaler kombinierter PostgreSQL-/Objektspeicher-Lauf war wegen `401 UNAUTHORIZED` beim Abruf des Test-Images `quay.io/minio/mc:RELEASE.2025-02-08T19-14-21Z` blockiert; der fehlgeschlagene Lauf bereinigte seine Testressourcen. Am 15.11.2026 wurde der vollständige lokale Drill erfolgreich mit den in CI gepinnten GHCR-MinIO-Images ausgeführt (`RESTORE_TEST_MC_IMAGE` und `RESTORE_TEST_MINIO_IMAGE` auf `ghcr.io/disaster37/minio@sha256:282ffcd2e0a3906086ab49cd70765617b20ce5c24ccf7d788043eb9b4ae59e6f`).
+
+Am 16.11.2026 bestand der lokale vollständige Drill mit den in CI gepinnten GHCR-MinIO-Images: erfolgreicher Restore, Tenant-RLS und DMS-Objekt-Prüfungen sowie beide Fehlerpfade (Restore-Fehler lässt Dienste gestoppt und erhält den Datenbankstand; Fehler nach teilweise erfolgreichem Resume stoppt gestartete Dienste). Das ist lokale synthetische Regressionsevidenz, kein CI-Lauf für den aktuellen Worktree.
 
 Es wurden kein Produktionsanbieter, keine produktiven Daten und kein produktiver Restore geprüft. Ein gemessenes RPO oder RTO liegt nicht vor; Betreiber müssen Ziele festlegen und für Datenbank **und** Dokumentenobjekte in einem separaten, wiederholbaren Anbieter-Drill messen.
 

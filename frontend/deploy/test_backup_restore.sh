@@ -117,6 +117,7 @@ for command_name in docker openssl python3 shasum; do
         exit 1
     fi
 done
+REAL_DOCKER_BIN="$(command -v docker)"
 docker info >/dev/null
 
 if project_resources_exist; then
@@ -592,7 +593,7 @@ else
     echo "[TEST] PASS: Migrationen, Tenant-DMS-Datensätze, Versionen, Audit und RLS wurden wiederhergestellt."
     echo "[TEST] S3-Objekte und ClamAV wurden in diesem Modus nicht getestet."
 fi
-echo "[TEST] Simuliere einen Restore-Fehler nach dem Quiesce und prüfe das Wiederanlaufen der Dienste."
+echo "[TEST] Simuliere einen Restore-Fehler nach dem Quiesce und prüfe, dass die Dienste gestoppt bleiben."
 if RESTORE_DB_USER=restore_test_missing \
     RESTORE_QUIESCE_SERVICES=restore-test-marker \
     RESTORE_RESUME_SERVICES=restore-test-marker \
@@ -606,12 +607,81 @@ if ! grep -q "Stoppe Schreibzugriffe: restore-test-marker" "$TEMP_DIR/expected-r
     cat "$TEMP_DIR/expected-restore-failure.log" >&2
     exit 1
 fi
-MARKER_CONTAINER="$(compose ps -q restore-test-marker)"
-MARKER_STATE="$(docker inspect --format '{{.State.Status}}' "$MARKER_CONTAINER")"
-if [ "$MARKER_STATE" != running ]; then
-    echo "Fehler: Der Restore-Marker wurde nach einem fehlgeschlagenen Restore nicht wieder gestartet (Status: $MARKER_STATE)." >&2
+MARKER_CONTAINER="$(compose ps -a -q restore-test-marker)"
+if [ -z "$MARKER_CONTAINER" ]; then
+    echo "Fehler: Der Restore-Marker-Container wurde nach dem fehlgeschlagenen Restore nicht gefunden." >&2
     cat "$TEMP_DIR/expected-restore-failure.log" >&2
     exit 1
 fi
-echo "[TEST] Fehlerpfad verifiziert: quiescierte Dienste wurden trotz fehlgeschlagenem pg_restore wieder gestartet."
+MARKER_STATE="$(docker inspect --format '{{.State.Status}}' "$MARKER_CONTAINER")"
+if [ "$MARKER_STATE" != exited ]; then
+    echo "Fehler: Der Restore-Marker wurde nach einem fehlgeschlagenen Restore unerwartet gestartet (Status: $MARKER_STATE)." >&2
+    cat "$TEMP_DIR/expected-restore-failure.log" >&2
+    exit 1
+fi
+FAILED_RESTORE_TITLE="$(compose exec -T db psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+    -At -c "SELECT title FROM documents WHERE id = '$DOCUMENT_ID' AND tenant_id = '$TENANT_A_ID';")"
+if [ "$FAILED_RESTORE_TITLE" != "Restore baseline A" ]; then
+    echo "Fehler: Der fehlgeschlagene Restore hat den zuvor bestätigten Datenbankstand verändert." >&2
+    echo "Erhalten: $FAILED_RESTORE_TITLE" >&2
+    exit 1
+fi
+echo "[TEST] Fehlerpfad verifiziert: Dienste bleiben gestoppt und der bestätigte Datenbankstand bleibt erhalten."
+
+echo "[TEST] Simuliere einen Fehler beim Wiederanlaufen nach erfolgreichem Restore und prüfe das Stoppen teilweise gestarteter Dienste."
+compose up -d restore-test-marker
+FAIL_RESUME_BIN_DIR="$TEMP_DIR/fail-resume-bin"
+mkdir -p "$FAIL_RESUME_BIN_DIR"
+cat > "$FAIL_RESUME_BIN_DIR/docker" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+REAL_DOCKER_BIN="${RESTORE_TEST_REAL_DOCKER_BIN:?}"
+if [ "${RESTORE_TEST_FAIL_RESUME:-0}" = "1" ] && [ "${1:-}" = "compose" ]; then
+    shift
+    if [[ " $* " == *" up -d restore-test-marker "* ]]; then
+        "$REAL_DOCKER_BIN" compose "$@"
+        echo "[TEST] Simulierter Fehler nach erfolgreichem Start der Resume-Dienste." >&2
+        exit 1
+    fi
+    exec "$REAL_DOCKER_BIN" compose "$@"
+fi
+exec "$REAL_DOCKER_BIN" "$@"
+EOF
+chmod +x "$FAIL_RESUME_BIN_DIR/docker"
+if RESTORE_TEST_REAL_DOCKER_BIN="$REAL_DOCKER_BIN" \
+    RESTORE_TEST_FAIL_RESUME=1 \
+    PATH="$FAIL_RESUME_BIN_DIR:$PATH" \
+    RESTORE_DB_USER="$POSTGRES_USER" \
+    RESTORE_QUIESCE_SERVICES=restore-test-marker \
+    RESTORE_RESUME_SERVICES=restore-test-marker \
+    "$SCRIPT_DIR/restore.sh" "$BACKUP_ARCHIVE" >"$TEMP_DIR/expected-resume-failure.log" 2>&1; then
+    echo "Fehler: Der Restore mit absichtlich fehlgeschlagenem Wiederanlaufen war erfolgreich." >&2
+    exit 1
+fi
+if ! grep -q "Simulierter Fehler nach erfolgreichem Start" "$TEMP_DIR/expected-resume-failure.log" ||
+    ! grep -q "Dienste konnten nach dem Restore nicht gestartet werden" "$TEMP_DIR/expected-resume-failure.log"; then
+    echo "Fehler: Der Test hat den erwarteten Fehler beim Wiederanlaufen nicht erreicht." >&2
+    cat "$TEMP_DIR/expected-resume-failure.log" >&2
+    exit 1
+fi
+MARKER_CONTAINER="$(compose ps -a -q restore-test-marker)"
+if [ -z "$MARKER_CONTAINER" ]; then
+    echo "Fehler: Der Restore-Marker-Container wurde nach dem Resume-Fehler nicht gefunden." >&2
+    cat "$TEMP_DIR/expected-resume-failure.log" >&2
+    exit 1
+fi
+MARKER_STATE="$(docker inspect --format '{{.State.Status}}' "$MARKER_CONTAINER")"
+if [ "$MARKER_STATE" != exited ]; then
+    echo "Fehler: Ein teilweise gestarteter Restore-Marker läuft nach dem Resume-Fehler weiter (Status: $MARKER_STATE)." >&2
+    cat "$TEMP_DIR/expected-resume-failure.log" >&2
+    exit 1
+fi
+FAILED_RESUME_TITLE="$(compose exec -T db psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+    -At -c "SELECT title FROM documents WHERE id = '$DOCUMENT_ID' AND tenant_id = '$TENANT_A_ID';")"
+if [ "$FAILED_RESUME_TITLE" != "Restore baseline A" ]; then
+    echo "Fehler: Der Resume-Fehler hat den wiederhergestellten Datenbankstand verändert." >&2
+    echo "Erhalten: $FAILED_RESUME_TITLE" >&2
+    exit 1
+fi
+echo "[TEST] Fehlerpfad verifiziert: teilweise gestartete Dienste bleiben gestoppt; wiederhergestellte Daten bleiben intakt."
 echo "[TEST] ClamAV: nicht gestartet und daher in diesem Restore-Test nicht verifiziert."

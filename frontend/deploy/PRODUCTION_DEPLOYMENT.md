@@ -211,7 +211,7 @@ Die Testzugangsdaten liegen in einer lokalen temporären Datei. Der MC-Container
 | Nachweisstufe | Was geprüft wird | Status dieses Tests |
 |---|---|---|
 | Automatisierte Tests | Jest-, Migrations- und CI-Tests auf synthetischen Daten | CI führt den isolierten Restore-Regressionstest als eigenen Job aus. |
-| Lokaler Integrationstest | Backup-/Restore-Skripte, vollständige Migrationen und DMS-Daten in einer lokalen Testdatenbank | Durch `test:backup-restore` abgedeckt. |
+| Lokaler Integrationstest | Backup-/Restore-Skripte, vollständige Migrationen und DMS-Daten in einer lokalen Testdatenbank | Durch `test:backup-restore` abgedeckt; der aktuelle Worktree prüft zusätzlich, dass ein fehlgeschlagener transaktionaler Restore Dienste gestoppt lässt und teilweise gestartete Dienste bei einem Resume-Fehler gestoppt werden. |
 | Isolierter Infrastrukturtest | Test-Compose-Projekt, lokales PostgreSQL und lokaler MinIO-/SeaweedFS-kompatibler Objektspeicher | Abgedeckt; Ressourcen und Zugangsdaten sind testisoliert. |
 | Realer Provider-Test | Versionierung, Replikation, Berechtigungen und Wiederherstellung beim tatsächlich konfigurierten S3-Anbieter | Nicht abgedeckt; dazu ist ein separater Test mit einem dedizierten, nicht-produktiven Provider-Bucket nötig. |
 | Vollständige Produktionsabnahme | Wiederherstellung eines repräsentativen Produktionsbackups in einer freigegebenen, produktionsgleichen Umgebung einschließlich Anwendung, Provider und fachlicher Abnahme | Nicht abgedeckt und nicht durch diesen Regressionstest ersetzbar. |
