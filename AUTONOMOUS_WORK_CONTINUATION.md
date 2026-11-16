@@ -382,7 +382,18 @@ Log: `finalization-handover-linkage-hosted-ci.log`; accessibility artifact:
 `handover-linkage-browser-diagnostic/.../error-context.md`. The successful API
 case is not proof of ten passing browser journeys or a seven-job run.
 
-1. Publish coherent FNL-023 plus the FNL-022 real shared-status selector correction.
+FNL-024 additionally reproduced seven same-owner read-order defects: old
+list/detail/outbox success/errors replaced newer results after filter/selection
+A-B-A, and an earlier write callback reloaded an obsolete filter.
+Monotonic independent read generations now retain only the latest read/error;
+current-query guards also prevent starting old filter requests. Existing
+identity/selected-record checks and visible current errors remain.
+Full local frontend367/367 in36 files, typecheck and build passed; backend
+unchanged from hosted552. Logs: `finalization-handover-order-red.log`,
+`finalization-handover-order-frontend.log`,
+`finalization-handover-order-build.log`.
+
+1. Publish FNL-024 plus the stable heading/exact-role locator correction.
    Verify all hosted jobs on the exact full SHA; read actual logs and fix the
    new browser journey/API regression if either fails. Earlier seven-job
    success does not validate these changes; the two 9/10 runs remain failures.
@@ -396,8 +407,8 @@ case is not proof of ten passing browser journeys or a seven-job run.
    no remaining `throw new Error('offline')` or online-state-based catch fallback
    in the active store/controllers/components; this is not exhaustive coverage.
    Inspect remaining real workflow boundaries, not already corrected handlers.
-   FNL-022 render/context defects and FNL-023 confirmation eligibility are now
-   corrected with the precise hosted gaps above, not fresh reproduction tasks.
+   FNL-022/023/024 render/context, account eligibility and read-order defects
+   are now corrected with the precise hosted gaps above, not fresh reproduction tasks.
    No authorization bypass or complete module acceptance is claimed.
 3. Keep the requested final documents/tracker current; no ESLint configuration
    or script was found, so do not claim lint ran.

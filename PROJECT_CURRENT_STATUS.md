@@ -125,6 +125,23 @@ A new real PostgreSQL/API case exercises all three viewers, differing/equal
 contact email, denied employee-list access and both actual confirmations;
 it has not run locally because Docker is unavailable. New exact hosted
 verification is required; this is not a new exploit or complete role matrix.
+Exact published CI43964650702 above now establishes frontend360/backend552,
+including the genuine new PostgreSQL/API case. Its incomplete six-job result
+does not establish ten passing browser journeys. The actual browser artifact
+still showed the filled form and submit; a value-dependent exact textarea-label
+filter invalidated the test locator. Stable heading-scoped form and exact
+accessible-role fields are now independently confirmed in real Chromium.
+
+**Subsequent FNL-024 — IMPLEMENTIERT; full verification OFFEN:** Seven new
+initially failing cases reproduce same-owner stale list/detail/outbox success
+and errors, including filter/selection A→B→A, plus an old write callback starting
+an obsolete filter query. Independent monotonic read generations now keep only
+the latest result/error; identity and current selection guards remain intact.
+The current query is checked before starting a list request, so stale write
+closures cannot overwrite a newer filter. Current request errors remain visible.
+Full local frontend **367/367 in 36 files**, typecheck and production build
+passed. Backend code is unchanged from the verified 552-case hosted run;
+new exact full hosted execution, including the tenth real journey, remains open.
 
 **Published FNL-018 — IMPLEMENTIERT UND GETESTET:** Sync
 now checks identity after awaited attachment inspection and post-sync snapshots

@@ -183,6 +183,7 @@ export const HandoversModule: React.FC = () => {
   const identityKey = JSON.stringify([currentTenantId, userId]);
   const identityRef = useRef(identityKey);
   identityRef.current = identityKey;
+  const readVersions = useRef({ local: 0, list: 0, details: 0 });
 
   const [handovers, setHandovers] = useState<Handover[]>([]);
   const [total, setTotal] = useState(0);
@@ -257,23 +258,27 @@ export const HandoversModule: React.FC = () => {
     if (filter.to) params.set('to', filter.to);
     return params.toString();
   }, [filter, page]);
+  const listQueryRef = useRef(listQuery);
+  listQueryRef.current = listQuery;
 
   const refreshLocalMutations = useCallback(async () => {
     if (!currentTenantId || !userId) return;
     const requestIdentity = identityKey;
+    const requestVersion = ++readVersions.current.local;
     try {
       const records = await offlineVault.getOutbox(currentTenantId, 'handover', userId);
-      if (identityRef.current !== requestIdentity) return;
+      if (identityRef.current !== requestIdentity || readVersions.current.local !== requestVersion) return;
       setLocalMutations(records.sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)));
       setStorageError('');
     } catch (loadError) {
-      if (identityRef.current !== requestIdentity) return;
+      if (identityRef.current !== requestIdentity || readVersions.current.local !== requestVersion) return;
       setStorageError(loadError instanceof Error ? loadError.message : 'Lokaler Übergabespeicher ist nicht verfügbar.');
     }
   }, [currentTenantId, userId, identityKey]);
 
   const refreshList = useCallback(async () => {
-    if (identityRef.current !== identityKey || !permissions.includes('handovers:read')) return;
+    if (identityRef.current !== identityKey || listQueryRef.current !== listQuery || !permissions.includes('handovers:read')) return;
+    const requestVersion = ++readVersions.current.list;
     setError('');
     const siteQuery = filter.siteId ? `?siteId=${encodeURIComponent(filter.siteId)}` : '';
     try {
@@ -281,19 +286,20 @@ export const HandoversModule: React.FC = () => {
         apiClient.get<HandoverListResponse>(`/handovers?${listQuery}`),
         apiClient.get<DashboardCounts>(`/handovers/dashboard${siteQuery}`)
       ]);
-      if (identityRef.current !== identityKey) return;
+      if (identityRef.current !== identityKey || listQueryRef.current !== listQuery || readVersions.current.list !== requestVersion) return;
       setHandovers(list.items);
       setTotal(list.total);
       setCounts(dashboard);
       setSelectedId(current => list.items.some(item => item.id === current) ? current : (list.items[0]?.id || ''));
     } catch (loadError) {
-      if (identityRef.current !== identityKey) return;
+      if (identityRef.current !== identityKey || listQueryRef.current !== listQuery || readVersions.current.list !== requestVersion) return;
       setError(loadError instanceof Error ? loadError.message : 'Übergaben konnten nicht geladen werden.');
     }
   }, [filter.siteId, listQuery, permissions, identityKey]);
 
   const refreshDetails = useCallback(async (handoverId: string) => {
     if (identityRef.current !== identityKey || selectedIdRef.current !== handoverId) return;
+    const requestVersion = ++readVersions.current.details;
     if (!handoverId) {
       setTasks([]);
       setEvents([]);
@@ -306,12 +312,12 @@ export const HandoversModule: React.FC = () => {
         apiClient.get<{ items: HandoverEvent[] }>(`/handovers/${handoverId}/events?limit=50`),
         canReadDocuments ? apiClient.get<HandoverDocument[]>(`/handovers/${handoverId}/documents`) : Promise.resolve([])
       ]);
-      if (identityRef.current !== identityKey || selectedIdRef.current !== handoverId) return;
+      if (identityRef.current !== identityKey || selectedIdRef.current !== handoverId || readVersions.current.details !== requestVersion) return;
       setTasks(taskResult);
       setEvents(eventResult.items);
       setLinkedDocuments(documentResult);
     } catch (loadError) {
-      if (identityRef.current !== identityKey || selectedIdRef.current !== handoverId) return;
+      if (identityRef.current !== identityKey || selectedIdRef.current !== handoverId || readVersions.current.details !== requestVersion) return;
       setError(loadError instanceof Error ? loadError.message : 'Details zur Übergabe konnten nicht geladen werden.');
     }
   }, [canReadDocuments, identityKey]);

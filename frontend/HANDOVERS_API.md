@@ -97,6 +97,11 @@ ebenfalls zurückgesetzt. Späte Server-/Schreibabschlüsse dürfen den neuen Ko
 nicht überschreiben oder dessen Pending-Zustand beenden; Detailergebnisse bleiben
 zusätzlich an die aktuell ausgewählte Übergabe gebunden. Vorbelegung aus frisch
 gefilterten Store-Arrays ändert den Formularzustand nur bei tatsächlichen Änderungen.
+Auch innerhalb derselben Identität werden ältere Listen-, Detail- und
+Outboxantworten beziehungsweise Fehler nach einer neueren Abfrage verworfen.
+Das gilt bei Rückkehr zum vorherigen Filter oder Protokoll; ein alter
+Schreibabschluss darf keine überholte Filterabfrage neu starten. Fehler der
+jeweils aktuellen Abfrage bleiben sichtbar.
 
 Die Oberfläche speichert eine neue Übergabe zuerst in `SecurityOps2_OfflineVault.outbox` und sendet sie danach an:
 

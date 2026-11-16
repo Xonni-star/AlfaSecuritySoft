@@ -66,6 +66,12 @@ describe('HandoversModule', () => {
     field.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
+  function setSearch(value: string) {
+    const field = container.querySelector<HTMLInputElement>('input[aria-label="Übergaben durchsuchen"]')!;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(field, value);
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
   beforeEach(() => {
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
     container = document.createElement('div');
@@ -396,5 +402,119 @@ describe('HandoversModule', () => {
     await act(async () => root.render(<HandoversModule />));
     expect(Array.from(container.querySelectorAll('button')).some(item => item.textContent === label)).toBe(false);
     expect(mocks.post).not.toHaveBeenCalled();
+  });
+
+  test.each(['success', 'failure'] as const)('keeps the newest list after returning to an earlier filter and an old %s', async outcome => {
+    let finish!: (value: { items: ReturnType<typeof persistedHandover>[]; total: number }) => void;
+    let fail!: (error: Error) => void;
+    const oldList = new Promise<{ items: ReturnType<typeof persistedHandover>[]; total: number }>((resolve, reject) => {
+      finish = resolve;
+      fail = reject;
+    });
+    const normalGet = mocks.get.getMockImplementation()!;
+    let listReads = 0;
+    mocks.get.mockImplementation((path: string) => {
+      if (path.startsWith('/handovers?')) {
+        if (++listReads === 1) return oldList;
+        return Promise.resolve({
+          items: [persistedHandover('current', path.includes('search=OTHER') ? 'MIDDLE_QUERY' : 'CURRENT_QUERY')], total: 1
+        });
+      }
+      if (path.endsWith('/tasks')) return Promise.resolve([]);
+      return normalGet(path);
+    });
+    await act(async () => root.render(<HandoversModule />));
+    await act(async () => setSearch('OTHER'));
+    await act(async () => setSearch(''));
+    expect(container.textContent).toContain('CURRENT_QUERY');
+    await act(async () => {
+      if (outcome === 'success') finish({ items: [persistedHandover('old', 'OUTDATED_QUERY')], total: 1 });
+      else fail(new Error('outdated-query-error'));
+    });
+    expect(container.textContent).toContain('CURRENT_QUERY');
+    expect(container.textContent).not.toContain('OUTDATED_QUERY');
+    expect(container.textContent).not.toContain('outdated-query-error');
+  });
+
+  test.each(['success', 'failure'] as const)('keeps the newest details after reselecting a record and an old %s', async outcome => {
+    const currentTask = { id: 'current-task', title: 'CURRENT_DETAIL', status: 'open', priority: 'normal' };
+    let finish!: (value: typeof currentTask[]) => void;
+    let fail!: (error: Error) => void;
+    const oldTasks = new Promise<typeof currentTask[]>((resolve, reject) => { finish = resolve; fail = reject; });
+    const normalGet = mocks.get.getMockImplementation()!;
+    let firstRecordReads = 0;
+    mocks.get.mockImplementation((path: string) => {
+      if (path.startsWith('/handovers?')) return Promise.resolve({
+        items: [
+          { ...persistedHandover('first'), area: 'First record' },
+          { ...persistedHandover('second'), area: 'Second record' }
+        ], total: 2
+      });
+      if (path === '/handovers/first/tasks') return ++firstRecordReads === 1 ? oldTasks : Promise.resolve([currentTask]);
+      if (path.endsWith('/tasks')) return Promise.resolve([]);
+      return normalGet(path);
+    });
+    await act(async () => root.render(<HandoversModule />));
+    const select = (name: string) => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes(name))!.click();
+    await act(async () => select('Second record'));
+    await act(async () => select('First record'));
+    expect(container.textContent).toContain('CURRENT_DETAIL');
+    await act(async () => {
+      if (outcome === 'success') finish([{ ...currentTask, title: 'OUTDATED_DETAIL' }]);
+      else fail(new Error('outdated-details-error'));
+    });
+    expect(container.textContent).toContain('CURRENT_DETAIL');
+    expect(container.textContent).not.toContain('OUTDATED_DETAIL');
+    expect(container.textContent).not.toContain('outdated-details-error');
+  });
+
+  test.each(['success', 'failure'] as const)('keeps a newer same-owner outbox read after an old %s', async outcome => {
+    let finish!: (records: OutboxMutation[]) => void;
+    let fail!: (error: Error) => void;
+    mocks.getOutbox.mockReturnValueOnce(new Promise<OutboxMutation[]>((resolve, reject) => {
+      finish = resolve;
+      fail = reject;
+    }));
+    await act(async () => root.render(<HandoversModule />));
+    mocks.state.isSyncing = true;
+    await act(async () => root.render(<HandoversModule />));
+    expect(mocks.getOutbox).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      if (outcome === 'success') finish([localRecord('user-1')]);
+      else fail(new Error('outdated-local-error'));
+    });
+    expect(container.textContent).toContain('0 lokale Einträge');
+    expect(container.textContent).not.toContain('local-user-1');
+    expect(container.textContent).not.toContain('outdated-local-error');
+  });
+
+  test('an earlier write callback cannot reload the previous filter', async () => {
+    let finish!: () => void;
+    mocks.post.mockReturnValueOnce(new Promise<void>(resolve => { finish = resolve; }));
+    mocks.state.authUser.permissions = ['handovers:read', 'handovers:confirm'];
+    mocks.state.isOnline = true;
+    const normalGet = mocks.get.getMockImplementation()!;
+    const listRequests: string[] = [];
+    mocks.get.mockImplementation((path: string) => {
+      if (path.startsWith('/handovers?')) {
+        listRequests.push(path);
+        const current = path.includes('search=CURRENT');
+        return Promise.resolve({
+          items: [{ ...persistedHandover(current ? 'current' : 'old', current ? 'CURRENT_FILTER' : 'INITIAL_FILTER'), isOutgoingAccount: true }],
+          total: 1
+        });
+      }
+      if (path.endsWith('/tasks')) return Promise.resolve([]);
+      return normalGet(path);
+    });
+    await act(async () => root.render(<HandoversModule />));
+    const confirm = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Übergabe bestätigen')!;
+    await act(async () => confirm.click());
+    await act(async () => setSearch('CURRENT'));
+    const requestsBeforeCompletion = listRequests.length;
+    await act(async () => finish());
+    expect(listRequests).toHaveLength(requestsBeforeCompletion);
+    expect(container.textContent).toContain('CURRENT_FILTER');
+    expect(container.textContent).not.toContain('INITIAL_FILTER');
   });
 });
