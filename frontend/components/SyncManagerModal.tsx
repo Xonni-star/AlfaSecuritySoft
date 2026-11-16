@@ -17,7 +17,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { useSecurityStore } from '../store';
-import { offlineVault, StoredAttachment } from '../services/indexedDbService';
+import { offlineVault } from '../services/indexedDbService';
 
 interface SyncManagerModalProps {
   isOpen: boolean;
@@ -47,8 +47,8 @@ export const SyncManagerModal: React.FC<SyncManagerModalProps> = ({ isOpen, onCl
   const [selectedConflict, setSelectedConflict] = useState<any | null>(null);
   const [resolutionError, setResolutionError] = useState('');
   const [isResolvingConflict, setIsResolvingConflict] = useState(false);
-  const [ownerlessAttachments, setOwnerlessAttachments] = useState<StoredAttachment[]>([]);
-  const [recoveryError, setRecoveryError] = useState('');
+  const [hasOwnerlessAttachments, setHasOwnerlessAttachments] = useState(false);
+  const [ownerlessError, setOwnerlessError] = useState('');
   const identityKey = `${currentTenantId}:${authUser?.id || currentUserId}`;
 
   const tenant = getCurrentTenant();
@@ -76,33 +76,16 @@ export const SyncManagerModal: React.FC<SyncManagerModalProps> = ({ isOpen, onCl
 
   const refreshOwnerless = React.useCallback(async () => {
     try {
-      setOwnerlessAttachments(await offlineVault.listOwnerlessPendingAttachments(currentTenantId));
-      setRecoveryError('');
+      setHasOwnerlessAttachments(await offlineVault.hasOwnerlessPendingAttachments(currentTenantId));
+      setOwnerlessError('');
     } catch (error) {
-      setRecoveryError(error instanceof Error ? error.message : 'Nicht zugeordnete Anhänge konnten nicht gelesen werden.');
+      setOwnerlessError(error instanceof Error ? error.message : 'Der Status älterer Anhänge konnte nicht gelesen werden.');
     }
   }, [currentTenantId]);
 
   useEffect(() => {
     if (isOpen && activeTab === 'storage') void refreshOwnerless();
   }, [isOpen, activeTab, refreshOwnerless]);
-
-  const handleExportOwnerless = (attachment: StoredAttachment) => {
-    const link = document.createElement('a');
-    link.href = attachment.blobData;
-    link.download = attachment.fileName;
-    link.click();
-  };
-
-  const handleDiscardOwnerless = async (attachment: StoredAttachment) => {
-    if (!window.confirm(`Lokalen Anhang „${attachment.fileName}“ endgültig verwerfen? Sichern Sie die Datei vorher über „Sichern“.`)) return;
-    try {
-      await offlineVault.discardOwnerlessAttachment(attachment.id, currentTenantId);
-      await refreshOwnerless();
-    } catch (error) {
-      setRecoveryError(error instanceof Error ? error.message : 'Anhang konnte nicht verworfen werden.');
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -442,32 +425,15 @@ export const SyncManagerModal: React.FC<SyncManagerModalProps> = ({ isOpen, onCl
               </p>
             )}
 
-            {(ownerlessAttachments.length > 0 || recoveryError) && (
+            {(hasOwnerlessAttachments || ownerlessError) && (
               <section aria-label="Nicht zugeordnete Wachbuchanhänge" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-[11px] space-y-3 text-amber-100">
-                <span className="font-bold block">Ältere Wachbuchanhänge ohne Benutzerzuordnung ({ownerlessAttachments.length})</span>
+                <span className="font-bold block">Ältere Wachbuchanhänge ohne sichere Zuordnung</span>
                 <p>
-                  Diese Dateien werden nie automatisch hochgeladen. Sichern Sie jede Datei, verwerfen Sie sie bei Bedarf
-                  und fügen Sie sie im jeweiligen Wachbucheintrag unter Ihrem eigenen Konto erneut hinzu.
+                  Diese Dateien bleiben lokal gespeichert und werden nicht synchronisiert. Da Benutzer- und Standortzugriff
+                  nicht verifiziert werden können, sind sie hier weder einsehbar noch exportierbar. Eine sichere Wiederherstellung
+                  ist über die normale Oberfläche derzeit nicht verfügbar.
                 </p>
-                {recoveryError && <p role="alert" className="text-red-300">{recoveryError}</p>}
-                <ul className="space-y-2">
-                  {ownerlessAttachments.map((attachment) => (
-                    <li key={attachment.id} className="flex items-center justify-between gap-2 rounded-lg bg-slate-900/70 p-2">
-                      <span className="min-w-0">
-                        <span className="block truncate">
-                          {attachment.fileName} · {(attachment.sizeBytes / 1024).toFixed(0)} KB · {new Date(attachment.capturedAt).toLocaleString('de-DE')}
-                        </span>
-                        <span className="block truncate text-slate-400">
-                          Lokale Wachbuch-ID: <code>{attachment.entityId}</code>
-                        </span>
-                      </span>
-                      <span className="flex gap-2 shrink-0">
-                        <button type="button" onClick={() => handleExportOwnerless(attachment)} className="px-2 py-1 rounded bg-blue-600 text-white">Sichern</button>
-                        <button type="button" onClick={() => void handleDiscardOwnerless(attachment)} className="px-2 py-1 rounded bg-red-700 text-white">Verwerfen</button>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                {ownerlessError && <p role="alert" className="text-red-300">{ownerlessError}</p>}
               </section>
             )}
 
@@ -475,7 +441,9 @@ export const SyncManagerModal: React.FC<SyncManagerModalProps> = ({ isOpen, onCl
               <span className="font-bold text-slate-300 block">Sicherheitshinweis zu lokalen Daten:</span>
               <p>
                 Lokale IndexedDB-Datensätze sind durch die Same-Origin-Policy des Browsers gegen andere Websites isoliert.
-                Bei Abmeldung oder Gerätewiderruf werden alle temporären Token und Offline-Caches bereinigt.
+                Die Abmeldung löscht Offline-Datensätze nicht automatisch. Auf gemeinsam genutzten Geräten sollten
+                Browserdaten nach der Nutzung entfernt werden; ältere Anhänge ohne sichere Benutzer- und Standortzuordnung
+                bleiben lokal gespeichert, bis ein autorisiertes Wiederherstellungsverfahren verfügbar ist.
               </p>
             </div>
           </div>

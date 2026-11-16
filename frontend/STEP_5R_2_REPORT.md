@@ -6,8 +6,8 @@
 1. **Vollständige Behandlung aller 6 Mutationstypen (CREATE, UPDATE, DELETE)**:
    - `guardbook`:
      - `CREATE`: Idempotente Erfassung via `ON CONFLICT (tenant_id, client_mutation_id) DO NOTHING`.
-     - `UPDATE`: Revisionssicheres Anhängen einer unlöschbaren Revision in `guardbook_revisions`.
-     - `DELETE`: Explizit mit `REJECTED` abgewiesen (DIN 77200 verbietet Löschungen).
+     - `UPDATE`: Anhängen einer Revision in `guardbook_revisions` gemäß der technischen Append-Only-Regel der Anwendung; dies ist keine Aussage über gesetzliche Revisionssicherheit.
+     - `DELETE`: Durch die Anwendung explizit mit `REJECTED` abgewiesen; dies wird nicht als DIN- oder Rechtsvorgabe behauptet.
    - `shift`:
      - `CREATE`, `UPDATE`, `DELETE`: Vollständig mit Mandantenprüfung und Composite Foreign Keys implementiert.
    - `task`:

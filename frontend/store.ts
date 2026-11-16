@@ -1641,7 +1641,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
             `${attachmentSync.failed} Wachbuchanhang/Anhänge konnten nicht übertragen werden und bleiben lokal gespeichert.`,
             'warning');
         }
-        notifyOwnerlessGuardbookAttachments(attachmentSync.ownerlessCount);
+        notifyOwnerlessGuardbookAttachments(attachmentSync.hasOwnerlessAttachments);
         return { success: 0, failed: attachmentSync.failed, conflicts: 0 };
       }
 
@@ -1829,7 +1829,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
           `${attachmentSync.failed} Wachbuchanhang/Anhänge konnten nicht übertragen werden und bleiben lokal gespeichert.`,
           'warning');
       }
-      notifyOwnerlessGuardbookAttachments(attachmentSync.ownerlessCount);
+      notifyOwnerlessGuardbookAttachments(attachmentSync.hasOwnerlessAttachments);
     } catch (err: any) {
       console.error('[CRITICAL SYNC ERROR]', err);
     } finally {
@@ -3181,10 +3181,12 @@ async function syncPendingGuardbookAttachments(
   tenantId: string,
   userId: string,
   isCurrentIdentity: () => boolean
-): Promise<{ failed: number; maxRetryCount: number; ownerlessCount: number }> {
-  if (typeof globalThis.indexedDB === 'undefined') return { failed: 0, maxRetryCount: 0, ownerlessCount: 0 };
+): Promise<{ failed: number; maxRetryCount: number; hasOwnerlessAttachments: boolean }> {
+  if (typeof globalThis.indexedDB === 'undefined') {
+    return { failed: 0, maxRetryCount: 0, hasOwnerlessAttachments: false };
+  }
   const attachments = await offlineVault.getPendingAttachments(tenantId, userId);
-  const ownerlessCount = await offlineVault.getOwnerlessPendingAttachmentCount(tenantId);
+  const hasOwnerlessAttachments = await offlineVault.hasOwnerlessPendingAttachments(tenantId);
   let failed = 0;
   let maxRetryCount = 0;
   for (const attachment of attachments) {
@@ -3230,13 +3232,13 @@ async function syncPendingGuardbookAttachments(
       maxRetryCount = Math.max(maxRetryCount, (attachment.uploadRetryCount ?? 0) + 1);
     }
   }
-  return { failed, maxRetryCount, ownerlessCount };
+  return { failed, maxRetryCount, hasOwnerlessAttachments };
 }
 
-function notifyOwnerlessGuardbookAttachments(count: number): void {
-  if (count <= 0) return;
+function notifyOwnerlessGuardbookAttachments(hasOwnerlessAttachments: boolean): void {
+  if (!hasOwnerlessAttachments) return;
   const title = 'Ältere Wachbuchanhänge nicht synchronisiert';
-  const message = `${count} lokal gespeicherte Wachbuchanhang/Anhänge haben keine gespeicherte Benutzerzuordnung. Sie werden aus Sicherheitsgründen nicht automatisch hochgeladen und bleiben lokal. Bitte prüfen Sie die Dateien und fügen Sie benötigte Anhänge nach manueller Zuordnung erneut hinzu.`;
+  const message = 'Ältere Wachbuchanhänge ohne sichere Benutzer- und Standortzuordnung bleiben lokal gespeichert und werden nicht automatisch synchronisiert. Sie sind in der normalen Oberfläche weder einsehbar noch exportierbar; ein autorisiertes Wiederherstellungsverfahren ist derzeit nicht verfügbar.';
   const state = useSecurityStore.getState();
   if (state.notifications.some((notification) =>
     notification.title === title && notification.message === message

@@ -1,7 +1,8 @@
 # SecurityOps 2.0 - Phase 6: Offline-Testbericht
 
-> **Historische Szenariomatrix:** Die 18 Einträge unten dokumentieren damalige lokale Prüfungen, keine aktuelle Browser-/Geräteabnahme. Insbesondere Szenario 2 prüft nur lokale IndexedDB-Validierung; es gibt keinen Foto-Upload-/Replay-Pfad, daher werden Fotos nicht synchronisiert.
+> **Historische Szenariomatrix:** Die 18 Einträge unten dokumentieren damalige lokale Prüfungen, keine aktuelle Browser-/Geräteabnahme. Insbesondere Szenario 2 prüft nur lokale IndexedDB-Validierung und ist kein Nachweis für Upload-/Replay-Verhalten; dieses Verhalten wird in aktuellen Offline-Sync-Tests separat geprüft.
 > **Aktueller Stand (15.11.2026):** PR [#64](https://github.com/Xonni-star/SecurityOps-2.0/pull/64) ist in `main` gemergt (`621874535ee480e56716ae8a7bd992272bc7a51a`). Migration 041 ergänzt tenant-scoped Idempotenzquittungen für den Wachbuchanhang-Upload. Anhänge mit gespeicherter `userId` können nach Wiederverbindung idempotent hochgeladen werden. Lokale Altanhänge ohne `userId` werden nicht automatisch hochgeladen oder einem Benutzer zugewiesen; die UI warnt davor, und der Benutzer muss sie erneut hinzufügen. Ein Altanhang mit bereits bestätigtem Eintrag und nicht-UUID lokaler ID kann nicht verknüpft werden. Main-CI-Lauf [43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) lief beim letzten Statuscheck noch.
+> **Worktree-Korrektur (16.11.2026):** Ein bestätigtes MEDIUM-Finding zur tenantweiten Sichtbarkeit und zum Export ownerloser lokaler Anhänge wurde behoben. Die Oberfläche zeigt weder Dateimetadaten noch Inhalte; die Daten bleiben lokal. Frontend-Regressionstests, Typcheck und Produktionsbuild bestanden. Dieser Fix ist nicht durch Hosted CI abgedeckt.
 
 ## 1. Testergebnisse der 18 Szenarien
 | Nr | Szenario | Status | Verifikation |

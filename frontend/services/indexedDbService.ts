@@ -778,53 +778,16 @@ export class IndexedDbService {
     });
   }
 
-  async getOwnerlessPendingAttachmentCount(tenantId: string): Promise<number> {
+  async hasOwnerlessPendingAttachments(tenantId: string): Promise<boolean> {
     const db = await this.init();
     return new Promise((resolve, reject) => {
       const tx = db.transaction('attachments', 'readonly');
       const request = tx.objectStore('attachments').getAll();
       request.onsuccess = () => resolve(
         ((request.result as StoredAttachment[]) || [])
-          .filter((attachment) => attachment.tenantId === tenantId && !attachment.synced && !attachment.userId)
-          .length
+          .some((attachment) => attachment.tenantId === tenantId && !attachment.synced && !attachment.userId)
       );
       request.onerror = () => reject(request.error || new Error('Lesen nicht zugeordneter Wachbuchanhänge fehlgeschlagen'));
-    });
-  }
-
-  async listOwnerlessPendingAttachments(tenantId: string): Promise<StoredAttachment[]> {
-    const db = await this.init();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction('attachments', 'readonly');
-      const request = tx.objectStore('attachments').getAll();
-      request.onsuccess = () => resolve(
-        ((request.result as StoredAttachment[]) || [])
-          .filter((attachment) => attachment.tenantId === tenantId && !attachment.synced && !attachment.userId)
-          .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt) || a.id.localeCompare(b.id))
-      );
-      request.onerror = () => reject(request.error || new Error('Lesen nicht zugeordneter Wachbuchanhänge fehlgeschlagen'));
-    });
-  }
-
-  // Only an explicit user action may call this; it never touches owned or synced attachments.
-  async discardOwnerlessAttachment(id: string, tenantId: string): Promise<boolean> {
-    const db = await this.init();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction('attachments', 'readwrite');
-      let deleted = false;
-      tx.oncomplete = () => resolve(deleted);
-      tx.onerror = () => reject(tx.error || new Error('Wachbuchanhang konnte nicht verworfen werden'));
-      tx.onabort = () => reject(tx.error || new Error('Verwerfen des Wachbuchanhangs wurde abgebrochen'));
-      const store = tx.objectStore('attachments');
-      const request = store.get(id);
-      request.onsuccess = () => {
-        const attachment = request.result as StoredAttachment | undefined;
-        if (attachment && attachment.tenantId === tenantId && !attachment.userId && !attachment.synced) {
-          store.delete(id);
-          deleted = true;
-        }
-      };
-      request.onerror = () => reject(request.error || new Error('Wachbuchanhang konnte nicht gelesen werden'));
     });
   }
 

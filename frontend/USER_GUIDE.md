@@ -69,7 +69,7 @@ Alle Abbildungen sind im zentralen Dokumentationsverzeichnis `docs/handbuch/imag
 2. Alle Einträge werden verschlüsselt in der lokalen **IndexedDB Outbox** zwischengespeichert.
 3. Bei Reconnect gleicht das Push-Protokoll alle Einträge über `client_uuid` dedupliziert und idempotent mit dem Server ab.
 4. Bei Kollisionen zweier Offline-Geräte öffnet das **SyncManagerModal** eine Side-by-Side Gegenüberstellung.
-5. Offline erfasste Wachbuchfotos werden nach der Wiederverbindung automatisch übertragen, wenn ihre lokale Benutzerzuordnung zur aktiven Anmeldung passt. Ältere Anhänge ohne gespeicherte Benutzerzuordnung werden aus Sicherheitsgründen nicht automatisch hochgeladen; eine Warnung weist darauf hin. Prüfen Sie diese Dateien und fügen Sie benötigte Anhänge nach manueller Zuordnung erneut hinzu.
+5. Offline erfasste Wachbuchfotos werden nach der Wiederverbindung automatisch übertragen, wenn ihre lokale Benutzerzuordnung zur aktiven Anmeldung passt. Ältere Anhänge ohne gespeicherte Benutzerzuordnung werden aus Sicherheitsgründen weder angezeigt noch exportiert oder automatisch hochgeladen. Die Sync-Zentrale zeigt nur einen allgemeinen Hinweis; eine sichere Wiederherstellung ist derzeit nicht verfügbar. Die Dateien bleiben lokal gespeichert.
 
 ---
 

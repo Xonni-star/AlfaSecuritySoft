@@ -4,8 +4,8 @@
 
 ### Hinzugefügt
 
-- Kontrollierte Wiederherstellung für lokale Wachbuchanhänge ohne Benutzerzuordnung (Sync-Manager › Speicher): Sichern und ausdrücklich Verwerfen, nie automatischer Upload.
 - Regressionstest für Nachtschichten über Zeitumstellungen (7 h/9 h reale Dauer).
+- Standortbezogene Zugriffsbeschränkung für alle vier Planungsberichte sowie Aggregate und Arbeitszeit-CSV; Regressionstest für Standort-A/Standort-B und fehlende Berechtigungen.
 
 ### Geändert
 
@@ -17,7 +17,7 @@
 - Kontrollpunkte sind nach Ablauf des zweiminütigen Duplikatfensters erneut scannbar; Scans innerhalb des Fensters werden abgewiesen.
 - Backend- und Frontend-Regressionstests sichern beide Verhaltensweisen gegen spätere Rückfälle ab.
 - Browserbasierte Berichte quotieren und maskieren CSV-Werte, escapen Anführungszeichen und neutralisieren Formeleingaben.
-- Der Offline-Speicher zeigt die lokale Wachbuch-ID für kontrolliert wiederherzustellende Anhänge ohne Benutzerzuordnung.
+- Die Sync-Oberfläche zeigt für ownerlose Altanhänge nur noch einen generischen Hinweis. Dateimetadaten und Inhalte können nicht mehr angezeigt, exportiert oder verworfen werden; die lokalen Daten bleiben erhalten.
 - Der Chromium-Offline-Fixture-Test erwartet jetzt den tatsächlich ausgewählten Dateinamen.
 
 ## [2.0.0] – 2026-11-11

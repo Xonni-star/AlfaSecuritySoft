@@ -8,7 +8,7 @@
    - Die Mutation-ID der Korrektur (`mut.clientUuid`) wird nicht mehr mit der Mutation-ID des Originaleintrags verwechselt.
    - Jede Korrektur erhält eine eigene `client_mutation_id` in `guardbook_revisions`.
    - Wiederholte Übertragungen derselben Korrektur werden über den Datenbank-Constraint `uq_revisions_client_mutation` idempotent dedupliziert.
-   - Wachbucheinträge bleiben revisionssicher und können nicht physisch gelöscht werden (`DELETE` wird explizit mit `REJECTED` quittiert).
+   - Wachbucheinträge folgen einer technischen Append-Only-Regel; `DELETE` wird von der Anwendung explizit mit `REJECTED` quittiert. Das belegt keine gesetzliche Revisionssicherheit.
 
 2. **Atomarer Versionsschutz im SQL UPDATE & DELETE**:
    - Tabellen `shifts`, `tasks` und `keys` verfügen über `revision_version INT NOT NULL DEFAULT 1`.
@@ -24,7 +24,7 @@
 4. **Vollständige Server-Konfliktauflösung (`resolveSyncConflict`)**:
    - `USE_LOCAL`: Wendet den lokalen Stand atomar an und inkrementiert `revision_version`.
    - `USE_SERVER`: Bestätigt den aktuellen Serverstand verbindlich und liefert diesen als `serverState` zurück.
-   - Revisionssicheres Audit-Logging in `audit_logs`.
+   - Audit-Ereignisse werden in `audit_logs` protokolliert; eine rechtliche Revisionssicherheitsbewertung ist nicht erfolgt.
 
 ---
 

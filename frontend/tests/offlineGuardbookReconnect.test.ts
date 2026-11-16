@@ -256,7 +256,7 @@ describe('offline guardbook reconnect exercise', () => {
     expect(await offlineVault.getPendingAttachments(tenantId, userId)).toEqual([]);
   });
 
-  test('lists and discards only ownerless unsynced attachments of the same tenant on explicit request', async () => {
+  test('reports only whether ownerless pending attachments exist and retains their data', async () => {
     const base = {
       tenantId, entityId: crypto.randomUUID(), fileName: 'f.jpg', mimeType: 'image/jpeg',
       sizeBytes: 5, blobData: 'data:image/jpeg;base64,cGhvdG8=', capturedAt: new Date().toISOString(), synced: false
@@ -266,12 +266,9 @@ describe('offline guardbook reconnect exercise', () => {
     await offlineVault.saveAttachment({ ...base, id: ownerless });
     await offlineVault.saveAttachment({ ...base, id: owned, userId });
 
-    expect((await offlineVault.listOwnerlessPendingAttachments(tenantId)).map((a) => a.id)).toEqual([ownerless]);
-    expect(await offlineVault.listOwnerlessPendingAttachments('another-tenant')).toEqual([]);
-    expect(await offlineVault.discardOwnerlessAttachment(owned, tenantId)).toBe(false);
-    expect(await offlineVault.discardOwnerlessAttachment(ownerless, 'another-tenant')).toBe(false);
-    expect(await offlineVault.discardOwnerlessAttachment(ownerless, tenantId)).toBe(true);
-    expect(await offlineVault.listOwnerlessPendingAttachments(tenantId)).toEqual([]);
+    expect(await offlineVault.hasOwnerlessPendingAttachments(tenantId)).toBe(true);
+    expect(await offlineVault.hasOwnerlessPendingAttachments('another-tenant')).toBe(false);
+    expect(await readAttachment(offlineVault, ownerless)).toMatchObject({ tenantId, synced: false });
     expect(await readAttachment(offlineVault, owned)).toMatchObject({ userId });
   });
 
@@ -321,13 +318,13 @@ describe('offline guardbook reconnect exercise', () => {
     const ownerlessLegacyAttachment = await readAttachment(offlineVault, legacyAttachmentId);
     expect(ownerlessLegacyAttachment).toMatchObject({ synced: false });
     expect(ownerlessLegacyAttachment).not.toHaveProperty('userId');
-    expect(await offlineVault.getOwnerlessPendingAttachmentCount(tenantId)).toBe(1);
-    expect(await offlineVault.getOwnerlessPendingAttachmentCount('another-tenant')).toBe(0);
+    expect(await offlineVault.hasOwnerlessPendingAttachments(tenantId)).toBe(true);
+    expect(await offlineVault.hasOwnerlessPendingAttachments('another-tenant')).toBe(false);
     expect(useSecurityStore.getState().notifications).toEqual(expect.arrayContaining([
       expect.objectContaining({
         title: 'Ältere Wachbuchanhänge nicht synchronisiert',
         type: 'warning',
-        message: expect.stringContaining('nicht automatisch hochgeladen')
+        message: expect.stringContaining('nicht automatisch synchronisiert')
       })
     ]));
   });

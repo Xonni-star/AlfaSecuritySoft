@@ -14,8 +14,7 @@ vi.mock('../store', () => ({
 vi.mock('../services/indexedDbService', () => ({
   offlineVault: {
     getStorageEstimates: mocks.getStorageEstimates,
-    listOwnerlessPendingAttachments: vi.fn(async () => []),
-    discardOwnerlessAttachment: vi.fn(async () => true),
+    hasOwnerlessPendingAttachments: vi.fn(async () => false),
     getDeviceId: vi.fn(() => 'device-a')
   }
 }));
@@ -150,24 +149,19 @@ describe('SyncManagerModal shift conflict snapshots', () => {
     expect(container.textContent).not.toContain('1.19 MB');
   });
 
-  test('shows the local entry identifier for an ownerless attachment recovery', async () => {
-    vi.mocked(offlineVault.listOwnerlessPendingAttachments).mockResolvedValue([{
-      id: 'legacy-attachment',
-      tenantId: 'tenant-a',
-      entityId: 'legacy-local-entry',
-      fileName: 'legacy.jpg',
-      mimeType: 'image/jpeg',
-      sizeBytes: 1024,
-      blobData: 'data:image/jpeg;base64,cGhvdG8=',
-      capturedAt: '2026-11-15T10:00:00.000Z',
-      synced: false
-    }]);
+  test('does not expose metadata or recovery actions for ownerless attachments', async () => {
+    vi.mocked(offlineVault.hasOwnerlessPendingAttachments).mockResolvedValue(true);
     await act(async () => root.render(<SyncManagerModal isOpen onClose={vi.fn()} />));
     const storageTab = Array.from(container.querySelectorAll('button'))
       .find(button => button.textContent?.includes('IndexedDB Speicher'));
     await act(async () => storageTab?.click());
 
-    expect(container.textContent).toContain('legacy.jpg');
-    expect(container.textContent).toContain('Lokale Wachbuch-ID: legacy-local-entry');
+    expect(container.textContent).toContain('Ältere Wachbuchanhänge ohne sichere Zuordnung');
+    expect(container.textContent).toContain('weder einsehbar noch exportierbar');
+    expect(container.textContent).not.toContain('legacy.jpg');
+    expect(container.textContent).not.toContain('legacy-local-entry');
+    expect(Array.from(container.querySelectorAll('button')).some(button =>
+      button.textContent?.includes('Sichern') || button.textContent?.includes('Verwerfen')
+    )).toBe(false);
   });
 });

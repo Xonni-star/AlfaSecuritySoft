@@ -4,37 +4,41 @@
 
 **Verified `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
 
-**GitHub pull requests:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66) is open; PRs #50–#65 are merged, including [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62).
+**GitHub pull requests:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66) is the only open PR; PRs #50–#65 are merged, including [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62).
 
-**Overall readiness:** **PARTIAL / BLOCKED — not approved or verified for production.**
+**Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
 This is the current evidence index. Phase reports and dated status sections remain historical snapshots; they have not been rewritten to make their former state appear current. The earlier 20:59 CET entry for `879ae95` and “no open PRs” is historical, not the current GitHub state. See the [Phase 9 completion report](./PHASE_9_COMPLETION_REPORT.md) for the documentation/operations audit and remaining gates.
 
 ## Status key
 
-- **DONE** — the scoped activity or stated test completed on the identified code/evidence.
-- **PARTIAL** — some evidence exists, but it does not cover the full stated acceptance.
-- **OPEN** — an acceptance, operating decision, or verification remains to be done.
-- **BLOCKED** — completion depends on unavailable evidence or an external decision.
+- **IMPLEMENTIERT** — the capability exists in source; this does not imply complete testing.
+- **IMPLEMENTIERT UND GETESTET** — the scoped capability passed the stated tests on the identified revision.
+- **TEILWEISE IMPLEMENTIERT** — only part of the scope is implemented or verified.
+- **IN ENTWICKLUNG** — work is active in a branch/worktree and is not yet a verified release.
+- **GEPLANT** — proposed work is not implemented.
+- **NICHT VERIFIZIERT** — available evidence does not establish the claim.
+- **OFFEN** — an acceptance or verification remains outstanding.
 
 ## Current verified evidence
 
 | Area | Status | Evidence and limits |
 |---|---|---|
-| Mainline integration | **DONE** | Current `main` is `9df02aaa5ef01de78e0fe5d53be446b2037db24d` (squash merge of #62). PRs #50–#65 are merged; none are open. |
-| Mainline CI | **DONE** | Post-merge [CI run 43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on `6218745` (the #64 merge); run [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed **7/7 jobs** on the exact current-main SHA `9df02aaa5ef01de78e0fe5d53be446b2037db24d`: root checks, frontend, PostgreSQL 16 backend/Jest, isolated restore, ClamAV adapter, DMS API flow, and production Compose/image validation. |
-| Release package validation | **PARTIAL** | The latest artifact run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2 on current `main` `9df02aa`. Packaging/provenance/install validation is not a deployment or production release. |
-| Documentation PR validation | **DONE** | PR #62 (head `6c8a52c`, hosted [CI run 43761213396](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43761213396) 7/7) is merged as `9df02aa`. |
-| Current PR validation | **BESTANDEN** | PR #66 CI [run 43843101598](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43843101598) passed 7/7 on head `7fc57d9`. The separate Chromium offline fixture passed locally; it is not part of the hosted CI workflow. |
-| Current PR reporting changes | **BESTANDEN** | The reporting UI requests tenant-authorized planned/approved hours, applies calendar ranges to reports and exports, and no longer estimates shift duration or asserts certification/audit readiness. Frontend: 29 Vitest files / 169 tests, typecheck, and production build passed locally; the updated PR head passed 7/7 hosted jobs. |
-| Prior backend validation | **BESTANDEN** | On the earlier PR revision, migration and seed ran against isolated PostgreSQL 16; backend build and 34 Jest suites / 315 tests passed. No backend code changed in the current reporting worktree. |
-| Test-only Linux install | **DONE** | PR #56 merged. The tar/deb installer and lifecycle guidance explicitly target isolated testing; they are not production installers. |
-| Backup/restore | **PARTIAL** | CI and local drills exercise synthetic DB and local object-store recovery. A real S3-provider restore, production-like restore, scanner/provider acceptance, and measured RPO/RTO are not evidenced. |
-| Offline and SOP workflows | **PARTIAL** | PR #64 is merged as `621874535ee480e56716ae8a7bd992272bc7a51a`; its PR head `b814b65` passed 7/7 hosted checks and code review reported no blockers. Post-merge main CI run 43760703980 also passed 7/7 on `6218745`. Migration 041 adds tenant-scoped idempotency receipts with `created_by` ownership. Stored attachments with a `userId` can be uploaded idempotently after reconnect. Ownerless local attachments remain ineligible for automatic upload or owner assignment; PR #66 adds a controlled local recovery view to save them or explicitly discard, with the local entry ID shown. Legacy attachments whose entry is already acknowledged with a non-UUID local ID still require manual re-addition. The Chromium fixture is not the authenticated application backend or a physical device. |
-| Security and tenancy | **PARTIAL** | PR #57 and #58 and tenant-authorization test PR #65 are merged. PR #65 passed 7/7 hosted checks; the bounded workstream reported no confirmed high-confidence issue. This is not a comprehensive security review or customer/production acceptance. |
-| Performance | **PARTIAL** | PR #53 adds a bounded local baseline. Its workload and environment do not establish production capacity, an SLA, or resource headroom. |
-| Production/provider/device acceptance | **OPEN** | No evidence here establishes a production deployment, real-provider behavior, customer acceptance, or physical-device acceptance. |
-| Cross-workstream final sign-off | **OPEN** | Offline-sync changes are merged and both PR checks and current-main CI passed; authenticated-backend/device/provider acceptance and remaining operational gates are outstanding. Do not close Phase 9 or mark production-ready based on CI alone. |
+| Mainline integration | **IMPLEMENTIERT UND GETESTET** | Current `main` is `9df02aaa5ef01de78e0fe5d53be446b2037db24d` (squash merge of #62). PRs #50–#65 are merged; PR #66 is the sole open PR. |
+| Mainline CI | **IMPLEMENTIERT UND GETESTET** | Post-merge [CI run 43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed **7/7 jobs** on the exact current-main SHA. |
+| Release package validation | **TEILWEISE IMPLEMENTIERT** | Artifact run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2 on current `main`; packaging/provenance/install validation is not a deployment or production release. |
+| Documentation PR validation | **IMPLEMENTIERT UND GETESTET** | PR #62 (head `6c8a52c`, hosted [CI run 43761213396](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43761213396) 7/7) is merged as `9df02aa`. |
+| Current remote PR validation | **IMPLEMENTIERT UND GETESTET** | PR #66 remote head `785e9eabc9e6ab5f1ce4e726fdff2cbfa49367e4`; [CI run 43843645961](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43843645961) passed 7/7. This run does not include local worktree changes. |
+| Reporting UI | **IMPLEMENTIERT UND GETESTET** | PR #66's frontend uses approved actual hours, calendar ranges, and safe CSV export; its frontend checks passed for the identified revision. |
+| Report site-scope correction | **IMPLEMENTIERT UND GETESTET** | This worktree explicitly filters all four report handlers and the work-hours CSV by authenticated site grants. Backend TypeScript build, three scope-helper tests, and `sync_and_roles.test.ts` (33/33) passed against isolated PostgreSQL 16. Hosted CI and production acceptance for this change remain outstanding. |
+| Prior backend validation | **IMPLEMENTIERT UND GETESTET** | On an earlier PR revision, migration and seed ran against isolated PostgreSQL 16; backend build and 34 Jest suites / 315 tests passed. These results do not cover the current report-scope change. |
+| Test-only Linux install | **IMPLEMENTIERT UND GETESTET** | PR #56 merged. The tar/deb installer and lifecycle guidance target isolated testing; they are not production installers. |
+| Backup/restore | **TEILWEISE IMPLEMENTIERT** | CI and local drills exercise synthetic DB and local object-store recovery. A real S3-provider restore and measured RPO/RTO are not evidenced. |
+| Offline and SOP workflows | **TEILWEISE IMPLEMENTIERT** | PR #64 offline sync is verified at its identified revision. The current worktree removes the tenant-wide ownerless-attachment recovery UI after a confirmed disclosure issue; focused regression tests and broader authenticated-backend/device acceptance remain. Legacy ownerless attachments stay local and cannot yet be securely recovered. |
+| Security and tenancy | **TEILWEISE IMPLEMENTIERT** | Tenant-authorization boundary tests exist; no comprehensive security review, penetration test, or production acceptance is established. |
+| Performance | **TEILWEISE IMPLEMENTIERT** | PR #53 adds a bounded local baseline; its workload does not establish production capacity, an SLA, or resource headroom. |
+| Production/provider/device acceptance | **OFFEN** | No evidence establishes production deployment, real-provider behavior, customer acceptance, or physical-device acceptance. |
+| Cross-workstream final sign-off | **OFFEN** | Authenticated-backend/device/provider acceptance and remaining operational gates are outstanding. Do not mark production-ready based on CI alone. |
 
 ## Merged PRs #50–#61 and #63–#65
 
@@ -64,8 +68,10 @@ At the 20:59 CET check, `main` was `879ae951d6cea52fd84d01dc699cf2ed08843300`, P
 
 ## Current documentation
 
+- [Project completion tracker](./PROJECT_COMPLETION_TRACKER.md) — active work items, acceptance criteria, blockers, and evidence.
 - [Phase 9 completion report](./PHASE_9_COMPLETION_REPORT.md) — operational/documentation audit, evidence boundaries, and gates.
 - [Linux test installation runbook](./frontend/deploy/linux-test/README.md) — isolated, non-production installation, update, backup and restore.
+- [Frontend architecture](./frontend/FRONTEND_ARCHITECTURE.md), [authentication and session security](./frontend/AUTHENTICATION_SECURITY.md), and [system overview](./frontend/SYSTEM_OVERVIEW.md) — current implementation boundaries.
 - [Production deployment and recovery guide](./frontend/deploy/PRODUCTION_DEPLOYMENT.md) — Compose operations, provider boundaries, and rollback constraints.
 - [Offline architecture](./frontend/OFFLINE_ARCHITECTURE.md) and [SOP API](./frontend/SOP_API.md) — workflow-specific behavior and limitations.
 - [Mainline integration history](./MAINLINE_INTEGRATION_STATUS.md) and [Phase 8 report](./PHASE_8_COMPLETION_REPORT.md) — preserved dated evidence; consult this file for current GitHub state.

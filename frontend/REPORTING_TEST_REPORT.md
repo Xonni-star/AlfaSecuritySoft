@@ -1,11 +1,5 @@
-# SecurityOps 2.0 - Phase 9: Reporting & Controlling Testbericht
+# Reporting test report
 
-## 1. Verifizierte Berichtsfunktionen
-| Nr | Szenario | Status | Verifikation |
-|---|---|---|---|
-| 1 | Soll-/Ist-Stundenberechnung aus echten Schichten | **BESTANDEN** | Summe der Schichtstunden stimmt im Dashboard, Bericht und CSV überein |
-| 2 | Vorfallsstatistiken nach Kategorien | **BESTANDEN** | Recharts PieChart bildet genaue Anzahl der Wachbucheinträge ab |
-| 3 | CSV-Exportfunktion | **BESTANDEN** | Client-seitige Formatierung mit UTF-8 BOM für Excel-Kompatibilität |
-| 4 | Druckansicht (PDF) | **BESTANDEN** | Druckspezifisches Layout für revisionssichere Audittabellen aktiv |
-| 5 | Mandantentrennung im Controlling | **BESTANDEN** | Tenant A aggregiert keine Stunden oder Vorfälle von Tenant B |
-| 6 | Berichtsgenerator-Vorlagen | **BESTANDEN** | Neue Vorlagen werden im Zustand Store und DB-Schema persistiert |
+**Historical snapshot — not current verification.** The former report's claims about PDF printing, audit-table immutability, tenant aggregation, and report templates were not tied to the current implementation or a reproducible current test run. Do not treat those checks as evidence that these features exist or are production-ready.
+
+The current report API contract is [SERVICE_PLANNING_API.md](./backend/SERVICE_PLANNING_API.md). The current worktree has explicit site-grant filters for all four planning reports and work-hours CSV, plus an API regression test in `frontend/backend/src/tests/sync_and_roles.test.ts`. That PostgreSQL-backed suite passed 33/33 tests against an isolated PostgreSQL 16 database. Hosted CI for this worktree has not run; this result does not establish production readiness.

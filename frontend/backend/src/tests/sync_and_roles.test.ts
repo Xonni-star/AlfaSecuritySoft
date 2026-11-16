@@ -271,7 +271,7 @@ describe('SecurityOps 2.0 - Schritt 5R.2.7: Idempotenz zwischen Sync-Push und Ko
     await migrationPool.query(
       `INSERT INTO tenant_role_permissions (tenant_id,role_id,permission_id,site_id,data_scope)
        SELECT $1,$2,p.id,$3,'SITE' FROM permissions p WHERE p.code=ANY($4::text[])`,
-      [testTenantA, roleId, siteAId, ['logbook:create', 'employees:read', 'users:read']]
+      [testTenantA, roleId, siteAId, ['logbook:create', 'employees:read', 'users:read', 'planning:reports:read']]
     );
     siteScopedUserId = (await pool.query(
       `INSERT INTO users (email,password_hash,first_name,last_name)
@@ -311,6 +311,38 @@ describe('SecurityOps 2.0 - Schritt 5R.2.7: Idempotenz zwischen Sync-Push und Ko
        VALUES ($1,$2,$3,NOW()+interval '1 hour',false)`,
       [siteScopedUserId, testTenantA, crypto.createHash('sha256').update(token).digest('hex')]
     );
+
+    const reportDate = '2027-06-11';
+    const siteBQualification = `SiteBOnly_${Date.now()}`;
+    await withTenantTransaction(testTenantA, async tx => {
+      await tx.query(
+        `INSERT INTO employee_qualifications
+          (tenant_id,employee_id,qualification_type,certificate_number,issue_date,expiry_date,verified,status)
+         VALUES ($1,$2,$3,$4,'2025-01-01','2028-01-01',TRUE,'VALID')`,
+        [testTenantA, siteB.employeeId, siteBQualification, `Q-${Date.now()}`]
+      );
+    });
+    const siteAShift = await request(app).post('/api/v1/planning/shifts')
+      .set(authHeaders(testTokenA)).send({
+        siteId: siteAId, employeeId: guardAId, date: reportDate,
+        startTime: '08:00', endTime: '16:00', requiredQualification: 'Sachkunde',
+        clientMutationId: `site-report-a-${Date.now()}`
+      });
+    expect(siteAShift.status).toBe(201);
+    const siteBShift = await request(app).post('/api/v1/planning/shifts')
+      .set(authHeaders(testTokenA)).send({
+        siteId: siteB.id, employeeId: siteB.employeeId, date: reportDate,
+        startTime: '08:00', endTime: '16:00', requiredQualification: siteBQualification,
+        clientMutationId: `site-report-b-${Date.now()}`
+      });
+    expect(siteBShift.status).toBe(201);
+    await withTenantTransaction(testTenantA, async tx => {
+      await tx.query(
+        `INSERT INTO employee_absences (tenant_id,employee_id,absence_type,date_from,date_to,status)
+         VALUES ($1,$2,'SICKNESS',$3,$3,'APPROVED'),($1,$4,'VACATION',$3,$3,'APPROVED')`,
+        [testTenantA, guardAId, reportDate, siteB.employeeId]
+      );
+    });
 
     const employeeList = await request(app).get('/api/v1/employees').set(authHeaders(token));
     expect(employeeList.status).toBe(200);
@@ -366,6 +398,49 @@ describe('SecurityOps 2.0 - Schritt 5R.2.7: Idempotenz zwischen Sync-Push und Ko
       status: 'REJECTED',
       message: expect.stringContaining('fehlende Berechtigung')
     });
+
+    const reportQuery = `from=${reportDate}&to=${reportDate}`;
+    const siteWorkHours = await request(app).get(`/api/v1/planning/reports/work-hours?${reportQuery}`)
+      .set(authHeaders(token));
+    expect(siteWorkHours.status).toBe(200);
+    expect(siteWorkHours.body.data.map((row: { employee_id: string }) => row.employee_id)).toEqual([guardAId]);
+    const siteCsv = await request(app)
+      .get(`/api/v1/planning/reports/work-hours?${reportQuery}&format=csv`)
+      .set(authHeaders(token));
+    expect(siteCsv.status).toBe(200);
+    expect(siteCsv.text).not.toContain('Site B Employee');
+
+    const siteCoverage = await request(app).get(`/api/v1/planning/reports/coverage?${reportQuery}`)
+      .set(authHeaders(token));
+    expect(siteCoverage.status).toBe(200);
+    expect(siteCoverage.body.data.map((row: { shift_id: string }) => row.shift_id))
+      .toContain(siteAShift.body.data.shift.id);
+    expect(siteCoverage.body.data.map((row: { shift_id: string }) => row.shift_id))
+      .not.toContain(siteBShift.body.data.shift.id);
+
+    const siteQualifications = await request(app).get(`/api/v1/planning/reports/qualifications?${reportQuery}`)
+      .set(authHeaders(token));
+    expect(siteQualifications.status).toBe(200);
+    expect(siteQualifications.body.data.map((row: { qualification_type: string }) => row.qualification_type))
+      .not.toContain(siteBQualification);
+
+    const siteAbsences = await request(app).get(`/api/v1/planning/reports/absences?${reportQuery}`)
+      .set(authHeaders(token));
+    expect(siteAbsences.status).toBe(200);
+    expect(siteAbsences.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ absence_type: 'SICKNESS', affected_employees: 1 })
+    ]));
+    expect(siteAbsences.body.data.map((row: { absence_type: string }) => row.absence_type))
+      .not.toContain('VACATION');
+
+    for (const path of [
+      `/api/v1/planning/reports/work-hours?${reportQuery}`,
+      `/api/v1/planning/reports/coverage?${reportQuery}`,
+      `/api/v1/planning/reports/qualifications?${reportQuery}`,
+      `/api/v1/planning/reports/absences?${reportQuery}`
+    ]) {
+      expect((await request(app).get(path).set(authHeaders(planningDeniedToken))).status).toBe(403);
+    }
   });
 
   // 1. Wachbuch: CREATE und wiederholte identische Übertragung
