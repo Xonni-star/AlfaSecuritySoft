@@ -9,7 +9,9 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:4173',
     browserName: 'chromium',
     headless: true,
-    serviceWorkers: 'allow'
+    serviceWorkers: 'allow',
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure'
   },
   webServer: {
     command: 'npm run build && node e2e/test-server.js',

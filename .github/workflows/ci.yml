@@ -130,6 +130,21 @@ jobs:
       - name: Produktions-Build erzeugen
         run: npm run build
 
+      - name: Chromium für isolierten Offline-Browsertest installieren
+        run: npx playwright install --with-deps chromium
+
+      - name: Offline-Neustart und idempotente Wiederholung im Browser prüfen
+        run: npm run test:browser
+
+      - name: Browser-Fehlerdiagnose sichern
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-browser-test-results
+          path: frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Frontend-Build auf verbliebene Modell-API-Verbindungen und Schlüssel prüfen
         run: |
           if grep -R -E 'generativelanguage\.googleapis\.com|aiplatform\.(googleapis|clients6)\.com|api\.openai\.com|process\.env\.(API_KEY|GEMINI_API_KEY)|AIza[0-9A-Za-z_-]{30,}' dist; then

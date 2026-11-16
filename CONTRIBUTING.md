@@ -4,6 +4,7 @@
 
 - Backend: im Ordner `frontend/backend` `npm ci`, `npm run build` und `npm test -- --runInBand` ausführen. Die Tests benötigen PostgreSQL 16 sowie die in `src/config/env.ts` beschriebenen Testvariablen.
 - Frontend: im Ordner `frontend` `npm ci`, `npm test` und `npm run build` ausführen.
+- Offline-Browser-Fixture: im Ordner `frontend` `npx playwright install chromium` und `npm run test:browser` ausführen. CI installiert Chromium samt Systemabhängigkeiten. Die Fixture ersetzt keine Abnahme mit authentifiziertem Backend oder realen Geräten.
 - Produktionskonfiguration: `docker compose -f frontend/deploy/docker-compose.production.yml config --no-interpolate --quiet` und beide Dockerfiles prüfen.
 - Keine echten Secrets in `.env.example`, CI, Bundles oder Commits ablegen.
 
