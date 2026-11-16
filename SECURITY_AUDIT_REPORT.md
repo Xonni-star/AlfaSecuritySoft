@@ -12,6 +12,15 @@ notifications, truthful disconnected-preference labels, late conflict/patrol
 guards and owner-filtered patrol lookup. Locally 331 frontend tests, typecheck/
 build and nine actual browser cases with cleanup passed; new hosted evidence
 remains separate. Session-local notifications are not a server delivery/audit log.
+FNL-019 is now hosted-verified at `ab961c92e45ad4bc4b0bb53dfb19918393c99ff9`,
+CI 43949055729 7/7, downloaded logs 331/546/9 plus cleanup.
+Subsequent FNL-020 implements durable GuardBook completion and actual revisions;
+targeted frontend 155/155, PostgreSQL sync 36/36, typecheck/both builds and real
+browser 9/9 with cleanup passed. Final local full attempts are not fully green;
+new exact hosted validation remains open. This is not a new comprehensive
+security review. Bounded local restore review found cross-owner patrol progress/
+handover metadata contamination (FNL-021), not a confirmed private-payload leak
+or cross-owner server mutation.
 **Scope:** PR #66 changes, browser-based report CSV export, local legacy-attachment recovery, backend authorization boundaries, PostgreSQL tenant/RLS context, authentication/session handling, and web security configuration. This is not a comprehensive security audit, penetration test, or certification.
 
 **Finalization evidence update, not a new comprehensive security review:**

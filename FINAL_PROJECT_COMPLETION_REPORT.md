@@ -103,9 +103,16 @@ und entfernt bedienbare unangebundene Zustellpräferenzen. Späte Konfliktfehler
 und Kontrollgang-Abschlüsse bleiben kontextgebunden. Elf ursprüngliche rote
 Regressionen, Frontend 331/331, Typprüfung/Build und Browser 9/9 mit echter
 Offline-Meldung und Cleanup bestanden lokal. Kein serverseitiges
-Zustellprotokoll; exakte neue Hosted-Prüfung bleibt separat.
-Der nächste konkrete Funktionsfehler FNL-020 ist der nur lokal wirkende
-Wachbuchabschluss; noch keine dauerhafte Abschlussfunktion behauptet.
+Zustellprotokoll. FNL-019 ist inzwischen als `ab961c92e45ad4bc4b0bb53dfb19918393c99ff9`
+mit CI 43949055729 7/7 und gelesenen Logs 331/546/9 plus Cleanup belegt.
+Nachfolgendes FNL-020 implementiert dauerhafte Wachbuchabschlüsse mit Pending-UI,
+atomarem Status/`resolved` und tatsächlichen Nachträgen/Autoren nach Reload.
+Gezielt Frontend 155/155, PostgreSQL-Syncsuite 36/36, Typprüfung/beide Builds
+und echte Browser 9/9 mit verlorener Abschlussquittung/Replay/Cleanup bestanden.
+Die abschließenden lokalen Gesamtläufe sind nicht vollständig grün; neue exakte
+Hosted-Prüfung bleibt offen. Kein vollständiger 549er-Backendnachweis behauptet.
+Nächste konkrete interne Aufgabe FNL-021: ownergebundene Wiederherstellung
+lokaler Kontrollgangs-/Übergabeansichten, kein bestätigter Exploit.
 
 Verbindliche Details:
 [Tracker](./PROJECT_COMPLETION_TRACKER.md),

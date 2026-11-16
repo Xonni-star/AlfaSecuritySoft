@@ -27,7 +27,14 @@ export async function listGuardbook(req: Request, res: Response, next: NextFunct
         `SELECT g.id, g.site_id, s.name as site_name, g.guard_id, 
                 concat(e.first_name, ' ', e.last_name) as guard_name,
                 g.entry_timestamp, g.category, g.priority, g.stage, g.title, g.description, 
-                g.police_involved, g.resolved, g.client_mutation_id
+                g.police_involved, g.resolved, g.client_mutation_id,
+                COALESCE((
+                  SELECT json_agg(json_build_object(
+                    'id', r.id, 'timestamp', r.created_at, 'authorName', r.author_name, 'note', r.note
+                  ) ORDER BY r.created_at, r.id)
+                  FROM guardbook_revisions r
+                  WHERE r.entry_id = g.id AND r.tenant_id = g.tenant_id
+                ), '[]'::json) AS revisions
          FROM guardbook_entries g
          JOIN sites s ON g.site_id = s.id AND g.tenant_id = s.tenant_id
          JOIN employees e ON g.guard_id = e.id AND g.tenant_id = e.tenant_id

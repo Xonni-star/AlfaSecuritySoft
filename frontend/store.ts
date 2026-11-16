@@ -377,7 +377,7 @@ function mapGuardBookRow(row: any, tenantId: string): GuardBookEntry {
     description: asString(row.description),
     policeInvolved: Boolean(row.police_involved ?? row.policeInvolved),
     resolved: Boolean(row.resolved),
-    revisions: [],
+    revisions: Array.isArray(row.revisions) ? row.revisions : [],
     offlineCreated: false
   };
 }
@@ -722,8 +722,8 @@ interface SecurityOpsStore {
   addReportDefinition: (definition: Omit<ReportDefinition, 'id' | 'createdAt'>) => void;
   deleteReportDefinition: (id: string) => void;
   addGuardBookEntry: (entry: Omit<GuardBookEntry, 'id' | 'timestamp' | 'tenantId'>) => Promise<string>;
-  updateGuardBookStage: (id: string, stage: GuardBookEntry['stage'], note?: string) => void;
-  resolveGuardBookEntry: (id: string, note: string) => void;
+  updateGuardBookStage: (id: string, stage: GuardBookEntry['stage'], note?: string) => Promise<boolean>;
+  resolveGuardBookEntry: (id: string, note: string) => Promise<boolean>;
   pendingSOPAcknowledgements: SOPPendingAcknowledgement[];
   acknowledgeSOP: (sopId: string) => Promise<boolean>;
   syncPendingSOPAcknowledgements: () => Promise<void>;
@@ -2209,7 +2209,14 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
   getTenantGuardBook: () => {
     const { guardBook, currentTenantId } = get();
-    return guardBook.filter((gb) => gb.tenantId === currentTenantId);
+    const identity = currentSOPIdentity(get());
+    return guardBook.filter((gb) => gb.tenantId === currentTenantId).map(entry => ({
+      ...entry,
+      pendingUpdate: get().syncQueue.some(item =>
+        item.tenantId === identity.tenantId && item.userId === identity.userId &&
+        item.entityType === 'guardbook' && item.action === 'UPDATE' &&
+        item.payload.entryId === entry.id && item.status !== 'synced')
+    }));
   },
   getTenantSOPs: () => {
     const { sops, currentTenantId } = get();
@@ -3052,14 +3059,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
       timestamp: new Date().toISOString(),
       stage: entry.stage || 'Erfasst',
       offlineCreated: !isOnline,
-      revisions: [
-        {
-          id: `rev-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          authorName: entry.guardName,
-          note: 'Ersterfassung im digitalen Wachbuch'
-        }
-      ]
+      revisions: []
     };
 
     await enqueueOfflineAction({
@@ -3126,36 +3126,36 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
     return entryId;
   },
 
-  updateGuardBookStage: (id, stage, note) => {
-    const { currentUserName } = get();
-    set((state) => ({
-      guardBook: state.guardBook.map((item) => {
-        if (item.id === id) {
-          const newRevisions = item.revisions ? [...item.revisions] : [];
-          if (note) {
-            newRevisions.push({
-              id: `rev-${Date.now()}`,
-              timestamp: new Date().toISOString(),
-              authorName: currentUserName,
-              note: `Statusänderung zu "${stage}": ${note}`
-            });
-          }
-          return {
-            ...item,
-            stage,
-            resolved: stage === 'Abgeschlossen' || stage === 'Archiviert',
-            resolutionNote: note || item.resolutionNote,
-            revisions: newRevisions
-          };
-        }
-        return item;
-      })
-    }));
+  updateGuardBookStage: async (id, stage, note) => {
+    const identity = currentSOPIdentity(get());
+    const entry = get().getTenantGuardBook().find(item => item.id === id);
+    const correctionNote = note?.trim() ?? `Statusänderung zu "${stage}"`;
+    if (!entry || entry.pendingUpdate || correctionNote.length < 5) {
+      get().addNotification('Wachbuchänderung nicht vorgemerkt',
+        !entry ? 'Der Eintrag ist im aktuellen Mandanten nicht verfügbar.'
+          : entry.pendingUpdate ? 'Eine Änderung dieses Eintrags wartet bereits auf Serverbestätigung.'
+          : 'Der Abschlussvermerk muss mindestens fünf Zeichen enthalten.', 'alert');
+      return false;
+    }
+    try {
+      await get().enqueueOfflineAction({
+        tenantId: identity.tenantId, entityType: 'guardbook', action: 'UPDATE',
+        payload: { entryId: id, stage, correctionNote }
+      });
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return false;
+      get().addNotification('Wachbuchänderung vorgemerkt',
+        'Dauerhaft lokal gespeichert; Abschluss und Revision gelten erst nach Serverbestätigung.', 'info');
+      if (get().isOnline) void get().triggerManualSync();
+      return true;
+    } catch (error) {
+      if (isCurrentSOPIdentity(identity.tenantId, identity.userId)) {
+        get().addNotification('Wachbuchänderung nicht vorgemerkt', errorText(error), 'alert');
+      }
+      return false;
+    }
   },
 
-  resolveGuardBookEntry: (id, note) => {
-    get().updateGuardBookStage(id, 'Abgeschlossen', note);
-  },
+  resolveGuardBookEntry: (id, note) => get().updateGuardBookStage(id, 'Abgeschlossen', note),
 
   acknowledgeSOP: async (sopId) => {
     const state = get();

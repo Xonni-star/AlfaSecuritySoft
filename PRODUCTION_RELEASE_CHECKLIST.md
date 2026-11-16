@@ -35,6 +35,13 @@ Test, ein Merge und ein erfolgreiches Containerimage ersetzen sie nicht.
       Kein serverseitiges Zustellprotokoll oder vollständiger Rollennachweis.
 - [x] Privaten lokalen S3-/ClamAV-Ablauf, Originalbytes und echte Dateiablehnung geprüft.
 - [x] Transaktionalen lokalen Restore, Fehler-/Resume-Pfade und Archivfrische geprüft.
+- [ ] FNL-020-Gesamtprüfung auf exaktem neuen Commit abschließen.
+      Implementiert: dauerhafter Wachbuchabschluss mit Pending-UI, atomarem
+      Status/Erledigt und echten Nachträgen. Gezielte Frontendtests 155/155,
+      PostgreSQL-Syncsuite 36/36, Typprüfung/beide Builds und echte Browser
+      9/9 mit verlorener Abschlussquittung/Replay/Cleanup bestanden.
+      Lokale Gesamtprüfungen nicht vollständig grün; kein Gesamtabnahme-Haken.
+- [ ] FNL-021: lokale Kontrollgangs-/Übergabewiederherstellung ownerbinden.
 
 Diese Haken bestätigen nur den beschriebenen Entwicklungsnachweis;
 die exakten Revisionen stehen im [Projektstatus](./PROJECT_CURRENT_STATUS.md).

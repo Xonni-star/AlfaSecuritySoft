@@ -8,15 +8,15 @@
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
-**Fully hosted-verified code revision:** `0aec6191f30d75d5596c779d246e0b87997c8794`
+**Fully hosted-verified code revision:** `ab961c92e45ad4bc4b0bb53dfb19918393c99ff9`
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes have been pushed; no merge, tag or deployment was performed.
-Its exact [CI 43945975019](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43945975019)
-passed **7/7 jobs**; downloaded logs confirm frontend **320/320**, backend
+Its exact [CI 43949055729](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43949055729)
+passed **7/7 jobs**; downloaded logs confirm frontend **331/331**, backend
 **546/546 in 35 suites**, real browser **9/9** and owned-container cleanup.
 This includes confirmed form writes, report grant/date/identity fixes, durable
 critical-incident follow-ups, truthful audit displays and delayed local-write
-identity isolation, plus FNL-013/014/015/016/017/018 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
+identity isolation, plus FNL-013–019 below. Earlier `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`
 and `5ef02b3ab0b9f711025405247e711f21d3ee9811` passed their own
 CI 43929519192 and 43928436875, 7/7 each.
 
@@ -25,7 +25,7 @@ read-only API console (`/auth/me`, `/customers`, `/logbook`), actual response/er
 display and identity-bound results replace fabricated API/Python/isolation checks.
 Acceptance is a read-only checklist, not a local role-switch or fake release.
 
-**Subsequent FNL-019 — locally IMPLEMENTIERT UND GETESTET:** Actual runtime
+**Published FNL-019 — IMPLEMENTIERT UND GETESTET:** Actual runtime
 notices now populate the same owner-/tenant-bound feed used by the bell and
 center. Read/dismiss actions target one UUID, including simultaneous messages;
 other identities' notices cannot be displayed or changed through these actions.
@@ -36,8 +36,38 @@ the current owner's outbox and guards both lookup and durable-write completion.
 Eleven original regressions failed; all **331/331 frontend tests in 36 files**,
 typecheck/build and **9/9 genuine browser journeys** with cleanup now pass.
 The contract journey reads/dismisses a genuine offline-customer notice and
-verifies the actual bell count. Backend sources are unchanged. New hosted
-verification remains separate.
+verifies the actual bell count. Backend sources are unchanged from FNL-018.
+Exact hosted verification is CI 43949055729 above.
+
+**Subsequent FNL-020 — IMPLEMENTIERT; full verification OFFEN:** GuardBook
+completion now uses the durable owner-bound outbox and existing idempotent
+sync UPDATE. The UI preserves rejected drafts and shows pending, not completed,
+until a genuine server receipt and reload. Stage and `resolved` are updated
+atomically with a real correction note; GET returns stored revisions and their
+authenticated author. Initial capture no longer invents an unstored revision.
+Nine new frontend cases (eight selected in the original failing run), an
+additional initially failing creation assertion and three initially failing
+PostgreSQL cases cover these changes. Current focused frontend **155/155**,
+full affected PostgreSQL suite **36/36**, typecheck, both builds and genuine
+browser **9/9** with cleanup passed. The browser loses the actual first
+completion receipt and verifies one note, original description, author and
+consistent terminal stage/`resolved` after identical replay and reload.
+
+The final local full frontend attempts are **not green**: first 337/340,
+then 331/340 during a temporary reduced-view fixture experiment, with Roster
+timeouts and a dependent approval failure. The experiment was reverted; no
+budgets or assertions were weakened. Isolated Roster approval passed, but that
+does not establish the full suite. The full local backend run was intentionally
+interrupted; its sync and migration suites passed, including a 534.914-second
+migration suite, but no complete 549/549 result is claimed. The separate fresh
+36/36 run and final browser run cleaned up their owned containers.
+Exact new hosted verification remains required. No migration was added.
+
+**Next concrete FNL-021 — OFFEN:** Mobile patrol restore reads tenant-wide
+outbox data and can adopt another owner's local round/progress; the handover
+local queue also reads tenant-wide metadata. Bind both reads and late results
+to the current owner. A bounded static review established these functional
+defects, not a confirmed private-payload leak or cross-owner server mutation.
 
 **Published FNL-018 — IMPLEMENTIERT UND GETESTET:** Sync
 now checks identity after awaited attachment inspection and post-sync snapshots
@@ -48,7 +78,7 @@ conflict/ownerless-storage responses to the original identity/dialog opening.
 Twelve new regressions cover empty/nonempty outboxes, attachment/snapshot
 completion, explicit storage errors, conflict races and close/reopen.
 Full frontend **320/320 in 35 files**, typecheck/build and actual browser **9/9**
-with cleanup passed. Exact hosted verification is CI 43945975019 above.
+with cleanup passed. Exact historical hosted verification is CI 43945975019.
 Separate bounded static reviews of FNL-014–018 resource/sync changes and existing
 GuardBook access found no confirmed remaining vulnerability. They did not run
 live endpoint/RLS checks or establish a complete SITE/OWN matrix, and do not

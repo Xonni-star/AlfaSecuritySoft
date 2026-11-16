@@ -71,8 +71,15 @@ Cleanup. Nachfolgendes FNL-019 besteht lokal Frontend 331/331,
 Typprüfung/Build und echte Browser 9/9 mit Cleanup: tatsächliche lokale
 Benachrichtigungen, Lesen/Verwerfen/Zähler und identitätsgebundene späte
 Konflikt-/Kontrollgang-Ergebnisse. Keine serverseitige Zustellung/Persistenz,
-keine angebundenen E-Mail-/Push-Präferenzen. FNL-020 (dauerhafter
-Wachbuchabschluss) bleibt konkrete interne Arbeit, keine externe Blockade.
+keine angebundenen E-Mail-/Push-Präferenzen. FNL-019 ist inzwischen unter
+`ab961c92e45ad4bc4b0bb53dfb19918393c99ff9` gehostet bestätigt:
+CI 43949055729 7/7, gelesene Logs 331/546/9 plus Cleanup.
+FNL-020 implementiert dauerhaften Wachbuchabschluss, Pending-Anzeige und
+tatsächliche Nachträge; gezielte Frontendtests 155/155, PostgreSQL-Syncsuite
+36/36, Typprüfung/beide Builds und echte Browser 9/9 mit Cleanup bestanden.
+Die abschließenden lokalen Gesamtprüfungen sind nicht vollständig grün;
+neue exakte Hosted-Prüfung bleibt offen. FNL-021 (ownergebundene lokale
+Kontrollgangs-/Übergabewiederherstellung) bleibt konkrete interne Arbeit.
 
 Interne Arbeit bleibt offen: Konvergenz-/Berechtigungsabdeckung erweitern,
 vorhandene Teilmodule fachlich abnehmen und fehlende Produktfunktionen nur

@@ -219,6 +219,7 @@ export interface GuardBookEntry {
   resolutionNote?: string;
   revisions?: GuardBookRevision[];
   offlineCreated?: boolean;
+  pendingUpdate?: boolean;
 }
 
 export interface SOPDocument {

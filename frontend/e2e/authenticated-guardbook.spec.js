@@ -365,6 +365,49 @@ test('real session and PostgreSQL persist one offline mutation after a lost rece
   expect(restoredEntries).toHaveLength(1);
   await page.getByRole('button', { name: /^Digitales Wachbuch(?: \d+)?$/ }).click();
   await expect(page.getByText(title, { exact: true })).toBeVisible();
+  const entryCard = page.getByRole('article', { name: `Wachbucheintrag: ${title}`, exact: true });
+  const completionNote = `Tatsächlich geprüfter Abschluss ${randomUUID()}`;
+  await context.setOffline(true);
+  await expect(page.getByRole('button', { name: 'Offline. Verbindung wiederherstellen', exact: true })).toBeVisible();
+  await entryCard.getByRole('button', { name: 'Abschließen', exact: true }).click();
+  const completionForm = page.getByRole('form', { name: 'Wachbucheintrag abschließen', exact: true });
+  await completionForm.getByLabel('Abschlussvermerk', { exact: true }).fill(completionNote);
+  await completionForm.getByRole('button', { name: 'Abschluss vormerken', exact: true }).click();
+  await expect(completionForm).toHaveCount(0);
+  await expect(entryCard.getByText('Änderung vorgemerkt – Serverbestätigung ausstehend', { exact: true })).toBeVisible();
+  await expect(entryCard.getByText('Erledigt', { exact: true })).toHaveCount(0);
+  const [completionMutation] = await readOutbox(page);
+  expect(completionMutation.payload).toMatchObject({
+    entryId: entries[0].id, stage: 'Abgeschlossen', correctionNote: completionNote
+  });
+  const completionReceipts = [];
+  await page.route('**/api/v1/sync/push', async route => {
+    expect(route.request().postDataJSON().mutations.map(item => item.clientUuid)).toEqual([completionMutation.id]);
+    const response = await route.fetch();
+    expect(response.status()).toBe(200);
+    completionReceipts.push((await response.json()).data);
+    if (completionReceipts.length === 1) await route.abort('failed');
+    else await route.fulfill({ response });
+  });
+  await context.setOffline(false);
+  await expect.poll(() => completionReceipts.length, { timeout: 30_000 }).toBe(2);
+  await expect.poll(async () => (await readOutbox(page)).length).toBe(0);
+  expect(completionReceipts[0]).toEqual(completionReceipts[1]);
+  expect(completionReceipts[0][0]).toMatchObject({ status: 'SYNCED', serverId: entries[0].id });
+  await page.unroute('**/api/v1/sync/push');
+  await page.reload();
+  await page.getByRole('button', { name: /^Digitales Wachbuch(?: \d+)?$/ }).click();
+  await expect(entryCard.getByText('Erledigt', { exact: true })).toBeVisible();
+  await expect(entryCard.getByText('Stufe: Abgeschlossen', { exact: true })).toBeVisible();
+  const completedEntry = (await (await page.request.get('/api/v1/logbook')).json()).data
+    .find(entry => entry.id === entries[0].id);
+  expect(completedEntry).toMatchObject({
+    stage: 'Abgeschlossen', resolved: true, description: entries[0].description,
+    revisions: [{ note: completionNote, authorName: ownerEmail }]
+  });
+  await entryCard.getByRole('button', { name: '1 Revision(en)', exact: true }).click();
+  await expect(page.getByText(completionNote, { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Schließen', exact: true }).click();
   const sessionCookies = await context.cookies('http://127.0.0.1:4173/api/v1/auth/me');
   const sessionCookie = sessionCookies.find(cookie => cookie.name === 'secops_session');
   expect(sessionCookie?.httpOnly).toBe(true);

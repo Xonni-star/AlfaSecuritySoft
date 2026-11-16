@@ -1805,6 +1805,60 @@ describe('SecurityOps 2.0 - Schritt 5R.2.7: Idempotenz zwischen Sync-Push und Ko
     expect(revCheck.rows[0].note).toContain('Zeuge');
   });
 
+  test.each(['Abgeschlossen', 'Archiviert'])('persists %s and reopening consistently without duplicating completion on replay', async stage => {
+    const entryId = await withTenantTransaction(testTenantA, async tx => (await tx.query(
+      `INSERT INTO guardbook_entries (tenant_id,site_id,guard_id,category,title,description)
+       VALUES ($1,$2,$3,'Vorkommnis','Persistent completion','Verified actual completion') RETURNING id`,
+      [testTenantA, siteAId, guardAId]
+    )).rows[0].id);
+    const clientUuid = `complete-${crypto.randomUUID()}`;
+    const mutation = {
+      clientUuid, entityType: 'guardbook', action: 'UPDATE',
+      clientTimestamp: new Date().toISOString(), baseVersion: 1,
+      payload: { entryId, stage, correctionNote: 'Tatsächlicher Abschluss nach Prüfung' }
+    };
+    const batch = { deviceId: 'completion-test', mutations: [mutation] };
+    const first = await request(app).post('/api/v1/sync/push').set(authHeaders(testTokenA)).send(batch);
+    expect(first.body.data[0].status).toBe('SYNCED');
+    const readEntry = () => withTenantTransaction(testTenantA, async tx => (await tx.query(
+      'SELECT stage,resolved FROM guardbook_entries WHERE tenant_id=$1 AND id=$2', [testTenantA, entryId]
+    )).rows[0]);
+    expect(await readEntry()).toEqual({ stage, resolved: true });
+    expect((await request(app).post('/api/v1/sync/push').set(authHeaders(testTokenA)).send(batch)).body.data).toEqual(first.body.data);
+    const reopened = await request(app).post('/api/v1/sync/push').set(authHeaders(testTokenA)).send({
+      deviceId: 'completion-test',
+      mutations: [{ ...mutation, clientUuid: `reopen-${crypto.randomUUID()}`,
+        payload: { entryId, stage: 'In Bewertung', correctionNote: 'Erneute Prüfung nach tatsächlichem Nachtrag' } }]
+    });
+    expect(reopened.body.data[0].status).toBe('SYNCED');
+    await request(app).post('/api/v1/sync/push').set(authHeaders(testTokenA)).send(batch);
+    expect(await readEntry()).toEqual({ stage: 'In Bewertung', resolved: false });
+    const revisions = await withTenantTransaction(testTenantA, tx => tx.query(
+      'SELECT note FROM guardbook_revisions WHERE tenant_id=$1 AND entry_id=$2', [testTenantA, entryId]
+    ));
+    expect(revisions.rows).toHaveLength(2);
+  });
+
+  test('rejects an invalid GuardBook workflow stage without persisting an invented revision', async () => {
+    const entryId = await withTenantTransaction(testTenantA, async tx => (await tx.query(
+      `INSERT INTO guardbook_entries (tenant_id,site_id,guard_id,category,title,description)
+       VALUES ($1,$2,$3,'Vorkommnis','Invalid completion','Do not invent a status') RETURNING id`,
+      [testTenantA, siteAId, guardAId]
+    )).rows[0].id);
+    const result = await request(app).post('/api/v1/sync/push').set(authHeaders(testTokenA)).send({
+      deviceId: 'completion-test',
+      mutations: [{ clientUuid: `invalid-${crypto.randomUUID()}`, entityType: 'guardbook', action: 'UPDATE',
+        clientTimestamp: new Date().toISOString(), baseVersion: 1,
+        payload: { entryId, stage: 'Ungeprüft fertig', correctionNote: 'Ungültige Stufe nicht übernehmen' } }]
+    });
+    expect(result.body.data[0].status).toBe('REJECTED');
+    const saved = await withTenantTransaction(testTenantA, async tx => ({
+      entry: (await tx.query('SELECT stage,resolved FROM guardbook_entries WHERE tenant_id=$1 AND id=$2', [testTenantA, entryId])).rows[0],
+      revisions: (await tx.query('SELECT id FROM guardbook_revisions WHERE tenant_id=$1 AND entry_id=$2', [testTenantA, entryId])).rowCount
+    }));
+    expect(saved).toEqual({ entry: { stage: 'Erfasst', resolved: false }, revisions: 0 });
+  });
+
   // 3. Wachbuch: Wiederholte Korrektur ohne doppelte Revision
   test('3. Wachbuch: Wiederholte Korrektur mit derselben Mutation-ID erzeugt keine doppelte Revision', async () => {
     const entryId = await withTenantTransaction(testTenantA, async (tx) => {

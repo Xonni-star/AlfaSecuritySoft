@@ -275,7 +275,31 @@ in development, not approved for production. Do not repeat this already done wor
 
 ## Remaining work
 
-1. Publish coherent FNL-019 and verify all hosted jobs
+FNL-019 publication is complete: `ab961c92e45ad4bc4b0bb53dfb19918393c99ff9`,
+CI 43949055729 7/7; downloaded logs verify frontend 331, backend 546 and real
+browser 9 plus cleanup (`finalization-runtime-notifications-hosted-ci.log`).
+
+FNL-020 is implemented through the existing durable sync UPDATE, not a second
+completion endpoint. Until a server receipt/reload, UI reports only pending.
+Stage/resolved, genuine note and idempotent receipt are atomic; actual GET
+revisions retain the authenticated author. No fictional initial revision remains.
+Latest targeted frontend 155/155, typecheck/both builds, fresh PostgreSQL
+sync suite 36/36 and final real browser 9/9 passed with cleanup.
+The browser loses the actual first completion response, replays identically and
+verifies one note, original description, actual author and stage/resolved.
+
+Do not claim a complete final local suite: frontend attempts were 337/340 and
+331/340 (the latter during a reverted fixture-view experiment), failing in
+Roster under unchanged five-second budgets. An isolated approval passed;
+this is not proof of full-suite success. The full backend run was intentionally
+interrupted; sync and migration suites passed, but not all suites completed.
+Separate full affected suite 36/36 passed; no 549/549 result is established.
+Logs: `finalization-guardbook-completion-backend-focused.log`,
+`finalization-guardbook-completion-browser-final.log`,
+`finalization-guardbook-frontend-final.log`. No timeout increases, weakened
+assertions or Roster source changes were retained.
+
+1. Publish coherent FNL-020 and verify all hosted jobs
    on the exact new full SHA; inspect actual logs before updating evidence.
    The preceding 7/7 does not validate these newer changes.
 2. Repeat a bounded convergence audit for new concrete functional defects,
@@ -288,13 +312,12 @@ in development, not approved for production. Do not repeat this already done wor
    no remaining `throw new Error('offline')` or online-state-based catch fallback
    in the active store/controllers/components; this is not exhaustive coverage.
    Inspect remaining real workflow boundaries, not already corrected handlers.
-   Concrete next task FNL-020: the active GuardBook completion button calls
-   updateGuardBookStage/resolveGuardBookEntry, which only changes local state.
-   Reproduce lost completion after reload, persist completion/note through the
-   existing API/offline contracts, confirm resolved/stage consistency and guard
-   pending/error/identity boundaries. Existing revisions endpoint appends notes;
-   sync UPDATE currently changes stage but not resolved. Do not add a second
-   incompatible completion path or claim persistence before actual confirmation.
+   Concrete next task FNL-021: bind MobilePatrolScanner and HandoversModule
+   local outbox reads to the authenticated owner, clear restored state on owner
+   change and prevent stale local-read success/errors from entering the new
+   view. Add same-tenant two-user round/progress and queue regressions.
+   A bounded static review found functional cross-owner local-state adoption,
+   not a confirmed private-payload leak or cross-owner server mutation.
 3. Keep the requested final documents/tracker current; no ESLint configuration
    or script was found, so do not claim lint ran.
 4. Merge PR #66 only after

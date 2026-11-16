@@ -99,6 +99,15 @@ Nachfolgendes FNL-019 korrigiert reale lokale Benachrichtigungen, unangebundene
 Einstellungsversprechen und verspätete Konflikt-/Kontrollgang-Veröffentlichung.
 Elf zunächst rote Fälle, Frontend 331/331, Typprüfung/Build und echte Browser
 9/9 mit Cleanup; kein neuer Exploit oder serverseitiges Zustellprotokoll behauptet.
+FNL-019 ist inzwischen unter `ab961c92e45ad4bc4b0bb53dfb19918393c99ff9`
+gehostet belegt: CI 43949055729 7/7, gelesene Logs 331/546/9 plus Cleanup.
+FNL-020 implementiert nun den dauerhaften Wachbuchabschluss und echte Nachträge:
+gezielt Frontend 155/155, PostgreSQL-Syncsuite 36/36, Typprüfung/beide Builds
+und echte Browser 9/9 mit Cleanup bestanden. Lokale Gesamtprüfungen sind nicht
+vollständig grün; exakte neue Hosted-Prüfung bleibt offen. Das ist keine neue
+umfassende Sicherheitsprüfung. Die begrenzte Prüfung lokaler Kontrollgangs-/
+Übergabewiederherstellung fand funktionale Owner-Zustandsvermischung (FNL-021),
+aber keinen bestätigten privaten Payload-Abfluss oder fremden Serverzugriff.
 
 Unberechtigte Reportanfragen wurden bereits vom Server abgewiesen; das
 Frontend vermeidet sie jetzt. Formularverlust, Zeitzonenvalidierung,

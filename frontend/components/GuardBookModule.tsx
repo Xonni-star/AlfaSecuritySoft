@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   BookOpen,
   Plus,
@@ -28,8 +28,8 @@ export const GuardBookModule: React.FC = () => {
     currentTenantId,
     currentUserId,
     addGuardBookEntry,
-    updateGuardBookStage,
     resolveGuardBookEntry,
+    authUser,
     isOnline
   } = useSecurityStore();
 
@@ -44,6 +44,51 @@ export const GuardBookModule: React.FC = () => {
   const [submissionError, setSubmissionError] = useState('');
   const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
   const [selectedEntryForRevision, setSelectedEntryForRevision] = useState<GuardBookEntry | null>(null);
+  const [completionEntryId, setCompletionEntryId] = useState<string | null>(null);
+  const [completionNote, setCompletionNote] = useState('');
+  const [completionError, setCompletionError] = useState('');
+  const [isCompleting, setIsCompleting] = useState(false);
+  const completingRef = useRef(false);
+  const identityKey = `${currentTenantId}:${authUser?.id || currentUserId}`;
+  const identityRef = useRef(identityKey);
+  identityRef.current = identityKey;
+
+  useEffect(() => {
+    completingRef.current = false;
+    setCompletionEntryId(null);
+    setCompletionNote('');
+    setCompletionError('');
+    setIsCompleting(false);
+    setSelectedEntryForRevision(null);
+  }, [identityKey]);
+
+  const handleCompletion = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (completingRef.current || !completionEntryId) return;
+    const requestIdentity = identityRef.current;
+    completingRef.current = true;
+    setIsCompleting(true);
+    setCompletionError('');
+    try {
+      const queued = await resolveGuardBookEntry(completionEntryId, completionNote);
+      if (identityRef.current !== requestIdentity) return;
+      if (!queued) {
+        setCompletionError('Der Abschluss wurde nicht vorgemerkt. Bitte die Meldung im Benachrichtigungscenter beachten und erneut versuchen.');
+        return;
+      }
+      setCompletionEntryId(null);
+      setCompletionNote('');
+    } catch (error) {
+      if (identityRef.current === requestIdentity) {
+        setCompletionError(error instanceof Error ? error.message : 'Der Abschluss konnte nicht vorgemerkt werden.');
+      }
+    } finally {
+      if (identityRef.current === requestIdentity) {
+        completingRef.current = false;
+        setIsCompleting(false);
+      }
+    }
+  };
 
   // Form states for new entry
   const [selectedSiteId, setSelectedSiteId] = useState(sites[0]?.id || '');
@@ -226,6 +271,8 @@ export const GuardBookModule: React.FC = () => {
           filteredLogs.map((entry) => (
             <div
               key={entry.id}
+              role="article"
+              aria-label={`Wachbucheintrag: ${entry.title}`}
               className={`p-4 rounded-xl bg-slate-900 border transition ${
                 entry.priority === 'Kritisch'
                   ? 'border-rose-500/40 bg-rose-950/10'
@@ -297,7 +344,9 @@ export const GuardBookModule: React.FC = () => {
                 </div>
 
                 <div className="shrink-0 self-end md:self-start mt-2 md:mt-0 flex items-center gap-1.5">
-                  {entry.resolved ? (
+                  {entry.pendingUpdate ? (
+                    <span className="text-xs text-amber-300">Änderung vorgemerkt – Serverbestätigung ausstehend</span>
+                  ) : entry.resolved ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       Erledigt
@@ -305,8 +354,9 @@ export const GuardBookModule: React.FC = () => {
                   ) : (
                     <button
                       onClick={() => {
-                        const note = prompt('Abschlussvermerk für Wachbucheintrag eingeben:');
-                        if (note) resolveGuardBookEntry(entry.id, note);
+                        setCompletionEntryId(entry.id);
+                        setCompletionNote('');
+                        setCompletionError('');
                       }}
                       className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-amber-300 border border-amber-500/30 transition"
                     >
@@ -319,6 +369,34 @@ export const GuardBookModule: React.FC = () => {
           ))
         )}
       </div>
+
+      {completionEntryId && (
+        <div role="dialog" aria-modal="true" aria-label="Wachbucheintrag abschließen"
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <form aria-label="Wachbucheintrag abschließen" onSubmit={handleCompletion}
+            className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-lg w-full space-y-4">
+            <h3 className="font-bold text-white">Wachbucheintrag abschließen</h3>
+            <p className="text-xs text-slate-400">Der Abschluss wird dauerhaft lokal vorgemerkt.
+              Erst nach Serverbestätigung wird der Eintrag als erledigt angezeigt.</p>
+            <fieldset disabled={isCompleting} className="space-y-4">
+              <label className="block text-xs text-slate-200">
+                Abschlussvermerk
+                <textarea required minLength={5} value={completionNote}
+                  onChange={event => setCompletionNote(event.target.value)}
+                  className="block mt-2 w-full bg-slate-800 border border-slate-700 rounded-lg p-3" />
+              </label>
+              {completionError && <p role="alert" className="text-sm text-rose-400">{completionError}</p>}
+              <div className="flex justify-end gap-3">
+                <button type="button" onClick={() => setCompletionEntryId(null)}
+                  className="px-3 py-2 text-slate-300">Abbrechen</button>
+                <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white">
+                  {isCompleting ? 'Wird vorgemerkt…' : 'Abschluss vormerken'}
+                </button>
+              </div>
+            </fieldset>
+          </form>
+        </div>
+      )}
 
       {/* Revisions History Drawer Modal */}
       {selectedEntryForRevision && (

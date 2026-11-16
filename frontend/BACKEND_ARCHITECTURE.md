@@ -6,6 +6,53 @@ Die operative Fach-API liegt in `frontend/backend/src/` und verwendet Express 4,
 
 Die Session-Authentifizierung verwendet ein zufälliges HttpOnly-Cookie. `authenticateJwt` ist aus Kompatibilitätsgründen benannt, prüft aber den Session-Hash in `user_sessions` und lädt Tenant, Rolle sowie Berechtigungen aus der Datenbank. `requirePermission` erzwingt Rechte auf jeder geschützten Route. Die Datenbank setzt `app.current_tenant` pro Transaktion und erzwingt RLS.
 
+## Wachbuchabschluss und Nachträge
+
+`GET /api/v1/logbook` liefert die letzten 100 sichtbaren Einträge einschließlich
+`revisions: [{ id, timestamp, authorName, note }]`. Die Nachträge sind nach
+Zeit und ID geordnet.
+Nur tatsächlich gespeicherte Nachträge werden als Revisionen angezeigt; eine
+lokale Erfassung erfindet keinen serverseitigen Ersterfassungs-Nachtrag.
+
+Der Abschluss verwendet die vorhandene dauerhafte IndexedDB-Outbox und
+`POST /api/v1/sync/push`, nicht einen zweiten Abschluss-Endpunkt:
+
+```json
+{
+  "deviceId": "browser-device-id",
+  "mutations": [{
+    "clientUuid": "queue-stable-mutation-id",
+    "entityType": "guardbook",
+    "action": "UPDATE",
+    "clientTimestamp": "2026-11-16T12:00:00.000Z",
+    "baseVersion": 1,
+    "payload": {
+      "entryId": "11111111-1111-4111-8111-111111111111",
+      "stage": "Abgeschlossen",
+      "correctionNote": "Tatsächlicher Abschluss nach Prüfung."
+    }
+  }]
+}
+```
+
+`entryId` ist die ursprüngliche UUID. Ein angegebener Korrekturvermerk muss
+getrimmt mindestens fünf Zeichen enthalten. Zulässige Stufen sind `Erfasst`,
+`In Bewertung`, `Zugewiesen`, `Maßnahme läuft`, `Eskaliert`, `Abgeschlossen`
+und `Archiviert`. Ungültige Änderungen werden als `REJECTED` zurückgegeben.
+Nachtrag, Statusänderung und idempotente Quittung laufen in derselben
+Tenant-Transaktion. `resolved` wird aus der validierten Stufe abgeleitet:
+Abgeschlossen/Archiviert setzen es auf `true`, die anderen Stufen auf `false`.
+Der Nachtragsautor stammt aus der authentifizierten Sitzung, nicht dem Payload.
+Wiederholte identische Mutationen erzeugen keinen zweiten Nachtrag.
+
+Die UI bestätigt zunächst nur dauerhafte lokale Speicherung. Bis zur
+Serverquittung bleibt der bisherige Serverstatus maßgeblich; Fehler und
+ausstehende Änderungen sind im Center beziehungsweise der Warteschlange
+sichtbar. Erst der bestätigte, neu geladene Serverstand zeigt „Erledigt“.
+`logbook:read`, die bestehende `logbook:create`-/Standortprüfung beim Sync,
+Tenant-Kontext und RLS bleiben maßgeblich. Das ist keine vollständig
+abgenommene Rollen-/Objektmatrix oder rechtliche Revisionssicherheitszusage.
+
 ## DMS-Datenfluss
 
 1. Das DMS-Modul sendet einen binären Online-Upload (`application/octet-stream`) mit Dateiname als Metadatum; es besitzt keine allgemeine Offline-Binärdateisynchronisation. Davon getrennt speichert das Wachbuch ownergebundene Offline-Fotoanhänge in IndexedDB und überträgt sie später über seinen idempotenten Anhangpfad.

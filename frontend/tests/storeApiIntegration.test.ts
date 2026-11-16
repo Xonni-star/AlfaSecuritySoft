@@ -215,6 +215,75 @@ afterEach(() => {
 });
 
 describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
+  test('durably queues GuardBook completion without claiming server resolution or inventing a revision', async () => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser, isOnline: false });
+    await useSecurityStore.getState().loadTenantData();
+    const enqueue = vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => ({
+      ...mutation, deviceId: 'test-device', status: 'PENDING', retryCount: 0
+    }));
+    expect(await useSecurityStore.getState().resolveGuardBookEntry(logbookRow.id, '  Tatsächlich geprüft.  ')).toBe(true);
+    expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({
+      tenantId: readUser.tenantId, userId: readUser.id, entityType: 'guardbook', action: 'UPDATE',
+      payload: { entryId: logbookRow.id, stage: 'Abgeschlossen', correctionNote: 'Tatsächlich geprüft.' }
+    }));
+    expect(useSecurityStore.getState().getTenantGuardBook()[0]).toMatchObject({
+      resolved: false, stage: 'Erfasst', revisions: [], pendingUpdate: true
+    });
+    expect(await useSecurityStore.getState().resolveGuardBookEntry(logbookRow.id, 'Doppelter Abschluss')).toBe(false);
+    expect(enqueue).toHaveBeenCalledOnce();
+  });
+
+  test('does not close a GuardBook entry when durable completion storage fails', async () => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser, isOnline: false });
+    await useSecurityStore.getState().loadTenantData();
+    vi.spyOn(offlineVault, 'enqueueMutation').mockRejectedValue(new Error('Completion quota exceeded'));
+    expect(await useSecurityStore.getState().resolveGuardBookEntry(logbookRow.id, 'Abschluss nach Prüfung')).toBe(false);
+    expect(useSecurityStore.getState().guardBook[0]).toMatchObject({ stage: 'Erfasst', resolved: false, revisions: [] });
+    expect(useSecurityStore.getState().syncQueue).toEqual([]);
+    expect(useSecurityStore.getState().notifications[0].message).toContain('Completion quota exceeded');
+  });
+
+  test.each(['tenant', 'user'] as const)('does not publish GuardBook completion after a %s change during durable storage', async change => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser, isOnline: false });
+    await useSecurityStore.getState().loadTenantData();
+    let finish!: () => void;
+    const pause = new Promise<void>(resolve => { finish = resolve; });
+    const enqueue = vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => {
+      await pause;
+      return { ...mutation, deviceId: 'test-device', status: 'PENDING', retryCount: 0 };
+    });
+    const result = useSecurityStore.getState().resolveGuardBookEntry(logbookRow.id, 'Private Abschlussnotiz');
+    await Promise.resolve();
+    expect(enqueue).toHaveBeenCalledOnce();
+    useSecurityStore.setState({
+      authUser: null, currentTenantId: change === 'tenant' ? 'tenant-other' : readUser.tenantId,
+      currentUserId: change === 'user' ? 'different-user' : readUser.id,
+      guardBook: [], syncQueue: [], notifications: []
+    });
+    finish();
+    expect(await result).toBe(false);
+    expect(useSecurityStore.getState().guardBook).toEqual([]);
+    expect(useSecurityStore.getState().syncQueue).toEqual([]);
+    expect(useSecurityStore.getState().notifications).toEqual([]);
+    expect(enqueue.mock.calls[0][0]).toMatchObject({ tenantId: readUser.tenantId, userId: readUser.id });
+  });
+
+  test.each(['invalid note', 'foreign entry'] as const)('rejects GuardBook completion with %s before enqueue', async reason => {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser, isOnline: false });
+    await useSecurityStore.getState().loadTenantData();
+    if (reason === 'foreign entry') {
+      useSecurityStore.setState({ guardBook: useSecurityStore.getState().guardBook.map(entry => ({ ...entry, tenantId: 'tenant-other' })) });
+    }
+    const enqueue = vi.spyOn(offlineVault, 'enqueueMutation');
+    expect(await useSecurityStore.getState().resolveGuardBookEntry(logbookRow.id, reason === 'invalid note' ? '  x  ' : 'Echter Abschluss')).toBe(false);
+    expect(enqueue).not.toHaveBeenCalled();
+    expect(useSecurityStore.getState().guardBook[0].resolved).toBe(false);
+  });
+
   test.each(['tenant', 'user'] as const)('does not publish an old conflict failure after a %s change', async change => {
     let rejectRequest!: (error: Error) => void;
     mockedApi.post.mockReturnValueOnce(new Promise((_, reject) => { rejectRequest = reject; }));
@@ -1814,6 +1883,7 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     expect(mutationWrite).toHaveBeenCalledWith(expect.objectContaining({
       payload: expect.objectContaining({ id: persistedEntryId })
     }));
+    expect(state.guardBook.find(entry => entry.id === persistedEntryId)?.revisions).toEqual([]);
     expect(state.syncQueue[0]).toMatchObject({
       tenantId: 'tenant-frankfurt',
       entityType: 'guardbook',

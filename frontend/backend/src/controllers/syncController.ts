@@ -37,6 +37,12 @@ const syncPushBatchSchema = z.object({
   mutations: z.array(syncMutationItemSchema).min(1, 'Mindestens eine Mutation muss übermittelt werden.')
 });
 
+const guardbookUpdateSchema = z.object({
+  entryId: z.string().guid(),
+  correctionNote: z.string().trim().min(5).default('Korrektur aus Offline-Synchronisation'),
+  stage: z.enum(['Erfasst', 'In Bewertung', 'Zugewiesen', 'Maßnahme läuft', 'Eskaliert', 'Abgeschlossen', 'Archiviert']).optional()
+});
+
 function dateOnly(value: string | Date): string {
   if (!(value instanceof Date)) return String(value).slice(0, 10);
   return `${String(value.getFullYear()).padStart(4, '0')}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
@@ -376,6 +382,7 @@ export async function pushSyncMutations(req: Request, res: Response, next: NextF
             }
           } else if (mut.action === 'UPDATE') {
             const targetEntryId = mut.payload.entryId;
+            const update = guardbookUpdateSchema.safeParse(mut.payload);
 
             if (!targetEntryId) {
               itemResult = {
@@ -384,6 +391,12 @@ export async function pushSyncMutations(req: Request, res: Response, next: NextF
                 status: 'REJECTED',
                 serverVersion: mut.baseVersion,
                 message: 'Wachbuch-Korrektur erfordert die ursprüngliche entryId in payload.entryId.'
+              };
+            } else if (!update.success) {
+              itemResult = {
+                clientUuid: mut.clientUuid, serverId: targetEntryId, status: 'REJECTED',
+                serverVersion: mut.baseVersion,
+                message: `Ungültige Wachbuch-Korrektur: ${update.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join('; ')}`
               };
             } else {
               const entryCheck = await client.query(
@@ -400,7 +413,7 @@ export async function pushSyncMutations(req: Request, res: Response, next: NextF
                   message: 'Ursprünglicher Wachbucheintrag für Korrektur nicht gefunden oder fremder Mandant.'
                 };
               } else {
-                const note = mut.payload.correctionNote || 'Korrektur aus Offline-Synchronisation';
+                const note = update.data.correctionNote;
 
                 await client.query(
                   `INSERT INTO guardbook_revisions (tenant_id, entry_id, author_name, note, client_mutation_id)
@@ -409,10 +422,11 @@ export async function pushSyncMutations(req: Request, res: Response, next: NextF
                   [tenantId, targetEntryId, userEmail, note, mut.clientUuid]
                 );
 
-                if (mut.payload.stage) {
+                if (update.data.stage) {
                   await client.query(
-                    'UPDATE guardbook_entries SET stage = $1 WHERE id = $2 AND tenant_id = $3',
-                    [mut.payload.stage, targetEntryId, tenantId]
+                    'UPDATE guardbook_entries SET stage = $1, resolved = $4 WHERE id = $2 AND tenant_id = $3',
+                    [update.data.stage, targetEntryId, tenantId,
+                      update.data.stage === 'Abgeschlossen' || update.data.stage === 'Archiviert']
                   );
                 }
 
