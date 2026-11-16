@@ -2,11 +2,14 @@
 
 ## Latest verified development state
 
-Code5ee9f36665616178c331e9c53526b1e35396b7bd passed exact
-CI43972242288 **7/7**; read378 frontend/553 backend in35 suites/10 genuine
-browser journeys and owned-container cleanup. FNL-022–028 are complete in their
-stated scope. Later documentation corrects absent device revocation/delta pull
-and distinguishes snapshots from live forge state; no runtime source changed.
+PR66 is merged as5c6031e21fc8cba3c8256525c9edc52928564f2b after verified
+head df93a7104365aa8848f46e67aabf6c628ebd37cc/CI43973880410 **7/7**.
+The main tree is identical; exact main CI43974506659 passed **7/7**,
+read378 frontend/553 backend in35 suites/10 genuine browser journeys.
+Artifact43974980830 passed **2/2**, verified source commit/CI provenance and
+clean production installation. FNL001–005 and007–029 are complete only in
+their documented scope; FNL006 and product/acceptance gaps remain open.
+No tag/deployment, independent security approval or total completion.
 On resumption first inspect live main/PR/CI, not these historical open-PR counts.
 Never repeat an already completed merge or reimplement closed findings.
 
@@ -457,10 +460,10 @@ read378/553/10 and cleanup in `finalization-sync-refresh-mutex-hosted-ci.log`.
 FNL-029 also reconciles device/security/legacy scenario descriptions against
 actual route registration and schema, without implementing missing features.
 
-1. Verify the final documentation-only head CI and current PR/main state.
-   If PR66 is still open, integrate only its compatible verified exact head;
-   if it is already merged, inspect post-merge CI/artifact results instead.
-   Resolve any actual regression, never relabel a failed run.
+1. PR66 integration and its post-merge CI/artifact verification are complete;
+   do not repeat them. On resumption refresh live main/PR/CI and verify any
+   later documentation-only changes on their own revision before integration.
+   Resolve any actual new regression, never relabel a failed run.
 2. Repeat a bounded convergence audit for new concrete functional defects,
    misleading current UI/docs and missing directly relevant regressions.
    Do not turn actual API 403s or functional test fixture errors into unproven

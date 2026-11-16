@@ -4,6 +4,7 @@
 
 ### Hinzugefügt
 
+- PR66 ist als `5c6031e21fc8cba3c8256525c9edc52928564f2b` regulär integriert; unveränderter geprüfter Quellbaum, tatsächliche Main-CI43974506659 **7/7** mit gelesenen378/553/10, Artefakt43974980830 **2/2** mit Commit-/CI-Provenienz und sauberer Backend-Produktionsinstallation. Tracker schließt die Integration und verfügbare Gesamtprüfung im dokumentierten Umfang; keine Produktionsfreigabe.
 - FNL-028 ist auf `5ee9f36665616178c331e9c53526b1e35396b7bd` gehostet bestätigt: CI43972242288 **7/7**, gelesene Logs **378 Frontend/553 Backend/10 echte Browser** plus Cleanup. Das schließt die folgenden historischen Pending-Angaben; keine Produktionsfreigabe.
 - Abschließender Dokumentabgleich kennzeichnet die tatsächlich fehlende Gerätewiderrufsprüfung und den nicht registrierten Delta-Pull auch in Gerätesicherheit und alter Offline-Szenariomatrix als OFFEN. Keine verifizierte Gerätezeit-/Sequenzgarantie für alle Module; keine neue Sicherheitsprüfung behauptet.
 - FNL-028 gibt generische Sync-Sperre/Pending erst im zentralen `finally` frei, einschließlich Snapshot-Refresh nach leerer Queue. Zwei Fälle zunächst rot; gezielt148/Typprüfung/Build grün. Neue Auslöser bleiben vorgemerkt, Fehler sichtbar; eigene Gesamt-CI offen. Aktives Protokoll korrigiert falsche Gerätewiderrufs-/Delta-Pull-Aussagen statt fehlende Funktionen als vorhanden zu beschreiben.

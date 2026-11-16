@@ -3,9 +3,11 @@
 ## Aktuelle Finalisierungsrunde, 16.11.2026
 
 **Status: IN ENTWICKLUNG / OFFEN — keine Gesamtfertigstellung oder Produktionsfreigabe.**
-Die Korrekturrunden und Prüfgrenzen stehen im Tracker. Der letzte Main-/PR-
-Snapshot wurde vor Integration erstellt; der aktuelle Zustand steht in
-[PR #66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66).
+Die Korrekturrunden und Prüfgrenzen stehen im Tracker.
+[PR #66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66) ist als
+5c6031e21fc8cba3c8256525c9edc52928564f2b integriert: tatsächliche Main-
+CI43974506659 **7/7**, gelesene378/553/10; Artefakt43974980830 **2/2**
+mit passender Commit-/CI-Provenienz und sauberer Produktionsinstallation.
 Keine Produktionsfreigabe, kein Tag oder Deployment.
 
 Veröffentlicht:
