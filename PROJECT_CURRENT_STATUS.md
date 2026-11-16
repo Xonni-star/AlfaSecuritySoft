@@ -71,6 +71,7 @@ At the 20:59 CET check, `main` was `879ae951d6cea52fd84d01dc699cf2ed08843300`, P
 ## Current documentation
 
 - [Project completion tracker](./PROJECT_COMPLETION_TRACKER.md) — active work items, acceptance criteria, blockers, and evidence.
+- [Phase 10 completion report](./FINAL_PHASE_10_COMPLETION_REPORT.md) — completed changes, security findings, verification, and remaining acceptance gates.
 - [Phase 9 completion report](./PHASE_9_COMPLETION_REPORT.md) — operational/documentation audit, evidence boundaries, and gates.
 - [Linux test installation runbook](./frontend/deploy/linux-test/README.md) — isolated, non-production installation, update, backup and restore.
 - [Frontend architecture](./frontend/FRONTEND_ARCHITECTURE.md), [authentication and session security](./frontend/AUTHENTICATION_SECURITY.md), and [system overview](./frontend/SYSTEM_OVERVIEW.md) — current implementation boundaries.
