@@ -73,6 +73,14 @@ Neue vollständige Backend-/Hosted-Evidenz bleibt revisionsgebunden separat.
 Der abschließende lokale Backend-Lauf mit den erweiterten Vertrags-/SLA-/
 Sync-Assertions besteht ebenfalls 546/546 in 35 Suites auf frischem PostgreSQL 16.
 Neue Hosted-Prüfung bleibt offen.
+Dieser FNL-016-Publikationsschritt ist nun erfüllt: `8f7b71dc6b6ee769094e5a5774f3fbd62653241e`,
+CI 43942074079 7/7; gelesene Logs bestätigen 270/546/9 und Cleanup.
+Nachfolgendes FNL-017 korrigiert fünf Archiv-/Wiederherstellungsaktionen:
+explizite API-/dauerhafte Queuebestätigung, kein nachträglicher Offlinefallback
+bei API-Fehlern, Identitätsgrenzen und sichtbare lokale Speicherfehler.
+32 Store- und sechs UI-Regressionen, Frontend 308/308, Typprüfung/Build und
+Browser 9/9 mit echtem Archiv/Reload/Wiederherstellung bestanden lokal.
+Neue exakte Hosted-Prüfung ist nicht durch den vorigen Lauf ersetzt.
 
 Noch interne Arbeit: vollständige Rollen-/Objektmatrix und offene Teilmodule
 abnehmen; erforderliche Prüfung vor autorisierter PR-Integration abschließen.

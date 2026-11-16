@@ -4,26 +4,19 @@
 **Scope:** PR #66 changes, browser-based report CSV export, local legacy-attachment recovery, backend authorization boundaries, PostgreSQL tenant/RLS context, authentication/session handling, and web security configuration. This is not a comprehensive security audit, penetration test, or certification.
 
 **Finalization evidence update, not a new comprehensive security review:**
-`3b9836334690e5b5e2da9ffca518b4b9f63c81a5` passed exact
-[CI 43929519192](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43929519192),
-7/7 jobs; logs confirm frontend 206/206, backend 546/546 and real browser 6/6
-with container cleanup. Subsequent FNL-013 locally passes frontend 212/212,
-strict typecheck, both builds and real browser 7/7. It replaces simulated
-API/Python/acceptance results with real read-only GET data/errors and an honest
-checklist; generic automation remains local drafts without an engine.
-FNL-014 is published in `64c9ee953dfd3241de0678e482eb1fc19f4d0f13`;
-[CI 43934545176](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43934545176)
-passed 7/7, with frontend 242, backend 546 and browser 7.
-Subsequent FNL-015 locally passes frontend 262 and browser 8, including genuine
-employee persistence, nullable proof editing, reload calendar dates/expired
-classification and a real overlap conflict with retained input. These functional
-changes are not presented as newly security-reviewed or complete role coverage.
-FNL-015 is now hosted-verified as
-`fcafebd134d3b1e5530b1e4ae0f46b32b72065d4`, CI 43938567434 7/7,
-with frontend 262, backend 546 and browser 8 plus cleanup. Subsequent
-FNL-016 locally passes frontend 270 and browser 9, and three genuine
-PostgreSQL API cases verify contract fields, idempotency and preserved SLA.
-These are functional/data-integrity corrections, not additional security findings.
+FNL-016 `8f7b71dc6b6ee769094e5a5774f3fbd62653241e` passed exact
+[CI 43942074079](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43942074079),
+7/7 jobs; downloaded logs verify frontend 270, backend 546 in 35 suites,
+real browser 9 and cleanup. This includes genuine employee calendar/proof/
+absence and customer contract/site metadata persistence, preserved omitted SLA
+and removal of fabricated audit/acceptance displays. Generic automation remains
+local drafts without an engine. Subsequent FNL-017 locally passes frontend 308,
+typecheck/build and browser 9 with actual archive/reload/restore coverage.
+Five lifecycle actions now explicitly confirm API/durable queue success, never
+reinterpret an API denial as offline success, report local-storage failures and
+suppress old-context completions/errors. Backend sources remain unchanged.
+These are functional/data-integrity corrections, not additional security findings
+or complete role coverage. Exact newer hosted verification remains separate.
 The bounded review reported no confirmed new vulnerability and supplied no
 complete coverage matrix. Current revision boundaries and remaining internal/
 external gates are in [current status](./PROJECT_CURRENT_STATUS.md) and

@@ -4,6 +4,7 @@
 
 ### Hinzugefügt
 
+- 38 Frontendregressionen für fünf Archiv-/Wiederherstellaktionen: API-/dauerhafte Queuebestätigung, feste Online-/Offlineentscheidung, Speicherfehler, verzögerter Identitätswechsel und geordnete Offline-Revisionen. UI wartet, blockiert Doppelaktionen und meldet unbestätigte Änderungen. Echte Browserfälle um Archiv/Reload/Wiederherstellung erweitert, inklusive Objektversionen 3→4→5 und erhaltenen Mitarbeiterdaten. Lokal Frontend 308/308, Typprüfung/Build und Browser 9/9 mit Cleanup; kein neuer Exploit behauptet.
 - Neunte echte Browserjourney für dauerhafte Offline-Kundenanlage, tatsächliche Vertragswerte nach Reload/Änderung und persistierte Objektanforderungen nach Bearbeitung/Reload; Testdaten werden über reale Archivierungsaktionen entfernt. Lokal komplette Suite 9/9 mit Containerbereinigung.
 - Achte echte Browserjourney für Mitarbeiteranlage, Nachweise ohne Ablaufdatum, tatsächliche Abwesenheit und HTTP-409-Konflikt mit erhaltenem Entwurf. Reload belegt Kalendertage und abgelaufenen Nachweisstatus; vollständige echte Suite 8/8 mit Containerbereinigung.
 - Echte schreibgeschützte API-Konsole mit vorhandenen GET-Routen, tatsächlichen Daten/Fehlern, Pendingzustand und identitätsgebundenen Ergebnissen. Siebte echte Browserjourney prüft identische API-/UI-Daten, exakt erlaubten Kunden und tatsächliches HTTP 403 für SOP-only-Reader ohne Mutation. Lokal: Frontend 212/212 in 34 Dateien und Browser 7/7; exakte Hosted-Zuordnung steht im Projektstatus.

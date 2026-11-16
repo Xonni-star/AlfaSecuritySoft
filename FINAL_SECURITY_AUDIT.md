@@ -70,6 +70,16 @@ historischen Kontext im [Sicherheitsbericht](./SECURITY_AUDIT_REPORT.md).
   Lokal Frontend 270/270, gezielte echte PostgreSQL-Fälle 3/3 und Browser 9/9
   mit Cleanup. Keine neu bestätigte Schwachstelle oder zusätzliche vollständige
   Sicherheitsprüfung wird aus diesen Funktionsnachweisen abgeleitet.
+  FNL-016 ist nun als `8f7b71dc6b6ee769094e5a5774f3fbd62653241e` veröffentlicht;
+  CI 43942074079 bestätigt 7/7 mit 270/546/9 und Cleanup.
+- Nachfolgendes FNL-017 bestätigt fünf Archiv-/Wiederherstellaktionen nur nach
+  API oder dauerhafter Queue. API-Ablehnungen werden bei einem Verbindungswechsel
+  nicht als Offline-Erfolg behandelt; alte Identitäten veröffentlichen keine
+  verspäteten Ergebnisse/Fehler. Lokale Speicherfehler bleiben sichtbar.
+  32 Store- und sechs UI-Regressionen, Frontend 308/308, Typprüfung/Build und
+  neun echte Browserfälle einschließlich Archiv/Reload/Wiederherstellung
+  bestanden lokal; Backendquellen unverändert. Keine zusätzliche vollständige
+  Sicherheitsprüfung oder neue bestätigte Schwachstelle wird behauptet.
 
 ## Fachliche Fehler sind keine behaupteten Exploits
 

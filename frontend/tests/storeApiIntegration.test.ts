@@ -256,6 +256,119 @@ describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
     { name: 'update employee', write: () => useSecurityStore.getState().updateEmployee(employeeRow.id, { firstName: 'Updated employee' }) }
   ];
 
+  const lifecycleWrites = [
+    { name: 'archive customer', entityType: 'client', action: 'DELETE', id: customerRow.id, write: () => useSecurityStore.getState().archiveClient(customerRow.id) },
+    { name: 'archive site', entityType: 'site', action: 'DELETE', id: siteRow.id, write: () => useSecurityStore.getState().archiveSite(siteRow.id) },
+    { name: 'restore site', entityType: 'site', action: 'RESTORE', id: siteRow.id, write: () => useSecurityStore.getState().restoreSite(siteRow.id) },
+    { name: 'archive employee', entityType: 'employee', action: 'DELETE', id: employeeRow.id, write: () => useSecurityStore.getState().archiveEmployee(employeeRow.id) },
+    { name: 'restore employee', entityType: 'employee', action: 'RESTORE', id: employeeRow.id, write: () => useSecurityStore.getState().restoreEmployee(employeeRow.id) }
+  ];
+  async function prepareLifecycle(restore: boolean) {
+    mockReadEndpoints();
+    useSecurityStore.setState({ authUser: readUser });
+    await useSecurityStore.getState().loadTenantData();
+    if (restore) useSecurityStore.setState(state => ({
+      sites: state.sites.map(site => ({ ...site, archivedAt: '2026-01-01T00:00:00Z' })),
+      employees: state.employees.map(employee => ({ ...employee, archivedAt: '2026-01-01T00:00:00Z' }))
+    }));
+    const { clients, sites, employees } = useSecurityStore.getState();
+    return { clients, sites, employees };
+  }
+  test.each(lifecycleWrites)('$name rejects an old identity completion without publishing resource or notification changes', async ({ write, action }) => {
+    const original = await prepareLifecycle(action === 'RESTORE');
+    let resolve!: (value: unknown) => void;
+    mockedApi.post.mockReturnValueOnce(new Promise(done => { resolve = done; }));
+    const pending = write();
+    useSecurityStore.setState({ authUser: { ...readUser, id: 'different-lifecycle-owner' }, notifications: [] });
+    resolve({ archived_at: '2026-11-16T00:00:00Z', revision_version: 2 });
+    const result = await pending;
+    expect(useSecurityStore.getState()).toMatchObject({ ...original, notifications: [], syncQueue: [] });
+    expect(result).toBe(false);
+  });
+  test.each(lifecycleWrites)('$name never reinterprets an API denial as offline success after a network change', async ({ write, action }) => {
+    const original = await prepareLifecycle(action === 'RESTORE');
+    const enqueue = vi.spyOn(offlineVault, 'enqueueMutation');
+    let reject!: (error: Error) => void;
+    mockedApi.post.mockReturnValueOnce(new Promise((_resolve, fail) => { reject = fail; }));
+    const pending = write();
+    useSecurityStore.setState({ isOnline: false });
+    reject(new ApiError(403, 'Lifecycle permission denied'));
+    const result = await pending;
+    expect(enqueue).not.toHaveBeenCalled();
+    expect(useSecurityStore.getState()).toMatchObject({ ...original, syncQueue: [] });
+    expect(result).toBe(false);
+    expect(useSecurityStore.getState().notifications[0]).toMatchObject({
+      type: 'alert', message: expect.stringContaining('Lifecycle permission denied')
+    });
+  });
+  test.each(lifecycleWrites)('$name reports local persistence rejection without mutating resources or leaking a rejection', async ({ write, action }) => {
+    const original = await prepareLifecycle(action === 'RESTORE');
+    useSecurityStore.setState({ isOnline: false });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(offlineVault, 'enqueueMutation').mockRejectedValueOnce(new Error('Lifecycle storage unavailable'));
+    expect(await write()).toBe(false);
+    expect(useSecurityStore.getState()).toMatchObject({ ...original, syncQueue: [] });
+    expect(useSecurityStore.getState().notifications[0]).toMatchObject({
+      type: 'alert', message: expect.stringContaining('Lifecycle storage unavailable')
+    });
+  });
+  test.each(lifecycleWrites)('$name suppresses delayed API errors after identity replacement', async ({ write, action }) => {
+    const original = await prepareLifecycle(action === 'RESTORE');
+    let reject!: (error: Error) => void;
+    mockedApi.post.mockReturnValueOnce(new Promise((_resolve, fail) => { reject = fail; }));
+    const pending = write();
+    useSecurityStore.setState({ authUser: { ...readUser, id: 'different-lifecycle-owner' }, notifications: [] });
+    reject(new ApiError(403, 'Previous owner private lifecycle error'));
+    expect(await pending).toBe(false);
+    expect(useSecurityStore.getState()).toMatchObject({ ...original, notifications: [], syncQueue: [] });
+  });
+  test.each(lifecycleWrites)('$name suppresses delayed local completion after identity replacement', async ({ write, action }) => {
+    const original = await prepareLifecycle(action === 'RESTORE');
+    useSecurityStore.setState({ isOnline: false });
+    let persist!: () => void;
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementationOnce(mutation => new Promise(resolve => {
+      persist = () => resolve({ ...mutation, deviceId: 'lifecycle-device', retryCount: 0, status: 'PENDING' });
+    }));
+    const pending = write();
+    useSecurityStore.setState({ authUser: { ...readUser, id: 'different-lifecycle-owner' }, notifications: [] });
+    persist();
+    expect(await pending).toBe(false);
+    expect(useSecurityStore.getState()).toMatchObject({ ...original, notifications: [], syncQueue: [] });
+  });
+  test.each(lifecycleWrites)('$name waits for durable local storage and then confirms only a queued operation', async ({ write, action, entityType, id }) => {
+    const original = await prepareLifecycle(action === 'RESTORE');
+    useSecurityStore.setState({ isOnline: false });
+    let persist!: () => void;
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementationOnce(mutation => new Promise(resolve => {
+      persist = () => resolve({ ...mutation, deviceId: 'lifecycle-device', retryCount: 0, status: 'PENDING' });
+    }));
+    const pending = write();
+    expect(useSecurityStore.getState()).toMatchObject(original);
+    persist();
+    expect(await pending).toBe(true);
+    expect(useSecurityStore.getState().syncQueue[0]).toMatchObject({
+      entityType, action, payload: { id }, baseVersion: 1
+    });
+    expect(useSecurityStore.getState().notifications[0]).toMatchObject({
+      type: 'info', title: expect.stringContaining('vorgemerkt')
+    });
+    expect(mockedApi.post).not.toHaveBeenCalled();
+  });
+  test.each(['site', 'employee'] as const)('offline %s archive then restore advances durable base versions in order', async entityType => {
+    await prepareLifecycle(false);
+    useSecurityStore.setState({ isOnline: false });
+    const enqueue = vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => ({
+      ...mutation, deviceId: 'lifecycle-device', retryCount: 0, status: 'PENDING'
+    }));
+    const id = entityType === 'site' ? siteRow.id : employeeRow.id;
+    const state = useSecurityStore.getState();
+    expect(await (entityType === 'site' ? state.archiveSite(id) : state.archiveEmployee(id))).toBe(true);
+    expect(await (entityType === 'site' ? state.restoreSite(id) : state.restoreEmployee(id))).toBe(true);
+    expect(enqueue.mock.calls.map(([mutation]) => mutation.baseVersion)).toEqual([1, 2]);
+    const records = entityType === 'site' ? useSecurityStore.getState().sites : useSecurityStore.getState().employees;
+    expect(records.find(record => record.id === id)).toMatchObject({ archivedAt: null, revisionVersion: 3 });
+  });
+
   const actualSiteMetadata = {
     requiredGuardsDay: 4, requiredGuardsNight: 3, alarmSystem: 'Actual equipment',
     accessRules: 'Actual access rules', timeZone: 'Europe/Berlin'

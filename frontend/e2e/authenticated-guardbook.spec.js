@@ -142,7 +142,25 @@ test('genuine customer contract terms and site requirements survive offline repl
   await expect(page.getByText('5 Tag / 3 Nacht', { exact: true })).toBeVisible();
   const siteArchive = page.waitForResponse(response => response.url().endsWith(`/sites/${createdSite.id}/archive`));
   await page.getByRole('button', { name: 'Archivieren', exact: true }).click();
-  expect((await siteArchive).status()).toBe(200);
+  const archivedSiteResponse = await siteArchive;
+  expect(archivedSiteResponse.status()).toBe(200);
+  expect((await archivedSiteResponse.json()).data.revision_version).toBe(3);
+  await page.reload();
+  await page.getByRole('button', { name: 'Objektverwaltung (Detail-Tabs)', exact: true }).click();
+  await page.getByRole('button', { name: 'Archiv anzeigen', exact: true }).click();
+  await page.getByRole('heading', { name: siteName, level: 3, exact: true }).click();
+  const siteRestore = page.waitForResponse(response => response.url().endsWith(`/sites/${createdSite.id}/restore`));
+  await page.getByRole('button', { name: 'Wiederherstellen', exact: true }).click();
+  const restoredSiteResponse = await siteRestore;
+  expect(restoredSiteResponse.status()).toBe(200);
+  expect((await restoredSiteResponse.json()).data.revision_version).toBe(4);
+  await page.getByRole('button', { name: 'Aktive anzeigen', exact: true }).click();
+  await expect(page.getByText('5 Tag / 3 Nacht', { exact: true })).toBeVisible();
+  const finalSiteArchive = page.waitForResponse(response => response.url().endsWith(`/sites/${createdSite.id}/archive`));
+  await page.getByRole('button', { name: 'Archivieren', exact: true }).click();
+  const finalSiteResponse = await finalSiteArchive;
+  expect(finalSiteResponse.status()).toBe(200);
+  expect((await finalSiteResponse.json()).data.revision_version).toBe(5);
   await page.getByRole('button', { name: 'Kunden & Verträge', exact: true }).click();
   page.once('dialog', dialog => dialog.accept());
   const customerArchive = page.waitForResponse(response => response.url().endsWith(`/customers/${queued.payload.id}/archive`));
@@ -243,6 +261,20 @@ test('employee qualifications and absences confirm real persistence and retain a
   await page.reload();
   await page.getByRole('button', { name: 'Personal & § 34a GewO', exact: true }).click();
   await expect(qualifications.getByText('ABGELAUFEN · 2020-02-01', { exact: false })).toBeVisible();
+  const employeeArchive = page.waitForResponse(response => response.url().endsWith(`/employees/${employee.id}/archive`));
+  await card.getByTitle('Archivieren', { exact: true }).click();
+  expect((await employeeArchive).status()).toBe(200);
+  await expect(card).toHaveCount(0);
+  await page.reload();
+  await page.getByRole('button', { name: 'Personal & § 34a GewO', exact: true }).click();
+  await page.getByRole('button', { name: 'Archiv anzeigen', exact: true }).click();
+  await expect(card).toBeVisible();
+  const employeeRestore = page.waitForResponse(response => response.url().endsWith(`/employees/${employee.id}/restore`));
+  await card.getByTitle('Wiederherstellen', { exact: true }).click();
+  expect((await employeeRestore).status()).toBe(200);
+  await page.getByRole('button', { name: 'Aktive anzeigen', exact: true }).click();
+  await expect(qualifications.getByText('ABGELAUFEN · 2020-02-01', { exact: false })).toBeVisible();
+  await expect(card.getByText('Sonstige: 2030-07-01 – 2030-07-02 · PENDING', { exact: true })).toBeVisible();
 });
 
 test('real session and PostgreSQL persist one offline mutation after a lost receipt', async ({ page, context }) => {

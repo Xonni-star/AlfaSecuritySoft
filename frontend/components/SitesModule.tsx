@@ -133,9 +133,18 @@ export const SitesModule: React.FC = () => {
       if (identityRef.current === identity) setIsSiteActionPending(false);
     }
   };
-  const runSiteAction = async (action: () => Promise<void>) => {
+  const runSiteAction = async (action: () => Promise<boolean>) => {
+    if (isSiteActionPending) return;
+    setSaveError('');
     setIsSiteActionPending(true);
-    try { await action(); } finally { if (identityRef.current === identity) setIsSiteActionPending(false); }
+    try {
+      const saved = await action();
+      if (identityRef.current === identity && !saved) setSaveError('Die Änderung wurde nicht bestätigt.');
+    } catch (error) {
+      if (identityRef.current === identity) setSaveError(error instanceof Error ? error.message : 'Objekt nicht geändert.');
+    } finally {
+      if (identityRef.current === identity) setIsSiteActionPending(false);
+    }
   };
 
   // Filter object-scoped data
@@ -146,6 +155,7 @@ export const SitesModule: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {!isModalOpen && saveError && <p role="alert" className="text-sm text-rose-300">{saveError}</p>}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">

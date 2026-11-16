@@ -191,6 +191,29 @@ Logs: `finalization-resource-metadata-red.log`,
 `finalization-resource-metadata-browser-verified.log`,
 `finalization-resource-metadata-backend-final.log`.
 
+FNL-016 is published as `8f7b71dc6b6ee769094e5a5774f3fbd62653241e`.
+Exact [CI 43942074079](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43942074079)
+passed 7/7. Downloaded logs verify frontend 270, backend 546 and real browser 9
+plus cleanup; `finalization-resource-metadata-hosted-ci.log`.
+
+FNL-017 is now locally verified: five customer/site/employee archive/restore
+actions explicitly confirm API or durable queuing, keep the initial operation
+mode and guard success/failure by tenant/user after awaits. Storage rejection
+does not mutate resources or leak a rejected UI promise. The UI awaits genuine
+confirmation, blocks duplicates and suppresses old-session results. Offline
+success explicitly remains unacknowledged by the server.
+Twenty initial cases failed; 32 store and six component cases now pass, including
+API denial during a network change, delayed API/local success/error after an
+identity replacement and ordered offline archive/restore revisions.
+Full frontend **308/308 in 35 files**, typecheck/build and real browser **9/9**
+with cleanup passed. Extended existing journeys verify real site revision
+3→4→5, archive/reload/restore and employee data preservation after restore.
+An intermediate test edit accidentally nested two parametrized test definitions;
+fixed by moving them back into describe, without removing assertions.
+Backend sources are unchanged from the fully verified FNL-016 above.
+Logs: `finalization-resource-lifecycle-red.log`,
+`finalization-resource-lifecycle-browser.log`.
+
 Required `FINAL_SECURITY_AUDIT.md`, `PRODUCTION_READINESS_REPORT.md` and
 `PRODUCTION_RELEASE_CHECKLIST.md` now exist and explicitly preserve open
 internal/external boundaries. README/current status, module matrix, changelog,
@@ -200,7 +223,7 @@ in development, not approved for production. Do not repeat this already done wor
 
 ## Remaining work
 
-1. Publish coherent FNL-016 and verify all hosted jobs
+1. Publish coherent FNL-017 and verify all hosted jobs
    on the exact new full SHA; inspect actual logs before updating evidence.
    The preceding 7/7 does not validate these newer changes.
 2. Repeat a bounded convergence audit for new concrete functional defects,
@@ -208,10 +231,11 @@ in development, not approved for production. Do not repeat this already done wor
    Do not turn actual API 403s or functional test fixture errors into unproven
    security vulnerabilities. Full roles/objects and generic automation/audit/
    recovery features remain internal open scope, not externally blocked or done.
-   The concrete client/site metadata trace is corrected under FNL-016, not an
-   outstanding task. Next narrow trace: older archive/restore actions still
-   use void results and offline fallbacks; inspect actual error/identity/
-   durable-persistence behavior before claiming those paths safe or complete.
+   The concrete client/site metadata and five resource archive/restore traces
+   are corrected under FNL-016/017, not outstanding tasks. Current rescan found
+   no remaining `throw new Error('offline')` or online-state-based catch fallback
+   in the active store/controllers/components; this is not exhaustive coverage.
+   Inspect remaining real workflow boundaries, not already corrected handlers.
 3. Keep the requested final documents/tracker current; no ESLint configuration
    or script was found, so do not claim lint ran.
 4. Merge PR #66 only after

@@ -46,6 +46,14 @@ Veröffentlicht als `fcafebd134d3b1e5530b1e4ae0f46b32b72065d4`;
 7/7, Logs: Frontend 262, Backend 546, Browser 8 und Cleanup.
 FNL-016 besteht lokal Frontend 270/270, Typprüfung/beide Builds,
 gezielte PostgreSQL-API-Fälle 3/3 und Browser 9/9 mit Cleanup.
+FNL-016 ist inzwischen als `8f7b71dc6b6ee769094e5a5774f3fbd62653241e`
+mit CI 43942074079 gehostet 7/7 bestätigt: Frontend 270, Backend 546, Browser 9
+und Cleanup. Nachfolgendes FNL-017 bestätigt fünf Archiv-/Wiederherstellaktionen
+erst nach API/dauerhafter Queue, verhindert die Umdeutung von API-Fehlern zu
+Offline-Erfolg und bindet verspätete Ergebnisse/Fehler an die Identität.
+Lokal Frontend 308/308, Typprüfung/Build und Browser 9/9 mit echten
+Archiv-/Reload-/Wiederherstellungsfällen. Backendquellen unverändert;
+neue exakte Hosted-Prüfung bleibt separat.
 Spätere Hosted-Ergebnisse sind getrennt im
 [Projektstatus](./PROJECT_CURRENT_STATUS.md) zu prüfen.
 

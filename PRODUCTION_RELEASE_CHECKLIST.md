@@ -19,6 +19,10 @@ Test, ein Merge und ein erfolgreiches Containerimage ersetzen sie nicht.
 - [x] Neunte echte Browserjourney für Offline-Kundenanlage, tatsächliche Vertragswerte
       und Objektanforderungen nach Änderung/Reload; realer API-/Sync-Nachweis
       für Verlängerung/Kündigungsfrist und unveränderte SLA bei Teiländerung.
+- [x] Archiv-/Wiederherstellbestätigung für Kunde/Objekt/Mitarbeiter, sichtbare
+      Speicherfehler und identitätsgebundene verzögerte Ergebnisse; 38 neue
+      Frontendregressionen sowie echte Archiv-/Reload-/Wiederherstellungsfälle
+      innerhalb der neun Browserjourneys. Kein vollständiger Rollen-/Objektnachweis.
 - [x] Gefundene simulierte Audit-/Technik-/Abnahmeergebnisse entfernt;
       lokale Automationsentwürfe und fehlende Engine ausdrücklich gekennzeichnet.
 - [x] Privaten lokalen S3-/ClamAV-Ablauf, Originalbytes und echte Dateiablehnung geprüft.

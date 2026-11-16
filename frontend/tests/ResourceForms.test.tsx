@@ -1,11 +1,11 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import type { Client, Site } from '../types';
+import { UserRole, type Client, type Employee, type Site } from '../types';
 
 const state = vi.hoisted(() => ({
   clients: [] as Client[],
-  employees: [],
+  employees: [] as Employee[],
   sites: [],
   currentTenantId: 'tenant-a',
   currentUserId: 'user-a',
@@ -37,9 +37,9 @@ import { SitesModule } from '../components/SitesModule';
 import { EmployeesModule } from '../components/EmployeesModule';
 
 const resources = [
-  { name: 'customer', Component: ClientsModule, open: 'Mandant hinzufügen', save: state.addClient },
-  { name: 'site', Component: SitesModule, open: 'Objekt anlegen', save: state.addSite },
-  { name: 'employee', Component: EmployeesModule, open: 'Mitarbeiter anlegen', save: state.addEmployee }
+  { name: 'customer', Component: ClientsModule, open: 'Mandant hinzufügen', save: state.addClient, archive: state.archiveClient },
+  { name: 'site', Component: SitesModule, open: 'Objekt anlegen', save: state.addSite, archive: state.archiveSite },
+  { name: 'employee', Component: EmployeesModule, open: 'Mitarbeiter anlegen', save: state.addEmployee, archive: state.archiveEmployee }
 ];
 
 describe('Resource forms confirmed persistence', () => {
@@ -49,11 +49,12 @@ describe('Resource forms confirmed persistence', () => {
   beforeEach(() => {
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
     vi.clearAllMocks();
-    for (const { save } of resources) save.mockReset();
+    for (const { save, archive } of resources) { save.mockReset(); archive.mockReset(); }
     state.updateClient.mockReset();
     state.updateSite.mockReset();
     state.currentUserId = 'user-a';
     state.clients = [];
+    state.employees = [];
     state.getTenantSites.mockReturnValue([]);
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -63,6 +64,7 @@ describe('Resource forms confirmed persistence', () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     container.remove();
+    vi.restoreAllMocks();
   });
 
   async function openForm(label: string, value: string) {
@@ -119,6 +121,49 @@ describe('Resource forms confirmed persistence', () => {
     accessRules: 'Actual access rules', timeZone: 'Europe/Berlin', siteManagerId: '', siteManagerName: '',
     instructionsCount: 0, activeAlarms: 0, checkpoints: []
   };
+  const existingEmployee: Employee = {
+    id: 'employee-a', tenantId: 'tenant-a', personnelNumber: 'EMP-1',
+    firstName: 'Archive', lastName: 'Fixture', email: 'archive@example.test', phone: '12345',
+    role: UserRole.GUARD, status: 'Aktiv', weeklyHours: 40, hourlyRate: 18,
+    dateOfJoining: '2026-01-01', qualifications: [], assignedSiteIds: []
+  };
+
+  test.each(resources)('$name archive waits for confirmation and displays a rejected operation', async ({ Component, archive }) => {
+    state.clients = [existingClient];
+    state.employees = [existingEmployee];
+    state.getTenantSites.mockReturnValue([existingSite]);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    let resolve!: (saved: boolean) => void;
+    archive.mockReturnValueOnce(new Promise<boolean>(done => { resolve = done; }));
+    await act(async () => root.render(<Component />));
+    const button = Array.from(container.querySelectorAll('button'))
+      .find(button => button.title === 'Archivieren' || button.textContent?.trim() === 'Archivieren');
+    if (!button) throw new Error('Missing archive action');
+    await act(async () => button.click());
+    expect(archive).toHaveBeenCalledTimes(1);
+    expect(button.matches(':disabled')).toBe(true);
+    await act(async () => { resolve(false); });
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('nicht bestätigt');
+    expect(button.matches(':disabled')).toBe(false);
+  });
+
+  test.each(resources)('$name archive does not publish an old identity failure in a new session', async ({ Component, archive }) => {
+    state.clients = [existingClient];
+    state.employees = [existingEmployee];
+    state.getTenantSites.mockReturnValue([existingSite]);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    let resolve!: (saved: boolean) => void;
+    archive.mockReturnValueOnce(new Promise<boolean>(done => { resolve = done; }));
+    await act(async () => root.render(<Component />));
+    const button = Array.from(container.querySelectorAll('button'))
+      .find(button => button.title === 'Archivieren' || button.textContent?.trim() === 'Archivieren');
+    if (!button) throw new Error('Missing archive action');
+    await act(async () => button.click());
+    state.currentUserId = 'user-b';
+    await act(async () => root.render(<Component />));
+    await act(async () => { resolve(false); });
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
 
   test('customer editing preserves actual contract terms and submits explicit changes', async () => {
     state.clients = [existingClient];

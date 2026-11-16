@@ -74,6 +74,19 @@ export const ClientsModule: React.FC = () => {
       if (identityRef.current === identity) setIsSaving(false);
     }
   };
+  const handleArchive = async (id: string, company: string) => {
+    if (isSaving || !window.confirm(`„${company}“ archivieren? Zugeordnete Objekte bleiben erhalten.`)) return;
+    setSaveError('');
+    setIsSaving(true);
+    try {
+      const saved = await archiveClient(id);
+      if (identityRef.current === identity && !saved) setSaveError('Die Archivierung wurde nicht bestätigt.');
+    } catch (error) {
+      if (identityRef.current === identity) setSaveError(error instanceof Error ? error.message : 'Kunde nicht archiviert.');
+    } finally {
+      if (identityRef.current === identity) setIsSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -103,6 +116,7 @@ export const ClientsModule: React.FC = () => {
         </button>
       </div>
 
+      {!isModalOpen && saveError && <p role="alert" className="text-sm text-rose-300">{saveError}</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {clients.map((c) => (
           <div key={c.id} className="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col justify-between shadow-sm">
@@ -149,9 +163,7 @@ export const ClientsModule: React.FC = () => {
                 setContractAutoRenew(c.contractAutoRenew); setNoticePeriodMonths(c.noticePeriodMonths);
                 setIsModalOpen(true);
               }}><Pencil className="w-3.5 h-3.5" /> Bearbeiten</button>
-              <button type="button" className="text-xs text-amber-300 hover:text-white flex items-center gap-1 ml-auto" onClick={() => {
-                if (window.confirm(`„${c.companyName}“ archivieren? Zugeordnete Objekte bleiben erhalten.`)) void archiveClient(c.id);
-              }}><Archive className="w-3.5 h-3.5" /> Archivieren</button>
+              <button disabled={isSaving} type="button" className="text-xs text-amber-300 hover:text-white flex items-center gap-1 ml-auto disabled:opacity-50" onClick={() => void handleArchive(c.id, c.companyName)}><Archive className="w-3.5 h-3.5" /> Archivieren</button>
             </div>
           </div>
         ))}

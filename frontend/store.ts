@@ -703,15 +703,15 @@ interface SecurityOpsStore {
   // Actions
   addClient: (client: Omit<Client, 'id' | 'tenantId'>) => Promise<boolean>;
   updateClient: (id: string, updates: Partial<Client>) => Promise<boolean>;
-  archiveClient: (id: string) => Promise<void>;
+  archiveClient: (id: string) => Promise<boolean>;
   addSite: (site: Omit<Site, 'id' | 'tenantId'>) => Promise<boolean>;
   updateSite: (id: string, updates: Partial<Site>) => Promise<boolean>;
-  archiveSite: (id: string) => Promise<void>;
-  restoreSite: (id: string) => Promise<void>;
+  archiveSite: (id: string) => Promise<boolean>;
+  restoreSite: (id: string) => Promise<boolean>;
   addEmployee: (emp: Omit<Employee, 'id' | 'tenantId'>) => Promise<boolean>;
   updateEmployee: (id: string, updates: Partial<Employee>) => Promise<boolean>;
-  archiveEmployee: (id: string) => Promise<void>;
-  restoreEmployee: (id: string) => Promise<void>;
+  archiveEmployee: (id: string) => Promise<boolean>;
+  restoreEmployee: (id: string) => Promise<boolean>;
   addQualification: (employeeId: string, qualification: Omit<Qualification, 'id'>) => Promise<boolean>;
   updateQualification: (employeeId: string, qualificationId: string, changes: Partial<Qualification>) => Promise<boolean>;
   addAbsence: (employeeId: string, absence: Omit<AbsenceRecord, 'id' | 'approved' | 'status' | 'revisionVersion'>) => Promise<boolean>;
@@ -2366,17 +2366,25 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
 
   archiveClient: async (id) => {
-    const client = get().clients.find((c) => c.id === id);
-    if (!client) return;
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const client = get().clients.find(c => c.id === id && c.tenantId === tenantId);
+    if (!client) {
+      get().addNotification('Kunde nicht archiviert', 'Der Kunde ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
     const revisionVersion = client.revisionVersion || 1;
+    const online = get().isOnline;
     try {
-      if (!get().isOnline) throw new Error('offline');
-      await apiClient.post(`/customers/${id}/archive`, { revisionVersion });
+      if (online) await apiClient.post(`/customers/${id}/archive`, { revisionVersion });
+      else await get().enqueueOfflineAction({ tenantId, entityType: 'client', action: 'DELETE', payload: { id }, baseVersion: revisionVersion });
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
       set((s) => ({ clients: s.clients.filter((c) => c.id !== id) }));
-    } catch (error: any) {
-      if (get().isOnline) { get().addNotification('Kunde nicht archiviert', error?.message || 'Archivierung fehlgeschlagen.', 'alert'); return; }
-      await get().enqueueOfflineAction({ tenantId: client.tenantId, entityType: 'client' as any, action: 'DELETE', payload: { id }, baseVersion: revisionVersion });
-      set((s) => ({ clients: s.clients.filter((c) => c.id !== id) }));
+      get().addNotification(online ? 'Kunde archiviert' : 'Archivierung vorgemerkt', online ? `${client.companyName} wurde archiviert.` : 'Dauerhaft lokal gespeichert; Serverbestätigung steht aus.', 'info');
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification('Kunde nicht archiviert', error instanceof Error ? error.message : 'Archivierung fehlgeschlagen.', 'alert');
+      return false;
     }
   },
 
@@ -2476,28 +2484,56 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
 
   archiveSite: async (id) => {
-    const site = get().sites.find(s=>s.id===id); if (!site) return;
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const site = get().sites.find(s => s.id === id && s.tenantId === tenantId);
+    if (!site) {
+      get().addNotification('Objekt nicht archiviert', 'Das Objekt ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
     const revisionVersion = site.revisionVersion || 1;
-    try { if (!get().isOnline) throw new Error('offline');
-      const result = await apiClient.post<any>(`/sites/${id}/archive`, { revisionVersion });
+    const online = get().isOnline;
+    try {
+      let result: { archived_at: string; revision_version: number };
+      if (online) result = await apiClient.post<typeof result>(`/sites/${id}/archive`, { revisionVersion });
+      else {
+        await get().enqueueOfflineAction({ tenantId, entityType: 'site', action: 'DELETE', payload: { id }, baseVersion: revisionVersion });
+        result = { archived_at: new Date().toISOString(), revision_version: revisionVersion + 1 };
+      }
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
       set(state => ({ sites: state.sites.map(s => s.id === id ? { ...s, archivedAt: result.archived_at, revisionVersion: result.revision_version } : s) }));
-      get().addNotification('Standort archiviert', `${site.name} wurde archiviert. Verknüpfte Einsatzdaten bleiben erhalten.`, 'info');
-    } catch (error: any) { if (get().isOnline) { get().addNotification(error?.status === 409 ? 'Versionskonflikt' : 'Archivierung fehlgeschlagen', error?.message || 'Objekt nicht archiviert.', 'alert'); return; }
-      await get().enqueueOfflineAction({ tenantId: site.tenantId, entityType: 'site', action: 'DELETE', payload: { id }, baseVersion: revisionVersion });
-      set(state => ({ sites: state.sites.map(s => s.id === id ? { ...s, archivedAt: new Date().toISOString(), revisionVersion: revisionVersion + 1 } : s) }));
+      get().addNotification(online ? 'Standort archiviert' : 'Archivierung vorgemerkt', online ? `${site.name} wurde archiviert. Verknüpfte Einsatzdaten bleiben erhalten.` : 'Dauerhaft lokal gespeichert; Serverbestätigung steht aus.', 'info');
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification(error instanceof ApiError && error.status === 409 ? 'Versionskonflikt' : 'Archivierung fehlgeschlagen', error instanceof Error ? error.message : 'Objekt nicht archiviert.', 'alert');
+      return false;
     }
   },
 
   restoreSite: async (id) => {
-    const site = get().sites.find(s=>s.id===id); if (!site) return;
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const site = get().sites.find(s => s.id === id && s.tenantId === tenantId);
+    if (!site) {
+      get().addNotification('Objekt nicht wiederhergestellt', 'Das Objekt ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
     const revisionVersion = site.revisionVersion || 1;
-    try { if (!get().isOnline) throw new Error('offline');
-      const result = await apiClient.post<any>(`/sites/${id}/restore`, { revisionVersion });
+    const online = get().isOnline;
+    try {
+      let result: { revision_version: number };
+      if (online) result = await apiClient.post<typeof result>(`/sites/${id}/restore`, { revisionVersion });
+      else {
+        await get().enqueueOfflineAction({ tenantId, entityType: 'site', action: 'RESTORE', payload: { id }, baseVersion: revisionVersion });
+        result = { revision_version: revisionVersion + 1 };
+      }
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
       set(state => ({ sites: state.sites.map(s => s.id === id ? { ...s, archivedAt: null, revisionVersion: result.revision_version } : s) }));
-      get().addNotification('Standort wiederhergestellt', `${site.name} ist wieder aktiv.`, 'info');
-    } catch (error: any) { if (get().isOnline) { get().addNotification(error?.status === 409 ? 'Versionskonflikt' : 'Wiederherstellung fehlgeschlagen', error?.message || 'Objekt nicht wiederhergestellt.', 'alert'); return; }
-      await get().enqueueOfflineAction({ tenantId: site.tenantId, entityType: 'site', action: 'RESTORE', payload: { id }, baseVersion: revisionVersion });
-      set(state => ({ sites: state.sites.map(s => s.id === id ? { ...s, archivedAt: null, revisionVersion: revisionVersion + 1 } : s) }));
+      get().addNotification(online ? 'Standort wiederhergestellt' : 'Wiederherstellung vorgemerkt', online ? `${site.name} ist wieder aktiv.` : 'Dauerhaft lokal gespeichert; Serverbestätigung steht aus.', 'info');
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification(error instanceof ApiError && error.status === 409 ? 'Versionskonflikt' : 'Wiederherstellung fehlgeschlagen', error instanceof Error ? error.message : 'Objekt nicht wiederhergestellt.', 'alert');
+      return false;
     }
   },
 
@@ -2641,14 +2677,56 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   },
 
   archiveEmployee: async (id) => {
-    const employee=get().employees.find(e=>e.id===id);if(!employee)return;const revisionVersion=employee.revisionVersion||1;
-    try{if(!get().isOnline)throw new Error('offline');const result=await apiClient.post<any>(`/employees/${id}/archive`,{revisionVersion});set(s=>({employees:s.employees.map(e=>e.id===id?{...e,archivedAt:result.archived_at,revisionVersion:result.revision_version}:e)}));get().addNotification('Mitarbeiter archiviert','Stammdaten und Einsatzbezüge bleiben erhalten.','info');}
-    catch(error:any){if(!get().isOnline){await get().enqueueOfflineAction({tenantId:employee.tenantId,entityType:'employee',action:'DELETE',payload:{id},baseVersion:revisionVersion});set(s=>({employees:s.employees.map(e=>e.id===id?{...e,archivedAt:new Date().toISOString(),revisionVersion:revisionVersion+1}:e)}));return;}get().addNotification(error?.status===409?'Versionskonflikt':'Archivierung fehlgeschlagen',error?.message||'Mitarbeiter nicht archiviert.','alert');}
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const employee = get().employees.find(e => e.id === id && e.tenantId === tenantId);
+    if (!employee) {
+      get().addNotification('Mitarbeiter nicht archiviert', 'Der Mitarbeiter ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
+    const revisionVersion = employee.revisionVersion || 1;
+    const online = get().isOnline;
+    try {
+      let result: { archived_at: string; revision_version: number };
+      if (online) result = await apiClient.post<typeof result>(`/employees/${id}/archive`, { revisionVersion });
+      else {
+        await get().enqueueOfflineAction({ tenantId, entityType: 'employee', action: 'DELETE', payload: { id }, baseVersion: revisionVersion });
+        result = { archived_at: new Date().toISOString(), revision_version: revisionVersion + 1 };
+      }
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      set(state => ({ employees: state.employees.map(e => e.id === id ? { ...e, archivedAt: result.archived_at, revisionVersion: result.revision_version } : e) }));
+      get().addNotification(online ? 'Mitarbeiter archiviert' : 'Archivierung vorgemerkt', online ? 'Stammdaten und Einsatzbezüge bleiben erhalten.' : 'Dauerhaft lokal gespeichert; Serverbestätigung steht aus.', 'info');
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification(error instanceof ApiError && error.status === 409 ? 'Versionskonflikt' : 'Archivierung fehlgeschlagen', error instanceof Error ? error.message : 'Mitarbeiter nicht archiviert.', 'alert');
+      return false;
+    }
   },
   restoreEmployee: async (id) => {
-    const employee=get().employees.find(e=>e.id===id);if(!employee)return;const revisionVersion=employee.revisionVersion||1;
-    try{if(!get().isOnline)throw new Error('offline');const result=await apiClient.post<any>(`/employees/${id}/restore`,{revisionVersion});set(s=>({employees:s.employees.map(e=>e.id===id?{...e,archivedAt:null,revisionVersion:result.revision_version}:e)}));get().addNotification('Mitarbeiter wiederhergestellt','Der Mitarbeiter ist wieder aktiv.','info');}
-    catch(error:any){if(!get().isOnline){await get().enqueueOfflineAction({tenantId:employee.tenantId,entityType:'employee',action:'RESTORE',payload:{id},baseVersion:revisionVersion});set(s=>({employees:s.employees.map(e=>e.id===id?{...e,archivedAt:null,revisionVersion:revisionVersion+1}:e)}));return;}get().addNotification(error?.status===409?'Versionskonflikt':'Wiederherstellung fehlgeschlagen',error?.message||'Mitarbeiter nicht wiederhergestellt.','alert');}
+    const { tenantId, userId } = currentSOPIdentity(get());
+    const employee = get().employees.find(e => e.id === id && e.tenantId === tenantId);
+    if (!employee) {
+      get().addNotification('Mitarbeiter nicht wiederhergestellt', 'Der Mitarbeiter ist im aktuellen Mandanten nicht verfügbar.', 'alert');
+      return false;
+    }
+    const revisionVersion = employee.revisionVersion || 1;
+    const online = get().isOnline;
+    try {
+      let result: { revision_version: number };
+      if (online) result = await apiClient.post<typeof result>(`/employees/${id}/restore`, { revisionVersion });
+      else {
+        await get().enqueueOfflineAction({ tenantId, entityType: 'employee', action: 'RESTORE', payload: { id }, baseVersion: revisionVersion });
+        result = { revision_version: revisionVersion + 1 };
+      }
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      set(state => ({ employees: state.employees.map(e => e.id === id ? { ...e, archivedAt: null, revisionVersion: result.revision_version } : e) }));
+      get().addNotification(online ? 'Mitarbeiter wiederhergestellt' : 'Wiederherstellung vorgemerkt', online ? 'Der Mitarbeiter ist wieder aktiv.' : 'Dauerhaft lokal gespeichert; Serverbestätigung steht aus.', 'info');
+      return true;
+    } catch (error) {
+      if (!isCurrentSOPIdentity(tenantId, userId)) return false;
+      get().addNotification(error instanceof ApiError && error.status === 409 ? 'Versionskonflikt' : 'Wiederherstellung fehlgeschlagen', error instanceof Error ? error.message : 'Mitarbeiter nicht wiederhergestellt.', 'alert');
+      return false;
+    }
   },
   addQualification: async (employeeId, qualification) => {
     const { tenantId, userId } = currentSOPIdentity(get());
