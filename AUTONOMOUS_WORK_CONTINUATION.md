@@ -348,6 +348,13 @@ locators are now corrected, without removing assertions or raising budgets.
 Full logs: `finalization-handover-context-hosted-ci.log`; failure excerpt:
 `finalization-handover-context-hosted-failure.log`. Re-run exact hosted CI;
 do not describe the failed first run as ten passing journeys.
+Subsequent `5f73f976a849dde8ca068e693f670ec2d2a228c8`, exact CI43963628561,
+again passed six jobs and browser 9/10 with cleanup. It passed the corrected
+native selects, then exposed a second test-only locator mistake: the expected
+offline banner exists only inside GuardBook, not Handovers. The journey now
+waits for the existing shared `Offline. Verbindung wiederherstellen` status
+button, as the real customer journey already does. No behavior assertions or
+budgets were removed. Job log: `finalization-handover-context-hosted-root-rerun.log`.
 
 1. Publish coherent FNL-022 and verify all hosted jobs on the exact new full SHA;
    read actual logs and fix the new browser journey/product if it fails.

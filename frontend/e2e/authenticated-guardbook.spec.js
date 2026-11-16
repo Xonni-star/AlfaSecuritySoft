@@ -945,7 +945,7 @@ test('real handover UI restores one offline protocol after a lost server receipt
   await expect(form.getByLabel(/^Übernehmende Person \*/)).not.toHaveValue('');
   await form.getByLabel('Allgemeiner Übergabetext', { exact: true }).fill(text);
   await context.setOffline(true);
-  await expect(page.getByText('Offline-Modus aktiv')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Offline. Verbindung wiederherstellen', exact: true })).toBeVisible();
   await form.getByRole('button', { name: 'Übergabe lokal sichern', exact: true }).click();
   await expect(page.getByText('Offline in der IndexedDB gespeichert. Die Serverbestätigung steht noch aus.', { exact: true })).toBeVisible();
   const pending = await readOutbox(page);
