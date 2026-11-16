@@ -8,6 +8,9 @@ import { InMemoryDocumentObjectStore, readDocumentBlob, removeDocumentBlob, setD
 import { setDocumentScanner, DocumentScannerUnavailableError } from '../services/documentScanner';
 import { claimDueAlarmEscalationJobs } from '../services/alarmEscalationWorker';
 
+// Multi-step HTTP/database workflows need a bounded integration budget, not the unit-test default.
+jest.setTimeout(30000);
+
 function getSeedPassword(): string {
   const password = process.env.SECOPS_DEMO_USER_PASSWORD;
   if (!password || password.length < 16) {

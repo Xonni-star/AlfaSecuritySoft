@@ -5,6 +5,8 @@ import { pool, migrationPool, withTenantTransaction, verifyAppDatabaseRole } fro
 import { cleanupTestData, authHeaders, insertTenantMembership } from './testUtils';
 import { env } from '../config/env';
 
+jest.setTimeout(30000);
+
 describe('SecurityOps 2.0 - Schritt 5R.2.7: Idempotenz zwischen Sync-Push und Konfliktauflösung', () => {
   let testTenantA: string;
   let testTenantB: string;

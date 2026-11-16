@@ -29,10 +29,12 @@ Projektabschluss und keine Produktions-, Sicherheits- oder Rechtsfreigabe.
 | `4946d31` | Vorhandene serverseitige Abmeldung in Navigation erreichbar gemacht; explizite Warnung bei unbestätigtem Widerruf. Echter Browser-Test prüft Ablehnung einer separat aufbewahrten alten Cookie-Kopie. Offline-Test wartet vor Retry/DB-Schließen auf Sync-Abschluss. Browserbuilds bleiben auch unter `NODE_ENV=test` Produktionsbuilds. |
 | `8611044` | Reale Session-Antwort `userId` statt ausschließlich älterer `sub`-/`id`-Aliasse lesen. Echte Browsererfassung nach Session-Restore und Besitzerbindung einer offenen Mutation über zwei Konten/zwei Mandanten; erst beim ursprünglichen Besitzer genau einmal synchronisiert. |
 | `591bbd2` | Authentifizierte Reportmatrix 16/16 mit fehlenden/entzogenen Rechten, echten Tenant-/Site-Grants, CSV, exakten Aggregaten und direkten IDs. Roster-Tests auf tatsächliche verzögerte Requests und richtige Refreshsection korrigiert; vollständiger Frontendlauf 175/175 mit Standardbudgets. |
-| Aktuelles SOP-/Wachbuchpaket | Echte SOP-Browserjourney mit vier Konten, Veröffentlichung und expliziter Offlinekenntnisnahme, Offline-Reload sowie identischem Retry nach verlorener echter Serverantwort. Nullable Formularwerte und fehlende Versions-UUIDs korrigiert; ersetzte Wachbuchreferenzen bleiben konsistent. Frontend 179/179, reale Browsersuite 3/3, Typcheck und Backendbuild bestanden. |
+| `67a1185` | Echte SOP-Browserjourney mit vier Konten, Veröffentlichung und expliziter Offlinekenntnisnahme, Offline-Reload sowie identischem Retry nach verlorener echter Serverantwort. Nullable Formularwerte und fehlende Versions-UUIDs korrigiert; ersetzte Wachbuchreferenzen bleiben konsistent. Frontend 179/179, reale Browsersuite 3/3, Typcheck und Backendbuild bestanden. |
+| `18aca69` | Berechtigungsgerechtes Laden mit erhaltenen Tenant-/Site-/Own-Grants und sichtbaren echten API-Fehlern. Navbar zeigt tatsächliche Sitzungsrolle. Frontend 184/184, Store/Navbar 51/51 und reale Browsersuite 3/3 einschließlich null unberechtigter Basis-GETs des SOP-Mitarbeiters bestanden. |
+| Aktueller Backendabschluss | Vollständige 35 Suites / 546 Tests bestanden auf frischem Standard-PostgreSQL 16 mit expliziten API-/Sync-Integrationsbudgets 30 s und Patrol 60 s. Keine Assertions entfernt oder Anwendungs-/DB-Konfiguration geändert; frühere Fehlläufe bleiben dokumentiert. Keine Performancefreigabe. |
 
-Die Phase-11-Tabelle im Tracker enthält **21 abgegrenzte Pakete**:
-**16 lokal erledigt**, **2 in Arbeit** (Backendregression und gehostete Browser-CI) und
+Die Phase-11-Tabelle im Tracker enthält **22 abgegrenzte Pakete**:
+**18 lokal erledigt**, **1 in Arbeit** (gehostete Browser-CI) und
 **3 extern zu prüfen**. Diese Zahlen sind keine Fertigstellungsquote des Produkts.
 Die ältere breite Audit-/Anforderungsmatrix enthält weiterhin offene Arbeit.
 
@@ -41,10 +43,10 @@ Die ältere breite Audit-/Anforderungsmatrix enthält weiterhin offene Arbeit.
 | Prüfung | Ergebnis | Grenze |
 |---|---|---|
 | Backend-TypeScript-Build | Bestanden | Lokaler Build, kein Produktionsbetrieb |
-| Historische vollständige Backend-Suite | 35/35 Suites, 534/534 Tests; keine Open-Handle-Warnung | Früherer Revisionsstand; ersetzt den aktuellen fehlgeschlagenen Lauf nicht |
-| Aktuelle vollständige PostgreSQL-gestützte Backend-Suite | **OFFEN:** 32/35 Suites, 535/546 Tests; elf Fehler | Überwiegend 5-s-/30-s-Integrationstimeouts mit abhängigem Fixturefehler; Migrationstests bestanden in 701 s. Unveränderte Wiederholung auf eigener RAM-Dateisystem-Testinstanz läuft |
-| Erweiterte authentifizierte Berechtigungsmatrix | 16/16 Tests | Frische migrierte/geseedete PostgreSQL-16-DB; vier Berichte/CSV, fehlende/entzogene Rechte, Tenant-/Site-Grenzen, manipulierte Hinweise und direkte IDs. Nur erweiterte Suite erneut ausgeführt, vorherige vollständige Backendzahl bleibt historisch |
-| Frontend-Abschlusslauf | 29 Dateien, 179/179 Tests | Zwei Worker, unveränderte Standard-5-s-Zeitlimits; frühere 172/172 benötigten 30 Sekunden |
+| Historische vollständige Backend-Suite | 35/35 Suites, 534/534 Tests; keine Open-Handle-Warnung | Früherer Revisionsstand; spätere Fehlläufe und der aktuelle Abschluss sind separat dokumentiert |
+| Aktuelle vollständige PostgreSQL-gestützte Backend-Suite | 35/35 Suites, 546/546 Tests in 342 s; kein Open-Handle-Hinweis | Explizites API-/Sync-Integrationsbudget 30 s und Patrol-Budget 60 s; keine entfernten Assertions oder geänderten Anwendungs-/DB-Defaults. Zwei vorherige 535/546-Läufe bleiben Fehlläufe; keine Performancekorrektur |
+| Erweiterte authentifizierte Berechtigungsmatrix | 16/16 Tests, separat und im aktuellen Volltest | Frische migrierte/geseedete PostgreSQL-16-DB; vier Berichte/CSV, fehlende/entzogene Rechte, Tenant-/Site-Grenzen, manipulierte Hinweise und direkte IDs |
+| Frontend-Abschlusslauf | 29 Dateien, 184/184 Tests | Zwei Worker, unveränderte Standard-5-s-Zeitlimits; frühere 172/172 benötigten 30 Sekunden |
 | Frontend-Typprüfung | Bestanden | `npm run typecheck --prefix frontend` |
 | Frontend-Produktionsbuild | Bestanden | Durch Browser-Webserver; bestehende Vite-Konfigurations-/Chunkwarnungen sind keine behobenen Aufgaben |
 | Bestehende Chromium-API-Fixture | 1/1 bestanden | In-Memory-API, lokale Fotos bleiben unsynced |
@@ -129,6 +131,29 @@ beschrieben. Der lokale Lauf verwendete für MinIO und MC dieses Testimage:
   Der Formularfix berücksichtigt auch ersetzte initiale Referenz-IDs. Kombinierte
   Modulregressionen 15/15, reale Browsersuite 3/3 und voller Frontendlauf 179/179
   bestanden; Typcheck und Backendbuild ebenfalls.
+- **Fortsetzung BUG-014:** Der reine SOP-Mitarbeiter erhielt beim allgemeinen
+  Laden sieben erwartbare HTTP-403-Antworten, die als unerreichbares Backend
+  dargestellt wurden. Basis-GETs benötigen jetzt passende Leserechte; der
+  Session-Restore erhält Site-/Own-Grants getrennt von Tenantrechten. Ein echter
+  Serverfehler wird nicht verschluckt und heißt nicht mehr pauschal
+  „Backend nicht erreichbar“. Die Navbar zeigt die tatsächliche Sitzungsrolle
+  statt der lokalen „Einsatzleitung“-Simulation. Neue Tests behalten leere
+  Authentifizierungsfixtures standardmäßig bei und setzen Leserechte gezielt;
+  eine zunächst pauschal authentifizierte Fixture löste Hintergrundsync-Rennen
+  aus und wurde korrigiert. Store/Navbar 51/51, Frontend 184/184 und Browser 3/3
+  bestanden; der echte Mitarbeiter löst auch nach Reload keine Basis-GETs aus.
+- **Fortsetzung QA-013:** Die ersten beiden vollen Backendläufe blieben bei 535/546 mit elf
+  Fehlern, überwiegend Zeitlimits und einem abhängigen Fixturefehler. Migrationen
+  bestanden auf Disk in 701 s und auf RAM in 552 s; RAM ist keine Fehlerbehebung.
+  Ein separater JIT-off-Diagnoselauf blieb mit 48/58 ebenfalls unvollständig.
+  Es wurde deshalb keine Anwendungs-/PostgreSQL-Einstellung geändert. Ein neuer
+  Volltest verwendet ausdrücklich 30 s für API-/Sync-Integrationsabläufe und
+  60 s für Patrol, analog zu bestehenden begrenzten Integrationsbudgets.
+  Die ersten vollständigen Abläufe bestanden, darunter SOP in 12,7 s und die
+  modulübergreifende Phase-5-Journey in 20,5 s. Das ist keine Performancekorrektur
+  und kein Nachweis unveränderter Standard-5-s-Integrationstests. Der anschließende
+  vollständige Lauf bestand 35/35 Suites und 546/546 Tests in 342 s ohne
+  Open-Handle-Hinweis; Assertions bleiben unverändert. Last-/Latenzabnahme ist offen.
 
 ## Begrenztes Security-Review
 
@@ -146,19 +171,15 @@ wurde abgeschlossen.
 
 ## Verbleibende Grenzen und konkrete Fortsetzung
 
-1. **Nächste lokal ausführbare Aufgabe:** Der reine SOP-Mitarbeiter löst beim
-   allgemeinen Laden sieben unberechtigte Basis-GETs aus. Deren HTTP 403 wird
-   irreführend als „Backend nicht erreichbar“ angezeigt. Vor einem Berechtigungs-
-   Gate den Auth-Vertrag für Tenant-/Site-/Own-Grants über Login und Session-Restore
-   erhalten; nicht ausschließlich Tenantrechte prüfen und dadurch berechtigte
-   Standortnutzer ausschließen. Anschließend Anhang-Replay mit echter isolierter
-   S3-/Scanneranbindung prüfen; keine Fixture-Antworten als Providernachweis ausgeben.
-   SOP-Offlinebestätigung und Konten-/Mandantenwechsel nicht erneut implementieren.
+1. **Nächste lokal ausführbare Aufgabe:** Anhang-Replay mit echter isolierter
+   S3-/Scanneranbindung prüfen;
+   keine Fixture-Antworten als Providernachweis ausgeben. SOP-Offlinebestätigung,
+   Reader-Ladefehler und Konten-/Mandantenwechsel nicht erneut implementieren.
 2. Authentifizierte Rollen-/Standort-/Objektmatrix auf weitere Module ausbauen.
    Report-Lese-/Exportrechte und direkte Schicht-IDs sind unter AUTH-013 bestanden.
    Vorhandene 215 unauthentifizierte
    Routentests nicht fälschlich als diese Matrix zählen oder erneut implementieren.
-3. Default-5-s-Frontendlauf bestanden (179/179, zwei Worker).
+3. Default-5-s-Frontendlauf bestanden (184/184, zwei Worker).
    Neue reproduzierbare Timer-/Test-Isolationsfehler weiterhin fokussiert beheben;
    frühere 30-s-Läufe bleiben historische Evidenz und werden nicht umgedeutet.
 4. Vor Integration GitHub-/Branch-/CI-Stand erneut prüfen und lokale Commits

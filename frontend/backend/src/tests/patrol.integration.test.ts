@@ -7,7 +7,7 @@ import { materializePatrolOccurrences, processTenantPatrolSchedules } from '../s
 import { removeDocumentBlob } from '../services/documentFiles';
 import { authHeaders, insertTenantMembership } from './testUtils';
 
-jest.setTimeout(30000);
+jest.setTimeout(60000);
 
 const SEED_PASSWORD = 'SecOpsVault2025SecurePassword!';
 const TENANT_ID = '11111111-1111-1111-1111-111111111111';

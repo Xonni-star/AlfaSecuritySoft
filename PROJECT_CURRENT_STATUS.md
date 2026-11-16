@@ -10,7 +10,7 @@
 
 **Current worktree:** branch `xonni-star-phase9-docs-and-status-cleanup` includes Phase 10 fixes plus Phase 11 migration-history preservation (`ef6a2c6`), offline-fixture CI (`55384e6`), module/architecture inventory (`f38499a`), backup generation health (`b3889b6`), a real authenticated Chromium/PostgreSQL replay test with a GuardBook default-selection fix (`840c5bd`), and reachable logout with server-side revocation evidence (`4946d31`). The commits have not been pushed; PR #66 and hosted CI still refer to remote head `785e9eabc9e6ab5f1ce4e726fdff2cbfa49367e4`. This remains the existing isolated PR branch, not a separately created Phase 11 branch.
 
-**Latest functional package:** The authenticated Chromium suite passes **3/3**.
+**SOP functional package (`67a1185`):** The authenticated Chromium suite passes **3/3**.
 It includes account/tenant switches, owner-bound replay, session-restoring reload
 and a real SOP journey using distinct author/reviewer/approver accounts and a
 reader with only `sop:read`/`sop:acknowledge`. Opening does not acknowledge;
@@ -22,18 +22,34 @@ reference data replaces initial IDs. These results remain local.
 **Latest regression package:** `authorization_boundaries.integration.test.ts`
 passes **16/16** against fresh migrated/seeded PostgreSQL 16: four reports and
 CSV, tenant/site grants, missing/revoked grants, forged tenant hints and direct
-shift IDs. The full frontend suite now passes **179/179** with two workers and
+shift IDs. The full frontend suite now passes **184/184** with two workers and
 unchanged default five-second test/hook budgets. Long Roster scenarios were
 separated; unconsumed one-shot mocks and a selector that refreshed the wrong
-section were corrected. The previous full backend total remains historical;
-only the extended boundary suite was rerun for these test-only backend changes.
+section were corrected. The new full backend run passes **546/546** in **35/35**
+suites, including the 16 authorization cases, using the explicit integration
+budgets described below.
 
-**Current backend regression gate: OFFEN.** The new full run finished with
+**Backend regression history and budgets:** The first new full run finished with
 32/35 suites and 535/546 tests passing; eleven failures were predominantly
 five-second integration timeouts, one 30-second Patrol timeout and a dependent
-fixture failure. Migration tests passed but took 701 seconds. A repeat with
-unchanged tests/timeouts on an isolated PostgreSQL RAM filesystem is in progress.
-The historical 534/534 result below is not current-worktree acceptance.
+fixture failure. Migration tests passed but took 701 seconds.
+The RAM-filesystem retry also finished with 535/546 tests passing; a separate
+JIT-disabled diagnostic did not resolve the failures. A new complete run uses
+explicit integration budgets (30 seconds API/sync workflows, 60 seconds Patrol)
+and passed **546/546** in 342 seconds on stock PostgreSQL 16, without removing
+assertions or changing application/PostgreSQL defaults. The real SOP API workflow
+took 12.7 seconds and the cross-module Phase 5 journey 20.5 seconds. These are
+bounded functional tests, not a latency/throughput improvement or production
+performance acceptance. The earlier 534/534 result remains historical.
+
+**Reader hydration correction:** Base-module GETs now require a matching read
+grant. Session restore preserves `sitePermissions` and `ownPermissions` separately
+from tenant permissions, so scoped readers remain eligible. A stale grant still
+surfaces a real API denial; the banner no longer mislabels every error as an
+unreachable backend. Navbar displays the real session role instead of the local
+demo selector. Focused store/Navbar tests passed 51/51; real Chromium passed 3/3
+including zero unauthorized base GETs for the SOP-only reader and its correct
+role after reload.
 
 This is the current evidence index. Phase reports and dated status sections remain historical snapshots; they have not been rewritten to make their former state appear current. The earlier 20:59 CET entry for `879ae95` and “no open PRs” is historical, not the current GitHub state. See the [Phase 9 completion report](./PHASE_9_COMPLETION_REPORT.md) for the documentation/operations audit and remaining gates.
 
@@ -59,9 +75,9 @@ This is the current evidence index. Phase reports and dated status sections rema
 | Reporting UI | **IMPLEMENTIERT UND GETESTET** | PR #66's frontend uses approved actual hours, calendar ranges, and safe CSV export; its frontend checks passed for the identified revision. |
 | Report site-scope correction | **IMPLEMENTIERT UND GETESTET** | This worktree explicitly filters all four report handlers and the work-hours CSV by authenticated site grants. Backend TypeScript build, three scope-helper tests, and `sync_and_roles.test.ts` (33/33) passed against isolated PostgreSQL 16. Hosted CI and production acceptance for this change remain outstanding. |
 | Prior backend validation | **IMPLEMENTIERT UND GETESTET** | On an earlier PR revision, migration and seed ran against isolated PostgreSQL 16; backend build and 34 Jest suites / 315 tests passed. These results do not cover the current report-scope change. |
-| Phase 11 backend and migrations | **IMPLEMENTIERT UND GETESTET** | Full local backend suite: 35/35 suites, 534/534 tests, no open-handle warning. A real 041→042 upgrade preserves earlier checksums, rejects GuardBook DELETE/core-field UPDATE and becomes a no-op on rerun. Published 001/004 are restored unchanged; new text correction is additive in 042. |
+| Phase 11 backend and migrations | **IMPLEMENTIERT UND GETESTET** | Latest full local backend suite: 35/35 suites, 546/546 tests, no open-handle warning. API/sync integration budget is explicitly 30 s, Patrol 60 s; no assertions removed and no application/PostgreSQL defaults changed. Earlier 5-s/30-s timeout runs are documented above, not reclassified as passing. A real 041→042 upgrade preserves earlier checksums, rejects GuardBook DELETE/core-field UPDATE and becomes a no-op on rerun. Published 001/004 remain unchanged; text correction is additive in 042. |
 | Authenticated report authorization | **IMPLEMENTIERT UND GETESTET** | Extended boundary suite: 16/16, with two tenants/three sites, report-only and site grants, absent/removed permissions, CSV, exact aggregates, forged tenant hints and direct shift IDs. Existing sessions immediately lose removed report grants. No new runtime authorization defect found; other endpoint/object combinations remain open. |
-| Phase 11 frontend and browser | **IMPLEMENTIERT UND GETESTET** | Latest full local frontend suite: 29 files, 179/179 tests with `--maxWorkers=2` and unchanged default 5-s budgets; typecheck and production browser build passed. Previous 172/172 required 30-s budgets. Roster isolation and offline retry/teardown races are corrected. Chromium: historical 1/1 API-fixture and current 3/3 real Express/PostgreSQL scenarios covering authenticated offline replay, logout, session restoration, owner isolation across two accounts/two tenants and the four-account SOP publication/acknowledgement journey. No physical-device/photo/provider or complete identity-matrix acceptance is inferred. |
+| Phase 11 frontend and browser | **IMPLEMENTIERT UND GETESTET** | Latest full local frontend suite: 29 files, 184/184 tests with `--maxWorkers=2` and unchanged default 5-s budgets; typecheck and production browser build passed. Previous 172/172 required 30-s budgets. Scoped hydration, actual Navbar role, Roster isolation and offline retry/teardown are covered. Chromium: historical 1/1 API-fixture and current 3/3 real Express/PostgreSQL scenarios covering authenticated replay/logout, session restoration, two-account/two-tenant ownership and the four-account SOP journey without unauthorized base-module GETs. No physical-device/photo/provider or complete identity-matrix acceptance is inferred. |
 | API authentication boundary | **IMPLEMENTIERT UND GETESTET** | All 215 currently registered protected method/path pairs return 401 without a session in the local backend suite. Health, login and password-reset completion are explicit public exceptions. Full per-role/site/object matrix remains open. |
 | Module/architecture inventory | **IMPLEMENTIERT** | [13-module evidence matrix](./MODULE_IMPLEMENTATION_STATUS.md) identifies active UI/API/database/test paths and remaining limits. npm and production Docker use Node/TypeScript; historical Python/Alembic files were not validated by these runs. Not a complete product acceptance. |
 | Test-only Linux install | **IMPLEMENTIERT UND GETESTET** | PR #56 merged. The tar/deb installer and lifecycle guidance target isolated testing; they are not production installers. |

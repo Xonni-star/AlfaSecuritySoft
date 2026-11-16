@@ -19,11 +19,14 @@
 
 ### Geändert
 
+- Explizite Backend-Integrationsbudgets für lange echte API-/Sync-Abläufe (30 s) und Patrol (60 s), analog zu bestehenden Handover-/Migrationstests. Der vollständige Lauf besteht 546/546; frühere 5-s-/30-s-Fehlläufe bleiben im Phase-11-Bericht dokumentiert. Keine Performancekorrektur, keine entfernten Assertions oder geänderten Anwendungs-/DB-Defaults.
 - Oberflächentexte behaupten keine DIN-77200-/KRITIS-/BSI-Konformität mehr.
 - Wachbuch-Fehlermeldungen beschreiben die technische Append-Only-Regel statt einer unbelegten DIN-77200-Pflicht.
 
 ### Fehlerkorrekturen
 
+- Berechtigungsgerechtes Datenladen: reine SOP-Konten rufen keine sieben unberechtigten Basismodule mehr ab; Standort-/Eigenrechte bleiben beim Session-Restore erhalten. Tatsächliche API-Fehler bleiben sichtbar und werden nicht pauschal als unerreichbares Backend bezeichnet.
+- Navigation zeigt für angemeldete Konten die tatsächliche Sitzungsrolle statt der lokal simulierten „Einsatzleitung“; der lokale Rollenumschalter wird dort nicht mehr angeboten.
 - SOP-Formulare senden optionale leere Datums-/DMS-Felder als `null` für Anlage, Entwurfsänderung und neue Versionen; der zuvor reproduzierte HTTP-400-Fehler entfällt.
 - SOP-Listen liefern die exakte `version_id` auch für Mitarbeiter; Offline-Kenntnisnahmen können damit die tatsächlich zugewiesene Version binden. Verwaltungssichten liefern die angezeigte Entwurfs- oder veröffentlichte Versions-ID.
 - Wachbuch-Auswahlwerte werden bei ersetzten Referenzdaten auf vorhandene Defaults aufgelöst, statt nicht mehr vorhandene IDs im Formularzustand zu behalten.
