@@ -1561,7 +1561,8 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
   syncQueue: [],
 
   enqueueOfflineAction: async (item) => {
-    const userId = currentSOPIdentity(get()).userId;
+    const identity = currentSOPIdentity(get());
+    const userId = identity.userId;
     const queueEntry: OfflineQueueItem = {
       ...item,
       id: item.id ?? `queue-${crypto.randomUUID()}`,
@@ -1582,6 +1583,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
         occurredAt: new Date().toISOString(),
         baseVersion: queueEntry.baseVersion ?? 1
       });
+      if (!isCurrentSOPIdentity(identity.tenantId, identity.userId)) return;
 
       set((state) => ({
         syncQueue: [{
@@ -1589,13 +1591,15 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
           payload: offlineQueuePreviewPayload(queueEntry.entityType, queueEntry.payload)
         }, ...state.syncQueue]
       }));
-    } catch (err: any) {
+    } catch (err) {
       console.error('[OUTBOX WRITE FAILED]', err);
-      get().addNotification(
-        'Lokaler Speicherfehler',
-        `Konnte Eintrag nicht lokal sichern: ${err?.message || 'Unbekannter IndexedDB Fehler'}`,
-        'alert'
-      );
+      if (isCurrentSOPIdentity(identity.tenantId, identity.userId)) {
+        get().addNotification(
+          'Lokaler Speicherfehler',
+          `Konnte Eintrag nicht lokal sichern: ${errorText(err)}`,
+          'alert'
+        );
+      }
       throw err;
     }
   },
@@ -2735,7 +2739,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
 
   addGuardBookEntry: async (entry) => {
     const identity = currentSOPIdentity(get());
-    const { currentTenantId, isOnline, enqueueOfflineAction, addNotification, addAuditLog } = get();
+    const { currentTenantId, isOnline, authUser, enqueueOfflineAction, addNotification, addAuditLog } = get();
     const entryId = crypto.randomUUID();
     const newEntry: GuardBookEntry = {
       ...entry,
@@ -2803,13 +2807,13 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
     }));
 
     addAuditLog({
-      actorEmail: 'guard@secops.local',
-      actorRole: 'Wachdienstmitarbeiter',
+      actorEmail: authUser?.email || 'Nicht ermittelt',
+      actorRole: authUser?.role || 'Nicht ermittelt',
       actionType: 'INCIDENT_MOD',
       severity: entry.priority === 'Kritisch' ? 'ALARM' : 'INFO',
       targetEntity: `Logbook ${entryId}`,
       details: `Neuer Wachbucheintrag "${entry.title}" am Objekt ${entry.siteName} erfasst.`,
-      ipAddress: '194.25.101.44'
+      ipAddress: 'Nicht erhoben (lokal)'
     });
 
     if (isOnline) {

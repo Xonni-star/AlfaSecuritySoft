@@ -64,9 +64,32 @@ The read-only functional review is complete; its report-request finding is fixed
 The security review tool returned no confirmed vulnerability in reviewed changes;
 it did not provide sufficient coverage detail to claim a complete security audit.
 
-Next concrete action: publish the locally verified corrections and obtain CI on
-the exact code SHA, then reconcile the required final documents, contributor
-instructions and repository description and repeat the convergence audit.
+FNL-007/008/009/010 are now published as
+`5ef02b3ab0b9f711025405247e711f21d3ee9811`;
+[CI 43928436875](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43928436875)
+passed **7/7** including frontend, real browser/root, backend, restore, DMS,
+ClamAV and production Docker.
+
+The next audit found FNL-011/012: SecurityAuditCenter used a timer to invent
+Pentest PASS results, claimed 100% MFA and immutable/live audit verification,
+changed remote session status only locally and claimed an unimplemented export.
+Those are removed/disabled with explicit local/example/unimplemented labels.
+Three new component regressions pass. Deferred IndexedDB success/failure could
+publish into a different signed-in identity; new guards preserve original durable
+ownership without putting old queue/error state into the current UI. Incident
+audit entries no longer invent email/IP, using actual session email/role and
+explicitly uncollected IP. Three regression assertions failed before the store
+fix and pass afterwards. Focused 13/13, typecheck and frontend build passed.
+Full follow-up passed **206/206 frontend tests in 32 files** and **6/6 real browser
+journeys** with container cleanup. Frontend typecheck/production build passed.
+This newer code still requires publication and exact-head hosted verification.
+
+FNL-013 is the next concrete functional audit item: other architectural/demo
+screens still use timer-generated API/isolation/acceptance results and absolute
+isolation badges. Inspect `BackendLiveConsole`, `ArchitectureCenter`,
+`E2EAcceptanceCenter` and `AutomationCenter`; distinguish real local/API actions
+from simulation, remove false claims, do not manufacture a backend or CI pass.
+Then reconcile required final documents, module inventory and GitHub description.
 
 ## Remaining work
 

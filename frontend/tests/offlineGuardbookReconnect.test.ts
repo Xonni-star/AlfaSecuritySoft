@@ -47,6 +47,7 @@ describe('offline guardbook reconnect exercise', () => {
       syncQueue: [],
       guardBook: [],
       tasks: [],
+      auditLogs: [],
       notifications: []
     });
   });
@@ -60,6 +61,40 @@ describe('offline guardbook reconnect exercise', () => {
     else Reflect.deleteProperty(globalThis, 'indexedDB');
     if (onlineDescriptor) Object.defineProperty(navigator, 'onLine', onlineDescriptor);
     else Reflect.deleteProperty(navigator, 'onLine');
+  });
+
+  test.each(['success', 'failure'] as const)('keeps a delayed outbox write with outcome %s isolated from a different identity', async outcome => {
+    const enqueue = offlineVault.enqueueMutation.bind(offlineVault);
+    let release!: () => void;
+    let writing!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const started = new Promise<void>(resolve => { writing = resolve; });
+    vi.spyOn(offlineVault, 'enqueueMutation').mockImplementation(async mutation => {
+      writing();
+      await gate;
+      if (outcome === 'failure') throw new Error('Verzögerter Speicherfehler');
+      return enqueue(mutation);
+    });
+    const result = useSecurityStore.getState().enqueueOfflineAction({
+      tenantId, entityType: 'task', action: 'CREATE', payload: { title: 'Privater Entwurf' }
+    }).then(() => null, (error: unknown) => error);
+    await started;
+    useSecurityStore.setState({
+      currentTenantId: 'different-tenant', currentUserId: 'different-user',
+      authUser: {
+        id: 'different-user', email: 'different@test.invalid', fullName: 'Anderer Benutzer',
+        role: 'Wachdienstmitarbeiter', tenantId: 'different-tenant',
+        tenantName: 'Anderer Mandant', permissions: []
+      },
+      syncQueue: [], notifications: []
+    });
+    release();
+    if (outcome === 'success') expect(await result).toBeNull();
+    else expect(await result).toBeInstanceOf(Error);
+    expect(useSecurityStore.getState().syncQueue).toEqual([]);
+    expect(useSecurityStore.getState().notifications).toEqual([]);
+    expect(await offlineVault.getOutbox(tenantId, undefined, userId))
+      .toHaveLength(outcome === 'success' ? 1 : 0);
   });
 
   test('durably queues a critical incident follow-up and reconciles only a valid server task receipt', async () => {
@@ -77,6 +112,10 @@ describe('offline guardbook reconnect exercise', () => {
     expect(post).not.toHaveBeenCalled();
     expect(useSecurityStore.getState().tasks).toEqual([]);
     expect(useSecurityStore.getState().notifications.some(item => item.title === 'Aufgabe für Vorfall erzeugt')).toBe(false);
+    expect(useSecurityStore.getState().auditLogs).toEqual([expect.objectContaining({
+      actorEmail: 'offline@test.invalid', actorRole: 'Wachdienstmitarbeiter',
+      ipAddress: 'Nicht erhoben (lokal)'
+    })]);
     offlineVault.close();
     await offlineVault.init();
     expect((await offlineVault.getOutbox(tenantId, undefined, userId)).map(item => item.id))
