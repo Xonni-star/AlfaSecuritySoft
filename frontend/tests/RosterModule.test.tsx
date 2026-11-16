@@ -923,6 +923,44 @@ describe('RosterModule', () => {
     expect(container.querySelector<HTMLInputElement>('input[type="number"][min="0"][step="1"]')).toBeNull();
   });
 
+  test('validates actual-time offsets natively before submitting the form', async () => {
+    mocks.listAssignments.mockResolvedValue([{
+      id: 'assignment-a', shift_id: 'shift-a', employee_id: 'employee-a',
+      first_name: 'Ada', last_name: 'Guard', status: 'assigned', revision_version: 1
+    }]);
+    await act(async () => root.render(<RosterModule />));
+    const eventButton = container.querySelector<HTMLButtonElement>('button[aria-label*="Objekt A"]');
+    if (!eventButton) throw new Error('Kalendereintrag fehlt');
+    await act(async () => eventButton.click());
+    const inputs = Array.from(container.querySelectorAll<HTMLInputElement>('input[placeholder^="2027-01-10T"]'));
+    expect(inputs).toHaveLength(2);
+    for (const input of inputs) {
+      for (const value of ['2027-01-10T08:03:00+01:00', '2027-01-10T08:03:00-05:00', '2027-01-10T08:03:00.123Z']) {
+        await act(async () => setInput(input, value));
+        expect(input.checkValidity(), value).toBe(true);
+      }
+      for (const value of ['not-a-timestamp', '2027-01-10T08:03:00', '2027-01-10T08:03:00+0100']) {
+        await act(async () => setInput(input, value));
+        expect(input.validity.patternMismatch, value).toBe(true);
+      }
+    }
+    const save = Array.from(container.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('Ist-Zeit serverseitig speichern'));
+    if (!save) throw new Error('Ist-Zeit speichern fehlt');
+    expect(save.disabled).toBe(false);
+    await act(async () => save.click());
+    expect(mocks.recordActualTime).not.toHaveBeenCalled();
+    await act(async () => {
+      setInput(inputs[0], '2027-01-10T08:03:00+01:00');
+      setInput(inputs[1], '2027-01-10T16:05:00+01:00');
+    });
+    await act(async () => save.click());
+    expect(mocks.recordActualTime).toHaveBeenCalledOnce();
+    expect(mocks.recordActualTime).toHaveBeenCalledWith('shift-a', expect.objectContaining({
+      actualStartAt: '2027-01-10T08:03:00+01:00', actualEndAt: '2027-01-10T16:05:00+01:00'
+    }));
+  });
+
   test('allows a different authorized user to approve the current actual-time revision', async () => {
     mocks.listAssignments.mockResolvedValue([{
       id: 'assignment-a',

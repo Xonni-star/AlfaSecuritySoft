@@ -2,6 +2,23 @@
 
 This tracker is the working source of truth for the current audit. Statuses apply only to the stated scope; completion requires its acceptance criteria and evidence. Historical reports and CI results do not prove current-worktree behavior.
 
+## Autonomous finalization audit (2026-11-16)
+
+Starting revision `24b7a7199f8cfae5a4d6a19399315856fa1c0922` is clean and
+published; exact CI 43921891610 passed 7/7. `main` remains `9df02aaa5ef01de78e0fe5d53be446b2037db24d`.
+PR #66 is the only open PR, mergeable, with no submitted reviews or requested
+reviewers. There are no open GitHub issues. These observations are a snapshot,
+not a complete acceptance. Continuation: `AUTONOMOUS_WORK_CONTINUATION.md`.
+
+| ID | Priority | Status | Scope and concrete action | Evidence / remaining prerequisite |
+|---|---|---|---|---|
+| FNL-001 | P1 | IN ARBEIT | Re-audit repository, open work, active modules, tests, CI and documentation after previous packages | Refreshed main/PR/issues/CI; 104-file PR diff inventoried. Marker matches are predominantly input placeholders, not unimplemented functions; full convergence check pending. |
+| FNL-002 | P1 | IN ARBEIT | Review PR66 functional changes and integrate only a compatible verified head | Separate read-only functional review in progress; baseline CI green, no merge yet. |
+| FNL-003 | P2 | ERLEDIGT | Correct native actual-time timestamp validation and add a real-form regression | Invalid JSX escaping and HTML Unicode-set character class corrected in both inputs. New regression fails before the fix and passes after it; all 30 Roster tests and frontend typecheck pass. Real Chromium accepts offset/UTC/fractional values and rejects malformed/missing-offset values in both actual patterns. Full-suite/CI follow-up remains FNL-005. Not a security finding. |
+| FNL-004 | P1 | OFFEN | Reconcile required final/continuation/readiness/checklist docs, contributor instructions and GitHub description | Four required entry documents absent at baseline; browser prerequisites and backend description are outdated. |
+| FNL-005 | P1 | OFFEN | Execute full available validation and repeat audit after corrections | Prior 5/5 browser, 184/184 frontend, 546/546 backend results remain tied to earlier revisions. No ESLint setup found; no invented lint result. |
+| FNL-006 | P0 | EXTERN ZU PRÜFEN | Provider/device/production, independent security and legal acceptance | Requires approved provider/off-host environment, devices, agreed RPO/RTO and independent/legal reviewers; not substituted by local Docker tests. |
+
 ## Phase 11 work packages (2026-11-16)
 
 The Phase 10 items below remain valid unless superseded by the precise scope here. A completed local work package is not production acceptance.
