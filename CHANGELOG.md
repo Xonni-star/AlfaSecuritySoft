@@ -4,6 +4,8 @@
 
 ### Hinzugefügt
 
+- Backup-Healthcheck für Archivfrische und letzten Sicherungsfehler; atomare Archivveröffentlichung, private Dateirechte und Regressionen für Fehler/Erholung im isolierten Restore-Drill. Dies ist kein Restore- oder externer Alarmierungsnachweis.
+- Quellcode-/Test-Evidenzmatrix der 13 Projektmodule und Abgrenzung des aktiven Node-Backends vom historischen Python-Pfad.
 - Migration 042 aktualisiert die technische Wachbuch-Fehlermeldung additiv; veröffentlichte Migrationen 001/004 behalten ihre ursprünglichen SHA-256-Prüfsummen.
 - Automatische unauthentifizierte Negativtests für alle 215 registrierten geschützten API-Routen.
 - Restore-Regression mit injiziertem DDL-Fehler nach der Clean-Phase und abweichendem Vor-Restore-Datenstand als Rollback-Nachweis.

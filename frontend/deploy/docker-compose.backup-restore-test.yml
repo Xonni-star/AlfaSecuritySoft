@@ -58,6 +58,7 @@ services:
       BACKUP_ONCE: "true"
     volumes:
       - ./backup_cron.sh:/usr/local/bin/backup_cron.sh:ro
+      - ./backup_healthcheck.sh:/usr/local/bin/backup_healthcheck.sh:ro
       - ${RESTORE_TEST_TMPDIR:?Set RESTORE_TEST_TMPDIR}/backups:/var/backups
     entrypoint: ["/bin/bash", "/usr/local/bin/backup_cron.sh"]
 

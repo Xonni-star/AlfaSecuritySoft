@@ -175,6 +175,29 @@ Ist der passende Provider-Snapshot, die Schema-Kompatibilität oder die Wiederhe
 
 Backups laufen automatisch alle 24 Stunden (`backup`-Dienst). Das verschlüsselte Archiv enthält den PostgreSQL-Dump (`secops_backups`, 30 Tage Retention). DMS-Objekte liegen außerhalb von Compose; für sie müssen Versionierung, Replikation/Backup und Retention beim gewählten S3-kompatiblen Anbieter separat aktiviert und getestet werden. Ein Datenbank-Restore stellt keine Objekte wieder her.
 
+Der Compose-Healthcheck des Backupdienstes läuft alle fünf Minuten (30 Minuten
+Starttoleranz). Er verlangt mindestens ein nicht leeres, abgeschlossenes Archiv
+der letzten 25 Stunden und keinen Fehler beim letzten Sicherungsversuch.
+Verschlüsselung schreibt zunächst eine `.partial`-Datei und benennt sie erst bei
+Erfolg atomar um; partielle Archive zählen nicht. Ein Fehler erzeugt
+`.backup_failed`, erst ein erfolgreicher Folgelauf entfernt diesen Marker.
+Temporäre Dumps und Archive werden mit `umask 077` angelegt.
+
+```bash
+docker compose -f docker-compose.production.yml ps backup
+docker compose -f docker-compose.production.yml exec backup \
+  bash /usr/local/bin/backup_healthcheck.sh
+docker compose -f docker-compose.production.yml logs --tail=100 backup
+```
+
+**Prüfgrenze:** `healthy` bestätigt ausschließlich aktuelle Archiverzeugung,
+nicht Entschlüsselbarkeit, Wiederherstellbarkeit, Objektvollständigkeit oder
+RPO/RTO. Die 25-Stunden-Schwelle ist eine technische Frischekontrolle des
+24-Stunden-Daemons, kein vereinbartes Wiederherstellungsziel. Docker startet
+unhealthy Container nicht automatisch neu und versendet keine Alarmmeldung;
+Statusabfrage, externe Alarmierung und regelmäßige Restore-Drills muss der
+Betrieb separat einrichten.
+
 Manuell:
 
 ```bash
@@ -202,7 +225,7 @@ Mit Docker, OpenSSL und Python 3 lässt sich der verschlüsselte PostgreSQL-Back
 npm run test:backup-restore --prefix frontend/backend
 ```
 
-Der Test verwendet ein zufällig benanntes, isoliertes Compose-Projekt, zufällige Testzugangsdaten, zwei synthetische Mandanten, Benutzer, DMS-Dokumente, Versionen und Auditereignisse. Er baut den Backend-Migrationsrunner aus dem Repository und prüft den vollständigen angewendeten Migrationssatz `001`–`007`, `009`, `011`–`040`, dessen Historie sowie `ENABLE`/`FORCE ROW LEVEL SECURITY` für neun DMS-Tabellen. Danach erstellt er mit `backup_cron.sh` ein verschlüsseltes Backup, mutiert DMS-Metadaten, entfernt beide synthetischen Objekte, stellt DB und Objektsnapshot wieder her und verifiziert Versions-/Auditdaten, SHA-256, benutzerdefinierte Objektmetadaten und Tenant-RLS einschließlich eines abgewiesenen Fremdtenant-Schreibversuchs. Der Lauf hat begrenzte Wartezeiten und räumt ausschließlich Ressourcen seines eindeutigen Testprojekts auf.
+Der Test verwendet ein zufällig benanntes, isoliertes Compose-Projekt, zufällige Testzugangsdaten, zwei synthetische Mandanten, Benutzer, DMS-Dokumente, Versionen und Auditereignisse. Er baut den Backend-Migrationsrunner aus dem Repository und prüft den vollständigen angewendeten Migrationssatz `001`–`007`, `009`, `011`–`042`, dessen Historie sowie `ENABLE`/`FORCE ROW LEVEL SECURITY` für neun DMS-Tabellen. Danach erstellt er mit `backup_cron.sh` ein verschlüsseltes Backup, prüft den Healthcheck einschließlich fehlgeschlagenem Sicherungsversuch und erfolgreichem Folgelauf, mutiert DMS-Metadaten, entfernt beide synthetischen Objekte, stellt DB und Objektsnapshot wieder her und verifiziert Versions-/Auditdaten, SHA-256, benutzerdefinierte Objektmetadaten und Tenant-RLS einschließlich eines abgewiesenen Fremdtenant-Schreibversuchs. Ein injizierter DDL-Fehler nach der Clean-Phase muss einen abweichenden Vor-Restore-Datenstand unverändert erhalten; Restore-/Resume-Fehler lassen Dienste gestoppt. Der Lauf hat begrenzte Wartezeiten und räumt ausschließlich Ressourcen seines eindeutigen Testprojekts auf.
 
 Die Testzugangsdaten liegen in einer lokalen temporären Datei. Der MC-Container erhält ausschließlich das Fixture-Verzeichnis schreibgeschützt. Produktions-Compose, Produktionsdaten, Produktionszugangsdaten und externe Anbieterendpunkte werden nicht verwendet. `--database-only` überspringt den S3-Objektschritt; der Standardlauf testet MinIO lokal, optional kann `RESTORE_TEST_S3_BACKEND=seaweedfs` einen lokalen SeaweedFS-Dienst verwenden.
 

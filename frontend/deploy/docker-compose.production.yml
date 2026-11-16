@@ -223,6 +223,13 @@ services:
     volumes:
       - secops_backups:/var/backups
       - ./backup_cron.sh:/usr/local/bin/backup_cron.sh:ro
+      - ./backup_healthcheck.sh:/usr/local/bin/backup_healthcheck.sh:ro
     entrypoint: ["/bin/bash", "/usr/local/bin/backup_cron.sh"]
+    healthcheck:
+      test: ["CMD", "/bin/bash", "/usr/local/bin/backup_healthcheck.sh"]
+      interval: 5m
+      timeout: 10s
+      retries: 1
+      start_period: 30m
     networks:
       - secops_internal

@@ -16,6 +16,7 @@ if [ "$MODE" = full ] && [ "$S3_BACKEND" != minio ] && [ "$S3_BACKEND" != seawee
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+bash "$SCRIPT_DIR/test_backup_healthcheck.sh"
 PROJECT="secops-restore-test-$(date +%Y%m%d%H%M%S)-$$"
 TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/${PROJECT}.XXXXXX")"
 ENV_FILE="$TEMP_DIR/.env.restore-test"
@@ -418,6 +419,19 @@ if [ "$ARCHIVE_COUNT" != 1 ]; then
     exit 1
 fi
 BACKUP_ARCHIVE="$(find "$BACKUP_DIR" -type f -name 'secops_backup_*.tar.gz.enc' -print)"
+compose run --rm --no-deps --entrypoint /bin/bash backup /usr/local/bin/backup_healthcheck.sh
+echo "[TEST] Prüfe, dass ein fehlgeschlagenes Backup trotz vorhandenem Archiv ungesund ist."
+if compose run --rm --no-deps -e POSTGRES_USER=restore_test_missing backup; then
+    echo "Fehler: Backup mit unbekanntem DB-Benutzer war erfolgreich." >&2
+    exit 1
+fi
+if compose run --rm --no-deps --entrypoint /bin/bash backup /usr/local/bin/backup_healthcheck.sh; then
+    echo "Fehler: Backup-Health übersieht den letzten fehlgeschlagenen Versuch." >&2
+    exit 1
+fi
+compose run --rm --no-deps backup
+compose run --rm --no-deps --entrypoint /bin/bash backup /usr/local/bin/backup_healthcheck.sh
+echo "[TEST] Backup-Health meldet Fehler und erholt sich erst nach erfolgreichem Backup."
 
 if [ "$MODE" = full ]; then
     echo "[TEST] Erstelle getrennten $S3_BACKEND-Snapshot und entferne das Quellobjekt."
