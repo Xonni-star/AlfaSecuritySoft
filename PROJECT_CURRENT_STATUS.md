@@ -2,9 +2,9 @@
 
 **Last verified:** 2026-11-17 (after PR #68 merge)
 
-**Current `main` commit:** [`c28482f2eb2b5d615df94cee60986ab9760a2ed0`](https://github.com/Xonni-star/AlfaSecuritySoft/commit/c28482f2eb2b5d615df94cee60986ab9760a2ed0)
+**Brand-migration merge commit:** [`c28482f2eb2b5d615df94cee60986ab9760a2ed0`](https://github.com/Xonni-star/AlfaSecuritySoft/commit/c28482f2eb2b5d615df94cee60986ab9760a2ed0)
 
-**GitHub integration:** [#68](https://github.com/Xonni-star/AlfaSecuritySoft/pull/68) merged on 2026-11-17; its head was `88df849d16a427a7741056a69bcd72360f5f1e86` and merge commit is the current main SHA above. [#67](https://github.com/Xonni-star/AlfaSecuritySoft/pull/67) and [#66](https://github.com/Xonni-star/AlfaSecuritySoft/pull/66) were merged earlier. The live repository reported no open PRs at the time of this check. This document records revision-specific evidence, not a live forge state.
+**GitHub integration:** [#68](https://github.com/Xonni-star/AlfaSecuritySoft/pull/68) merged on 2026-11-17; its head was `88df849d16a427a7741056a69bcd72360f5f1e86` and merge commit is the brand-migration SHA above. [#67](https://github.com/Xonni-star/AlfaSecuritySoft/pull/67) and [#66](https://github.com/Xonni-star/AlfaSecuritySoft/pull/66) were merged earlier. The live repository reported no open PRs at the post-#68 check, before this status-document update. This document records revision-specific evidence, not a live forge state.
 
 **Post-#68 verification:** [Main CI 44062087886](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/44062087886) passed **7/7 jobs** on the exact current main SHA, including migration 043, PostgreSQL integration tests, the full restore job, authenticated browser, Compose validation and image builds. The exact PR-head run [44061599741](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/44061599741) also passed **7/7** on `88df849`. [Artifact workflow 43976343055](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43976343055) passed **2/2** on the earlier #67 revision; it is not evidence for a new release. No tag, deployment or production acceptance is inferred.
 
@@ -381,9 +381,9 @@ This is the current evidence index. Phase reports and dated status sections rema
 
 | Area | Status | Evidence and limits |
 |---|---|---|
-| Mainline integration | **IMPLEMENTIERT UND GETESTET** | Current `main` is `c28482f2eb2b5d615df94cee60986ab9760a2ed0` (merge commit for #68). PRs #50–#68 are merged; no open PRs were returned by the live check. |
+| Mainline integration | **IMPLEMENTIERT UND GETESTET** | At the post-#68 live check, the brand-migration merge commit was `c28482f2eb2b5d615df94cee60986ab9760a2ed0`; PRs #50–#68 were merged and no other PRs were open. |
 | AlfaSecuritySoft brand correction | **IMPLEMENTIERT UND GETESTET** | PR #68 integrates the additive role migration, compatible environment-variable changes, repository URL updates and branded test identities. Local frontend/backend validation passed; exact PR-head CI 44061599741 and post-merge main CI 44062087886 each passed 7/7, including migrations, restore, browser, Compose and image builds. Persistent identifiers remain compatible; production and external-provider acceptance remain open. |
-| Mainline CI | **IMPLEMENTIERT UND GETESTET** | Post-#68 [CI run 44062087886](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/44062087886) passed **7/7 jobs** on the exact current-main SHA. |
+| Mainline CI | **IMPLEMENTIERT UND GETESTET** | Post-#68 [CI run 44062087886](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/44062087886) passed **7/7 jobs** on the exact #68 merge commit. |
 | Release package validation | **TEILWEISE IMPLEMENTIERT** | Post-#67 artifact run [43976343055](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43976343055) passed 2/2; packaging/provenance/install validation is not a deployment or production release. |
 | Documentation PR validation | **IMPLEMENTIERT UND GETESTET** | PR #67 (head `c995be4`, merge commit `80ac44f`) and PR #68 (head `88df849`, merge commit `c28482f`) are merged; exact post-#68 main CI 44062087886 passed all seven jobs. |
 | Published finalization CI | **IMPLEMENTIERT UND GETESTET** | Exact `3110bbbda1655e804cba35c89ccbda5174e84444` passed CI 43932552825, 7/7: frontend 212, backend 546 and seven real browser cases with cleanup. FNL-014 is separately locally verified, not covered by this earlier run. |
