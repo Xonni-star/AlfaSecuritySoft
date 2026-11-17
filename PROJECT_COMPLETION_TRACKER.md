@@ -2,17 +2,17 @@
 
 This tracker is the working source of truth for the current audit. Statuses apply only to the stated scope; completion requires its acceptance criteria and evidence. Historical reports and CI results do not prove current-worktree behavior.
 
-## AlfaSecuritySoft correction audit (2026-11-16)
+## AlfaSecuritySoft correction audit (2026-11-17)
 
 Starting checkpoint: `3e36ceaccda8462a43a10f9eeb77cf20d5599870`;
-current upstream `main` at audit start: `80ac44f4bccc0d9c1aef0891239017ff51b5e216`.
-GitHub repository and description are now branded `Xonni-star/AlfaSecuritySoft`;
-PR #67 was merged and no other PRs were open at the live check. The correction
-is on the existing feature branch and has not yet been published or integrated.
+`main` at audit start: `80ac44f4bccc0d9c1aef0891239017ff51b5e216`. The
+correction was merged by PR #68 as `c28482f2eb2b5d615df94cee60986ab9760a2ed0`;
+the exact post-merge main CI run 44062087886 passed 7/7. No open PRs were
+returned by the live check after the merge.
 
 | ID | Priority | Status | Scope and concrete action | Evidence / remaining prerequisite |
 |---|---|---|---|---|
-| BRAND-001 | P1 | IN ENTWICKLUNG | Complete the second-round AlfaSecuritySoft migration without changing persisted data or feature behavior | 368 old GitHub URL occurrences replaced across 63 tracked text files. App login role migration 043 is additive and grants only the existing restricted `secops_app_user` role; the legacy role and historical migrations stay intact. New demo-password and Compose variables have backward-compatible legacy fallbacks. Frontend 380/380, typecheck/build, backend build, focused demo-password compatibility tests 3/3, branding/login tests 3/3, shell/Node syntax and diff checks pass locally. Local Docker/PostgreSQL are unavailable; hosted migration/Compose/browser CI, PR creation and integration remain required. |
+| BRAND-001 | P1 | ERLEDIGT | Complete the second-round AlfaSecuritySoft migration without changing persisted data or feature behavior | 368 old GitHub URL occurrences replaced across 63 tracked text files. App login role migration 043 is additive and grants only the existing restricted `secops_app_user` role; the legacy role and historical migrations stay intact. New demo-password and Compose variables have backward-compatible legacy fallbacks. Frontend 380/380, typecheck/build, backend build, focused demo-password compatibility tests 3/3, branding/login tests 3/3, shell/Node syntax and diff checks passed locally. The first restore CI run revealed an outdated expected-migration list; corrected it to include 043 and reran successfully. PR CI 44061599741 passed 7/7 on `88df849`; post-merge main CI 44062087886 passed 7/7 on `c28482f`. Docker/PostgreSQL were unavailable locally, but hosted migration, restore, browser, Compose and image-build checks passed. This does not claim production, legal, certification or external-provider acceptance. |
 
 ## Autonomous finalization audit (2026-11-16)
 
