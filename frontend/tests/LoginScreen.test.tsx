@@ -67,6 +67,8 @@ describe('LoginScreen tenant selection', () => {
       .mockResolvedValueOnce(undefined);
 
     await act(async () => root.render(<LoginScreen />));
+    expect(container.querySelector('h1')?.textContent).toBe('AlfaSecuritySoft');
+    expect(container.textContent).not.toContain('SecurityOps');
     const email = container.querySelector<HTMLInputElement>('input[type="email"]');
     const password = container.querySelector<HTMLInputElement>('input[type="password"]');
     const form = container.querySelector('form');

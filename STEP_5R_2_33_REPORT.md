@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Entwicklungsschritt 5R.2.33
+# AlfaSecuritySoft – Entwicklungsschritt 5R.2.33
 ## PostgreSQL-Typ-Aliase bei Array-Typen korrekt normalisieren
 
 **Ausgangsstand:** `main` @ `053dd9ed831da2297d07d8b16cd52de6cc8463dd`
@@ -112,10 +112,10 @@ Die CI/CD-Konfiguration wurde nicht verändert.
 
 | Workflow | Run-ID | Job | Ergebnis |
 |---|---|---|---|
-| SecurityOps 2.0 CI | [`43064547719`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43064547719) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** (47 s) |
-| SecurityOps 2.0 CI | [`43064547719`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43064547719) | Frontend – npm ci, Vitest, Produktions-Build | **success** (13 s) |
-| SecurityOps 2.0 CI | [`43064547719`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43064547719) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** (1 m 31 s) |
-| SecurityOps 2.0 CD | [`43064829396`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43064829396) | Release-Paket aus CI-Artefakten bauen | **success** |
+| AlfaSecuritySoft CI | [`43064547719`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43064547719) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** (47 s) |
+| AlfaSecuritySoft CI | [`43064547719`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43064547719) | Frontend – npm ci, Vitest, Produktions-Build | **success** (13 s) |
+| AlfaSecuritySoft CI | [`43064547719`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43064547719) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** (1 m 31 s) |
+| AlfaSecuritySoft CD | [`43064829396`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43064829396) | Release-Paket aus CI-Artefakten bauen | **success** |
 
 Der Schritt **„Migrationshistorie & Baseline (Integrationstests)“** wurde im Backend-Job mit **success** abgeschlossen; die vollständige Jest-Suite (112 Tests) lief ebenfalls erfolgreich.
 

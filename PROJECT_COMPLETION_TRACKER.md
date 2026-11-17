@@ -1,4 +1,4 @@
-# SecurityOps 2.0 — Project completion tracker
+# AlfaSecuritySoft — Project completion tracker
 
 This tracker is the working source of truth for the current audit. Statuses apply only to the stated scope; completion requires its acceptance criteria and evidence. Historical reports and CI results do not prove current-worktree behavior.
 

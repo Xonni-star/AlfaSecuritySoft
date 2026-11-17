@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Phase 13: Performance- & Lasttestbericht
+# AlfaSecuritySoft - Phase 13: Performance- & Lasttestbericht
 
 > **Historischer Snapshot:** Messwerte und Architekturangaben stammen aus einem früheren Stand und wurden für den aktuellen TypeScript/Express/PostgreSQL-Stack nicht erneut verifiziert. Insbesondere sind FastAPI-Messwerte nicht auf den aktuellen Stack übertragbar.
 

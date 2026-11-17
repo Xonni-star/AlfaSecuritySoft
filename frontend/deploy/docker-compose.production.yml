@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Production Docker Compose (TypeScript backend + PostgreSQL 16)
+# AlfaSecuritySoft - Production Docker Compose (TypeScript backend + PostgreSQL 16)
 #
 # Architecture:
 #   proxy (Caddy, public 80/443) -> backend (Express/TS, internal 8000) -> db (PostgreSQL 16)
@@ -80,7 +80,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.backend
-    image: securityops-backend:latest
+    image: alfasecuritysoft-backend:latest
     container_name: secops_prod_migrate
     restart: "no"
     depends_on:
@@ -114,7 +114,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.backend
-    image: securityops-backend:latest
+    image: alfasecuritysoft-backend:latest
     container_name: secops_prod_dbinit
     restart: "no"
     depends_on:
@@ -132,7 +132,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.backend
-    image: securityops-backend:latest
+    image: alfasecuritysoft-backend:latest
     restart: unless-stopped
     depends_on:
       db:
@@ -183,7 +183,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.frontend
-    image: securityops-frontend:latest
+    image: alfasecuritysoft-frontend:latest
     container_name: secops_prod_proxy
     restart: unless-stopped
     depends_on:

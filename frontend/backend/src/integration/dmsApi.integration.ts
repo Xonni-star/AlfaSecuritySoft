@@ -33,7 +33,7 @@ function getSeedPassword(): string {
 const seedPassword = getSeedPassword();
 const boundaryEmail = `dms-api-boundary-${crypto.randomUUID()}@example.test`;
 const boundaryPassword = `DmsApiBoundary-${crypto.randomUUID()}!`;
-const cleanPdf = Buffer.from('%PDF-1.7\nSecurityOps clean DMS integration fixture.\n%%EOF\n');
+const cleanPdf = Buffer.from('%PDF-1.7\nAlfaSecuritySoft clean DMS integration fixture.\n%%EOF\n');
 const eicarSignature = Buffer.from('X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*');
 const storage = new S3Client({
   endpoint: env.DMS_S3_ENDPOINT,

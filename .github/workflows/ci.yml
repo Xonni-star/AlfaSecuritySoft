@@ -1,7 +1,7 @@
-name: SecurityOps 2.0 CI
+name: AlfaSecuritySoft CI
 
 # Vereinheitlichte Verifikation für Root-Projekt, Frontend (React/Vitest) und
-# SecurityOps-Backend (Node/TypeScript, PostgreSQL 16 RLS).
+# AlfaSecuritySoft Backend (Node/TypeScript, PostgreSQL 16 RLS).
 #
 # Benötigte Repository-Secrets:
 #   JWT_SECRET               (Pflicht, >= 32 Zeichen, z. B. `openssl rand -hex 32`)
@@ -392,7 +392,7 @@ jobs:
         run: docker compose -f frontend/deploy/docker-compose.production.yml config --no-interpolate --quiet
 
       - name: Backend-Image bauen
-        run: docker build -f frontend/deploy/Dockerfile.backend -t securityops-backend:ci frontend
+        run: docker build -f frontend/deploy/Dockerfile.backend -t alfasecuritysoft-backend:ci frontend
 
       - name: Frontend-Image bauen
-        run: docker build -f frontend/deploy/Dockerfile.frontend -t securityops-frontend:ci frontend
+        run: docker build -f frontend/deploy/Dockerfile.frontend -t alfasecuritysoft-frontend:ci frontend

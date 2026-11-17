@@ -111,7 +111,7 @@ afterAll(() => {
   }
 });
 
-describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
+describe('AlfaSecuritySoft – Versionssicherer Migrationsrunner', () => {
   test('upgrades an unchanged 041 history and preserves append-only protection with technical messaging', async () => {
     const db = await createTestDatabase();
     const beforeUpgradeDir = makeMigrationsDir({}, ['042_guardbook_technical_integrity_message.sql']);
@@ -2183,7 +2183,7 @@ describe('SecurityOps 2.0 – Versionssicherer Migrationsrunner', () => {
     throw new Error('Runner hätte die Baseline ablehnen müssen, hat sie aber akzeptiert.');
   }
 
-  test('34. Korrekte bestehende SecurityOps-Baseline wird bis zum aktuellen Stand migriert', async () => {
+  test('34. Korrekte bestehende AlfaSecuritySoft-Baseline wird bis zum aktuellen Stand migriert', async () => {
     const { db, dir } = await createFullBaselineDatabase();
 
     const result = await runMigrations({

@@ -1,4 +1,4 @@
-# Deployment acceptance — SecurityOps 2.0
+# Deployment acceptance — AlfaSecuritySoft
 
 **Assessment date:** 2026-11-15  
 **Overall deployment status:** **NICHT GETESTET for production.** This report distinguishes configuration/build checks from an installed or operated deployment.

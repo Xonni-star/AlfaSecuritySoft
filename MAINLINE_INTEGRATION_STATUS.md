@@ -123,7 +123,7 @@ The merged changes include:
 
 ## Restore and malware-scanning evidence
 
-The isolated MinIO and SeaweedFS checks associated with PRs #29–#30 passed with documented image overrides. They exercise selected test database metadata and S3-compatible object snapshots, hash/metadata comparisons, credential and mount isolation, and disposable-resource cleanup. They are **not** a full SecurityOps installation, full migrated-schema restore, or production/external-provider restore.
+The isolated MinIO and SeaweedFS checks associated with PRs #29–#30 passed with documented image overrides. They exercise selected test database metadata and S3-compatible object snapshots, hash/metadata comparisons, credential and mount isolation, and disposable-resource cleanup. They are **not** a full AlfaSecuritySoft installation, full migrated-schema restore, or production/external-provider restore.
 
 The ClamAV adapter check exercises the application INSTREAM protocol against clean content and benign EICAR. The separate PR #37 CI job exercises the DMS API with PostgreSQL, private MinIO, and ClamAV, including type/size checks, clean release, authorized download, EICAR quarantine, tenant/auth boundaries, private storage, and audit events. These isolated checks do not establish that production storage/scanner services are configured or reachable. A separate isolated `clamdscan --stream` smoke check also recognized benign EICAR; that result is limited to the test runtime.
 

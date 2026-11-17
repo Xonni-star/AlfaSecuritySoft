@@ -47,8 +47,8 @@ export async function seedDatabase(): Promise<void> {
     await client.query(`
       INSERT INTO tenants (id, name, subdomain, tax_number, license_tier, bwr_register_id, din77200_certified)
       VALUES 
-        ($1, 'Securitas & Wache Frankfurt GmbH', 'ffm-sec.securityops.de', 'DE301928374', 'ENTERPRISE', 'BWR-HE-99201', true),
-        ($2, 'Bavaria Schutz & Werkschutz AG', 'bavaria.securityops.de', 'DE819203948', 'PROFESSIONAL', 'BWR-BY-11029', true)
+        ($1, 'Securitas & Wache Frankfurt GmbH', 'ffm-sec.alfasecuritysoft.example', 'DE301928374', 'ENTERPRISE', 'BWR-HE-99201', true),
+        ($2, 'Bavaria Schutz & Werkschutz AG', 'bavaria.alfasecuritysoft.example', 'DE819203948', 'PROFESSIONAL', 'BWR-BY-11029', true)
       ON CONFLICT (id) DO NOTHING;
     `, [TENANT_FRANKFURT_ID, TENANT_BAVARIA_ID]);
 

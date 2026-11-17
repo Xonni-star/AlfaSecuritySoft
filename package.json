@@ -1,5 +1,5 @@
 {
-  "name": "securityops-2-1-sicherheitsdienstverwaltung",
+  "name": "alfasecuritysoft-monorepo",
   "private": true,
   "scripts": {
     "dev-frontend": "npm run dev --prefix frontend",

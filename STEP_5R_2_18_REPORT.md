@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Schritt 5R.2.18
+# AlfaSecuritySoft – Schritt 5R.2.18
 ## GitHub-Actions-CI aktivieren und technische Prüfungen vereinheitlichen
 
 **Ausgangsstand:** `main` @ `4d53d4c` (Schritt 5R.2.17)
@@ -35,7 +35,7 @@ Die bisherigen Dateien unter `frontend/.github/workflows/` wurden nach `.github/
 - Minimale Rechte: `permissions: contents: read`
 
 ### `.github/workflows/ci_cd.yml`
-- Trigger: `workflow_run` auf `SecurityOps 2.0 CI` (`completed`, Branch `main`)
+- Trigger: `workflow_run` auf `AlfaSecuritySoft CI` (`completed`, Branch `main`)
 - Läuft nur bei `conclusion == 'success'`
 - Lädt `frontend-dist` und `backend-dist` des auslösenden CI-Laufs, erzeugt ein `BUILD-MANIFEST.txt` und veröffentlicht das Release-Paket als Artefakt (30 Tage)
 

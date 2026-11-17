@@ -1,4 +1,4 @@
-# SecurityOps 2.0 — Produktionsreife
+# AlfaSecuritySoft — Produktionsreife
 
 **Stand: 16.11.2026. Entscheidung: NICHT FÜR PRODUKTION FREIGEGEBEN.**
 Ein Merge oder bestandene CI ist keine betriebliche, juristische oder

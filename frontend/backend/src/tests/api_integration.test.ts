@@ -727,7 +727,7 @@ afterAll(async () => {
   await migrationPool.end();
 });
 
-describe('SecurityOps 2.0 – API-Persistenz & Mandantentrennung', () => {
+describe('AlfaSecuritySoft – API-Persistenz & Mandantentrennung', () => {
   test('1. Kunde wird über die API in PostgreSQL gespeichert und nach erneutem Login wieder geladen', async () => {
     const firstToken = await login(SEED_USER_EMAIL);
 

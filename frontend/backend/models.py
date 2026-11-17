@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Core PostgreSQL Database Models (SQLAlchemy 2.0 Declarative)
+# AlfaSecuritySoft - Core PostgreSQL Database Models (SQLAlchemy 2.0 Declarative)
 # Covers Modules A through M with Phase 9 Reporting, Controlling & KPI Definitions
 
 from __future__ import annotations

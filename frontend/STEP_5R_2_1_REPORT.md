@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Abschlussbericht Schritt 5R.2.1
+# AlfaSecuritySoft - Abschlussbericht Schritt 5R.2.1
 ## Idempotenz, atomarer Versionsschutz und echte Konfliktauflösung
 
 ### 1. Behobene Probleme & Implementierte Funktionen

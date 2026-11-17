@@ -36,7 +36,7 @@ Phase 6 includes an accessibility improvement to the Navbar and one focused regr
 
 ### Navbar change
 
-The SecurityOps logo/dashboard navigation and global quick-search control are now native buttons with keyboard support and visible focus styling. Icon-only controls have accessible names, including the theme, sync, notifications, and mobile/desktop actions. The network simulation control announces online/offline state and exposes its pressed state. `NavbarAccessibility.test.tsx` verifies keyboard focusability, activation of dashboard/search, and accessible names/state.
+The AlfaSecuritySoft logo/dashboard navigation and global quick-search control are now native buttons with keyboard support and visible focus styling. Icon-only controls have accessible names, including the theme, sync, notifications, and mobile/desktop actions. The network simulation control announces online/offline state and exposes its pressed state. `NavbarAccessibility.test.tsx` verifies keyboard focusability, activation of dashboard/search, and accessible names/state.
 
 ## Technical and reporting decisions
 

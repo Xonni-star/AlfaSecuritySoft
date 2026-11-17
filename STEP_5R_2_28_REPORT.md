@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Schritt 5R.2.28
+# AlfaSecuritySoft – Schritt 5R.2.28
 ## Unerwartete Schemaobjekte auch bei bestehender Migrationstabelle erkennen
 
 **Ausgangsstand:** `main` @ `54743b0d1512bab1db161cf30fe60ec1449a07c1`
@@ -17,7 +17,7 @@ Die Prüfung auf unerwartete Objekte war unvollständig aufgeteilt:
 | `findUnexpectedCustomTypes()` | global vor der Pfadentscheidung (seit 5R.2.27) | Typen waren abgedeckt, Relationen und Routinen nicht |
 | `inspectSchema()` | nur wenn `schema_migrations` leer war | Bei vorhandener Historie wurde die Schema-Prüfung vollständig übersprungen |
 
-Eine bereits migrierte SecurityOps-Datenbank mit vier Migrationseinträgen konnte daher zusätzliche Tabellen, Views, Sequenzen oder Funktionen enthalten, ohne dass der Runner dies bemerkte.
+Eine bereits migrierte AlfaSecuritySoft-Datenbank mit vier Migrationseinträgen konnte daher zusätzliche Tabellen, Views, Sequenzen oder Funktionen enthalten, ohne dass der Runner dies bemerkte.
 
 ---
 
@@ -90,7 +90,7 @@ Die statische Whitelist beschreibt exakt den Stand nach Migration 004. Sind bere
 
 ## 4. Neue Integrationstests
 
-`frontend/backend/src/tests/migrations.test.ts` wurde von 40 auf **45 Tests** erweitert. Alle Tests laufen gegen eine gültige SecurityOps-Datenbank mit vier Migrationseinträgen.
+`frontend/backend/src/tests/migrations.test.ts` wurde von 40 auf **45 Tests** erweitert. Alle Tests laufen gegen eine gültige AlfaSecuritySoft-Datenbank mit vier Migrationseinträgen.
 
 | # | Test | Ergebnis |
 |---|---|---|
@@ -102,7 +102,7 @@ Die statische Whitelist beschreibt exakt den Stand nach Migration 004. Sind bere
 
 Weiterhin erfolgreich:
 
-- Test 34: gültige SecurityOps-Baseline wird akzeptiert
+- Test 34: gültige AlfaSecuritySoft-Baseline wird akzeptiert
 - Tests 35–39: Typabweichungen in bestehender Baseline
 - Test 40: Erweiterungstypen ohne Fehlalarm
 - Tests 1–33 aus den vorherigen Schritten
@@ -128,10 +128,10 @@ Die CI/CD-Konfiguration wurde nicht verändert. Der Backend-Job führt den Schri
 
 | Workflow | Run-ID | Job | Ergebnis |
 |---|---|---|---|
-| SecurityOps 2.0 CI | [`43054655988`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43054655988) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** (42 s) |
-| SecurityOps 2.0 CI | [`43054655988`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43054655988) | Frontend – npm ci, Vitest, Produktions-Build | **success** (17 s) |
-| SecurityOps 2.0 CI | [`43054655988`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43054655988) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** (1 m 26 s) |
-| SecurityOps 2.0 CD | [`43054924502`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43054924502) | Release-Paket aus CI-Artefakten bauen | **success** |
+| AlfaSecuritySoft CI | [`43054655988`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43054655988) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** (42 s) |
+| AlfaSecuritySoft CI | [`43054655988`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43054655988) | Frontend – npm ci, Vitest, Produktions-Build | **success** (17 s) |
+| AlfaSecuritySoft CI | [`43054655988`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43054655988) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** (1 m 26 s) |
+| AlfaSecuritySoft CD | [`43054924502`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43054924502) | Release-Paket aus CI-Artefakten bauen | **success** |
 
 Der Schritt **„Migrationshistorie & Baseline (Integrationstests)“** wurde im Backend-Job mit **success** abgeschlossen. Damit liefen alle 45 Migrationstests tatsächlich gegen den PostgreSQL-16-Servicecontainer.
 

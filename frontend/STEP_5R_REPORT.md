@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Abschlussbericht Korrekturschritt 5R
+# AlfaSecuritySoft - Abschlussbericht Korrekturschritt 5R
 ## Rücknahme der Regressionen & Wiederherstellung der Offline-Sicherheit
 
 ### 1. Behobene Regressionen & Implementierte Funktionen

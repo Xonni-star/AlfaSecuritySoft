@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Abschlussbericht Schritt 5R.2
+# AlfaSecuritySoft - Abschlussbericht Schritt 5R.2
 ## Vollständige und fachlich abgesicherte Synchronisationslogik
 
 ### 1. Behobene Probleme & Implementierte Funktionen

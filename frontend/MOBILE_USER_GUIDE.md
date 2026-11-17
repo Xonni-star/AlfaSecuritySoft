@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Phase 11: Benutzerhandbuch Mobile Mitarbeiter-App
+# AlfaSecuritySoft - Phase 11: Benutzerhandbuch Mobile Mitarbeiter-App
 
 ## 1. Schnellstart auf dem Dienstgerät
 1. Öffnen Sie die Anwendung im Browser oder installieren Sie sie über das Browsermenü als App (PWA).

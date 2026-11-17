@@ -13,7 +13,7 @@ async function bootstrap() {
 
     const { app } = await import('./app');
     const server = app.listen(env.PORT, () => {
-      console.log(`[SECURITYOPS 2.0 BACKEND] Gestartet auf Port ${env.PORT} (${env.NODE_ENV}).`);
+      console.log(`[AlfaSecuritySoft Backend] Gestartet auf Port ${env.PORT} (${env.NODE_ENV}).`);
       console.log(`[CORS WHITELIST] Erlaubte Origins: ${env.ALLOWED_CORS_ORIGINS.join(', ')}`);
       console.log(`[API V1 HEALTH] http://localhost:${env.PORT}/api/v1/health`);
     });

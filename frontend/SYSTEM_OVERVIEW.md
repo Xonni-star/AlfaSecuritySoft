@@ -1,4 +1,4 @@
-# SecurityOps 2.0 — System overview
+# AlfaSecuritySoft — System overview
 
 **Status:** TEILWEISE IMPLEMENTIERT; not approved for production. This overview is based on the current repository structure. Passing CI does not establish operational, legal, or standards conformity.
 
@@ -17,6 +17,6 @@ The planning API currently documents work-hours, coverage, qualification, and ab
 
 ## Limits and authoritative references
 
-SecurityOps 2.0 is not represented as certified to DIN 77200, BSI, KRITIS, or any law. Process references or operator-entered indicators do not establish conformity. Append-only or versioned records are technical controls, not proof of legal audit immutability.
+AlfaSecuritySoft is not represented as certified to DIN 77200, BSI, KRITIS, or any law. Process references or operator-entered indicators do not establish conformity. Append-only or versioned records are technical controls, not proof of legal audit immutability.
 
 Use the [README](../README.md), [project completion tracker](../PROJECT_COMPLETION_TRACKER.md), [backend architecture](./BACKEND_ARCHITECTURE.md), and module API documents for current implementation details. Older phase reports are historical snapshots and are not current feature matrices.

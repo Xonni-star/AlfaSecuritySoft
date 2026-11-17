@@ -25,7 +25,7 @@ GitHub’s `main` resolved to `621874535ee480e56716ae8a7bd992272bc7a51a`, the sq
 
 For the current main SHA:
 
-- Post-merge [SecurityOps 2.0 CI run 43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on `621874535ee480e56716ae8a7bd992272bc7a51a`: root checks, frontend typecheck/tests/build, PostgreSQL 16 backend migration/build/Jest, isolated restore, ClamAV adapter, DMS API flow, and production Compose/image validation. This is hosted CI evidence, not production acceptance.
+- Post-merge [AlfaSecuritySoft CI run 43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on `621874535ee480e56716ae8a7bd992272bc7a51a`: root checks, frontend typecheck/tests/build, PostgreSQL 16 backend migration/build/Jest, isolated restore, ClamAV adapter, DMS API flow, and production Compose/image validation. This is hosted CI evidence, not production acceptance.
 - The latest post-merge artifact run, [43757089831](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43757089831), passed **2/2 jobs** on the preceding main SHA `bed939a`. An artifact run for `6218745` was not yet observed. Artifact creation is not a release approval, deploy, or proof of customer operation.
 - PR checks for #50–#58, #60, #61, and #63 each showed 7/7 success. PR #59 had an empty PR-level check rollup; the successful post-merge run on `879ae95` is historical evidence for that tree. PR-level and post-merge results are not conflated.
 - PR #63 adds synthetic API coverage through employee qualification, planning publication, both handover confirmations, and a MinIO/ClamAV document upload, download, and audit flow. This is CI evidence, not provider or production acceptance.

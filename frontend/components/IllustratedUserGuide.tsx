@@ -224,7 +224,7 @@ export const IllustratedUserGuide: React.FC = () => {
         {
           stepNumber: 1,
           title: 'Kiosk-Vollbildmodus aktivieren',
-          description: 'Im Browser oder Android-Enterprise Kiosk startet SecurityOps im gesperrten Vollbildmodus.',
+          description: 'Im Browser oder Android-Enterprise Kiosk startet AlfaSecuritySoft im gesperrten Vollbildmodus.',
           calloutTarget: 'Vollbild-Terminal'
         },
         {
@@ -300,7 +300,7 @@ export const IllustratedUserGuide: React.FC = () => {
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block" />
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block" />
             <span className="ml-2 text-slate-300 font-semibold font-sans">
-              SecurityOps 2.0 – Originalansicht: {selectedChapter.title.replace(/^[0-9]+\.\s*/, '')}
+              AlfaSecuritySoft – Originalansicht: {selectedChapter.title.replace(/^[0-9]+\.\s*/, '')}
             </span>
           </div>
           <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20">
@@ -495,7 +495,7 @@ export const IllustratedUserGuide: React.FC = () => {
             <h1 className="text-xl font-bold text-white">Bebildertes Benutzerhandbuch & Schulungscenter</h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Illustrierte Schritt-für-Schritt-Anleitungen mit Original-Screenshots, Callouts und visueller Arbeitsablauf-Führung für SecurityOps 2.0.
+            Illustrierte Schritt-für-Schritt-Anleitungen mit Original-Screenshots, Callouts und visueller Arbeitsablauf-Führung für AlfaSecuritySoft.
           </p>
         </div>
 

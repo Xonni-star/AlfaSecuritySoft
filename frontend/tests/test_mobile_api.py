@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Phase 11 Mobile Application Test Suite
+# AlfaSecuritySoft - Phase 11 Mobile Application Test Suite
 import pytest
 import uuid
 

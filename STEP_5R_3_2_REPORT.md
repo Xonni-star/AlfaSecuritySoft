@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Entwicklungsschritt 5R.3.2
+# AlfaSecuritySoft – Entwicklungsschritt 5R.3.2
 > **Historischer Snapshot:** Dieser Bericht hält den Stand vor Schritt 5R.3.4 fest. Damals erwähnte KI-/Proxy-Funktionen wurden in Schritt 5R.3.4 vollständig aus dem Produkt entfernt; die folgenden Angaben sind kein aktueller Funktions- oder Architekturstatus.
 
 ## Produktionsdeployment vollständig auf das TypeScript-Backend umstellen
@@ -17,7 +17,7 @@ Die bestehende Produktionskonfiguration stammte aus der früheren FastAPI-/Googl
 - `frontend/deploy/Caddyfile` leitete `/api/*`, `/docs*` und `/openapi.json*` an `backend:8000`.
 - Der Compose-Dienst `backend` baute `deploy/Dockerfile.backend` – ein **Python-3.11-Image** mit `uvicorn backend.api:app`.
 - Zusätzlich existierten ein Redis-Broker und ein Python-Celery-Worker.
-- Das eigentliche SecurityOps-Backend unter `frontend/backend/` (Node.js/Express/TypeScript, PostgreSQL-RLS, JWT) wurde **nirgends gebaut oder gestartet**.
+- Das eigentliche AlfaSecuritySoft-Backend unter `frontend/backend/` (Node.js/Express/TypeScript, PostgreSQL-RLS, JWT) wurde **nirgends gebaut oder gestartet**.
 - Das Frontend wurde aus `../public` ausgeliefert; dort liegen nur `manifest.json` und `sw.js`, nicht der Vite-Produktionsbuild.
 - Migrationen liefen über Alembic/Python, nicht über den TypeScript-Migrationsrunner.
 - Die Datenbank-URL des Backends verwendete die administrative Rolle `secops_admin` (`postgresql+asyncpg://…`), nicht die Least-Privilege-Rolle `secops_app_user`.
@@ -177,8 +177,8 @@ Volumes: `secops_pgdata`, `secops_backups`, `caddy_data`, `caddy_config`.
 
 | Workflow | Run-ID | Ergebnis |
 |---|---|---|
-| SecurityOps 2.0 CI | [`43078287238`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43078287238) | **success** – Root, Frontend, Backend, Produktions-Docker |
-| SecurityOps 2.0 CD | [`43078565272`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43078565272) | **success** – Release-Paket |
+| AlfaSecuritySoft CI | [`43078287238`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43078287238) | **success** – Root, Frontend, Backend, Produktions-Docker |
+| AlfaSecuritySoft CD | [`43078565272`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43078565272) | **success** – Release-Paket |
 
 Artefakte:
 

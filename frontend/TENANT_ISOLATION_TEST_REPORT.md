@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Phase 13: Mandantenisolations-Prüfbericht
+# AlfaSecuritySoft - Phase 13: Mandantenisolations-Prüfbericht
 
 ## 1. Testmandanten
 - **Mandant A**: Securitas & Wache Frankfurt GmbH (`tenant-frankfurt`)

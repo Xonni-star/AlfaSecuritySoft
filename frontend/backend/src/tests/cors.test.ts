@@ -16,7 +16,7 @@ function preflight(
     .set('Access-Control-Request-Headers', requestedHeaders);
 }
 
-describe('SecurityOps 2.0 - CORS Whitelist & Header Security Tests', () => {
+describe('AlfaSecuritySoft - CORS Whitelist & Header Security Tests', () => {
   test('1. Erlaubte Origin erhält korrekte Access-Control-Allow-Origin Header', async () => {
     const res = await request(app)
       .get('/api/v1/health')

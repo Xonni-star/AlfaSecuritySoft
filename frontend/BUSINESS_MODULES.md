@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Fachmodule und aktueller Status
+# AlfaSecuritySoft - Fachmodule und aktueller Status
 
 > **Projektstatus: In Entwicklung; nicht für Produktion freigegeben.** Frühere Aussagen wie „Vollständig“ waren keine belastbare Produktreife-Aussage. Status und Grenzen beziehen sich auf den dokumentierten Code-/PR-Stand; siehe auch die [zentrale Statusübersicht](../README.md).
 

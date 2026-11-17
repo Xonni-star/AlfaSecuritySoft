@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Pytest Multi-Tenant & Database Integrity Verification
+# AlfaSecuritySoft - Pytest Multi-Tenant & Database Integrity Verification
 import pytest
 import uuid
 from datetime import datetime, date

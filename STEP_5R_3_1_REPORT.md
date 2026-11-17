@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Entwicklungsschritt 5R.3.1
+# AlfaSecuritySoft – Entwicklungsschritt 5R.3.1
 ## CORS-Konfiguration für alle vorhandenen API-Methoden korrigieren und testen
 
 **Durchgeführt am:** 2026-11-11
@@ -135,8 +135,8 @@ Beides sind Warnungen, keine Build-Fehler.
 
 | Workflow | Run-ID | Ergebnis |
 |---|---|---|
-| SecurityOps 2.0 CI | [`43075445680`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43075445680) | **success** (Root, Frontend, Backend) |
-| SecurityOps 2.0 CD | [`43075684622`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43075684622) | **success** (Release-Paket) |
+| AlfaSecuritySoft CI | [`43075445680`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43075445680) | **success** (Root, Frontend, Backend) |
+| AlfaSecuritySoft CD | [`43075684622`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43075684622) | **success** (Release-Paket) |
 
 Artefakte:
 
@@ -153,7 +153,7 @@ Alle Artefakte waren zum Prüfzeitpunkt vorhanden und nicht abgelaufen.
 ## 8. Git-Historie
 
 - `7a1e860` – `fix: allow PATCH requests in CORS preflight` (Code-Commit)
-- `47a1c33` – `docs: rewrite README for SecurityOps 2.0` (Remote-Commit)
+- `47a1c33` – `docs: rewrite README for AlfaSecuritySoft` (Remote-Commit)
 - `3e3e31c` – Merge des Remote-README in den lokalen Branch; beide Remotes
   (GitHub und Gitea) stehen auf diesem Stand.
 

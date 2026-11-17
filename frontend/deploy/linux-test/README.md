@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Linux-Testinstallation (Phase 7)
+# AlfaSecuritySoft – Linux-Testinstallation (Phase 7)
 
 > **Nur für isolierte Tests. Nicht produktionsbereit.** Diese Installation verwendet
 > `NODE_ENV=development`, HTTP für MinIO im internen Docker-Netz und illustrative
@@ -23,7 +23,7 @@ flowchart LR
 
 ### Screenshot des Phase-7-Builds
 
-![Anmeldeansicht des echten SecurityOps-2.0-Phase-7-Builds](images/phase7-login.png)
+![Anmeldeansicht des echten AlfaSecuritySoft-Phase-7-Builds](images/phase7-login.png)
 
 *Aufnahme der unveränderten Login-Oberfläche des gebauten Phase-7-Frontends.
 Es wurden keine Benutzer angemeldet, keine Demo-Daten angezeigt und keine echten

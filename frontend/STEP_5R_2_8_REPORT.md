@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Abschlussbericht Schritt 5R.2.8
+# AlfaSecuritySoft - Abschlussbericht Schritt 5R.2.8
 ## Frontend-Testkonfiguration & Build-Nachweise
 
 ### 1. Ausgeführte Arbeiten & Korrekturen

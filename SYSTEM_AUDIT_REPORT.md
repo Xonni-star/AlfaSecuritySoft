@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Systemaudit und Entwicklungsfahrplan
+# AlfaSecuritySoft – Systemaudit und Entwicklungsfahrplan
 
 **Prüfstand:** 2026-11-12
 **Geprüfter Stand:** main / ba914fb4e90dcbd890786df4c15f633a7458ae4a (vor Audit-Commit)
@@ -6,7 +6,7 @@
 
 ## 1. Zusammenfassung
 
-SecurityOps 2.0 besteht aus einer React-19-/Vite-SPA, einer TypeScript-/Express-API und PostgreSQL 16+. Login, tenantgebundene CRUD-Teilbereiche, RBAC, Row-Level Security, append-only Wachbuch-Grundlagen und eine IndexedDB-Outbox existieren. Das Gesamtsystem ist nach dem vorliegenden Code- und Testnachweis **nicht vollständig abgenommen und nicht als vollständig produktionsreif einzustufen**: mehrere Fachmodule sind lokal/mockbasiert oder ohne serverseitige Persistenz; eine vollständige Offline-/Browserabnahme für alle Geschäftsabläufe fehlt.
+AlfaSecuritySoft besteht aus einer React-19-/Vite-SPA, einer TypeScript-/Express-API und PostgreSQL 16+. Login, tenantgebundene CRUD-Teilbereiche, RBAC, Row-Level Security, append-only Wachbuch-Grundlagen und eine IndexedDB-Outbox existieren. Das Gesamtsystem ist nach dem vorliegenden Code- und Testnachweis **nicht vollständig abgenommen und nicht als vollständig produktionsreif einzustufen**: mehrere Fachmodule sind lokal/mockbasiert oder ohne serverseitige Persistenz; eine vollständige Offline-/Browserabnahme für alle Geschäftsabläufe fehlt.
 
 Schwerpunkte für die weitere Arbeit:
 1. Dokumente, Dienstanweisungen, Alarm-/Notfallpläne sowie mobile Übergaben und Kontrollgänge Ende-zu-Ende integrieren.

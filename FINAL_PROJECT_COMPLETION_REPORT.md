@@ -1,4 +1,4 @@
-# SecurityOps 2.0 — Ergebnis- und Fortsetzungsbericht
+# AlfaSecuritySoft — Ergebnis- und Fortsetzungsbericht
 
 ## Aktuelle Finalisierungsrunde, 16.11.2026
 

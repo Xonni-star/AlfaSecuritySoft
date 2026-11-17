@@ -1,4 +1,4 @@
-# SecurityOps 2.0 — Project status
+# AlfaSecuritySoft — Project status
 
 **Status:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved for production.** This is an evidence index, not a release or compliance approval.
 

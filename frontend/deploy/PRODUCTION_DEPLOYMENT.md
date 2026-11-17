@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Produktionsdeployment
+# AlfaSecuritySoft – Produktionsdeployment
 
 > **Nicht für Produktion freigegeben.** Diese Anleitung beschreibt Compose-Konfiguration und Betriebsbefehle; sie ist keine bestätigte Produktionsinstallation. Der Statusabschnitt mit Datum 15.11.2026, 20:30 CET weiter unten ist ein historischer Snapshot. Aktueller Mainline- und Abnahmestatus: [PROJECT_CURRENT_STATUS.md](../../PROJECT_CURRENT_STATUS.md) und [PHASE_9_COMPLETION_REPORT.md](../../PHASE_9_COMPLETION_REPORT.md).
 

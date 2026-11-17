@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Backup- und Wiederherstellungskonzept
+# AlfaSecuritySoft - Backup- und Wiederherstellungskonzept
 
 > **Aktueller Evidenzstand:** `main` enthält Migrationen bis einschließlich 040; der Post-Merge-Restore-Job auf `879ae951d6cea52fd84d01dc699cf2ed08843300` bestand in [CI run 43754217295](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43754217295). Die Test- und CI-Läufe bleiben isolierte/synthetische Nachweise. Provider-Restore und RPO/RTO sind weiterhin offen; siehe [PROJECT_CURRENT_STATUS.md](../PROJECT_CURRENT_STATUS.md) und [PHASE_9_COMPLETION_REPORT.md](../PHASE_9_COMPLETION_REPORT.md).
 

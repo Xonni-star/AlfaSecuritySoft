@@ -1,4 +1,4 @@
-# SecurityOps 2.0 — Sicherheitsprüfung und verbleibende Grenzen
+# AlfaSecuritySoft — Sicherheitsprüfung und verbleibende Grenzen
 
 **Stand: 16.11.2026. Status: TEILWEISE IMPLEMENTIERT / OFFEN.**
 Dies ist der Ergebnisstand begrenzter Codeprüfungen und automatisierter

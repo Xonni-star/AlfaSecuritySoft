@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Schritt 5R.2.30
+# AlfaSecuritySoft – Schritt 5R.2.30
 ## SQL-Migrationsparser sicher und robust machen
 
 **Ausgangsstand:** `main` @ `034a344a90b99bf09a0c0c25cfb93c8cb8459bba`
@@ -154,10 +154,10 @@ Die CI/CD-Konfiguration wurde nicht verändert. Der Backend-Job führt den Schri
 
 | Workflow | Run-ID | Job | Ergebnis |
 |---|---|---|---|
-| SecurityOps 2.0 CI | [`43059581251`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43059581251) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** (45 s) |
-| SecurityOps 2.0 CI | [`43059581251`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43059581251) | Frontend – npm ci, Vitest, Produktions-Build | **success** (13 s) |
-| SecurityOps 2.0 CI | [`43059581251`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43059581251) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** (1 m 28 s) |
-| SecurityOps 2.0 CD | [`43059858470`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43059858470) | Release-Paket aus CI-Artefakten bauen | **success** |
+| AlfaSecuritySoft CI | [`43059581251`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43059581251) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** (45 s) |
+| AlfaSecuritySoft CI | [`43059581251`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43059581251) | Frontend – npm ci, Vitest, Produktions-Build | **success** (13 s) |
+| AlfaSecuritySoft CI | [`43059581251`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43059581251) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** (1 m 28 s) |
+| AlfaSecuritySoft CD | [`43059858470`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43059858470) | Release-Paket aus CI-Artefakten bauen | **success** |
 
 Der Schritt **„Migrationshistorie & Baseline (Integrationstests)“** wurde im Backend-Job mit **success** abgeschlossen; die vollständige Jest-Suite (102 Tests) lief ebenfalls erfolgreich.
 

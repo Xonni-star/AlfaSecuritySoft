@@ -1,4 +1,4 @@
-# SecurityOps 2.0 — Project completion assessment
+# AlfaSecuritySoft — Project completion assessment
 
 **Assessment:** **PARTIAL / BLOCKED.** This report records implemented work and evidence; it does not declare the overall project or Phase 9 complete, production-ready, or approved.
 

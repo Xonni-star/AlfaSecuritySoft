@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Phase 6: Offline-First Architektur
+# AlfaSecuritySoft - Phase 6: Offline-First Architektur
 
 > **Projektstatus: In Entwicklung; nicht für Produktion freigegeben.** Offlinefunktionen sind workflow-spezifisch; nicht alle Module oder End-to-End-Geräteabläufe sind implementiert oder abgenommen.
 > **Historischer Status-Snapshot (15.11.2026, 20:30 CET):** Der folgende SHA/PR-Abschnitt stammt aus dem damaligen Review; PR #52 ist inzwischen gemergt. Aktueller Mainline-Stand und aktuelle Gates: [PROJECT_CURRENT_STATUS.md](../PROJECT_CURRENT_STATUS.md) und [PHASE_9_COMPLETION_REPORT.md](../PHASE_9_COMPLETION_REPORT.md).
@@ -19,7 +19,7 @@ Das [aktive Protokoll](./SYNC_PROTOCOL.md) unterscheidet tatsächliche Push-
 Endpunkte von nicht implementierter Gerätewiderrufsprüfung und Delta-Pull.
 
 ## 1. PWA & Service Worker
-SecurityOps 2.0 ist als vollwertige Progressive Web App (PWA) nach modernen Webstandards konzipiert:
+AlfaSecuritySoft ist als vollwertige Progressive Web App (PWA) nach modernen Webstandards konzipiert:
 - **App Shell Caching**: Die Kernanwendung (`index.html`, Scripts, Styles, Icons) wird über `public/sw.js` lokal im Cache vorgehalten.
 - **Offline Erkennung**: Reagiert nahtlos auf `navigator.onLine`, `window.addEventListener('online')` und `window.addEventListener('offline')`.
 - **Installierbar**: Über `public/manifest.json` auf Desktop (Chrome/Edge), Tablets (iPad/Android) und mobilen Dienstgeräten installierbar.

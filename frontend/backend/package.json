@@ -1,7 +1,7 @@
 {
-  "name": "securityops-backend",
+  "name": "alfasecuritysoft-backend",
   "version": "2.0.0",
-  "description": "SecurityOps 2.0 - Enterprise Node.js/TypeScript REST API mit PostgreSQL 16+ RLS und Multi-Tenancy",
+  "description": "AlfaSecuritySoft - Enterprise Node.js/TypeScript REST API mit PostgreSQL 16+ RLS und Multi-Tenancy",
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",

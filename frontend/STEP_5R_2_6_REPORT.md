@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Abschlussbericht Schritt 5R.2.6
+# AlfaSecuritySoft - Abschlussbericht Schritt 5R.2.6
 ## Konfliktauflösung vollständig idempotent & saubere Testtrennung
 
 ### 1. Behobene Probleme & Implementierte Funktionen

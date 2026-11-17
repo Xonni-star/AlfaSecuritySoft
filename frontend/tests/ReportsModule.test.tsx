@@ -109,7 +109,7 @@ describe('ReportsModule browser CSV export', () => {
     }
     expect(downloads).toHaveLength(1);
     const link = downloads[0];
-    expect(link.download).toMatch(new RegExp(`^SecurityOps_${source}_\\d{4}-\\d{2}-\\d{2}\\.csv$`));
+    expect(link.download).toMatch(new RegExp(`^AlfaSecuritySoft_${source}_\\d{4}-\\d{2}-\\d{2}\\.csv$`));
     expect(link.isConnected).toBe(false);
     const prefix = 'data:text/csv;charset=utf-8,';
     expect(link.href.startsWith(prefix)).toBe(true);

@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Schritt 5R.2.27
+# AlfaSecuritySoft – Schritt 5R.2.27
 ## Benutzerdefinierte Typen auch bei bestehender Datenbank-Baseline prüfen
 
 **Ausgangsstand:** `main` @ `313bc3b2d7c3bd3496bec7823f23203b019796b9`
@@ -9,7 +9,7 @@
 
 ## 1. Ausgangsproblem
 
-In Schritt 5R.2.26 wurde die Typ-Erkennung für den **Leer-Datenbank-Pfad** erweitert. Die vollständige Schema-Prüfung (`inspectSchema`) wurde jedoch nur ausgeführt, wenn `schema_migrations` leer war. Bei einer bestehenden SecurityOps-Datenbank mit vorhandener Historie übersprang der Runner die Baseline-Prüfung vollständig und führte lediglich Checksummen- und Dateinamenprüfungen aus. Ein zusätzlicher Composite-, Range- oder Multirange-Typ in einer bereits migrierten Datenbank blieb dadurch unentdeckt.
+In Schritt 5R.2.26 wurde die Typ-Erkennung für den **Leer-Datenbank-Pfad** erweitert. Die vollständige Schema-Prüfung (`inspectSchema`) wurde jedoch nur ausgeführt, wenn `schema_migrations` leer war. Bei einer bestehenden AlfaSecuritySoft-Datenbank mit vorhandener Historie übersprang der Runner die Baseline-Prüfung vollständig und führte lediglich Checksummen- und Dateinamenprüfungen aus. Ein zusätzlicher Composite-, Range- oder Multirange-Typ in einer bereits migrierten Datenbank blieb dadurch unentdeckt.
 
 ---
 
@@ -24,7 +24,7 @@ Nach Migrationen 001–004 und der Erweiterung `uuid-ossp` existieren im Schema 
 
 PostgreSQL-Systemtypen liegen in `pg_catalog`, nicht in `public`. Erweiterungsobjekte sind über `pg_depend` mit `deptype = 'e'` gekennzeichnet.
 
-Daraus folgt: Im SecurityOps-Schema `public` sind **keine eigenständigen benutzerdefinierten Typen** zu erwarten. Jeder solche Typ ist eine Abweichung.
+Daraus folgt: Im AlfaSecuritySoft-Schema `public` sind **keine eigenständigen benutzerdefinierten Typen** zu erwarten. Jeder solche Typ ist eine Abweichung.
 
 ---
 
@@ -90,7 +90,7 @@ Es werden keine Tabellen, Typen oder Daten verändert.
 
 | # | Test | Ergebnis |
 |---|---|---|
-| 34 | Korrekte bestehende SecurityOps-Baseline wird weiterhin akzeptiert | ✅ |
+| 34 | Korrekte bestehende AlfaSecuritySoft-Baseline wird weiterhin akzeptiert | ✅ |
 | 35 | Zusätzlicher Composite Type in gültiger Baseline wird erkannt; Typ bleibt erhalten; Historie bleibt 4 Einträge | ✅ |
 | 36 | Zusätzlicher Range Type in gültiger Baseline wird erkannt (inkl. automatischem Multirange) | ✅ |
 | 37 | Zusätzlicher Multirange Type (`typtype = 'm'`) wird erkannt | ✅ |
@@ -121,10 +121,10 @@ Die CI/CD-Struktur wurde nicht verändert. Der Backend-Job führt den Schritt �
 
 | Workflow | Run-ID | Job | Ergebnis |
 |---|---|---|---|
-| SecurityOps 2.0 CI | [`43052862901`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43052862901) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** (42 s) |
-| SecurityOps 2.0 CI | [`43052862901`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43052862901) | Frontend – npm ci, Vitest, Produktions-Build | **success** (17 s) |
-| SecurityOps 2.0 CI | [`43052862901`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43052862901) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** (1 m 27 s) |
-| SecurityOps 2.0 CD | [`43053123814`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43053123814) | Release-Paket aus CI-Artefakten bauen | **success** |
+| AlfaSecuritySoft CI | [`43052862901`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43052862901) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** (42 s) |
+| AlfaSecuritySoft CI | [`43052862901`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43052862901) | Frontend – npm ci, Vitest, Produktions-Build | **success** (17 s) |
+| AlfaSecuritySoft CI | [`43052862901`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43052862901) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** (1 m 27 s) |
+| AlfaSecuritySoft CD | [`43053123814`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43053123814) | Release-Paket aus CI-Artefakten bauen | **success** |
 
 Der Schritt **„Migrationshistorie & Baseline (Integrationstests)“** wurde im Backend-Job mit **success** abgeschlossen. Damit liefen alle 40 Migrationstests – einschließlich der neuen Baseline-Typ-Tests – tatsächlich gegen den PostgreSQL-16-Servicecontainer.
 

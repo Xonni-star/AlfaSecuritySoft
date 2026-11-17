@@ -1,4 +1,4 @@
-# Test results — SecurityOps 2.0
+# Test results — AlfaSecuritySoft
 
 **Run date:** 2026-11-15  
 **Scope:** Current local PR #66 worktree. This report is evidence for the listed commands only; it is not a complete production acceptance.

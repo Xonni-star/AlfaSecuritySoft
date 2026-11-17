@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Entwicklungsschritt 5R.3.5
+# AlfaSecuritySoft – Entwicklungsschritt 5R.3.5
 ## Kundenverwaltung dauerhaft vervollständigt
 
 **Status:** umgesetzt und geprüft  

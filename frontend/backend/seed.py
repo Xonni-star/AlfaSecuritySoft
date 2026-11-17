@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Controlled Test Data Seeder
+# AlfaSecuritySoft - Controlled Test Data Seeder
 import asyncio
 import uuid
 from datetime import datetime, date
@@ -14,7 +14,7 @@ async def seed_database():
         tenant_a = Tenant(
             id=TENANT_A_ID,
             name="Securitas & Wache Frankfurt GmbH",
-            subdomain="ffm-sec.securityops.de",
+            subdomain="ffm-sec.alfasecuritysoft.example",
             tax_number="DE301928374",
             license_tier=LicenseTier.ENTERPRISE,
             bwr_register_id="BWR-HE-99201",
@@ -23,7 +23,7 @@ async def seed_database():
         tenant_b = Tenant(
             id=TENANT_B_ID,
             name="Bavaria Schutz & Werkschutz AG",
-            subdomain="bavaria.securityops.de",
+            subdomain="bavaria.alfasecuritysoft.example",
             tax_number="DE819203948",
             license_tier=LicenseTier.PROFESSIONAL,
             bwr_register_id="BWR-BY-11029",

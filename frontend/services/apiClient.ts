@@ -1,4 +1,4 @@
-// SecurityOps 2.0 - Central Enterprise API Client
+// AlfaSecuritySoft - Central Enterprise API Client
 import { ResponseEnvelope, TenantSelectionOption } from '../types';
 
 const API_BASE = '/api/v1';

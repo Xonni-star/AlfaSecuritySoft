@@ -1,4 +1,4 @@
-# Changelog - SecurityOps 2.0
+# Changelog - AlfaSecuritySoft
 
 ## [1.0.0] - 2025-05-15 (Gold Master Release)
 ### Hinzugefügt

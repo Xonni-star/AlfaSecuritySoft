@@ -1,6 +1,6 @@
-# SecurityOps 2.0 - Sicherheitsdienstverwaltung
+# AlfaSecuritySoft - Sicherheitsdienstverwaltung
 
-SecurityOps 2.0 ist ein Softwareprojekt für Sicherheitsdienstprozesse mit React/Vite, einer TypeScript/Express-API und PostgreSQL 16+ Row-Level-Security (RLS). Der fachliche Bezug zu DIN 77200 oder § 34a GewO ist keine Zertifizierungs-, Rechtskonformitäts- oder Produktionsfreigabe.
+AlfaSecuritySoft ist ein Softwareprojekt für Sicherheitsdienstprozesse mit React/Vite, einer TypeScript/Express-API und PostgreSQL 16+ Row-Level-Security (RLS). Der fachliche Bezug zu DIN 77200 oder § 34a GewO ist keine Zertifizierungs-, Rechtskonformitäts- oder Produktionsfreigabe.
 
 > **Projektstatus: In Entwicklung; nicht für Produktion freigegeben.** Einzelne Module und End-to-End-Abnahmen haben unterschiedliche Reifegrade. Historische Berichte sind keine Aussage zur aktuellen Produktreife.
 
@@ -9,8 +9,8 @@ SecurityOps 2.0 ist ein Softwareprojekt für Sicherheitsdienstprozesse mit React
 ## 1. Verzeichnisstruktur & Architekturtrennung
 
 - **Frontend**: `frontend/` (bzw. Root-Verzeichnis bei flachem Checkout). React 18+/19 SPA mit Tailwind CSS, Zustand Store, IndexedDB Vault und Vitest-Testumgebung.
-- **SecurityOps TypeScript-Backend**: `frontend/backend/` (bzw. `backend/` bei flacher Monorepo-Struktur). Enthält die vollwertige Node.js/Express/TypeScript REST-API (`/api/v1`), PostgreSQL RLS-Transaktionen und die Idempotenz-Engine.
-- Es gibt kein separates Root-Proxy-Backend. Alle SecurityOps-Backend-Befehle werden unter `frontend/backend/` ausgeführt.
+- **AlfaSecuritySoft TypeScript-Backend**: `frontend/backend/` (bzw. `backend/` bei flacher Monorepo-Struktur). Enthält die vollwertige Node.js/Express/TypeScript REST-API (`/api/v1`), PostgreSQL RLS-Transaktionen und die Idempotenz-Engine.
+- Es gibt kein separates Root-Proxy-Backend. Alle AlfaSecuritySoft-Backend-Befehle werden unter `frontend/backend/` ausgeführt.
 
 ## Dienst- und Einsatzplanung (Phase 2)
 
@@ -44,7 +44,7 @@ Der aktuelle PR-Arbeitsstand ergänzt die vorhandene Authentifizierung/RBAC um t
 
 ## 2. Installations-, Build- und Testbefehle
 
-### 2.1 Backend (SecurityOps TypeScript-Backend unter `frontend/backend/`)
+### 2.1 Backend (AlfaSecuritySoft TypeScript-Backend unter `frontend/backend/`)
 Aus dem Repository-Root auszuführen:
 ```bash
 # Abhängigkeiten installieren

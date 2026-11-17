@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Phase 8 Automated Testing Suite: Automation Engine & Notifications
+# AlfaSecuritySoft - Phase 8 Automated Testing Suite: Automation Engine & Notifications
 import pytest
 from backend.services import AutomationEngineService
 

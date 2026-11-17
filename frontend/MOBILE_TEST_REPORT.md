@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Phase 11: Testbericht Mobile Anwendung
+# AlfaSecuritySoft - Phase 11: Testbericht Mobile Anwendung
 
 ## 1. Verifizierte Testszenarien
 | Nr | Szenario | Status | Verifikation |

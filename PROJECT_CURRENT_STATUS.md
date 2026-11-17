@@ -1,4 +1,4 @@
-# SecurityOps 2.0 — Current project status
+# AlfaSecuritySoft — Current project status
 
 **Last verified:** 2026-11-16
 

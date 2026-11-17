@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Core FastAPI REST Engine & Middleware (Phase 11 Mobile App Extension)
+# AlfaSecuritySoft - Core FastAPI REST Engine & Middleware (Phase 11 Mobile App Extension)
 from fastapi import FastAPI, Depends, HTTPException, status, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession

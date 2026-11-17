@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Aktives Synchronisationsprotokoll
+# AlfaSecuritySoft - Aktives Synchronisationsprotokoll
 
 ## Push - IMPLEMENTIERT UND GETESTET im beschriebenen Umfang
 

@@ -1,4 +1,4 @@
-# Phase 9 acceptance status — SecurityOps 2.0
+# Phase 9 acceptance status — AlfaSecuritySoft
 
 **Status:** **TEILWEISE BESTANDEN / BLOCKIERT.** This is an evidence-based status report, not a Phase 9 completion, production-readiness, or release approval.
 

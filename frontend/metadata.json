@@ -1,5 +1,5 @@
 {
-  "name": "SecurityOps 2.0 - Sicherheitsdienstverwaltung",
+  "name": "AlfaSecuritySoft",
   "description": "Softwareprojekt für Sicherheitsdienstprozesse mit TypeScript-Backend, PostgreSQL, Dienstplanung, digitalem Wachbuch und Offline-Synchronisation. Keine Zertifizierungs- oder Rechtskonformitätsaussage.",
   "requestFramePermissions": [
     "camera"

@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Schritt 5R.3.7.1 Abschlussbericht
+# AlfaSecuritySoft – Schritt 5R.3.7.1 Abschlussbericht
 
 ## Änderungen
 

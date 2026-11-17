@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Abschlussbericht Schritt 5R.2.5
+# AlfaSecuritySoft - Abschlussbericht Schritt 5R.2.5
 ## Fehlende Frontend- und Wachbuch-Konflikttests ergänzt
 
 ### 1. Behobene Fehler & Implementierte Funktionen

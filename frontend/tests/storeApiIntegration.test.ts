@@ -214,7 +214,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('SecurityOps 2.0 – Frontend/Backend-Integration', () => {
+describe('AlfaSecuritySoft – Frontend/Backend-Integration', () => {
   test('durably queues GuardBook completion without claiming server resolution or inventing a revision', async () => {
     mockReadEndpoints();
     useSecurityStore.setState({ authUser: readUser, isOnline: false });

@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Grenzen der Gerätesicherheit
+# AlfaSecuritySoft - Grenzen der Gerätesicherheit
 
 **Aktiver Express-/Browser-Pfad; keine Geräte- oder Datenschutzfreigabe.**
 

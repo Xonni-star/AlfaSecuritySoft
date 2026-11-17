@@ -1,5 +1,5 @@
 #!/bin/bash
-# SecurityOps 2.0 - Encrypted PostgreSQL Backup Daemon
+# AlfaSecuritySoft - Encrypted PostgreSQL Backup Daemon
 # S3 object retention/backup is managed by the configured object-storage provider.
 
 set -u -o pipefail

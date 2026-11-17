@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Phase 6 Automated Offline Synchronization Test Suite
+# AlfaSecuritySoft - Phase 6 Automated Offline Synchronization Test Suite
 import pytest
 import uuid
 from datetime import datetime, timezone

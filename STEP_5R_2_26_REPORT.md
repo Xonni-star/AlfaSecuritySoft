@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Schritt 5R.2.26
+# AlfaSecuritySoft – Schritt 5R.2.26
 ## Vollständige Erkennung benutzerdefinierter PostgreSQL-Typen
 
 **Ausgangsstand:** `main` @ `f3104918ca72e9939f1066c3a10f6d82058a4da5`
@@ -45,7 +45,7 @@ Umsetzung:
 - Eine Datenbank mit unbekannten Typen und ohne erwartete Tabellen wird **niemals** als leer eingestuft.
 - Der Runner bricht vor jeder Migration ab.
 - Es werden keine Objekte oder Daten verändert.
-- Die bestehende, korrekte SecurityOps-Baseline wird weiterhin akzeptiert, da die Typabfrage nur im Leer-Pfad (`existingTables.length === 0`) ausgeführt wird.
+- Die bestehende, korrekte AlfaSecuritySoft-Baseline wird weiterhin akzeptiert, da die Typabfrage nur im Leer-Pfad (`existingTables.length === 0`) ausgeführt wird.
 
 ---
 
@@ -63,7 +63,7 @@ Umsetzung:
 Weiterhin bestanden (bereits vorhanden, decken die geforderten Fälle ab):
 
 - **Test 25**: tatsächlich leere Datenbank wird akzeptiert, 001–004 werden angewendet.
-- **Test 7**: vollständige korrekte SecurityOps-Baseline wird akzeptiert.
+- **Test 7**: vollständige korrekte AlfaSecuritySoft-Baseline wird akzeptiert.
 - **Tests 22–24**: zusätzliche RLS-Policies werden abgelehnt.
 - **Tests 26–29**: Fremdtabelle/View/Daten bei abgelehnter Leer-Erkennung.
 
@@ -90,10 +90,10 @@ Die CI/CD-Struktur wurde nicht verändert. Der Backend-Job führt den Schritt �
 
 | Workflow | Run-ID | Job | Ergebnis |
 |---|---|---|---|
-| SecurityOps 2.0 CI | [`43051316780`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43051316780) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** (42 s) |
-| SecurityOps 2.0 CI | [`43051316780`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43051316780) | Frontend – npm ci, Vitest, Produktions-Build | **success** (16 s) |
-| SecurityOps 2.0 CI | [`43051316780`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43051316780) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** (1 m 22 s) |
-| SecurityOps 2.0 CD | [`43051566118`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43051566118) | Release-Paket aus CI-Artefakten bauen | **success** |
+| AlfaSecuritySoft CI | [`43051316780`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43051316780) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** (42 s) |
+| AlfaSecuritySoft CI | [`43051316780`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43051316780) | Frontend – npm ci, Vitest, Produktions-Build | **success** (16 s) |
+| AlfaSecuritySoft CI | [`43051316780`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43051316780) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** (1 m 22 s) |
+| AlfaSecuritySoft CD | [`43051566118`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43051566118) | Release-Paket aus CI-Artefakten bauen | **success** |
 
 Der Schritt **„Migrationshistorie & Baseline (Integrationstests)“** wurde im Backend-Job mit **success** abgeschlossen. Damit liefen alle 33 Migrationstests – einschließlich der neuen Typ-Tests – tatsächlich gegen den PostgreSQL-16-Servicecontainer.
 

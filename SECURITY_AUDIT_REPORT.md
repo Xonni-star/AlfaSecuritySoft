@@ -1,4 +1,4 @@
-# Focused security review — SecurityOps 2.0
+# Focused security review — AlfaSecuritySoft
 
 **Review date:** 2026-11-16
 

@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Backend- und API-Architektur
+# AlfaSecuritySoft – Backend- und API-Architektur
 
 ## Laufzeit und Schichten
 

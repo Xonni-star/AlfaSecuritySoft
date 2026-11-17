@@ -1,7 +1,7 @@
-# SecurityOps 2.0 - Phase 8: Automatisierungsengine & Intelligente Arbeitsabläufe
+# AlfaSecuritySoft - Phase 8: Automatisierungsengine & Intelligente Arbeitsabläufe
 
 ## 1. Systemarchitektur der Automatisierungsengine
-Die Automatisierungsengine in SecurityOps 2.0 arbeitet nach einem **deklarativen Event-Condition-Action (ECA)** Muster:
+Die Automatisierungsengine in AlfaSecuritySoft arbeitet nach einem **deklarativen Event-Condition-Action (ECA)** Muster:
 - **Ereignisauslöser (Triggers)**: `QUALIFICATION_EXPIRING`, `CONTRACT_EXPIRING`, `KEY_OVERDUE`, `INCIDENT_CREATED`, `SHIFT_CONFLICT_DETECTED`, `SOP_UNACKNOWLEDGED`.
 - **Bedingungen (Conditions)**: Typsichere Operatoren (`LESS_THAN_DAYS`, `EQUALS`, `NOT_EQUALS`, `GREATER_THAN`, `IN_ARRAY`). Aus Sicherheitsgründen werden **keine beliebigen SQL-Fragmente oder roher Code** ausgeführt.
 - **Aktionen (Actions)**: `CREATE_TASK`, `SEND_NOTIFICATION`, `ESCALATE_INCIDENT`, `SET_KEY_OVERDUE`.

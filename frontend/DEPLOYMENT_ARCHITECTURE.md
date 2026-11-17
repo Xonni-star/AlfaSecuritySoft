@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Deploymentarchitektur
+# AlfaSecuritySoft - Deploymentarchitektur
 
 > **Projektstatus: In Entwicklung; nicht für Produktion freigegeben.** Beschrieben wird die vorhandene Docker-Konfiguration in `frontend/deploy/`, nicht eine unabhängig verifizierte Produktionsumgebung.
 

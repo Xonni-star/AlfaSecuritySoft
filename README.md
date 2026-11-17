@@ -1,4 +1,4 @@
-# SecurityOps 2.0 — Sicherheitsdienstverwaltung
+# AlfaSecuritySoft — Sicherheitsdienstverwaltung
 
 Mandantenfähige Verwaltungssoftware für Sicherheitsunternehmen mit Prozessbezug zu **DIN 77200** und **§ 34a GewO**: Dienstplanung, Objekt- und Mitarbeiterverwaltung, digitales Wachbuch, Übergabe- und Kontrollgangsmanagement, Schlüssel- und Aufgabenverwaltung sowie Offline-Synchronisation für den mobilen Einsatz. Das ist keine Zertifizierungs- oder Rechtskonformitätsaussage.
 
@@ -34,7 +34,7 @@ Mandantenfähige Verwaltungssoftware für Sicherheitsunternehmen mit Prozessbezu
 |---|---|
 | `frontend/` | React-19-SPA mit Vite, TypeScript, Zustand-Store, IndexedDB-Outbox und Vitest |
 | `frontend/backend/` | Node.js/Express/TypeScript-REST-API (`/api/v1`) mit PostgreSQL 16+ Row-Level-Security, serverseitig widerrufbaren Cookie-Sitzungen und Argon2id |
-Es gibt kein separates Root-Proxy-Backend. Alle SecurityOps-Backend-Befehle (Migrationen, Seed, Tests) laufen unter `frontend/backend/`.
+Es gibt kein separates Root-Proxy-Backend. Alle AlfaSecuritySoft-Backend-Befehle (Migrationen, Seed, Tests) laufen unter `frontend/backend/`.
 
 ---
 
@@ -75,7 +75,7 @@ unset SECOPS_DEMO_USER_PASSWORD
 npm run dev
 ```
 
-`npm run dev` startet das Vite-Frontend und das SecurityOps-Backend (Standard-Port `8000`).
+`npm run dev` startet das Vite-Frontend und das AlfaSecuritySoft-Backend (Standard-Port `8000`).
 Der optionale Seed verlangt ein eigenes Testpasswort (`SECOPS_DEMO_USER_PASSWORD`,
 mindestens 16 Zeichen); keine Seed-Daten oder Konten in produktive Umgebungen übernehmen.
 

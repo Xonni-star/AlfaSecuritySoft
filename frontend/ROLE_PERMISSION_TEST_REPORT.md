@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Phase 13: Rollen- & Berechtigungs-Prüfbericht
+# AlfaSecuritySoft - Phase 13: Rollen- & Berechtigungs-Prüfbericht
 
 > **Historischer Snapshot:** Die Rollenmatrix und BESTANDEN-Angaben stammen aus einem früheren Stand. Sie sind nicht die aktuelle Berechtigungsmatrix; aktuelle Benutzer-/Rollen-API und Grenzen stehen in [USER_ADMINISTRATION_API.md](./USER_ADMINISTRATION_API.md).
 

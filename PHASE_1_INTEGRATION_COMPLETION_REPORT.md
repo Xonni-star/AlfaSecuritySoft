@@ -36,7 +36,7 @@ This is an implementation and evidence snapshot, not a compliance or production-
 - No full production installation, full production restore, or external-provider acceptance has been established.
 - Browser/device acceptance, operational acceptance, and legal/domain review have not been established.
 - External notification delivery, full offline binary support, and complete offline coverage across modules are not established.
-- The full-schema isolated restore test is not a full SecurityOps production installation or production-provider restore.
+- The full-schema isolated restore test is not a full AlfaSecuritySoft production installation or production-provider restore.
 - The backend development dependency tree's last recorded audit identified a LOW `deepmerge@4.3.1` advisory in test/development dependencies. The production-only audit found no production findings at that snapshot.
 
 **Status:** Implementation and automated test coverage are present on `main`; production/provider acceptance and the stated domain/device gaps remain outstanding.

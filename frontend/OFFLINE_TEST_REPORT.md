@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Phase 6: Offline-Testbericht
+# AlfaSecuritySoft - Phase 6: Offline-Testbericht
 
 > **Aktueller verifizierter Code:** `5ee9f36665616178c331e9c53526b1e35396b7bd`,
 > [CI43972242288](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43972242288)

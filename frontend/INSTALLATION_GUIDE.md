@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Installations- & Betriebshandbuch
+# AlfaSecuritySoft - Installations- & Betriebshandbuch
 
 > **Projektstatus: In Entwicklung; nicht für Produktion freigegeben.** Dieses Dokument beschreibt die vorhandene Docker-Konfiguration und ersetzt keine Produktivabnahme.
 
