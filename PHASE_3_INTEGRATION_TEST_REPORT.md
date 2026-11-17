@@ -14,8 +14,8 @@ The Phase 3 frontend validation passed **strict TypeScript checking, 18 test fil
 
 ## Existing integration evidence
 
-- Main CI run [43695784002](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695784002) passed all seven jobs on the reviewed main commit, including PostgreSQL/migrations/backend tests, frontend tests/build, isolated DMS/scanner integration, restore validation, and Docker checks.
-- Main release-artifact run [43695992978](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695992978) failed validation because the uploaded artifact omitted the tracked `frontend/deploy/.env.example`; the packaging workflow is being corrected. The failure does not invalidate the passing CI jobs but means a validated release bundle was not produced.
+- Main CI run [43695784002](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43695784002) passed all seven jobs on the reviewed main commit, including PostgreSQL/migrations/backend tests, frontend tests/build, isolated DMS/scanner integration, restore validation, and Docker checks.
+- Main release-artifact run [43695992978](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43695992978) failed validation because the uploaded artifact omitted the tracked `frontend/deploy/.env.example`; the packaging workflow is being corrected. The failure does not invalidate the passing CI jobs but means a validated release bundle was not produced.
 - The startup smoke test checks backend health and frontend HTML availability; it is not a business-workflow E2E test.
 
 ## Coverage limits

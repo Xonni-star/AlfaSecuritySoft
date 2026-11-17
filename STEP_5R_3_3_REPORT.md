@@ -48,8 +48,8 @@ Der Browser ruft `POST /api/v1/ai/incident-analysis` beziehungsweise `POST /api/
 
 ## CI/CD-Run-IDs
 
-- CI: [Run 43085536988](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43085536988) – erfolgreich (`success`) für Commit `968ef24`.
-- CD: [Run 43085757575](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43085757575) – erfolgreich (`success`), nach erfolgreicher CI für Commit `968ef24`.
+- CI: [Run 43085536988](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43085536988) – erfolgreich (`success`) für Commit `968ef24`.
+- CD: [Run 43085757575](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43085757575) – erfolgreich (`success`), nach erfolgreicher CI für Commit `968ef24`.
 
 ## Offene Risiken / nächste Schritte
 

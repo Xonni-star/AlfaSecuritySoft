@@ -11,12 +11,12 @@ Projektabschluss und keine Produktions-, Sicherheits- oder Rechtsfreigabe.
 - PR #66 ist weiterhin der einzige offene PR. Veröffentlichte Code-Revision:
   `3617576a8408002a99e1ed4f66e5a94b17a13cf5`; nachfolgende reine
   Dokumentationscommits sind in dieser Code-ID nicht enthalten.
-- [CI 43906594339](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43906594339)
+- [CI 43906594339](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43906594339)
   auf `6ead55c73885b1b5779501c50c55c08ee01c6184` bestand **5/7**:
   Backend, Root samt echten Browserjourneys, DMS, ClamAV und Produktions-Docker.
   Offline-Fixture und Linux-Restore scheiterten; dieser Lauf bleibt fehlgeschlagen.
 - Die korrigierte Revision `4524f12` wird in
-  [CI 43908926864](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43908926864)
+  [CI 43908926864](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43908926864)
   mit **7/7 erfolgreichen Jobs** bestätigt, einschließlich Linux-Restore und
   der getrennten Fixture-/echten Browser-Suiten. Dies ist keine Produktionsabnahme.
 - Die Arbeit bleibt auf dem vorhandenen isolierten Branch
@@ -29,7 +29,7 @@ Projektabschluss und keine Produktions-, Sicherheits- oder Rechtsfreigabe.
   nun höchstens zehn positive Containerlisten-Prüfungen ab; Dockerfehler gelten
   nicht als erfolgreiche Entfernung. Zwei frische lokale Zyklen bestanden
   jeweils 3/3 samt Cleanup. Korrektur `3aeebc08e30b9d34bd0e42e95f79c18693e363be`
-  bestand CI [43912398195](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43912398195)
+  bestand CI [43912398195](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43912398195)
   mit 7/7 Jobs.
 
 ## Umgesetzte und lokal geprüfte Pakete
@@ -54,7 +54,7 @@ Projektabschluss und keine Produktions-, Sicherheits- oder Rechtsfreigabe.
 Die Phase-11-Tabelle im Tracker enthält **24 abgegrenzte Pakete**:
 **21 im jeweils beschriebenen Umfang erledigt** und **3 extern zu prüfen**.
 Anhang-Code `3617576a8408002a99e1ed4f66e5a94b17a13cf5` bestand
-[CI 43921057411](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43921057411)
+[CI 43921057411](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43921057411)
 mit 7/7 Jobs; das Root-Protokoll bestätigt explizit 5/5 Browserjourneys und Cleanup.
 Das frühere gehostete Browser-CI-Gate ist auf `4524f12` bestanden.
 Diese Zahlen sind keine Fertigstellungsquote des Produkts.

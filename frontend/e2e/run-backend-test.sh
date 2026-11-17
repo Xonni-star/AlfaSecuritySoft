@@ -37,20 +37,20 @@ cleanup() {
 }
 trap cleanup EXIT
 
-CONTAINER="$(docker run --rm -d -p 127.0.0.1::5432 --label securityops.browser-test=true \
-    -e POSTGRES_DB=securityops_browser -e POSTGRES_USER=secops_admin \
+CONTAINER="$(docker run --rm -d -p 127.0.0.1::5432 --label alfasecuritysoft.browser-test=true \
+    -e POSTGRES_DB=alfasecuritysoft_browser -e POSTGRES_USER=secops_admin \
     -e POSTGRES_HOST_AUTH_METHOD=trust postgres:16-alpine)"
 CONTAINERS="$CONTAINER"
 DMS_S3_ACCESS_KEY="$(openssl rand -hex 16)"
 DMS_S3_SECRET_KEY="$(openssl rand -hex 32)"
 DMS_S3_BUCKET="browser-$(openssl rand -hex 12)"
 export DMS_S3_ACCESS_KEY DMS_S3_SECRET_KEY DMS_S3_BUCKET
-STORAGE_CONTAINER="$(docker run --rm -d -p 127.0.0.1::9000 --label securityops.browser-test=true \
+STORAGE_CONTAINER="$(docker run --rm -d -p 127.0.0.1::9000 --label alfasecuritysoft.browser-test=true \
     -e MINIO_ROOT_USER="$DMS_S3_ACCESS_KEY" -e MINIO_ROOT_PASSWORD="$DMS_S3_SECRET_KEY" \
     ghcr.io/disaster37/minio@sha256:282ffcd2e0a3906086ab49cd70765617b20ce5c24ccf7d788043eb9b4ae59e6f \
     server /data)"
 CONTAINERS="$CONTAINERS $STORAGE_CONTAINER"
-SCANNER_CONTAINER="$(docker run --rm -d -p 127.0.0.1::3310 --label securityops.browser-test=true \
+SCANNER_CONTAINER="$(docker run --rm -d -p 127.0.0.1::3310 --label alfasecuritysoft.browser-test=true \
     clamav/clamav:1.4.3)"
 CONTAINERS="$CONTAINERS $SCANNER_CONTAINER"
 export DMS_S3_ENDPOINT="http://127.0.0.1:$(docker port "$STORAGE_CONTAINER" 9000/tcp | cut -d: -f2)"
@@ -61,7 +61,7 @@ export DMS_CLAMAV_TIMEOUT_MS=30000
 
 READY=false
 for _ in $(seq 1 60); do
-    if docker exec "$CONTAINER" pg_isready -U secops_admin -d securityops_browser >/dev/null 2>&1; then
+    if docker exec "$CONTAINER" pg_isready -U secops_admin -d alfasecuritysoft_browser >/dev/null 2>&1; then
         READY=true
         break
     fi
@@ -95,10 +95,10 @@ docker exec "$STORAGE_CONTAINER" mc mb "browser/$DMS_S3_BUCKET"
 DB_PORT="$(docker port "$CONTAINER" 5432/tcp | cut -d: -f2)"
 export NODE_ENV=test PORT=4181 CORS_ORIGIN=http://127.0.0.1:4173
 JWT_SECRET="$(openssl rand -hex 32)"
-SECOPS_DEMO_USER_PASSWORD="$(openssl rand -hex 24)"
-export JWT_SECRET SECOPS_DEMO_USER_PASSWORD
-export DATABASE_MIGRATION_URL="postgresql://secops_admin@127.0.0.1:$DB_PORT/securityops_browser"
-export DATABASE_URL="postgresql://secops_app_user@127.0.0.1:$DB_PORT/securityops_browser"
+ALFASECURITYSOFT_DEMO_USER_PASSWORD="$(openssl rand -hex 24)"
+export JWT_SECRET ALFASECURITYSOFT_DEMO_USER_PASSWORD
+export DATABASE_MIGRATION_URL="postgresql://secops_admin@127.0.0.1:$DB_PORT/alfasecuritysoft_browser"
+export DATABASE_URL="postgresql://alfasecuritysoft_app_user@127.0.0.1:$DB_PORT/alfasecuritysoft_browser"
 unset RATE_LIMIT_REDIS_URL
 
 npm run migrate --prefix backend

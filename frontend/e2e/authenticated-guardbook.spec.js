@@ -19,7 +19,7 @@ function createStorageClient() {
 
 async function login(page, email = ownerEmail, tenantId = tenantA) {
   await page.getByLabel('E-Mail').fill(email);
-  await page.getByLabel('Passwort').fill(process.env.SECOPS_DEMO_USER_PASSWORD);
+  await page.getByLabel('Passwort').fill(process.env.ALFASECURITYSOFT_DEMO_USER_PASSWORD);
   await page.getByRole('button', { name: 'Anmelden', exact: true }).click();
   if (email === ownerEmail) {
     await page.getByRole('combobox', { name: 'Mandant', exact: true }).selectOption(tenantId);
@@ -292,7 +292,7 @@ test('employee qualifications and absences confirm real persistence and retain a
 
 test('real session and PostgreSQL persist one offline mutation after a lost receipt', async ({ page, context }) => {
   test.setTimeout(120_000);
-  const password = process.env.SECOPS_DEMO_USER_PASSWORD;
+  const password = process.env.ALFASECURITYSOFT_DEMO_USER_PASSWORD;
   expect(password, 'Run using npm run test:browser:backend for an isolated database').toBeTruthy();
   const title = `Backend-Browser-${randomUUID()}`;
   await page.goto('/');

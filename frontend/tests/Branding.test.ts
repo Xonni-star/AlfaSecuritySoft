@@ -16,6 +16,7 @@ describe('AlfaSecuritySoft brand metadata and compatibility identifiers', () => 
     const ciWorkflow = read('../../.github/workflows/ci.yml');
     const releaseWorkflow = read('../../.github/workflows/ci_cd.yml');
     const backendApp = read('../backend/src/app.ts');
+    const productionCompose = read('../deploy/docker-compose.production.yml');
 
     expect(read('../index.html')).toMatch(/<title>AlfaSecuritySoft<\/title>/);
     expect(manifest).toMatchObject({
@@ -32,6 +33,7 @@ describe('AlfaSecuritySoft brand metadata and compatibility identifiers', () => 
     expect(releaseWorkflow).toContain('name: alfasecuritysoft-release-');
     expect(backendApp).toContain("service: 'AlfaSecuritySoft Backend (Node.js/TypeScript)'");
     expect(read('../backend/src/server.ts')).toContain('[AlfaSecuritySoft Backend] Gestartet auf Port');
+    expect(productionCompose).toContain('DATABASE_URL: postgresql://alfasecuritysoft_app_user:');
   });
 
   test('keeps installation and offline persistence namespaces stable', () => {
@@ -39,5 +41,10 @@ describe('AlfaSecuritySoft brand metadata and compatibility identifiers', () => 
     expect(read('../services/indexedDbService.ts')).toContain("'SecurityOps2_OfflineVault'");
     expect(read('../backend/src/config/rateLimitRedis.ts')).toContain("'securityops:api-rate-limit:'");
     expect(read('../App.tsx')).toContain("'securityops:unauthorized'");
+    expect(read('../backend/src/migrations/043_alfasecuritysoft_application_role.sql'))
+      .toContain('GRANT secops_app_user TO alfasecuritysoft_app_user');
+    expect(read('../deploy/.env.example')).toContain('ALFASECURITYSOFT_INTERNAL_SUBNET');
+    expect(read('../deploy/docker-compose.production.yml'))
+      .toContain('${ALFASECURITYSOFT_INTERNAL_SUBNET:-${SECOPS_INTERNAL_SUBNET:-172.30.0.0/24}}');
   });
 });

@@ -1,6 +1,7 @@
 import argon2 from 'argon2';
 import { PoolClient } from 'pg';
 import { pool, withTenantTransaction } from '../config/database';
+import { getDemoUserPassword } from '../config/demoUserPassword';
 
 export const TENANT_FRANKFURT_ID = '11111111-1111-1111-1111-111111111111';
 export const TENANT_BAVARIA_ID = '22222222-2222-2222-2222-222222222222';
@@ -34,9 +35,9 @@ async function seedAlarmTypes(db: PoolClient, tenantId: string): Promise<void> {
 }
 
 export async function seedDatabase(): Promise<void> {
-  const testPassword = process.env.SECOPS_DEMO_USER_PASSWORD;
+  const testPassword = getDemoUserPassword();
   if (!testPassword || testPassword.length < 16) {
-    throw new Error('SECOPS_DEMO_USER_PASSWORD must be supplied and contain at least 16 characters.');
+    throw new Error('ALFASECURITYSOFT_DEMO_USER_PASSWORD must be supplied and contain at least 16 characters.');
   }
 
   console.log('[SEED] Starte Datenbankbefüllung mit Testmandanten und isolierten Daten...');

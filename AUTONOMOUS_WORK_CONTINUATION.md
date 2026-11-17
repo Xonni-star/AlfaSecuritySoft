@@ -24,7 +24,7 @@ Never repeat an already completed merge or reimplement closed findings.
 - PR #66 is the only open PR, mergeable with no reviews or review requests.
   Its diff contains 104 files, 3,578 insertions and 565 deletions.
 - No open GitHub issues were returned. Starting worktree was clean.
-- Exact baseline CI: [43921891610](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43921891610),
+- Exact baseline CI: [43921891610](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43921891610),
   7/7 jobs successful on the starting commit.
 
 ## Verified before this round
@@ -46,7 +46,7 @@ all 30 Roster tests and strict frontend typecheck pass. A separate native Chromi
 check of both actual JSX patterns accepts positive/negative offsets and fractional
 UTC timestamps and rejects malformed/missing-offset values. Published commit
 `ad3d60422e2c19e93fa1299798c64e7949f6f993` passed exact hosted CI
-[43924841249](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43924841249),
+[43924841249](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43924841249),
 7/7 jobs. This is a functional defect, not an authentication bypass.
 Logs: session files `finalization-roster-pattern-red.log` (failing original case).
 
@@ -79,7 +79,7 @@ it did not provide sufficient coverage detail to claim a complete security audit
 
 FNL-007/008/009/010 are now published as
 `5ef02b3ab0b9f711025405247e711f21d3ee9811`;
-[CI 43928436875](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43928436875)
+[CI 43928436875](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43928436875)
 passed **7/7** including frontend, real browser/root, backend, restore, DMS,
 ClamAV and production Docker.
 
@@ -99,7 +99,7 @@ At that preceding snapshot, this code still required publication and hosted veri
 
 That previous publication prerequisite is now satisfied:
 `3b9836334690e5b5e2da9ffca518b4b9f63c81a5` passed exact
-[CI 43929519192](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43929519192),
+[CI 43929519192](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43929519192),
 7/7. Downloaded logs confirm frontend 206/206, backend 546/546 in 35 suites,
 real browser 6/6 and container cleanup. Log:
 `finalization-truthful-audit-hosted-ci.log`.
@@ -126,7 +126,7 @@ customer `c1111111-1111-1111-1111-111111111111`, not a weaker empty-list check.
 Log: `finalization-genuine-console-browser-final.log`.
 
 FNL-013 is published as `3110bbbda1655e804cba35c89ccbda5174e84444`.
-Exact [CI 43932552825](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43932552825)
+Exact [CI 43932552825](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43932552825)
 passed 7/7; downloaded logs confirm frontend 212/212, backend 546/546 in 35 suites,
 real browser 7/7 and cleanup. Log: `finalization-genuine-console-hosted-ci.log`.
 
@@ -146,7 +146,7 @@ Logs: `finalization-resource-forms-red.log`,
 `finalization-resource-forms-browser.log`.
 This publication prerequisite is satisfied: FNL-014 is
 `64c9ee953dfd3241de0678e482eb1fc19f4d0f13`;
-[CI 43934545176](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43934545176)
+[CI 43934545176](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43934545176)
 passed 7/7. Downloaded logs confirm frontend 242, backend 546 and browser 7,
 including container cleanup (`finalization-resource-forms-hosted-ci.log`).
 
@@ -170,7 +170,7 @@ Full backend on a fresh PostgreSQL 16 also passed **546/546 in 35 suites**.
 Exact hosted follow-up is separate, not inferred from FNL-014.
 That hosted prerequisite is now satisfied: FNL-015 is published as
 `fcafebd134d3b1e5530b1e4ae0f46b32b72065d4`;
-[CI 43938567434](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43938567434)
+[CI 43938567434](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43938567434)
 passed 7/7. Downloaded logs verify frontend 262, backend 546, browser 8 and
 cleanup (`finalization-employee-details-hosted-ci.log`).
 Logs: `finalization-employee-details-red.log`,
@@ -205,7 +205,7 @@ Logs: `finalization-resource-metadata-red.log`,
 `finalization-resource-metadata-backend-final.log`.
 
 FNL-016 is published as `8f7b71dc6b6ee769094e5a5774f3fbd62653241e`.
-Exact [CI 43942074079](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43942074079)
+Exact [CI 43942074079](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43942074079)
 passed 7/7. Downloaded logs verify frontend 270, backend 546 and real browser 9
 plus cleanup; `finalization-resource-metadata-hosted-ci.log`.
 
@@ -228,7 +228,7 @@ Logs: `finalization-resource-lifecycle-red.log`,
 `finalization-resource-lifecycle-browser.log`.
 
 FNL-017 is published as `c4fbb7a3e9c1d82c89611ba9281dfe627af77449`;
-exact [CI 43943801543](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43943801543)
+exact [CI 43943801543](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43943801543)
 passed 7/7. Downloaded logs verify frontend 308, backend 546 and browser 9 plus
 cleanup; `finalization-resource-lifecycle-hosted-ci.log`.
 

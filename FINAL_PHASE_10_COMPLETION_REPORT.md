@@ -12,8 +12,8 @@ earlier point only. Current exact-SHA results and remaining gates are in
 
 - Verified `main`: `9df02aaa5ef01de78e0fe5d53be446b2037db24d`.
 - PR #66 is the only open PR; PRs #50–#65 are merged.
-- PR #66's remote head is `785e9eabc9e6ab5f1ce4e726fdff2cbfa49367e4`; hosted CI run [43843645961](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43843645961) passed 7/7 jobs on that SHA.
-- Current `main` CI run [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed 7/7 jobs, and release-artifact validation [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2 on `main`.
+- PR #66's remote head is `785e9eabc9e6ab5f1ce4e726fdff2cbfa49367e4`; hosted CI run [43843645961](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43843645961) passed 7/7 jobs on that SHA.
+- Current `main` CI run [43762052960](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43762052960) passed 7/7 jobs, and release-artifact validation [43762359834](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43762359834) passed 2/2 on `main`.
 - The isolated worktree branch is `xonni-star-phase9-docs-and-status-cleanup`. Local changes are committed but not pushed; they are not covered by the cited PR/main CI results. No PR was retargeted or merged.
 
 ## Local commits

@@ -35,8 +35,8 @@
 - Docker Compose Produktionskonfiguration (`docker compose ... config --quiet`, mit ausschließlich temporären Prüf-Platzhalterwerten): **bestanden**.
 - Produktions-Dockerbuild Backend: **bestanden**.
 - Produktions-Dockerbuild Frontend: **bestanden**.
-- GitHub CI Run [43100211123](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43100211123): **erfolgreich** (Root-Smoke-Start, Backend/PostgreSQL/Jest, Frontend und Dockerjobs).
-- GitHub CD-/Release-Artefakt-Run [43100615171](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43100615171): **erfolgreich** (Frontend-/Backend-Artefakte heruntergeladen, Manifest erzeugt, Paket hochgeladen).
+- GitHub CI Run [43100211123](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43100211123): **erfolgreich** (Root-Smoke-Start, Backend/PostgreSQL/Jest, Frontend und Dockerjobs).
+- GitHub CD-/Release-Artefakt-Run [43100615171](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43100615171): **erfolgreich** (Frontend-/Backend-Artefakte heruntergeladen, Manifest erzeugt, Paket hochgeladen).
 
 ## Bekannte Einschränkungen
 

@@ -119,14 +119,14 @@ const server = createServer(async (request, response) => {
   if (url.pathname === '/api/v1/auth/login' && request.method === 'POST') {
     authenticated = true;
     json(response, 200, { success: true, data: { user } }, {
-      'Set-Cookie': 'securityops-test-session=active; HttpOnly; SameSite=Lax; Path=/',
+      'Set-Cookie': 'alfasecuritysoft-test-session=active; HttpOnly; SameSite=Lax; Path=/',
       'X-CSRF-Token': 'isolated-test-csrf-token'
     });
     return;
   }
 
   if (url.pathname === '/api/v1/auth/me' && request.method === 'GET') {
-    if (!authenticated || !request.headers.cookie?.includes('securityops-test-session=active')) {
+    if (!authenticated || !request.headers.cookie?.includes('alfasecuritysoft-test-session=active')) {
       json(response, 401, { success: false, message: 'Nicht angemeldet' });
       return;
     }

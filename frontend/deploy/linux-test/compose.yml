@@ -2,7 +2,7 @@ name: ${COMPOSE_PROJECT_NAME:?Run install.sh to create a unique test project nam
 
 x-backend-environment: &backend_environment
   NODE_ENV: development
-  DATABASE_URL: postgresql://secops_app_user:${POSTGRES_APP_PASSWORD:?Run install.sh first}@db:5432/${POSTGRES_DB:?Run install.sh first}
+  DATABASE_URL: postgresql://alfasecuritysoft_app_user:${POSTGRES_APP_PASSWORD:?Run install.sh first}@db:5432/${POSTGRES_DB:?Run install.sh first}
   JWT_SECRET: ${JWT_SECRET:?Run install.sh first}
   JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
   CORS_ORIGIN: ${APP_ORIGIN:?Run install.sh first}
@@ -62,7 +62,7 @@ services:
     networks: [app]
 
   minio-bootstrap:
-    image: securityops-linux-test-backend:2.0.0
+    image: alfasecuritysoft-linux-test-backend:2.0.0
     build:
       context: ../..
       dockerfile: deploy/Dockerfile.backend
@@ -123,7 +123,7 @@ services:
     build:
       context: ../..
       dockerfile: deploy/Dockerfile.backend
-    image: securityops-linux-test-backend:2.0.0
+    image: alfasecuritysoft-linux-test-backend:2.0.0
     restart: "no"
     depends_on:
       db:
@@ -138,7 +138,7 @@ services:
     build:
       context: ../..
       dockerfile: deploy/Dockerfile.backend
-    image: securityops-linux-test-backend:2.0.0
+    image: alfasecuritysoft-linux-test-backend:2.0.0
     restart: "no"
     depends_on:
       migrate:
@@ -153,7 +153,7 @@ services:
     build:
       context: ../..
       dockerfile: deploy/Dockerfile.backend
-    image: securityops-linux-test-backend:2.0.0
+    image: alfasecuritysoft-linux-test-backend:2.0.0
     restart: unless-stopped
     depends_on:
       db:
@@ -181,7 +181,7 @@ services:
     build:
       context: ../..
       dockerfile: deploy/linux-test/Dockerfile.frontend
-    image: securityops-linux-test-web:2.0.0
+    image: alfasecuritysoft-linux-test-web:2.0.0
     restart: unless-stopped
     depends_on:
       backend:

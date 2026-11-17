@@ -2,9 +2,9 @@
 
 **Status:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved for production.** This is an evidence index, not a release or compliance approval.
 
-**Current `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
+**Current `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/AlfaSecuritySoft/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
 **Last checked:** 2026-11-16
-**Open PR:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66) is the only open PR. PRs #50–#65 are merged, including [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62).
+**Open PR:** [#66](https://github.com/Xonni-star/AlfaSecuritySoft/pull/66) is the only open PR. PRs #50–#65 are merged, including [#62](https://github.com/Xonni-star/AlfaSecuritySoft/pull/62).
 
 Phase 10/11 changes are published in PR #66. The canonical exact-SHA CI record,
 including the failed first hosted run and its fixture/restore corrections, is
@@ -39,7 +39,7 @@ Use the status labels **IMPLEMENTIERT**, **IMPLEMENTIERT UND GETESTET**, **TEILW
 ### IMPLEMENTIERT UND GETESTET
 
 - PR #64 head `b814b65` passed **7/7 hosted CI jobs**. Its PR description records frontend typecheck, seven focused frontend tests, frontend build, backend build, 22 migration-parser tests, and 17 authorization/sync tests as passed. The PostgreSQL-backed migration/API suites were not run locally because a verified isolated database was unavailable.
-- Historical push CI run [43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on merge SHA `621874535ee480e56716ae8a7bd992272bc7a51a`; it is not the current-main run. Current-main evidence is in the canonical status.
+- Historical push CI run [43760703980](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43760703980) passed **7/7 jobs** on merge SHA `621874535ee480e56716ae8a7bd992272bc7a51a`; it is not the current-main run. Current-main evidence is in the canonical status.
 - The rebased docs head `6c8a52c` passed 7/7 hosted jobs in run 43761213396.
 - Prior CI/artifact results apply only to their stated revisions.
 
@@ -52,10 +52,10 @@ Use the status labels **IMPLEMENTIERT**, **IMPLEMENTIERT UND GETESTET**, **TEILW
 | Validation | Result | Boundary |
 |---|---|---|
 | PR #64 hosted CI | **7/7 passed** on PR head `b814b65` | Pre-merge checks; does not replace post-merge CI. |
-| Main CI | **7/7 passed** on `9df02aa` | Post-merge run [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) on exact current SHA. |
+| Main CI | **7/7 passed** on `9df02aa` | Post-merge run [43762052960](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43762052960) on exact current SHA. |
 | PR #62 hosted CI | **7/7 passed** | Run 43761213396 on head `6c8a52c`; PR since merged. |
-| Artifact validation | **2/2 passed** on `9df02aa` | Run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834). Not a release approval. |
-| Published Phase 11 code in PR #66 | **7/7 passed** | Run [43921057411](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43921057411) on code SHA `3617576a8408002a99e1ed4f66e5a94b17a13cf5`, including 5/5 real browser journeys and genuine attachment rejection/preservation. Later documentation-only revisions are separate. |
+| Artifact validation | **2/2 passed** on `9df02aa` | Run [43762359834](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43762359834). Not a release approval. |
+| Published Phase 11 code in PR #66 | **7/7 passed** | Run [43921057411](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43921057411) on code SHA `3617576a8408002a99e1ed4f66e5a94b17a13cf5`, including 5/5 real browser journeys and genuine attachment rejection/preservation. Later documentation-only revisions are separate. |
 | Reporting UI update | **IMPLEMENTIERT UND GETESTET** | Latest local frontend suite 184/184; TypeScript check/build and hosted frontend job passed. Exact code-SHA evidence is indexed in current status. |
 | Report site-scope changes | **IMPLEMENTIERT UND GETESTET** | Local and hosted PostgreSQL-backed backend regressions passed on the published code revision; this is not full role/object or production acceptance. |
 | Production acceptance | **Not performed / not established** | No deployment or production approval is claimed. |

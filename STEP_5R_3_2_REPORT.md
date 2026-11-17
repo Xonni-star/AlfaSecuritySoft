@@ -177,8 +177,8 @@ Volumes: `secops_pgdata`, `secops_backups`, `caddy_data`, `caddy_config`.
 
 | Workflow | Run-ID | Ergebnis |
 |---|---|---|
-| AlfaSecuritySoft CI | [`43078287238`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43078287238) | **success** – Root, Frontend, Backend, Produktions-Docker |
-| AlfaSecuritySoft CD | [`43078565272`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43078565272) | **success** – Release-Paket |
+| AlfaSecuritySoft CI | [`43078287238`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43078287238) | **success** – Root, Frontend, Backend, Produktions-Docker |
+| AlfaSecuritySoft CD | [`43078565272`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43078565272) | **success** – Release-Paket |
 
 Artefakte:
 

@@ -1,17 +1,17 @@
 # AlfaSecuritySoft — Current project status
 
-**Last verified:** 2026-11-16
+**Last verified:** 2026-11-16 (after PR #67 merge)
 
-**Verified integration commit on `main`:** [`5c6031e21fc8cba3c8256525c9edc52928564f2b`](https://github.com/Xonni-star/SecurityOps-2.0/commit/5c6031e21fc8cba3c8256525c9edc52928564f2b)
+**Current `main` commit:** [`80ac44f4bccc0d9c1aef0891239017ff51b5e216`](https://github.com/Xonni-star/AlfaSecuritySoft/commit/80ac44f4bccc0d9c1aef0891239017ff51b5e216)
 
-**GitHub integration:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66) merged on 2026-11-16 after exact head `df93a7104365aa8848f46e67aabf6c628ebd37cc` passed CI43973880410 **7/7**. The resulting main tree is identical. Earlier PRs #50–#65 are also merged. This document records revision-specific evidence, not live forge state.
+**GitHub integration:** [#67](https://github.com/Xonni-star/AlfaSecuritySoft/pull/67) merged on 2026-11-16; its head was `c995be4f7943ffc1fb06a8d98497f3cb46a26561` and merge commit is the current main SHA above. [#66](https://github.com/Xonni-star/AlfaSecuritySoft/pull/66) was merged earlier as `5c6031e21fc8cba3c8256525c9edc52928564f2b`. The live repository reported no open PRs at the time of this check. This document records revision-specific evidence, not a live forge state.
 
-**Post-merge verification:** [Main CI43974506659](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43974506659) passed **7/7**, with downloaded logs confirming **378 frontend /553 backend in35 suites /10 real browser journeys**. [Artifact workflow43974980830](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43974980830) passed **2/2**: exact main commit and source CI-run provenance,40 migration files and clean production dependency installation. Artifact SHA256: `832ce253f9be755d19de300c3dee2b2e2e69b551f75af617ccb18b80388838f9`. No tag, deployment or production acceptance.
+**Post-#67 verification:** [Main CI43975869437](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43975869437) passed **7/7 jobs** on the exact current main SHA, including PostgreSQL migrations/integration tests, authenticated browser, Compose validation and both image builds. [Artifact workflow43976343055](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43976343055) passed **2/2**. The earlier #66 CI [43974506659](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43974506659) and artifact [43974980830](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43974980830) remain valid for commit `5c6031e`; no tag, deployment or production acceptance is inferred.
 
 **Overall readiness:** **TEILWEISE IMPLEMENTIERT / OFFEN — not approved or verified for production.**
 
 **Historical partial hosted evidence:** `9b79a03a4bc119e51f8f7933b3a82953715b6742`,
-[CI 43966537946](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43966537946):
+[CI 43966537946](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43966537946):
 read logs confirm **367 frontend / 552 backend**, **9/10 browser**, cleanup,
 and only **6/7 jobs**. The new handover journey passed, but its document read
 returned an unchecked HTTP 500; the older incident journey failed on a fixed
@@ -26,7 +26,7 @@ and both builds passed; the complete hosted result below closes this gap.
 on the existing isolated PR branch `xonni-star-phase9-docs-and-status-cleanup`.
 The Phase 10/11 changes were pushed, checked and integrated through PR66.
 No tag or deployment is authorized.
-Its exact [CI 43972242288](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43972242288)
+Its exact [CI 43972242288](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43972242288)
 passed **7/7 jobs**; downloaded logs confirm frontend **378/378**, backend
 **553/553 in 35 suites**, real browser **10/10** and owned-container cleanup.
 This closes the historical FNL-022–026 hosted gaps below, including real
@@ -263,7 +263,7 @@ not FNL-015 evidence.
 
 **Historical rejected-attachment extension (`3617576`) — IMPLEMENTIERT UND GETESTET:** The complete real
 browser suite passed **5/5** locally and in the hosted root job of
-[CI 43921057411](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43921057411),
+[CI 43921057411](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43921057411),
 which passed **7/7 jobs** on the exact code revision above. A synthetic invalid
 GIF receives the real API's HTTP 415, not a fabricated error response. Original
 bytes, owner, stable idempotency key and explicit upload error survive offline
@@ -277,7 +277,7 @@ key without assuming the automatic scheduler's exact attempt count.
 The new case uses 120 seconds; other budgets are unchanged. This tests file-type
 rejection before scanning, not malware quarantine, provider or device acceptance.
 
-**Hosted CI history:** [Run 43906594339](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43906594339)
+**Hosted CI history:** [Run 43906594339](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43906594339)
 on `6ead55c73885b1b5779501c50c55c08ee01c6184` completed **5/7**:
 backend, root/real browser, DMS, ClamAV and production Docker passed.
 The offline fixture failed because it lacked reference-data read grants; Linux
@@ -286,20 +286,20 @@ host runner. Both test contracts are corrected in `4524f12`: explicit fixture
 grants and selected-ID checks; backup UID/GID matching the restore test user,
 with ownership/readability and unchanged `0600` assertions.
 Local fixture **1/1**, full PostgreSQL/MinIO restore and backup-health checks passed.
-[Run 43908926864](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43908926864)
+[Run 43908926864](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43908926864)
 on the exact correction SHA completed **7/7 successfully**, including the
 separate fixture, real-browser/root, Linux restore, backend, DMS, ClamAV and
 production-Docker jobs. The failed first run is not reclassified. These are
 isolated automated checks, not provider/device/production acceptance.
 
 **Documentation-only follow-up:** `71e9c3f82f1c66735b92d27a6871305a6194d9af`
-completed [CI 43910126170](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43910126170)
+completed [CI 43910126170](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43910126170)
 with **6/7** jobs passing. All three real browser tests passed, but their cleanup
 checked too soon for Docker's asynchronous `--rm` removal. The runner now waits
 for up to ten successful container-list checks instead of treating an immediate
 inspect result as final; Docker command failures cannot count as removal.
 Two fresh isolated local cycles passed **3/3 each**, including cleanup.
-[Follow-up CI 43912398195](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43912398195)
+[Follow-up CI 43912398195](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43912398195)
 passed **7/7** on `3aeebc08e30b9d34bd0e42e95f79c18693e363be`;
 no application test was skipped or assertion removed.
 
@@ -317,7 +317,7 @@ The new photo case uses 120 seconds; existing budgets remain unchanged
 (GuardBook/identity 120 seconds, SOP 180 seconds). An earlier ungated test
 observed an already completed retry and failed; it was corrected with a real
 request gate, not sleeps, fake responses, skipped assertions or wider budgets.
-All three owned containers were removed. [CI 43916713656](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43916713656)
+All three owned containers were removed. [CI 43916713656](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43916713656)
 passed **7/7** on `31e63726d8b377abafe564da349c3aa622468291`;
 the hosted root log explicitly confirms **4/4** journeys and cleanup on Node 24.
 Physical devices, representative files and a real provider remain open.
@@ -381,10 +381,11 @@ This is the current evidence index. Phase reports and dated status sections rema
 
 | Area | Status | Evidence and limits |
 |---|---|---|
-| Mainline integration | **IMPLEMENTIERT UND GETESTET** | Current `main` is `9df02aaa5ef01de78e0fe5d53be446b2037db24d` (squash merge of #62). PRs #50–#65 are merged; PR #66 is the sole open PR. |
-| Mainline CI | **IMPLEMENTIERT UND GETESTET** | Post-merge [CI run 43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed **7/7 jobs** on the exact current-main SHA. |
-| Release package validation | **TEILWEISE IMPLEMENTIERT** | Artifact run [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2 on current `main`; packaging/provenance/install validation is not a deployment or production release. |
-| Documentation PR validation | **IMPLEMENTIERT UND GETESTET** | PR #62 (head `6c8a52c`, hosted [CI run 43761213396](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43761213396) 7/7) is merged as `9df02aa`. |
+| Mainline integration | **IMPLEMENTIERT UND GETESTET** | Current `main` is `80ac44f4bccc0d9c1aef0891239017ff51b5e216` (merge commit for #67). PRs #50–#67 are merged; no open PRs were returned by the live check. |
+| AlfaSecuritySoft brand correction | **IN ENTWICKLUNG** | This worktree starts from the mainline merge. The additive role migration, compatible environment-variable changes, repository URL updates and branded test identities are local branch changes, not yet published or integrated. Local frontend tests/typecheck/build, backend build, focused compatibility tests and syntax/diff checks passed; hosted migration/Compose/browser validation remains required. |
+| Mainline CI | **IMPLEMENTIERT UND GETESTET** | Post-#67 [CI run 43975869437](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43975869437) passed **7/7 jobs** on the exact current-main SHA. |
+| Release package validation | **TEILWEISE IMPLEMENTIERT** | Post-#67 artifact run [43976343055](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43976343055) passed 2/2; packaging/provenance/install validation is not a deployment or production release. |
+| Documentation PR validation | **IMPLEMENTIERT UND GETESTET** | PR #67 (head `c995be4`, merge commit `80ac44f`) is merged; exact main CI 43975869437 passed all seven jobs. |
 | Published finalization CI | **IMPLEMENTIERT UND GETESTET** | Exact `3110bbbda1655e804cba35c89ccbda5174e84444` passed CI 43932552825, 7/7: frontend 212, backend 546 and seven real browser cases with cleanup. FNL-014 is separately locally verified, not covered by this earlier run. |
 | Reporting UI | **IMPLEMENTIERT UND GETESTET** | PR #66's frontend uses approved actual hours, calendar ranges, and safe CSV export; its frontend checks passed for the identified revision. |
 | Report site-scope correction | **IMPLEMENTIERT UND GETESTET** | All four report handlers and work-hours CSV use authenticated site grants. Local scope-helper/integration tests and the hosted backend job on `6ead55c` passed. Production acceptance and the full role/object matrix remain outstanding. |
@@ -404,25 +405,25 @@ This is the current evidence index. Phase reports and dated status sections rema
 
 ## Merged PRs #50–#61 and #63–#65
 
-The PR check-rollup for #50–#58, #60, #61, and #63–#65 showed all seven hosted CI jobs successful on each PR. PR #59 had no PR-level check rollup; its post-merge CI and artifact validation were recorded in the historical snapshot below. The exact current-main CI above is the post-merge evidence for the latest merged tree.
+This historical list records those earlier PRs. PR #62 and PRs #66–#67 were also merged; the latest live main SHA and CI are recorded above. The PR check-rollup for #50–#58, #60, #61, and #63–#65 showed all seven hosted CI jobs successful on each PR. PR #59 had no PR-level check rollup; its post-merge CI and artifact validation were recorded in the historical snapshot below.
 
 | PR | Merged change | Merge commit | Merged (UTC) |
 |---|---|---|---|
-| [#50](https://github.com/Xonni-star/SecurityOps-2.0/pull/50) | Verify full isolated backup restore | `41d6354` | 2026-11-15 19:36:43 |
-| [#51](https://github.com/Xonni-star/SecurityOps-2.0/pull/51) | Improve mobile shift-swap usability | `1ea1c54` | 2026-11-15 19:38:47 |
-| [#52](https://github.com/Xonni-star/SecurityOps-2.0/pull/52) | Exercise offline guardbook sync in Chromium | `62f9851` | 2026-11-15 19:39:00 |
-| [#53](https://github.com/Xonni-star/SecurityOps-2.0/pull/53) | Add bounded local performance baseline | `87e56cf` | 2026-11-15 19:39:13 |
-| [#54](https://github.com/Xonni-star/SecurityOps-2.0/pull/54) | Return 403 for disallowed CORS origins | `9774a8a` | 2026-11-15 19:39:40 |
-| [#55](https://github.com/Xonni-star/SecurityOps-2.0/pull/55) | Add multi-tenant selection to login | `6a5adb4` | 2026-11-15 19:39:52 |
-| [#56](https://github.com/Xonni-star/SecurityOps-2.0/pull/56) | Add isolated Phase 7 Linux test installer | `2964dc2` | 2026-11-15 19:40:04 |
-| [#57](https://github.com/Xonni-star/SecurityOps-2.0/pull/57) | Fix customer-linked document RLS scope | `c8ae5ad` | 2026-11-15 19:40:16 |
-| [#58](https://github.com/Xonni-star/SecurityOps-2.0/pull/58) | Fix deepmerge development advisory | `9a621c2` | 2026-11-15 19:40:29 |
-| [#59](https://github.com/Xonni-star/SecurityOps-2.0/pull/59) | Refresh readiness and GitHub status docs | `879ae95` | 2026-11-15 19:45:43 |
-| [#60](https://github.com/Xonni-star/SecurityOps-2.0/pull/60) | Harden planning validation and approvals | `563efd6` | 2026-11-15 20:07:22 |
-| [#61](https://github.com/Xonni-star/SecurityOps-2.0/pull/61) | Improve global search keyboard accessibility | `084314e` | 2026-11-15 20:08:52 |
-| [#63](https://github.com/Xonni-star/SecurityOps-2.0/pull/63) | Test Phase 9 core online workflows | `bed939a` | 2026-11-15 20:13:07 |
-| [#64](https://github.com/Xonni-star/SecurityOps-2.0/pull/64) | Sync GuardBook attachments offline; add idempotent, tenant-scoped attachment receipts | `6218745` | 2026-11-15 20:54:49 |
-| [#65](https://github.com/Xonni-star/SecurityOps-2.0/pull/65) | Strengthen tenant authorization boundary coverage | `cd01c48` | 2026-11-15 20:24:25 |
+| [#50](https://github.com/Xonni-star/AlfaSecuritySoft/pull/50) | Verify full isolated backup restore | `41d6354` | 2026-11-15 19:36:43 |
+| [#51](https://github.com/Xonni-star/AlfaSecuritySoft/pull/51) | Improve mobile shift-swap usability | `1ea1c54` | 2026-11-15 19:38:47 |
+| [#52](https://github.com/Xonni-star/AlfaSecuritySoft/pull/52) | Exercise offline guardbook sync in Chromium | `62f9851` | 2026-11-15 19:39:00 |
+| [#53](https://github.com/Xonni-star/AlfaSecuritySoft/pull/53) | Add bounded local performance baseline | `87e56cf` | 2026-11-15 19:39:13 |
+| [#54](https://github.com/Xonni-star/AlfaSecuritySoft/pull/54) | Return 403 for disallowed CORS origins | `9774a8a` | 2026-11-15 19:39:40 |
+| [#55](https://github.com/Xonni-star/AlfaSecuritySoft/pull/55) | Add multi-tenant selection to login | `6a5adb4` | 2026-11-15 19:39:52 |
+| [#56](https://github.com/Xonni-star/AlfaSecuritySoft/pull/56) | Add isolated Phase 7 Linux test installer | `2964dc2` | 2026-11-15 19:40:04 |
+| [#57](https://github.com/Xonni-star/AlfaSecuritySoft/pull/57) | Fix customer-linked document RLS scope | `c8ae5ad` | 2026-11-15 19:40:16 |
+| [#58](https://github.com/Xonni-star/AlfaSecuritySoft/pull/58) | Fix deepmerge development advisory | `9a621c2` | 2026-11-15 19:40:29 |
+| [#59](https://github.com/Xonni-star/AlfaSecuritySoft/pull/59) | Refresh readiness and GitHub status docs | `879ae95` | 2026-11-15 19:45:43 |
+| [#60](https://github.com/Xonni-star/AlfaSecuritySoft/pull/60) | Harden planning validation and approvals | `563efd6` | 2026-11-15 20:07:22 |
+| [#61](https://github.com/Xonni-star/AlfaSecuritySoft/pull/61) | Improve global search keyboard accessibility | `084314e` | 2026-11-15 20:08:52 |
+| [#63](https://github.com/Xonni-star/AlfaSecuritySoft/pull/63) | Test Phase 9 core online workflows | `bed939a` | 2026-11-15 20:13:07 |
+| [#64](https://github.com/Xonni-star/AlfaSecuritySoft/pull/64) | Sync GuardBook attachments offline; add idempotent, tenant-scoped attachment receipts | `6218745` | 2026-11-15 20:54:49 |
+| [#65](https://github.com/Xonni-star/AlfaSecuritySoft/pull/65) | Strengthen tenant authorization boundary coverage | `cd01c48` | 2026-11-15 20:24:25 |
 
 ## Preserved historical status evidence
 

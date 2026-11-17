@@ -101,8 +101,8 @@ Jede mandantenspezifische Tabelle erzwingt zwei voneinander unabhängige Sicherh
 ### Lokale Entwicklung & Start
 ```bash
 # 1. Repository klonen und in Verzeichnis wechseln
-git clone https://github.com/Xonni-star/SecurityOps-2.0.git
-cd SecurityOps-2.0
+git clone https://github.com/Xonni-star/AlfaSecuritySoft.git
+cd AlfaSecuritySoft
 
 # 2. Abhängigkeiten installieren
 npm install --prefix backend

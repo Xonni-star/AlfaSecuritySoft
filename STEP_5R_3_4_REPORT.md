@@ -41,8 +41,8 @@ Neue Regressionen prüfen, dass die entfernten API-Pfade 404 liefern, Copilot un
 | Produktionsbundle-Suche nach API-URLs/Schlüsseln | Bestanden, keine Treffer |
 | Root-Struktur-/Proxy-Freiheitsprüfung | Bestanden |
 | `git diff --check` | Bestanden |
-| GitHub CI | Erfolgreich – [Run 43089207451](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43089207451) |
-| GitHub CD | Erfolgreich – [Run 43089475753](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43089475753) |
+| GitHub CI | Erfolgreich – [Run 43089207451](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43089207451) |
+| GitHub CD | Erfolgreich – [Run 43089475753](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43089475753) |
 
 ## Commits
 

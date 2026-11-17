@@ -18,7 +18,7 @@ networks:
     internal: true
     ipam:
       config:
-        - subnet: ${SECOPS_INTERNAL_SUBNET:-172.30.0.0/24}
+        - subnet: ${ALFASECURITYSOFT_INTERNAL_SUBNET:-${SECOPS_INTERNAL_SUBNET:-172.30.0.0/24}}
   secops_public:
     driver: bridge
 
@@ -127,7 +127,7 @@ services:
     networks:
       - secops_internal
 
-  # Application backend: uses exclusively secops_app_user.
+  # Application backend: uses the least-privilege AlfaSecuritySoft login.
   backend:
     build:
       context: ..
@@ -144,7 +144,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 8000
-      DATABASE_URL: postgresql://secops_app_user:${POSTGRES_APP_PASSWORD}@db:5432/${POSTGRES_DB:-securityops_v2}
+      DATABASE_URL: postgresql://alfasecuritysoft_app_user:${POSTGRES_APP_PASSWORD}@db:5432/${POSTGRES_DB:-securityops_v2}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET muss gesetzt sein}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
       CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN muss gesetzt sein}
@@ -199,7 +199,7 @@ services:
       - caddy_config:/config
     networks:
       secops_internal:
-        ipv4_address: ${SECOPS_PROXY_IPV4:-172.30.0.2}
+        ipv4_address: ${ALFASECURITYSOFT_PROXY_IPV4:-${SECOPS_PROXY_IPV4:-172.30.0.2}}
       secops_public: {}
     deploy:
       resources:

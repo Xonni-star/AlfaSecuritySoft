@@ -173,7 +173,7 @@ Alle Endpunkte sind authentifiziert, mandantengetrennt und über granulare Berec
 - `1317736` – CRUD-Persistenz für Schichten, Schlüssel und Aufgaben
 - `ae87d4c` – Aktualisierter Audit-/Fortschrittsbericht
 
-GitHub: <https://github.com/Xonni-star/SecurityOps-2.0>
+GitHub: <https://github.com/Xonni-star/AlfaSecuritySoft>
 
 ---
 

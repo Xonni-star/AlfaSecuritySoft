@@ -167,10 +167,10 @@ Commit `745cbc9`:
 
 | Workflow | Run-ID | Job | Ergebnis |
 |---|---|---|---|
-| AlfaSecuritySoft CI | [`43045151216`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43045151216) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** (48 s) |
-| AlfaSecuritySoft CI | [`43045151216`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43045151216) | Frontend – npm ci, Vitest, Produktions-Build | **success** (11 s) |
-| AlfaSecuritySoft CI | [`43045151216`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43045151216) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** (1 m 19 s) |
-| AlfaSecuritySoft CD | [`43045394364`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43045394364) | Release-Paket aus CI-Artefakten bauen | **success** |
+| AlfaSecuritySoft CI | [`43045151216`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43045151216) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** (48 s) |
+| AlfaSecuritySoft CI | [`43045151216`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43045151216) | Frontend – npm ci, Vitest, Produktions-Build | **success** (11 s) |
+| AlfaSecuritySoft CI | [`43045151216`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43045151216) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** (1 m 19 s) |
+| AlfaSecuritySoft CD | [`43045394364`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43045394364) | Release-Paket aus CI-Artefakten bauen | **success** |
 
 Der Schritt **„Migrationshistorie & Baseline (Integrationstests)“** wurde im Backend-Job ausgeführt und mit **success** abgeschlossen (9 Migrationstests gegen den isolierten PostgreSQL-16-Service). Die vollständige Jest-Suite desselben Jobs lief anschließend ebenfalls erfolgreich.
 

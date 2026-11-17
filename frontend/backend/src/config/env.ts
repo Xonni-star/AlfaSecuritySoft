@@ -6,9 +6,9 @@ dotenv.config();
 const envSchema = z.object({
   PORT: z.string().default('8000').transform((val) => parseInt(val, 10)),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  DATABASE_URL: z.string().min(10, 'DATABASE_URL muss zwingend konfiguriert sein (für secops_app_user).'),
+  DATABASE_URL: z.string().min(10, 'DATABASE_URL muss zwingend für die unprivilegierte Anwendungsrolle konfiguriert sein.'),
   // Nur der Migrationsrunner benötigt die administrative Verbindung.
-  // Der normale API-Server läuft ausschließlich mit secops_app_user.
+  // The legacy administrative role remains required for DDL migrations.
   DATABASE_MIGRATION_URL: z.string().min(10, 'DATABASE_MIGRATION_URL muss für Migrationen konfiguriert sein.').optional(),
   DMS_S3_ENDPOINT: z.string().url().default('http://127.0.0.1:9000'),
   DMS_S3_REGION: z.string().min(1).default('us-east-1'),

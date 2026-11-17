@@ -14,6 +14,7 @@ import request from 'supertest';
 import { app } from '../app';
 import { migrationPool, pool } from '../config/database';
 import { env } from '../config/env';
+import { getDemoUserPassword } from '../config/demoUserPassword';
 import { authHeaders } from '../tests/testUtils';
 import { S3DocumentObjectStore, setDocumentObjectStore, maxDocumentUploadBytes } from '../services/documentFiles';
 import { ClamAvDocumentScanner, documentScanner } from '../services/documentScanner';
@@ -24,9 +25,9 @@ const tenantFrankfurtId = '11111111-1111-1111-1111-111111111111';
 const tenantBavariaId = '22222222-2222-2222-2222-222222222222';
 const seedEmail = 'a.schmidt@ffm-sec.de';
 function getSeedPassword(): string {
-  const password = process.env.SECOPS_DEMO_USER_PASSWORD;
+  const password = getDemoUserPassword();
   if (!password || password.length < 16) {
-    throw new Error('SECOPS_DEMO_USER_PASSWORD must be set to the password used by the test database seed.');
+    throw new Error('ALFASECURITYSOFT_DEMO_USER_PASSWORD must be set to the password used by the test database seed.');
   }
   return password;
 }

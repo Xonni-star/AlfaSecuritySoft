@@ -19,8 +19,8 @@ This report describes the current worktree only. It does not change the status o
 
 | PR | State when checked | Base ← head | Latest known checks |
 |---|---|---|---|
-| [#16](https://github.com/Xonni-star/SecurityOps-2.0/pull/16) | Open, unmerged | `main` ← `xonni-star-phase-2-backend-planning` | All four CI jobs succeeded in run `43499444936` |
-| [#19](https://github.com/Xonni-star/SecurityOps-2.0/pull/19) | Open, unmerged | `xonni-star-phase-2-backend-planning` ← `xonni-star-phase-2-planning-ui` | All four CI jobs succeeded in run `43499895032` |
+| [#16](https://github.com/Xonni-star/AlfaSecuritySoft/pull/16) | Open, unmerged | `main` ← `xonni-star-phase-2-backend-planning` | All four CI jobs succeeded in run `43499444936` |
+| [#19](https://github.com/Xonni-star/AlfaSecuritySoft/pull/19) | Open, unmerged | `xonni-star-phase-2-backend-planning` ← `xonni-star-phase-2-planning-ui` | All four CI jobs succeeded in run `43499895032` |
 
 This work is based on PR #19's head `05b9b938a95f087dfb37731f3246b0e83874354c` and is intended as a stacked change. The above PR states are not claims about `main`; neither PR was merged or modified by this work.
 

@@ -2,7 +2,7 @@ import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { env } from './env';
 import { getRequestAuthorizationContext } from '../middleware/requestAuthorizationContext';
 
-// 1. Unprivilegierter Verbindungspool für den normalen Anwendungsbetrieb (secops_app_user)
+// 1. Unprivilegierter Verbindungspool für den normalen Anwendungsbetrieb (alfasecuritysoft_app_user)
 export const pool = new Pool({
   connectionString: env.DATABASE_URL,
   max: 20,
@@ -14,7 +14,7 @@ pool.on('error', () => {
   console.error('[POSTGRES POOL FEHLER] Idle database client reported an error.');
 });
 
-// 2. Privilegierter Pool AUSSCHLIESSLICH für Migrationen (secops_admin)
+// 2. Privilegierter Pool AUSSCHLIESSLICH für Migrationen (legacy secops_admin)
 export const migrationPool = new Pool({
   connectionString: env.DATABASE_MIGRATION_URL,
   max: 3,
@@ -45,7 +45,7 @@ async function releaseContextClient(client: PoolClient): Promise<void> {
 
 /**
  * 3. Verbindliche Rollenprüfung vor Start des HTTP-Servers:
- * Stellt sicher, dass secops_app_user weder SUPERUSER noch BYPASSRLS besitzt.
+ * Stellt sicher, dass die Anwendungsrolle keine privilegierten Rollenattribute besitzt.
  * Bei Feststellung von unzulässigen Rechten wird der Prozess sofort abgebrochen!
  */
 export async function verifyAppDatabaseRole(): Promise<void> {
@@ -61,7 +61,7 @@ export async function verifyAppDatabaseRole(): Promise<void> {
       throw new Error('[SICHERHEITSABBRUCH] Aktuelle Datenbankrolle konnte nicht ermittelt werden.');
     }
 
-    const { app_user, rolsuper, rolbypassrls } = res.rows[0];
+    const { app_user, rolsuper, rolbypassrls, rolcreaterole, rolcreatedb } = res.rows[0];
 
     if (rolsuper === true) {
       throw new Error(`[SICHERHEITSABBRUCH] Die Anwendungs-Rolle '${app_user}' besitzt SUPERUSER-Rechte! Start verweigert.`);
@@ -69,6 +69,10 @@ export async function verifyAppDatabaseRole(): Promise<void> {
 
     if (rolbypassrls === true) {
       throw new Error(`[SICHERHEITSABBRUCH] Die Anwendungs-Rolle '${app_user}' besitzt BYPASSRLS-Rechte! RLS wird dadurch ausgehebelt. Start verweigert.`);
+    }
+
+    if (rolcreaterole === true || rolcreatedb === true) {
+      throw new Error(`[SICHERHEITSABBRUCH] Die Anwendungs-Rolle '${app_user}' besitzt administrative Rollen- oder Datenbankrechte. Start verweigert.`);
     }
 
     console.log(`[POSTGRES SICHERHEIT] Anwendungsrolle '${app_user}' erfolgreich verifiziert (NOSUPERUSER, NOBYPASSRLS).`);

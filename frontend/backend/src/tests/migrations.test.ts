@@ -16,12 +16,12 @@ const noopLogger = () => {};
 const MIGRATION_VERSIONS = [
   '001', '002', '003', '004', '005', '006', '007', '009', '011', '012', '013', '014',
   '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025', '026',
-  '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040', '041', '042'
+  '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040', '041', '042', '043'
 ];
 const MIGRATION_VERSIONS_WITH_010 = [
   '001', '002', '003', '004', '005', '006', '007', '009', '010', '011', '012', '013',
   '014', '015', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025',
-  '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040', '041', '042'
+  '026', '027', '028', '029', '030', '031', '032', '033', '034', '035', '036', '037', '038', '039', '040', '041', '042', '043'
 ];
 
 function migrationUrl(): string {
@@ -38,7 +38,7 @@ function withDatabaseName(name: string, connectionString = migrationUrl()): stri
 }
 
 async function createTestDatabase(): Promise<string> {
-  const name = `secops_migtest_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
+  const name = `alfasecuritysoft_migtest_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
   const admin = new Client({ connectionString: withDatabaseName('postgres') });
   await admin.connect();
   try {
@@ -76,7 +76,7 @@ async function queryInDatabase<T extends Record<string, unknown> = Record<string
 }
 
 function makeMigrationsDir(extraFiles: Record<string, string> = {}, excludedFiles: string[] = []): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'secops-migrations-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'alfasecuritysoft-migrations-'));
   fs.cpSync(REAL_MIGRATIONS_DIR, dir, { recursive: true });
   for (const filename of excludedFiles) fs.rmSync(path.join(dir, filename));
   for (const [filename, content] of Object.entries(extraFiles)) {
@@ -114,7 +114,10 @@ afterAll(() => {
 describe('AlfaSecuritySoft – Versionssicherer Migrationsrunner', () => {
   test('upgrades an unchanged 041 history and preserves append-only protection with technical messaging', async () => {
     const db = await createTestDatabase();
-    const beforeUpgradeDir = makeMigrationsDir({}, ['042_guardbook_technical_integrity_message.sql']);
+    const beforeUpgradeDir = makeMigrationsDir({}, [
+      '042_guardbook_technical_integrity_message.sql',
+      '043_alfasecuritysoft_application_role.sql'
+    ]);
     await runMigrations({
       connectionString: withDatabaseName(db),
       migrationsDir: beforeUpgradeDir,
@@ -131,9 +134,42 @@ describe('AlfaSecuritySoft – Versionssicherer Migrationsrunner', () => {
       migrationsDir: REAL_MIGRATIONS_DIR,
       logger: noopLogger
     });
-    expect(result.applied).toEqual(['042']);
-    expect(result.skipped).toEqual(MIGRATION_VERSIONS.filter(version => version !== '042'));
-    expect((await historyRows(db)).filter(row => row.version !== '042')).toEqual(previousHistory);
+    expect(result.applied).toEqual(['042', '043']);
+    expect(result.skipped).toEqual(MIGRATION_VERSIONS.filter(version => version !== '042' && version !== '043'));
+    expect((await historyRows(db)).filter(row => row.version !== '042' && row.version !== '043')).toEqual(previousHistory);
+
+    const [applicationRole] = await queryInDatabase<{
+      rolcanlogin: boolean;
+      rolinherit: boolean;
+      rolsuper: boolean;
+      rolbypassrls: boolean;
+      rolcreaterole: boolean;
+      rolcreatedb: boolean;
+      inherits_legacy: boolean;
+      can_read_users: boolean;
+      can_delete_users: boolean;
+    }>(
+      db,
+      `SELECT app.rolcanlogin, app.rolinherit, app.rolsuper, app.rolbypassrls,
+              app.rolcreaterole, app.rolcreatedb,
+              pg_has_role(app.oid, legacy.oid, 'USAGE') AS inherits_legacy,
+              has_table_privilege(app.rolname, 'public.users', 'SELECT') AS can_read_users,
+              has_table_privilege(app.rolname, 'public.users', 'DELETE') AS can_delete_users
+         FROM pg_roles app CROSS JOIN pg_roles legacy
+        WHERE app.rolname = 'alfasecuritysoft_app_user'
+          AND legacy.rolname = 'secops_app_user'`
+    );
+    expect(applicationRole).toEqual({
+      rolcanlogin: true,
+      rolinherit: true,
+      rolsuper: false,
+      rolbypassrls: false,
+      rolcreaterole: false,
+      rolcreatedb: false,
+      inherits_legacy: true,
+      can_read_users: true,
+      can_delete_users: false
+    });
 
     const [{ id: tenantId }] = await queryInDatabase<{ id: string }>(
       db, `INSERT INTO tenants (name, subdomain, tax_number, bwr_register_id)

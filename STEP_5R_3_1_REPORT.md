@@ -135,8 +135,8 @@ Beides sind Warnungen, keine Build-Fehler.
 
 | Workflow | Run-ID | Ergebnis |
 |---|---|---|
-| AlfaSecuritySoft CI | [`43075445680`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43075445680) | **success** (Root, Frontend, Backend) |
-| AlfaSecuritySoft CD | [`43075684622`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43075684622) | **success** (Release-Paket) |
+| AlfaSecuritySoft CI | [`43075445680`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43075445680) | **success** (Root, Frontend, Backend) |
+| AlfaSecuritySoft CD | [`43075684622`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43075684622) | **success** (Release-Paket) |
 
 Artefakte:
 

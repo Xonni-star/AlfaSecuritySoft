@@ -7,14 +7,15 @@ import { authHeaders, insertTenantMembership } from './testUtils';
 import { InMemoryDocumentObjectStore, readDocumentBlob, removeDocumentBlob, setDocumentObjectStore } from '../services/documentFiles';
 import { setDocumentScanner, DocumentScannerUnavailableError } from '../services/documentScanner';
 import { claimDueAlarmEscalationJobs } from '../services/alarmEscalationWorker';
+import { getDemoUserPassword } from '../config/demoUserPassword';
 
 // Multi-step HTTP/database workflows need a bounded integration budget, not the unit-test default.
 jest.setTimeout(30000);
 
 function getSeedPassword(): string {
-  const password = process.env.SECOPS_DEMO_USER_PASSWORD;
+  const password = getDemoUserPassword();
   if (!password || password.length < 16) {
-    throw new Error('SECOPS_DEMO_USER_PASSWORD must be set to the password used by the test database seed.');
+    throw new Error('ALFASECURITYSOFT_DEMO_USER_PASSWORD must be set to the password used by the test database seed.');
   }
   return password;
 }

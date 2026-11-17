@@ -6,7 +6,7 @@ const argon2 = backendRequire('argon2');
 async function seedBrowserAccounts() {
   const database = new URL(process.env.DATABASE_MIGRATION_URL);
   if (process.env.NODE_ENV !== 'test' || database.hostname !== '127.0.0.1' ||
-      database.pathname !== '/securityops_browser') {
+      database.pathname !== '/alfasecuritysoft_browser') {
     throw new Error('Browser fixtures require the isolated loopback test database.');
   }
   const pool = new Pool({ connectionString: database.toString() });
@@ -19,12 +19,12 @@ async function seedBrowserAccounts() {
     const other = await client.query(
       `INSERT INTO users (email,password_hash,first_name,last_name)
        VALUES ($1,$2,'Browser','Other') RETURNING id`,
-      ['other@browser.test.invalid', await argon2.hash(process.env.SECOPS_DEMO_USER_PASSWORD)]
+      ['other@browser.test.invalid', await argon2.hash(process.env.ALFASECURITYSOFT_DEMO_USER_PASSWORD)]
     );
     const approver = await client.query(
       `INSERT INTO users (email,password_hash,first_name,last_name)
        VALUES ($1,$2,'Browser','Approver') RETURNING id`,
-      ['approver@browser.test.invalid', await argon2.hash(process.env.SECOPS_DEMO_USER_PASSWORD)]
+      ['approver@browser.test.invalid', await argon2.hash(process.env.ALFASECURITYSOFT_DEMO_USER_PASSWORD)]
     );
     for (const [tenantId, userId] of [
       [bavaria, owner.rows[0].id], [frankfurt, other.rows[0].id], [frankfurt, approver.rows[0].id]
@@ -53,7 +53,7 @@ async function seedBrowserAccounts() {
     const reader = await client.query(
       `INSERT INTO users (email,password_hash,first_name,last_name)
        VALUES ($1,$2,'Browser','Reader') RETURNING id`,
-      ['reader@browser.test.invalid', await argon2.hash(process.env.SECOPS_DEMO_USER_PASSWORD)]
+      ['reader@browser.test.invalid', await argon2.hash(process.env.ALFASECURITYSOFT_DEMO_USER_PASSWORD)]
     );
     await client.query(
       `INSERT INTO tenant_memberships (tenant_id,user_id,first_name,last_name)

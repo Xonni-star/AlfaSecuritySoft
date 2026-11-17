@@ -57,14 +57,14 @@ npm --prefix frontend/backend run build
 npm --prefix frontend/backend run migrate
 
 # Testdaten anlegen
-read -r -s -p 'Testpasswort für Demo-Seed (mindestens 16 Zeichen): ' SECOPS_DEMO_USER_PASSWORD
+read -r -s -p 'Testpasswort für Demo-Seed (mindestens 16 Zeichen): ' ALFASECURITYSOFT_DEMO_USER_PASSWORD
 printf '\n'
-export SECOPS_DEMO_USER_PASSWORD
+export ALFASECURITYSOFT_DEMO_USER_PASSWORD
 npm --prefix frontend/backend run seed
 
 # Backend- und PostgreSQL RLS-Integrationstests ausführen
 npm --prefix frontend/backend test -- --runInBand
-unset SECOPS_DEMO_USER_PASSWORD
+unset ALFASECURITYSOFT_DEMO_USER_PASSWORD
 ```
 
 ### 2.2 Frontend (React, Zustand Store & Vitest unter `frontend/`)
@@ -98,7 +98,7 @@ Für einen reproduzierbaren, ausschließlich lokalen Lauf siehe [Performance-Bas
    - `POST /api/v1/sync/push` verarbeitet Mutationen atomar via PostgreSQL Transaction Advisory Locks und persistiert Quittungen in `sync_idempotency_receipts`.
    - `POST /api/v1/sync/conflicts/resolve` trennt Konfliktentscheidungen in `sync_conflict_resolution_receipts`.
    - Das Frontend entfernt Mutationen erst nach bestätigtem Servererfolg (`applied: true`, `serverState`); bei Fehlern bleibt die Outbox unversehrt.
-3. **Least-Privilege**: Die Anwendung verbindet sich im operativen Betrieb ausschließlich als unprivilegierter Benutzer `secops_app_user` (ohne Superuser- oder BYPASSRLS-Rechte).
+3. **Least-Privilege**: Die Anwendung verbindet sich im operativen Betrieb als `alfasecuritysoft_app_user`, der die eingeschränkten Grants von `secops_app_user` erbt (ohne Superuser- oder BYPASSRLS-Rechte). Die Legacy-Rolle bleibt für bestehende Installationen und historische Grants erhalten.
 
 ## 4. Dokumentenmanagement
 
