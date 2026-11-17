@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Schritt 5R.3.7.1 Abschlussbericht
+# AlfaSecuritySoft – Schritt 5R.3.7.1 Abschlussbericht
 
 ## Änderungen
 
@@ -24,9 +24,9 @@ Frontend-Builds melden eine Vite-Konfigurationswarnung zu __dirname und einen gr
 
 Code-Commit: cadc6a7c12cf5a0e18a1116c76577fc7429ddb10 (fix: harden employee offline synchronization), nach main gepusht.
 
-- CI-Lauf https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43184941481: erfolgreich; alle vier Jobs (Backend/PostgreSQL 16, Frontend, Root-Smoke, Produktions-Docker) erfolgreich.
+- CI-Lauf https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43184941481: erfolgreich; alle vier Jobs (Backend/PostgreSQL 16, Frontend, Root-Smoke, Produktions-Docker) erfolgreich.
 - CI-Artefakte vorhanden und nicht abgelaufen: frontend-dist, backend-dist.
-- Release-Lauf https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43185170308: erfolgreich; Release-Artefakt securityops-release-cadc6a7c12cf5a0e18a1116c76577fc7429ddb10 vorhanden und nicht abgelaufen.
+- Release-Lauf https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43185170308: erfolgreich; Release-Artefakt securityops-release-cadc6a7c12cf5a0e18a1116c76577fc7429ddb10 vorhanden und nicht abgelaufen.
 
 ## Einschränkungen
 

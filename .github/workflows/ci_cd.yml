@@ -1,4 +1,4 @@
-name: SecurityOps 2.0 CD – Release-Artefakte
+name: AlfaSecuritySoft CD – Release-Artefakte
 
 # Läuft ausschließlich nach einem erfolgreichen CI-Lauf auf `main` und
 # bündelt die von der CI erzeugten Build-Artefakte zu einem Release-Paket.
@@ -6,7 +6,7 @@ name: SecurityOps 2.0 CD – Release-Artefakte
 
 on:
   workflow_run:
-    workflows: ["SecurityOps 2.0 CI"]
+    workflows: ["AlfaSecuritySoft CI"]
     types: [completed]
     branches: [main]
 
@@ -72,7 +72,7 @@ jobs:
       - name: Release-Paket als Artefakt sichern
         uses: actions/upload-artifact@v4
         with:
-          name: securityops-release-${{ github.event.workflow_run.head_sha }}
+          name: alfasecuritysoft-release-${{ github.event.workflow_run.head_sha }}
           path: release
           if-no-files-found: error
           # upload-artifact excludes dotfiles by default; the verified .env.example is required.
@@ -99,7 +99,7 @@ jobs:
       - name: Release-Artefakt herunterladen und extrahieren
         uses: actions/download-artifact@v4
         with:
-          name: securityops-release-${{ github.event.workflow_run.head_sha }}
+          name: alfasecuritysoft-release-${{ github.event.workflow_run.head_sha }}
           path: extracted-release
 
       - name: Kritische Dateien und CI-Provenienz prüfen

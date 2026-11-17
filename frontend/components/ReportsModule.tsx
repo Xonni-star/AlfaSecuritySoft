@@ -241,7 +241,7 @@ export const ReportsModule: React.FC = () => {
     const encodedUri = `data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`;
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `SecurityOps_${dataSource}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `AlfaSecuritySoft_${dataSource}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     link.remove();

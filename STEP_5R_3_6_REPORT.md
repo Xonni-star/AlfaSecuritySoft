@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Schritt 5R.3.6 Bericht
+# AlfaSecuritySoft – Schritt 5R.3.6 Bericht
 
 ## Ausgangszustand
 
@@ -43,8 +43,8 @@ Die Oberfläche unterscheidet aktive und archivierte Standorte, zeigt Archivzeit
 ## GitHub-CI/CD
 
 - Code-Commit `ed9fb7f7ef8faf21aeeb457ce8ca8f498018087a` – `feat: complete persistent site management`.
-- GitHub CI: [Run 43104468861](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43104468861) – **success**.
-- GitHub CD Release-Artefakte: [Run 43104762654](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43104762654) – **success**.
+- GitHub CI: [Run 43104468861](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43104468861) – **success**.
+- GitHub CD Release-Artefakte: [Run 43104762654](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43104762654) – **success**.
 - Code-Commit wurde zusätzlich auf das private Forgejo-Repository `xanni/SecurityOps-2.0` gespiegelt.
 
 ## Verbleibende Einschränkungen

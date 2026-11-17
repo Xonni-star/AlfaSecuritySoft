@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Administratorhandbuch
+# AlfaSecuritySoft - Administratorhandbuch
 
 > **Projektstatus:** In Entwicklung; nicht für Produktion freigegeben. Die folgenden Hinweise beschreiben Funktionen im aktuellen Quellcode/PR-Arbeitsstand, keine erfolgte Produktivabnahme.
 

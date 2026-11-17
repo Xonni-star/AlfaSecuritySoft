@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# SecurityOps 2.0 - TypeScript/Express Backend (PostgreSQL 16, RLS, JWT)
+# AlfaSecuritySoft - TypeScript/Express Backend (PostgreSQL 16, RLS, JWT)
 # Build context: frontend/ (repository path: frontend/deploy/Dockerfile.backend)
 
 FROM node:24-bookworm-slim AS deps

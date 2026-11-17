@@ -3,7 +3,7 @@ import { useSecurityStore } from '../store';
 import { apiClient, ApiError } from '../services/apiClient';
 import { offlineVault } from '../services/indexedDbService';
 
-describe('SecurityOps 2.0 - Frontend Store Konfliktauflösung & API-Vertragstests (Schritt 5R.2.15 - Vitest)', () => {
+describe('AlfaSecuritySoft - Frontend Store Konfliktauflösung & API-Vertragstests (Schritt 5R.2.15 - Vitest)', () => {
   const queueId = `test-q-${Date.now()}`;
 
   beforeEach(() => {

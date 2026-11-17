@@ -1,10 +1,10 @@
-# SecurityOps 2.0 — Ergebnis- und Fortsetzungsbericht
+# AlfaSecuritySoft — Ergebnis- und Fortsetzungsbericht
 
 ## Aktuelle Finalisierungsrunde, 16.11.2026
 
 **Status: IN ENTWICKLUNG / OFFEN — keine Gesamtfertigstellung oder Produktionsfreigabe.**
 Die Korrekturrunden und Prüfgrenzen stehen im Tracker.
-[PR #66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66) ist als
+[PR #66](https://github.com/Xonni-star/AlfaSecuritySoft/pull/66) ist als
 5c6031e21fc8cba3c8256525c9edc52928564f2b integriert: tatsächliche Main-
 CI43974506659 **7/7**, gelesene378/553/10; Artefakt43974980830 **2/2**
 mit passender Commit-/CI-Provenienz und sauberer Produktionsinstallation.
@@ -16,7 +16,7 @@ Veröffentlicht:
 `5ef02b3ab0b9f711025405247e711f21d3ee9811` korrigiert bestätigte Formularpersistenz,
 Identitätsbindung, Reportrechte/Zeitzonendaten und dauerhafte kritische
 Offline-Folgeaufgaben
-([CI 43928436875](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43928436875),
+([CI 43928436875](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43928436875),
 7/7; Logs bestätigen Frontend 201/201, Backend 546/546 und Browser 6/6).
 `3b9836334690e5b5e2da9ffca518b4b9f63c81a5` entfernt erfundene Audit-/Pentesterfolge
 und schützt verspätete IndexedDB-Antworten bei Identitätswechsel;

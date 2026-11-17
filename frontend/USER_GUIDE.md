@@ -1,6 +1,6 @@
-# SecurityOps 2.0 – Benutzerhandbuch
+# AlfaSecuritySoft – Benutzerhandbuch
 
-> **Projektstatus: In Entwicklung; nicht für Produktion freigegeben.** SecurityOps 2.0 ist weder als DIN-77200-konform noch nach § 34a GewO zertifiziert. Dieses Handbuch enthält beispielhafte Bedienhinweise; nicht alle genannten Bilddateien, Funktionen oder Abläufe sind im aktuellen Build verfügbar.
+> **Projektstatus: In Entwicklung; nicht für Produktion freigegeben.** AlfaSecuritySoft ist weder als DIN-77200-konform noch nach § 34a GewO zertifiziert. Dieses Handbuch enthält beispielhafte Bedienhinweise; nicht alle genannten Bilddateien, Funktionen oder Abläufe sind im aktuellen Build verfügbar.
 
 ## 1. Einführung
 

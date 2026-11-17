@@ -1,4 +1,4 @@
-// SecurityOps 2.0 - Service Worker (Offline App-Shell & Cache-First Asset Handler)
+// AlfaSecuritySoft - Service Worker (Offline App-Shell & Cache-First Asset Handler)
 const CACHE_NAME = 'secops-core-v2.0.5';
 const APP_SHELL_URLS = [
   './',

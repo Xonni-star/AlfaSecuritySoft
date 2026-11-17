@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Schritt 5R.3.7 Abschlussbericht
+# AlfaSecuritySoft – Schritt 5R.3.7 Abschlussbericht
 
 ## Ausgangszustand
 
@@ -33,9 +33,9 @@ Lokaler Qualitätslauf, tatsächlich ausgeführt:
 
 GitHub-Verifikation für Code-Commit `26ed6049d9ef522e708d27322f436d0a3a852618` (`feat: complete persistent employee management`):
 
-- CI [Run 43110894524](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43110894524): **success**, alle vier Jobs erfolgreich (Backend/PostgreSQL, Frontend, Integration, Produktions-Docker).
+- CI [Run 43110894524](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43110894524): **success**, alle vier Jobs erfolgreich (Backend/PostgreSQL, Frontend, Integration, Produktions-Docker).
 - CI-Artefakte: `backend-dist` (83,718 Bytes) und `frontend-dist` (269,357 Bytes), bei Prüfung vorhanden und nicht abgelaufen.
-- CD [Run 43111112784](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43111112784): **success**; Release-Paket `securityops-release-26ed6049d9ef522e708d27322f436d0a3a852618` (353,729 Bytes) vorhanden und nicht abgelaufen.
+- CD [Run 43111112784](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43111112784): **success**; Release-Paket `securityops-release-26ed6049d9ef522e708d27322f436d0a3a852618` (353,729 Bytes) vorhanden und nicht abgelaufen.
 - Code-Commit wurde nach `origin/main` gepusht; der lokale Branch war danach sauber und synchron.
 
 ## Offene Punkte und Grenzen

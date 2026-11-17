@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Async Database Engine & Tenant Context Manager
+# AlfaSecuritySoft - Async Database Engine & Tenant Context Manager
 from contextlib import asynccontextmanager
 import os
 import uuid

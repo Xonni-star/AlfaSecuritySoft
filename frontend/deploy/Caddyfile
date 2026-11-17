@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Production Reverse Proxy & TLS (Caddy)
+# AlfaSecuritySoft - Production Reverse Proxy & TLS (Caddy)
 # API requests are forwarded to the TypeScript/Express backend.
 # The frontend is served from the static production build in /srv.
 
@@ -27,7 +27,7 @@
         max_size 15MB
     }
 
-    # SecurityOps TypeScript/Express API
+    # AlfaSecuritySoft TypeScript/Express API
     handle /api/* {
         reverse_proxy backend:8000 {
             header_up Host {host}

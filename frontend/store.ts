@@ -126,7 +126,7 @@ function matchesPendingSOPRevision(sop: SOPDocument | undefined, acknowledgement
     sop.versionId === acknowledgement.versionId && sop.version === acknowledgement.version);
 }
 
-function currentSOPIdentity(state: SecurityOpsStore): { tenantId: string; userId: string } {
+function currentSOPIdentity(state: AlfaSecuritySoftStore): { tenantId: string; userId: string } {
   return {
     tenantId: state.currentTenantId || state.authUser?.tenantId || '',
     userId: state.authUser?.id || state.currentUserId
@@ -572,7 +572,7 @@ function alarmIncidentQueryString(filters: AlarmIncidentQuery): string {
 
 let alarmIncidentRequestId = 0;
 
-interface SecurityOpsStore {
+interface AlfaSecuritySoftStore {
   // Theme
   theme: ThemeMode;
   toggleTheme: () => void;
@@ -741,10 +741,10 @@ interface SecurityOpsStore {
   resolveAlarm: (siteId: string) => void;
 }
 
-type StoreSetter = (partial: Partial<SecurityOpsStore> | ((state: SecurityOpsStore) => Partial<SecurityOpsStore>)) => void;
-type StoreGetter = () => SecurityOpsStore;
+type StoreSetter = (partial: Partial<AlfaSecuritySoftStore> | ((state: AlfaSecuritySoftStore) => Partial<AlfaSecuritySoftStore>)) => void;
+type StoreGetter = () => AlfaSecuritySoftStore;
 
-function emptyTenantData(): Partial<SecurityOpsStore> {
+function emptyTenantData(): Partial<AlfaSecuritySoftStore> {
   return {
     clients: [],
     sites: [],
@@ -910,7 +910,7 @@ async function submitAlarmMutation(
   }
 }
 
-export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
+export const useSecurityStore = create<AlfaSecuritySoftStore>((set, get) => ({
   theme: (() => {
     try {
       return (typeof localStorage !== 'undefined' ? localStorage.getItem('secops_theme') as ThemeMode : 'dark') || 'dark';
@@ -1125,7 +1125,7 @@ export const useSecurityStore = create<SecurityOpsStore>((set, get) => ({
     if (!isCurrentSOPIdentity(requestIdentity.tenantId, requestIdentity.userId)) return;
     const tenantId = requestIdentity.tenantId;
     const errors: string[] = [];
-    const nextState: Partial<SecurityOpsStore> = {};
+    const nextState: Partial<AlfaSecuritySoftStore> = {};
 
     if (clientsResult.status === 'fulfilled') {
       nextState.clients = clientsResult.value.map((row) => mapClientRow(row, tenantId));

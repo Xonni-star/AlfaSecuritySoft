@@ -1,4 +1,4 @@
-// SecurityOps 2.0 - Zuverlässige Enterprise IndexedDB Storage Engine (Schritt 5R gehärtet)
+// AlfaSecuritySoft - Zuverlässige Enterprise IndexedDB Storage Engine (Schritt 5R gehärtet)
 // Wartet bei Schreiboperationen zwingend auf transaction.oncomplete.
 // Behandelt transaction.onerror und transaction.onabort als echte Fehler. Keine verschluckten Fehler!
 

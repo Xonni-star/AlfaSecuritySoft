@@ -1,8 +1,8 @@
-# Phase 9 acceptance status — SecurityOps 2.0
+# Phase 9 acceptance status — AlfaSecuritySoft
 
 **Status:** **TEILWEISE BESTANDEN / BLOCKIERT.** This is an evidence-based status report, not a Phase 9 completion, production-readiness, or release approval.
 
-**Repository state checked:** `main` at `9df02aaa5ef01de78e0fe5d53be446b2037db24d`; PR #66 open. Hosted run [43843101598](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43843101598) passed 7/7 on `7fc57d9`; the standalone browser fixture passed locally but is not part of hosted CI.
+**Repository state checked:** `main` at `9df02aaa5ef01de78e0fe5d53be446b2037db24d`; PR #66 open. Hosted run [43843101598](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43843101598) passed 7/7 on `7fc57d9`; the standalone browser fixture passed locally but is not part of hosted CI.
 
 | Area | Status | Evidence and remaining boundary |
 |---|---|---|

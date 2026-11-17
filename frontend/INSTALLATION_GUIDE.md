@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Installations- & Betriebshandbuch
+# AlfaSecuritySoft - Installations- & Betriebshandbuch
 
 > **Projektstatus: In Entwicklung; nicht für Produktion freigegeben.** Dieses Dokument beschreibt die vorhandene Docker-Konfiguration und ersetzt keine Produktivabnahme.
 
@@ -9,8 +9,8 @@
 
 ## 2. Docker-Installation
 ```bash
-git clone https://github.com/Xonni-star/SecurityOps-2.0.git
-cd SecurityOps-2.0
+git clone https://github.com/Xonni-star/AlfaSecuritySoft.git
+cd AlfaSecuritySoft
 chmod +x frontend/deploy/install.sh
 ./frontend/deploy/install.sh
 ```

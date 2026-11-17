@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SecurityOps 2.0 - Verified PostgreSQL Restore Runbook
+# AlfaSecuritySoft - Verified PostgreSQL Restore Runbook
 set -euo pipefail
 
 if [ "$#" -ne 1 ]; then

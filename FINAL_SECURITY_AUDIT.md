@@ -1,4 +1,4 @@
-# SecurityOps 2.0 — Sicherheitsprüfung und verbleibende Grenzen
+# AlfaSecuritySoft — Sicherheitsprüfung und verbleibende Grenzen
 
 **Stand: 16.11.2026. Status: TEILWEISE IMPLEMENTIERT / OFFEN.**
 Dies ist der Ergebnisstand begrenzter Codeprüfungen und automatisierter
@@ -20,7 +20,7 @@ historischen Kontext im [Sicherheitsbericht](./SECURITY_AUDIT_REPORT.md).
 ## Nachprüfbare Evidenz
 
 - Code `5ef02b3ab0b9f711025405247e711f21d3ee9811`:
-  [CI 43928436875](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43928436875)
+  [CI 43928436875](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43928436875)
   bestand 7/7 Jobs. Die Logs bestätigen Frontend 201/201, Backend 546/546
   in 35 Suites sowie sechs echte Browserjourneys mit Containerbereinigung.
   Separate Jobs prüfen privaten S3-/ClamAV-API-Ablauf, Scanneradapter,
@@ -37,14 +37,14 @@ historischen Kontext im [Sicherheitsbericht](./SECURITY_AUDIT_REPORT.md).
 - Nachfolgender veröffentlichter Code
   `3b9836334690e5b5e2da9ffca518b4b9f63c81a5` korrigiert verspätete lokale
   Schreibantworten bei Identitätswechsel und erfundene Auditzuordnung.
-  Exakte [CI 43929519192](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43929519192)
+  Exakte [CI 43929519192](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43929519192)
   bestand 7/7; die Logs bestätigen Frontend 206/206, Backend 546/546 und Browser
   6/6 mit Cleanup. Das ist keine Übertragung des Vorgängerergebnisses.
 - FNL-013 ersetzt weitere simulierte Technik-/Abnahmenachweise durch echte
   GET-Antworten, sichtbare Fehler und einen schreibgeschützten Prüfplan;
   generische Automationen sind lokale Entwürfe ohne Engine.
   Exakter veröffentlichter Code `3110bbbda1655e804cba35c89ccbda5174e84444`
-  bestand [CI 43932552825](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43932552825),
+  bestand [CI 43932552825](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43932552825),
   7/7; Logs: Frontend 212, Backend 546, sieben echte Browserfälle mit Cleanup.
   Die neue Journey prüft echte GET-Daten, exakt erlaubte Kunden-ID,
   tatsächliches HTTP 403 eines Readers und keine Mutation.

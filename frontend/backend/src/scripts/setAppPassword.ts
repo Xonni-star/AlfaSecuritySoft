@@ -20,16 +20,22 @@ async function main(): Promise<void> {
   await client.connect();
 
   try {
-    const role = await client.query(`SELECT 1 FROM pg_roles WHERE rolname = 'secops_app_user'`);
-    if (role.rowCount === 0) {
-      throw new Error('Rolle secops_app_user fehlt. Zuerst Migrationen ausführen.');
+    const roles = await client.query(
+      `SELECT rolname FROM pg_roles WHERE rolname = ANY($1::text[])`,
+      [['secops_app_user', 'alfasecuritysoft_app_user']]
+    );
+    if (roles.rowCount !== 2) {
+      throw new Error('Application database roles are missing. Run migrations before setting passwords.');
     }
 
     await client.query(
       `ALTER ROLE secops_app_user WITH LOGIN PASSWORD ${client.escapeLiteral(password)}`
     );
+    await client.query(
+      `ALTER ROLE alfasecuritysoft_app_user WITH LOGIN PASSWORD ${client.escapeLiteral(password)}`
+    );
 
-    console.log('[DB INIT] Passwort für secops_app_user gesetzt.');
+    console.log('[DB INIT] Application role passwords set.');
   } finally {
     await client.end();
   }

@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Abschlussbericht Schritt 5R.2.14
+# AlfaSecuritySoft - Abschlussbericht Schritt 5R.2.14
 ## Vitest endgültig im tatsächlichen Frontend eingerichtet & verifiziert
 
 ### 1. Ausgeführte Arbeiten & Bereinigung
@@ -49,7 +49,7 @@ securityops-frontend@2.0.0
  RUN  v1.6.0 /workspace/frontend
 
  ✓ tests/store_conflict_contract.test.ts (6 tests) 142ms
-   ✓ SecurityOps 2.0 - Frontend Store Konfliktauflösung & API-Vertragstests (Schritt 5R.2.14 - Vitest)
+   ✓ AlfaSecuritySoft - Frontend Store Konfliktauflösung & API-Vertragstests (Schritt 5R.2.14 - Vitest)
      ✓ 1. Gültige Konfliktantwort mit data, applied: true und serverState entfernt Outbox und aktualisiert Store
      ✓ 2. API liefert kein data-Objekt: Outbox bleibt unverändert erhalten, Fehler wird geworfen
      ✓ 3. API liefert applied: false: Outbox bleibt erhalten

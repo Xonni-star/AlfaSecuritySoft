@@ -526,7 +526,7 @@ export const MobilePatrolScanner: React.FC = () => {
   const handleQrValue = async (value: string, method: 'QR_CODE' | 'NFC_TAG') => {
     const payload = parsePatrolQrPayload(value);
     if (!payload) {
-      setErrorMessage('Der Code ist kein gültiger SecurityOps-Kontrollpunkt-Token.');
+      setErrorMessage('Der Code ist kein gültiger AlfaSecuritySoft-Kontrollpunkt-Token.');
       return;
     }
     const checkpoint = checkpoints.find(point => point.id === payload.checkpointId && point.siteId === payload.siteId) || {

@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Central Business Service Layer & Automation Engine
+# AlfaSecuritySoft - Central Business Service Layer & Automation Engine
 import uuid
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime, date

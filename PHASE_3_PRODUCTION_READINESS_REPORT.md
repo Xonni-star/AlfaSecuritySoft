@@ -6,8 +6,8 @@
 
 ## Verified improvements
 
-- The mainline CI run [43695784002](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695784002) passed all seven jobs on the reviewed commit.
-- The release-artifact run [43695992978](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695992978) failed its hosted validation: `actions/upload-artifact@v4` omitted the tracked hidden file `frontend/deploy/.env.example`, which the verifier requires. The Phase 4 change enables hidden-file inclusion on the release artifact upload; the verifier still rejects `.env*` files other than `.env.example`. The fix requires a subsequent hosted run to confirm.
+- The mainline CI run [43695784002](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43695784002) passed all seven jobs on the reviewed commit.
+- The release-artifact run [43695992978](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43695992978) failed its hosted validation: `actions/upload-artifact@v4` omitted the tracked hidden file `frontend/deploy/.env.example`, which the verifier requires. The Phase 4 change enables hidden-file inclusion on the release artifact upload; the verifier still rejects `.env*` files other than `.env.example`. The fix requires a subsequent hosted run to confirm.
 - The package verification performed during implementation checked all 36 current migrations and found zero vulnerabilities in the backend production dependency set.
 - On the Phase 4 branch, frontend strict type-check, 19 test files / 122 tests, and production build passed; backend build and 29 suites / 286 tests passed. The largest generated JavaScript chunk is 413.58 kB minified (next largest: 364.86 kB), below Vite's 500 kB warning threshold.
 - Existing production Compose, health checks, migration runner, and isolated full-schema restore checks are present. Their existence does not establish that production services have been deployed or accepted.

@@ -1,6 +1,6 @@
 {
-  "short_name": "SecurityOps",
-  "name": "SecurityOps 2.0 - Sicherheitsdienstverwaltung",
+  "short_name": "AlfaSecuritySoft",
+  "name": "AlfaSecuritySoft",
   "description": "Software für Sicherheitsdienstprozesse mit Wachbuch, Dienstplanung und Dokumentenverwaltung.",
   "start_url": "./",
   "display": "standalone",

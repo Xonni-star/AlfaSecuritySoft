@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Abschlussbericht Schritt 5R.2.11
+# AlfaSecuritySoft - Abschlussbericht Schritt 5R.2.11
 ## Frontend-Testumgebung vollständig eingerichtet & verifiziert
 
 ### 1. Ausgeführte Arbeiten

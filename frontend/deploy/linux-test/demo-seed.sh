@@ -27,6 +27,6 @@ if (( ${#DEMO_PASSWORD} < 16 )); then
   exit 1
 fi
 
-SECOPS_DEMO_USER_PASSWORD="$DEMO_PASSWORD" "${COMPOSE[@]}" run --rm -e SECOPS_DEMO_USER_PASSWORD \
+ALFASECURITYSOFT_DEMO_USER_PASSWORD="$DEMO_PASSWORD" "${COMPOSE[@]}" run --rm -e ALFASECURITYSOFT_DEMO_USER_PASSWORD \
   --entrypoint node backend dist/seeds/seed.js
 echo "Demo-Daten angelegt. Zugangsdaten nicht vergessen und nach dem Test wieder entfernen."

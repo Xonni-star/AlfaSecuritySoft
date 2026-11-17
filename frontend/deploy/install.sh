@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# SecurityOps 2.0 - Production Installer (TypeScript backend + PostgreSQL 16)
+# AlfaSecuritySoft - Production Installer (TypeScript backend + PostgreSQL 16)
 # ==============================================================================
 set -euo pipefail
 
@@ -20,7 +20,7 @@ COMPOSE_FILE="$SCRIPT_DIR/docker-compose.production.yml"
 ENV_FILE="$SCRIPT_DIR/.env"
 
 echo "=========================================================="
-echo "    SECURITYOPS 2.0 - PRODUKTIONSINSTALLATION             "
+echo "    AlfaSecuritySoft - PRODUKTIONSINSTALLATION             "
 echo "    TypeScript-Backend / PostgreSQL 16 / Caddy TLS        "
 echo "=========================================================="
 
@@ -65,8 +65,8 @@ if [ ! -f "$ENV_FILE" ]; then
     sed -i "s|CHANGEME_JWT_SECRET_MIN_32_CHARS|$GEN_JWT|" "$ENV_FILE"
     sed -i "s|CHANGEME_BACKUP_ENCRYPTION_KEY|$GEN_BACKUP|" "$ENV_FILE"
 
-    read -r -p "Öffentliche Domain [securityops.example]: " INPUT_DOMAIN
-    INPUT_DOMAIN=${INPUT_DOMAIN:-securityops.example}
+    read -r -p "Öffentliche Domain [alfasecuritysoft.example]: " INPUT_DOMAIN
+    INPUT_DOMAIN=${INPUT_DOMAIN:-alfasecuritysoft.example}
     sed -i "s|^DOMAIN=.*|DOMAIN=$INPUT_DOMAIN|" "$ENV_FILE"
     sed -i "s|^CORS_ORIGIN=.*|CORS_ORIGIN=https://$INPUT_DOMAIN|" "$ENV_FILE"
 
@@ -113,6 +113,6 @@ echo "    URL: https://$DOMAIN_VALUE"
 echo "    Health: https://$DOMAIN_VALUE/api/v1/health"
 echo ""
 echo "    Optionaler Demo-Seed (nicht für Produktion):"
-echo "    Eigenes SECOPS_DEMO_USER_PASSWORD (mindestens 16 Zeichen) setzen."
+echo "    Eigenes ALFASECURITYSOFT_DEMO_USER_PASSWORD (mindestens 16 Zeichen) setzen."
 echo "    docker compose -f $COMPOSE_FILE run --rm --entrypoint node backend dist/seeds/seed.js"
 echo "=========================================================="

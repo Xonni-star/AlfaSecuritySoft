@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Schritt 5R.2.17
+# AlfaSecuritySoft – Schritt 5R.2.17
 > **Historischer Snapshot:** Dieser frühere Bericht referenziert ein separates Root-Proxy-Backend. Dieses wurde in Schritt 5R.3.4 vollständig aus dem Repository entfernt.
 
 ## Vitest-Testumgebung endgültig im richtigen Frontend einrichten
@@ -35,7 +35,7 @@ npm error The `npm ci` command can only install with an existing package-lock.js
 
 Ein lokales `frontend/.npmrc` mit `workspaces=false` wurde von npm ignoriert („npm warn config ignoring workspace config at .../frontend/.npmrc"). Ohne Entfernen der Workspace-Deklaration ist die Abschlussbedingung „`npm ci` im Verzeichnis `frontend/` erfolgreich" technisch nicht erfüllbar.
 
-Die Workspace-Deklaration war ohnehin inkonsistent: Sie verwies mit `backend` auf den fremden Google-Cloud-Proxy, nicht auf das SecurityOps-Backend (`frontend/backend`). Die Root-Skripte (`dev-frontend`, `dev-backend`, `dev`) funktionieren unverändert über `--prefix`. `private: true` wurde ergänzt, damit das Root-Paket nicht versehentlich publiziert wird.
+Die Workspace-Deklaration war ohnehin inkonsistent: Sie verwies mit `backend` auf den fremden Google-Cloud-Proxy, nicht auf das AlfaSecuritySoft-Backend (`frontend/backend`). Die Root-Skripte (`dev-frontend`, `dev-backend`, `dev`) funktionieren unverändert über `--prefix`. `private: true` wurde ergänzt, damit das Root-Paket nicht versehentlich publiziert wird.
 
 ---
 

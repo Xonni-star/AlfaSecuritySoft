@@ -1,7 +1,7 @@
-# SecurityOps 2.0 - Phase 6: Offline-Testbericht
+# AlfaSecuritySoft - Phase 6: Offline-Testbericht
 
 > **Aktueller verifizierter Code:** `5ee9f36665616178c331e9c53526b1e35396b7bd`,
-> [CI43972242288](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43972242288)
+> [CI43972242288](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43972242288)
 > **7/7**, gelesene Logs **378 Frontend/553 Backend/10 echte Browserjourneys**
 > und Containerbereinigung. Das umfasst echte Quittungsverluste und erneute
 > Übertragung, Dokumentantworten, Entwurfs-/Besitzeraktivierungen und
@@ -11,7 +11,7 @@
 
 > **Aktueller Anhang-Fehlernachweis:** Die echte Suite besteht lokal und gehostet
 > **5/5** auf `3617576a8408002a99e1ed4f66e5a94b17a13cf5`;
-> [CI 43921057411](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43921057411)
+> [CI 43921057411](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43921057411)
 > besteht 7/7 Jobs, das Root-Protokoll bestätigt 5/5 und Cleanup.
 > Eine synthetische ungültige GIF-Datei erhält tatsächlich HTTP 415 vom Backend.
 > Originaldaten, Besitzer, Schlüssel und Uploadfehler überstehen Offline-Reload;
@@ -35,16 +35,16 @@
 > Testdefaults. Fotofall 120 s; bestehende Budgets unverändert (Wachbuch/
 > Identität 120 s, SOP 180 s); eigene Container entfernt.
 > Ein vorheriger ungesteuerter Zustandscheck war racy und bleibt als Fehlversuch
-> dokumentiert. [CI 43916713656](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43916713656)
+> dokumentiert. [CI 43916713656](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43916713656)
 > bestand auf `31e63726d8b377abafe564da349c3aa622468291` 7/7;
 > Root-Protokoll: 4/4 und Cleanup. Keine Geräte-/Providerabnahme.
 
-> **Gehostete Phase-11-Evidenz:** Run [43906594339](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43906594339)
+> **Gehostete Phase-11-Evidenz:** Run [43906594339](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43906594339)
 > auf `6ead55c` bestand insgesamt nur 5/7, aber die drei echten Browserjourneys
 > im Root-Job bestanden. Der separate Offline-Fixture scheiterte nach dem
 > Rechte-Gating an fehlenden Standort-/Mitarbeiter-Leserechten. `4524f12` ergänzt
 > genau diese Fixture-Grants und prüft geladene Referenz-IDs; lokal wieder 1/1.
-> Korrekturlauf [43908926864](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43908926864)
+> Korrekturlauf [43908926864](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43908926864)
 > bestand auf `4524f121420dd66829feafe7b7aed07aece7a338` **7/7 Jobs**,
 > einschließlich beider getrennter Browser-Suiten und des Linux-Restore-Drills.
 > Aktuelle Korrektur-CI und exakte SHAs: [Projektstatus](../PROJECT_CURRENT_STATUS.md).
@@ -77,7 +77,7 @@
 > **Historische Phase-11-CI-Konfiguration (16.11.2026):** Der vorhandene isolierte Chromium-Test wurde im Frontend-CI-Job eingerichtet (Chromium-Installation, Fehler-Trace und Screenshot). Lokal bestand er damals 1/1; gehostete Ausführung stand noch aus. Der Test bleibt eine Loopback-Fixture und keine authentifizierte Backend-/Geräteabnahme. Der aktuelle Ausführungsstand steht oben.
 
 > **Historische Szenariomatrix:** Die 18 Einträge unten dokumentieren damalige lokale Prüfungen, keine aktuelle Browser-/Geräteabnahme. Insbesondere Szenario 2 prüft nur lokale IndexedDB-Validierung und ist kein Nachweis für Upload-/Replay-Verhalten; dieses Verhalten wird in aktuellen Offline-Sync-Tests separat geprüft.
-> **Aktueller Stand (15.11.2026):** PR [#64](https://github.com/Xonni-star/SecurityOps-2.0/pull/64) ist in `main` gemergt (`621874535ee480e56716ae8a7bd992272bc7a51a`). Migration 041 ergänzt tenant-scoped Idempotenzquittungen für den Wachbuchanhang-Upload. Anhänge mit gespeicherter `userId` können nach Wiederverbindung idempotent hochgeladen werden. Lokale Altanhänge ohne `userId` werden nicht automatisch hochgeladen oder einem Benutzer zugewiesen; die UI warnt davor, und der Benutzer muss sie erneut hinzufügen. Ein Altanhang mit bereits bestätigtem Eintrag und nicht-UUID lokaler ID kann nicht verknüpft werden. Main-CI-Lauf [43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) lief beim letzten Statuscheck noch.
+> **Aktueller Stand (15.11.2026):** PR [#64](https://github.com/Xonni-star/AlfaSecuritySoft/pull/64) ist in `main` gemergt (`621874535ee480e56716ae8a7bd992272bc7a51a`). Migration 041 ergänzt tenant-scoped Idempotenzquittungen für den Wachbuchanhang-Upload. Anhänge mit gespeicherter `userId` können nach Wiederverbindung idempotent hochgeladen werden. Lokale Altanhänge ohne `userId` werden nicht automatisch hochgeladen oder einem Benutzer zugewiesen; die UI warnt davor, und der Benutzer muss sie erneut hinzufügen. Ein Altanhang mit bereits bestätigtem Eintrag und nicht-UUID lokaler ID kann nicht verknüpft werden. Main-CI-Lauf [43760703980](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43760703980) lief beim letzten Statuscheck noch.
 > **Veröffentlichte Korrektur (16.11.2026):** Ein bestätigtes MEDIUM-Finding zur tenantweiten Sichtbarkeit und zum Export ownerloser lokaler Anhänge wurde behoben. Die Oberfläche zeigt weder Dateimetadaten noch Inhalte; die Daten bleiben lokal. Frontend-Regressionstests, Typcheck und Produktionsbuild bestanden. Die Revision ist veröffentlicht; exakte CI-Prüfgrenzen stehen im aktuellen Projektstatus. Ein sicherer Recovery-Pfad bleibt offen.
 
 ## 1. Testergebnisse der 18 Szenarien
@@ -119,7 +119,7 @@ CI mapping for this verification snapshot: PR #16 head `a167379546d239ae7241974a
 
 > PR #52 has since merged. The test results and fixture/device limitations below describe that snapshot and remain useful evidence, but the open-PR state is historical. See [current project status](../PROJECT_CURRENT_STATUS.md) and the [Phase 9 report](../PHASE_9_COMPLETION_REPORT.md).
 
-Open PR [#52](https://github.com/Xonni-star/SecurityOps-2.0/pull/52) adds a Playwright/Chromium loopback scenario covering offline guardbook capture, reload persistence of the outbox entry and photo, reconnect, and retry after a deliberately lost receipt. The retry uses the same mutation ID and produces one effect in the local fixture. The PR reports three focused Vitest files / 48 tests, typecheck, production build, and `npm run test:browser -- --workers=1` passing on head `9dddf9e5a4c4ca2cbd0cfee7e924a30d3d7eefd1`; hosted CI run [43750985353](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43750985353) passed 7/7 jobs. The PR remains open and unmerged.
+Open PR [#52](https://github.com/Xonni-star/AlfaSecuritySoft/pull/52) adds a Playwright/Chromium loopback scenario covering offline guardbook capture, reload persistence of the outbox entry and photo, reconnect, and retry after a deliberately lost receipt. The retry uses the same mutation ID and produces one effect in the local fixture. The PR reports three focused Vitest files / 48 tests, typecheck, production build, and `npm run test:browser -- --workers=1` passing on head `9dddf9e5a4c4ca2cbd0cfee7e924a30d3d7eefd1`; hosted CI run [43750985353](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43750985353) passed 7/7 jobs. The PR remains open and unmerged.
 
 This browser test uses a loopback fixture, not the authenticated application backend or production services; backend/device acceptance remains incomplete. The DMS upload API has no idempotency key or retry lookup and generates a new document ID, so photo upload/replay is not implemented. Photos persist locally as **unsynced**. No UI or report should claim that a photo has synchronized.
 

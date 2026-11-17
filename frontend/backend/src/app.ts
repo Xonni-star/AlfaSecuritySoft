@@ -84,7 +84,7 @@ app.get('/api/v1/health', async (req, res) => {
     const dbRes = await pool.query('SELECT 1 as healthy');
     res.json({
       status: 'OPERATIONAL',
-      service: 'SecurityOps 2.0 Backend (Node.js/TypeScript)',
+      service: 'AlfaSecuritySoft Backend (Node.js/TypeScript)',
       version: '2.0.0',
       database: dbRes.rows[0].healthy ? 'PostgreSQL 16+ Connected (RLS Active)' : 'DB Unhealthy',
       rateLimitStore: rateLimitRedisClient ? 'Connected' : 'Not configured',

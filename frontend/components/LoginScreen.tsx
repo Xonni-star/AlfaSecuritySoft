@@ -42,7 +42,7 @@ export const LoginScreen: React.FC = () => {
             <Shield className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white">SecurityOps 2.0</h1>
+            <h1 className="text-lg font-bold text-white">AlfaSecuritySoft</h1>
             <p className="text-[11px] text-slate-400">Anmeldung an der PostgreSQL-Instanz</p>
           </div>
         </div>
@@ -128,7 +128,7 @@ export const LoginScreen: React.FC = () => {
         </button>
 
         <p className="text-[10px] text-slate-500 leading-relaxed">
-          Die Anmeldung erfolgt gegen das SecurityOps-Backend. Ohne gültige Sitzung werden keine
+          Die Anmeldung erfolgt gegen das AlfaSecuritySoft-Backend. Ohne gültige Sitzung werden keine
           Mandantendaten geladen.
         </p>
       </form>

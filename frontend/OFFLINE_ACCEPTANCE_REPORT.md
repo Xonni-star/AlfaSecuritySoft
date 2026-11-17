@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Phase 13: Offline-Abnahmebericht
+# AlfaSecuritySoft - Phase 13: Offline-Abnahmebericht
 
 ## 1. Testergebnisse
 - **Offline Start**: PWA lädt auch ohne Verbindung vollständig aus dem Service Worker Cache (`public/sw.js`).

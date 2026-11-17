@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Phase 6: Konfliktmanagement & Differenzierte Regeln
+# AlfaSecuritySoft - Phase 6: Konfliktmanagement & Differenzierte Regeln
 
 ## 1. Differenzierte Auflösungsregeln
 | Entität | Konfliktstrategie | Begründung |

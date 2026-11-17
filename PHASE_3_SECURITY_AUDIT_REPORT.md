@@ -23,7 +23,7 @@ No reportable vulnerability was found in the RLS/RBAC, authentication, and front
 
 - Backend: 29 Jest suites, 286 tests passed against an isolated, migrated and seeded PostgreSQL 16 database on the Phase 4 branch.
 - Frontend: 19 Vitest files, 122 tests passed; strict TypeScript check and production build passed on the Phase 4 branch.
-- Main CI run [43695784002](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695784002) passed all seven jobs on the reviewed main commit. The bounded static review described above remains a Phase 3 snapshot, not a complete Phase 4 authorization assessment.
+- Main CI run [43695784002](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43695784002) passed all seven jobs on the reviewed main commit. The bounded static review described above remains a Phase 3 snapshot, not a complete Phase 4 authorization assessment.
 
 These results verify the exercised test cases only. No penetration test, external security assessment, production deployment review, or live-provider security test was performed.
 

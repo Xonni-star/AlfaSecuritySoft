@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Phase 1: Echtes Backend & PostgreSQL-Datenbank
+# AlfaSecuritySoft - Phase 1: Echtes Backend & PostgreSQL-Datenbank
 > **Historischer Snapshot:** Dokumentation des früheren Phase-1-Stands. Die damals erwähnte optionale KI-Integration wurde im Schritt 5R.3.4 aus der Software entfernt.
 
 
@@ -101,8 +101,8 @@ Jede mandantenspezifische Tabelle erzwingt zwei voneinander unabhängige Sicherh
 ### Lokale Entwicklung & Start
 ```bash
 # 1. Repository klonen und in Verzeichnis wechseln
-git clone https://github.com/Xonni-star/SecurityOps-2.0.git
-cd SecurityOps-2.0
+git clone https://github.com/Xonni-star/AlfaSecuritySoft.git
+cd AlfaSecuritySoft
 
 # 2. Abhängigkeiten installieren
 npm install --prefix backend

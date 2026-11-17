@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Git Ignore Rules
+# AlfaSecuritySoft - Git Ignore Rules
 
 # Environment Variables & Secrets (Niemals ins Repository einchecken!)
 .env

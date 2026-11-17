@@ -1,6 +1,6 @@
 # Patrol management: implementation and acceptance audit
 
-**Historical implementation and verification snapshot:** PR [#14](https://github.com/Xonni-star/SecurityOps-2.0/pull/14) merged on 2026-11-13 as `252d4bf6e8ff26d7b7855529952cb5340d8f8fa8`. The original audit described the unmerged implementation worktree; its PR/worktree details and test counts below are historical snapshot evidence, not a fresh run against current `main`. The merge does not establish production readiness, operational availability, or device-level acceptance.
+**Historical implementation and verification snapshot:** PR [#14](https://github.com/Xonni-star/AlfaSecuritySoft/pull/14) merged on 2026-11-13 as `252d4bf6e8ff26d7b7855529952cb5340d8f8fa8`. The original audit described the unmerged implementation worktree; its PR/worktree details and test counts below are historical snapshot evidence, not a fresh run against current `main`. The merge does not establish production readiness, operational availability, or device-level acceptance.
 
 ## Implemented scope
 
@@ -54,10 +54,10 @@ The original implementation worktree used branch `xonni-star-feature-patrol-mana
 
 All four required jobs passed for current code head `d61057ee3a29a4c40586ff05de080bd0193855bb`:
 
-- [Backend – PostgreSQL 16, Migration, Build, Jest](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43437507879/job/131926310353) — passed
-- [Frontend – npm ci, Vitest, production build](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43437507879/job/131926310031) — passed
-- [Production Docker – configuration and image builds](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43437507879/job/131926309728) — passed
-- [Root – npm ci, structure check, overall start](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43437507879/job/131926310190) — passed
+- [Backend – PostgreSQL 16, Migration, Build, Jest](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43437507879/job/131926310353) — passed
+- [Frontend – npm ci, Vitest, production build](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43437507879/job/131926310031) — passed
+- [Production Docker – configuration and image builds](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43437507879/job/131926309728) — passed
+- [Root – npm ci, structure check, overall start](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43437507879/job/131926310190) — passed
 
 The historical report correction was documentation-only; the PR Checks tab is authoritative for the latest branch head.
 

@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Dedicated Production Background Worker
+# AlfaSecuritySoft - Dedicated Production Background Worker
 import time
 import asyncio
 import os
@@ -9,7 +9,7 @@ from backend.database import AsyncSessionLocal
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [WORKER] %(message)s")
 
 async def run_worker_loop():
-    logging.info("SecurityOps 2.0 Hintergrund-Worker gestartet (Celery/Asyncio Event Loop).")
+    logging.info("AlfaSecuritySoft Hintergrund-Worker gestartet (Celery/Asyncio Event Loop).")
     while True:
         try:
             logging.info("Führe periodische Watchdog-Prüfungen aus (Qualifikationen, Verträge, Schlüssel)...")

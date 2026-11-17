@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Schritt 5R.2.19
+# AlfaSecuritySoft – Schritt 5R.2.19
 > **Historischer Snapshot:** Dieser frühere Bericht referenziert ein separates Root-Proxy-Backend. Dieses wurde in Schritt 5R.3.4 vollständig aus dem Repository entfernt.
 
 ## Abhängigkeiten reproduzierbar festschreiben
@@ -77,7 +77,7 @@ Es wurden keine Lockfiles manuell editiert und keine Integrity-Hashes erfunden.
 
 ## 5. Zusätzlich notwendige Root-Korrektur
 
-Der Root-Befehl `npm run dev-backend` zeigte auf `--prefix backend` – also auf das **Google-Cloud-Proxy-Verzeichnis**, nicht auf das SecurityOps-Backend. Dieses Verzeichnis besitzt kein installiertes `nodemon` und ist laut `frontend/README.md` ausdrücklich nicht das Anwendungsbackend. Der Befehl endete mit `sh: 1: nodemon: not found` (Exit 127).
+Der Root-Befehl `npm run dev-backend` zeigte auf `--prefix backend` – also auf das **Google-Cloud-Proxy-Verzeichnis**, nicht auf das AlfaSecuritySoft-Backend. Dieses Verzeichnis besitzt kein installiertes `nodemon` und ist laut `frontend/README.md` ausdrücklich nicht das Anwendungsbackend. Der Befehl endete mit `sh: 1: nodemon: not found` (Exit 127).
 
 Korrektur: `dev-backend` zeigt jetzt auf `frontend/backend`. Die Root-Skripte bleiben ansonsten unverändert. Zusätzlich wurde `node_modules/` in die Root-`.gitignore` aufgenommen, damit das für die Root-Prüfung installierte `node_modules` nicht im Repository landet.
 
@@ -131,7 +131,7 @@ npm run dev        # mit Test-Umgebungsvariablen, PORT=8010
 |---|---|
 | `npm ci` (Root) | ✅ 20 Pakete, Exit 0 |
 | `concurrently --version` | ✅ `10.0.7` |
-| `npm run dev` | ✅ Frontend: `VITE v8.3.8 ready`, `http://localhost:5174/`; Backend: `[SECURITYOPS 2.0 BACKEND] Gestartet auf Port 8010`; Prozess nach 22 s kontrolliert per Timeout beendet (Exit 124 erwartet) |
+| `npm run dev` | ✅ Frontend: `VITE v8.3.8 ready`, `http://localhost:5174/`; Backend: `[AlfaSecuritySoft BACKEND] Gestartet auf Port 8010`; Prozess nach 22 s kontrolliert per Timeout beendet (Exit 124 erwartet) |
 
 Hinweis: Port 8000 war lokal bereits durch einen fremden Prozess belegt (`EADDRINUSE`). Für den Startnachweis wurde `PORT=8010` gesetzt. Das ist eine lokale Umgebungsbelegung, kein Fehler der Skripte.
 
@@ -152,7 +152,7 @@ Hinweis: Port 8000 war lokal bereits durch einen fremden Prozess belegt (`EADDRI
 ## 8. Verbleibende Risiken
 
 1. **Caret-Ranges im Backend:** `frontend/backend/package.json` verwendet weiterhin `^`-Ranges. `npm ci` ist durch das Lockfile reproduzierbar; ein `npm install` würde jedoch innerhalb der Ranges aktualisieren. Eine vollständige Umstellung auf exakte Versionen war nicht Teil der Aufgabe (keine unnötigen Änderungen).
-2. **Root-Backend-Verzeichnis:** Das Verzeichnis `backend/` (Google-Cloud-Proxy) bleibt bestehen. Es ist kein SecurityOps-Backend und wird von den Root-Dev-Skripten nicht mehr verwendet.
+2. **Root-Backend-Verzeichnis:** Das Verzeichnis `backend/` (Google-Cloud-Proxy) bleibt bestehen. Es ist kein AlfaSecuritySoft-Backend und wird von den Root-Dev-Skripten nicht mehr verwendet.
 3. **Dev-Start benötigt Umgebungsvariablen:** Das TypeScript-Backend bricht ohne gültige `DATABASE_URL`, `DATABASE_MIGRATION_URL`, `JWT_SECRET` und `CORS_ORIGIN` bewusst ab (Fail-Fast-Konfiguration). Das ist beabsichtigt.
 4. **Port-Konflikte:** Lokal belegte Standardports (8000, 5173) führen zu Ausweichports bzw. Startabbruch; in CI nicht relevant.
 

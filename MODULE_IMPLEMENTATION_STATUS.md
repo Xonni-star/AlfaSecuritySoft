@@ -1,4 +1,4 @@
-# SecurityOps 2.0 — Module implementation evidence
+# AlfaSecuritySoft — Module implementation evidence
 
 **Checked:** 2026-11-16, Phase 11 local worktree. This inventory maps active UI/API/database paths and available automated evidence. A row is not a full acceptance of every product requirement. The full route-by-route role/object matrix and deployment/device/provider acceptance remain open.
 

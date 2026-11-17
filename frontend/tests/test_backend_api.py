@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Backend API & Multi-Tenant Pytest Suite
+# AlfaSecuritySoft - Backend API & Multi-Tenant Pytest Suite
 import pytest
 import uuid
 from backend.security import (

@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Enterprise Pydantic v2 Request & Response Schemas
+# AlfaSecuritySoft - Enterprise Pydantic v2 Request & Response Schemas
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date
 import uuid

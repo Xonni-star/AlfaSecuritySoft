@@ -1,4 +1,4 @@
-# SecurityOps 2.0 — Produktionsreife
+# AlfaSecuritySoft — Produktionsreife
 
 **Stand: 16.11.2026. Entscheidung: NICHT FÜR PRODUKTION FREIGEGEBEN.**
 Ein Merge oder bestandene CI ist keine betriebliche, juristische oder
@@ -24,25 +24,25 @@ unabhängige Sicherheitsabnahme.
 ## Revisionsgebundene Grundlage
 
 `5ef02b3ab0b9f711025405247e711f21d3ee9811` bestand
-[CI 43928436875](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43928436875)
+[CI 43928436875](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43928436875)
 mit 7/7 Jobs; Logs: Frontend 201/201, Backend 546/546, echter Browser 6/6.
 Der nachfolgende veröffentlichte Code
 `3b9836334690e5b5e2da9ffca518b4b9f63c81a5` bestand exakte
-[CI 43929519192](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43929519192),
+[CI 43929519192](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43929519192),
 7/7; Logs: Frontend 206/206, Backend 546/546, Browser 6/6 mit Cleanup.
 Nachfolgendes FNL-013 bestand lokal Frontend 212/212 in 34 Dateien,
 Typprüfung, beide Builds, Root-/Compose-Prüfung und Browser 7/7.
 Sein veröffentlichter Code `3110bbbda1655e804cba35c89ccbda5174e84444` bestand
-[CI 43932552825](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43932552825),
+[CI 43932552825](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43932552825),
 7/7; Logs: Frontend 212, Backend 546, Browser 7 mit Cleanup.
 Nachfolgendes FNL-014 korrigiert Bestätigungs-/Identitätsgrenzen der Kunden-/
 Objekt-/Mitarbeiterformulare; lokal Frontend 242/242, Typprüfung/Build und
 Browser 7/7. Veröffentlicht als `64c9ee953dfd3241de0678e482eb1fc19f4d0f13`,
-[CI 43934545176](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43934545176)
+[CI 43934545176](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43934545176)
 7/7; Logs bestätigen Frontend 242, Backend 546 und Browser 7.
 FNL-015 besteht lokal Frontend 262/262, Typprüfung/Build und Browser 8/8.
 Veröffentlicht als `fcafebd134d3b1e5530b1e4ae0f46b32b72065d4`;
-[CI 43938567434](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43938567434)
+[CI 43938567434](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43938567434)
 7/7, Logs: Frontend 262, Backend 546, Browser 8 und Cleanup.
 FNL-016 besteht lokal Frontend 270/270, Typprüfung/beide Builds,
 gezielte PostgreSQL-API-Fälle 3/3 und Browser 9/9 mit Cleanup.

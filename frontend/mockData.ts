@@ -25,18 +25,18 @@ export const initialTenants: Tenant[] = [
   {
     id: 'tenant-frankfurt',
     name: 'Securitas & Wache Frankfurt GmbH',
-    subdomain: 'ffm-sec.securityops.de',
+    subdomain: 'ffm-sec.alfasecuritysoft.example',
     taxNumber: 'DE301928374',
     licenseTier: 'Enterprise (Unbegrenzt)',
     din77200Certified: true,
     bwrRegisterId: 'BWR-HE-99201',
     active: true,
-    contactEmail: 'zentrale@ffm-sec.securityops.de'
+    contactEmail: 'zentrale@ffm-sec.alfasecuritysoft.example'
   },
   {
     id: 'tenant-bavaria',
     name: 'Bavaria Schutz & Werkschutz AG',
-    subdomain: 'bavaria.securityops.de',
+    subdomain: 'bavaria.alfasecuritysoft.example',
     taxNumber: 'DE819203948',
     licenseTier: 'Professional (Bis 50 MA)',
     din77200Certified: true,

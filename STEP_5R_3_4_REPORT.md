@@ -1,8 +1,8 @@
-# SecurityOps 2.0 – Schritt 5R.3.4 Abschlussbericht
+# AlfaSecuritySoft – Schritt 5R.3.4 Abschlussbericht
 
 ## Ergebnis
 
-SecurityOps 2.0 enthält keine aktiven KI-Assistenten, Modellaufrufe oder KI-Endpunkte mehr. Manuelle Wachbucherfassung, bestehende Authentifizierung, Mandanten-/RLS-Logik, Offline-Synchronisation und regelbasierte Automatisierungen bleiben erhalten.
+AlfaSecuritySoft enthält keine aktiven KI-Assistenten, Modellaufrufe oder KI-Endpunkte mehr. Manuelle Wachbucherfassung, bestehende Authentifizierung, Mandanten-/RLS-Logik, Offline-Synchronisation und regelbasierte Automatisierungen bleiben erhalten.
 
 ## Entfernte Dateien und Funktionen
 
@@ -41,8 +41,8 @@ Neue Regressionen prüfen, dass die entfernten API-Pfade 404 liefern, Copilot un
 | Produktionsbundle-Suche nach API-URLs/Schlüsseln | Bestanden, keine Treffer |
 | Root-Struktur-/Proxy-Freiheitsprüfung | Bestanden |
 | `git diff --check` | Bestanden |
-| GitHub CI | Erfolgreich – [Run 43089207451](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43089207451) |
-| GitHub CD | Erfolgreich – [Run 43089475753](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43089475753) |
+| GitHub CI | Erfolgreich – [Run 43089207451](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43089207451) |
+| GitHub CD | Erfolgreich – [Run 43089475753](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43089475753) |
 
 ## Commits
 

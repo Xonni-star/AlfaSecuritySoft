@@ -19,7 +19,8 @@ export function authHeaders(credential: string): Record<string, string> {
 /**
  * Administrative Testbereinigung.
  *
- * secops_app_user besitzt bewusst kein DELETE auf Mandanten/Stammdaten.
+ * The legacy app role used by the AlfaSecuritySoft login alias has no DELETE
+ * privilege on tenant/master data.
  * Zusätzlich verhindern die Append-Only-Trigger in guardbook_entries das
  * kaskadierende Löschen eines Mandanten. Für die Testbereinigung wird daher
  * die administrative Rolle mit deaktivierter Trigger-Auswertung verwendet –

@@ -1,4 +1,4 @@
-# Changelog – SecurityOps 2.0
+# Changelog – AlfaSecuritySoft
 
 ## [Unreleased]
 

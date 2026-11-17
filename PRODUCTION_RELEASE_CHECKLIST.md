@@ -1,4 +1,4 @@
-# SecurityOps 2.0 — Produktionsfreigabe-Checkliste
+# AlfaSecuritySoft — Produktionsfreigabe-Checkliste
 
 **Stand: 16.11.2026. Keine Produktionsfreigabe.**
 Nicht gesetzte Haken sind offene Freigabevoraussetzungen. Ein historischer

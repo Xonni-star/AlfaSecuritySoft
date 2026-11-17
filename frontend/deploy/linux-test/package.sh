@@ -55,9 +55,9 @@ Version: $PACKAGE_VERSION
 Section: admin
 Priority: optional
 Architecture: all
-Maintainer: SecurityOps 2.0 maintainers
+Maintainer: AlfaSecuritySoft maintainers
 Depends: openssl, curl
-Description: SecurityOps 2.0 non-production Linux test installation
+Description: AlfaSecuritySoft non-production Linux test installation
  Isolated Docker Compose test package with local PostgreSQL, MinIO and ClamAV.
 EOF
 printf '2.0\n' > "$TMP_DIR/debian-binary"

@@ -6,21 +6,21 @@
 
 **Mainline baseline:** `main` HEAD `24c14ba599017d1f35e94533393c209300caf28d`; PR #45 merged at that commit on 2026-11-15 at 11:50:37 UTC. The Phase 6 changes described here are not part of that baseline.
 
-**PR status at original report review:** [#46](https://github.com/Xonni-star/SecurityOps-2.0/pull/46) was open against `main` from remote branch `phase-6-technical-consolidation`; it later merged as recorded above.
+**PR status at original report review:** [#46](https://github.com/Xonni-star/AlfaSecuritySoft/pull/46) was open against `main` from remote branch `phase-6-technical-consolidation`; it later merged as recorded above.
 
-**Hosted CI at original report review:** Run [43713451943](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43713451943) passed **7/7 jobs** on code/test commit `f6df5f509db530bcf780824442cf54becc305e23`. This result applies to that exact head; the merge and current-main evidence are recorded in the current GitHub status above.
+**Hosted CI at original report review:** Run [43713451943](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43713451943) passed **7/7 jobs** on code/test commit `f6df5f509db530bcf780824442cf54becc305e23`. This result applies to that exact head; the merge and current-main evidence are recorded in the current GitHub status above.
 
 ## Baseline and evidence
 
-- Main CI run [43710871856](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43710871856) completed successfully on the exact baseline commit: **7/7 jobs passed**.
+- Main CI run [43710871856](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43710871856) completed successfully on the exact baseline commit: **7/7 jobs passed**.
 - The backend job reported **29/29 Jest suites and 291/291 tests passed**. The frontend job reported **19/19 Vitest files passed** and completed its strict typecheck and production build.
 - Additional successful CI jobs covered root startup/structure, DMS API flow with PostgreSQL/private MinIO/ClamAV, ClamAV INSTREAM integration, isolated full-schema and local DMS-object-snapshot restore, and production Compose validation plus Docker image builds.
-- Release-artifact run [43711105799](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43711105799) completed successfully on the same baseline: **2/2 jobs passed**, covering artifact packaging and extraction/manifest/provenance/production-dependency validation.
-- The preceding mainline and release runs [43702382063](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702382063) and [43702607678](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43702607678) apply to the prior commit `77fdb0955e3bbbef01690edc93dc630e443bfbe8`; they are historical now.
+- Release-artifact run [43711105799](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43711105799) completed successfully on the same baseline: **2/2 jobs passed**, covering artifact packaging and extraction/manifest/provenance/production-dependency validation.
+- The preceding mainline and release runs [43702382063](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43702382063) and [43702607678](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43702607678) apply to the prior commit `77fdb0955e3bbbef01690edc93dc630e443bfbe8`; they are historical now.
 
 The mainline runs are baseline evidence only; they do not validate the Phase 6 PR head. The PR CI result is separate from mainline release evidence. Neither establishes production deployment, production-provider restore, external-service acceptance, customer acceptance, legal review, or certification.
 
-The CD release-artifact workflow is configured for `workflow_run` on `main` only, so no release-artifact run was triggered for PR #46. Release-artifact run [43711105799](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43711105799) remains baseline evidence for main commit `24c14ba599017d1f35e94533393c209300caf28d`, not the Phase 6 PR.
+The CD release-artifact workflow is configured for `workflow_run` on `main` only, so no release-artifact run was triggered for PR #46. Release-artifact run [43711105799](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43711105799) remains baseline evidence for main commit `24c14ba599017d1f35e94533393c209300caf28d`, not the Phase 6 PR.
 
 ## Changes and files
 
@@ -36,7 +36,7 @@ Phase 6 includes an accessibility improvement to the Navbar and one focused regr
 
 ### Navbar change
 
-The SecurityOps logo/dashboard navigation and global quick-search control are now native buttons with keyboard support and visible focus styling. Icon-only controls have accessible names, including the theme, sync, notifications, and mobile/desktop actions. The network simulation control announces online/offline state and exposes its pressed state. `NavbarAccessibility.test.tsx` verifies keyboard focusability, activation of dashboard/search, and accessible names/state.
+The AlfaSecuritySoft logo/dashboard navigation and global quick-search control are now native buttons with keyboard support and visible focus styling. Icon-only controls have accessible names, including the theme, sync, notifications, and mobile/desktop actions. The network simulation control announces online/offline state and exposes its pressed state. `NavbarAccessibility.test.tsx` verifies keyboard focusability, activation of dashboard/search, and accessible names/state.
 
 ## Technical and reporting decisions
 

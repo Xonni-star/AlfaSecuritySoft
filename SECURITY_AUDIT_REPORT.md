@@ -1,4 +1,4 @@
-# Focused security review — SecurityOps 2.0
+# Focused security review — AlfaSecuritySoft
 
 **Review date:** 2026-11-16
 
@@ -45,7 +45,7 @@ No new comprehensive security, device or full role/object acceptance is claimed.
 
 **Finalization evidence update, not a new comprehensive security review:**
 FNL-016 `8f7b71dc6b6ee769094e5a5774f3fbd62653241e` passed exact
-[CI 43942074079](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43942074079),
+[CI 43942074079](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43942074079),
 7/7 jobs; downloaded logs verify frontend 270, backend 546 in 35 suites,
 real browser 9 and cleanup. This includes genuine employee calendar/proof/
 absence and customer contract/site metadata persistence, preserved omitted SLA
@@ -99,7 +99,7 @@ not an unpublished fix today; current publication/CI evidence is indexed above.
 
 - The new real-browser photo extension passed locally 4/4 with isolated PostgreSQL, actual private MinIO and ClamAV. It checks offline reload/other-account exclusion, real lost-upload-receipt retry with the same author/key/document, one version/upload/clean-scan audit, exact S3/download bytes, anonymous S3 403 and foreign-tenant download 404 with a positive download grant. The launcher explicitly selects S3 rather than the test-default in-memory store. A transient-state test race was fixed by gating the real retry until failed IndexedDB state was observed, not by fabricating responses or increasing budgets: photo/GuardBook/identity use 120 s, SOP retains 180 s. Hosted evidence is tracked in current status; this is additional bounded functional evidence, not a new or comprehensive security review.
 - Latest complete backend run passed 546/546 tests in 35/35 suites on stock PostgreSQL 16, with explicit API/sync workflow budgets of 30 s and Patrol 60 s; no assertions were removed or application/PostgreSQL defaults changed. Two earlier complete runs passed only 535/546, predominantly integration timeouts and a dependent fixture error; RAM/JIT diagnostics did not resolve them. These failed runs remain documented, and higher functional-test budgets are not a performance correction or production acceptance.
-- The published Phase 11 SHA `6ead55c73885b1b5779501c50c55c08ee01c6184` completed [CI 43906594339](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43906594339) with 5/7 jobs passing. Backend, real-browser/root, DMS, ClamAV and production Docker passed; the offline fixture and Linux restore failed. `4524f121420dd66829feafe7b7aed07aece7a338` corrects fixture read grants and private test-archive ownership. Local fixture 1/1 and full PostgreSQL/MinIO restore passed again; [correction CI 43908926864](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43908926864) passed all 7 jobs on that exact SHA. Revision boundaries are indexed in [current status](./PROJECT_CURRENT_STATUS.md); the failed first run remains failed.
+- The published Phase 11 SHA `6ead55c73885b1b5779501c50c55c08ee01c6184` completed [CI 43906594339](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43906594339) with 5/7 jobs passing. Backend, real-browser/root, DMS, ClamAV and production Docker passed; the offline fixture and Linux restore failed. `4524f121420dd66829feafe7b7aed07aece7a338` corrects fixture read grants and private test-archive ownership. Local fixture 1/1 and full PostgreSQL/MinIO restore passed again; [correction CI 43908926864](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43908926864) passed all 7 jobs on that exact SHA. Revision boundaries are indexed in [current status](./PROJECT_CURRENT_STATUS.md); the failed first run remains failed.
 - Frontend tests, typecheck, and production build passed for the identified PR revision. The current backend TypeScript build passed.
 - The current report-scope PostgreSQL integration suite ran against an isolated PostgreSQL 16 database and passed 33/33 tests. This local run does not replace hosted CI or production acceptance.
 - The current frontend typecheck and production build passed; the complete frontend Vitest suite passed 169/169 tests, including the ownerless-attachment privacy regression tests.

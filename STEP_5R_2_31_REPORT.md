@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Schritt 5R.2.31
+# AlfaSecuritySoft – Schritt 5R.2.31
 ## Gequotete und schemaqualifizierte Routinen-Parametertypen korrigieren
 
 **Ausgangsstand:** `main` @ `bcd6acc48ef0c092e04ab37da9e952c717b327cc`
@@ -129,10 +129,10 @@ Die CI/CD-Konfiguration wurde nicht verändert.
 
 | Workflow | Run-ID | Job | Ergebnis |
 |---|---|---|---|
-| SecurityOps 2.0 CI | [`43061329246`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43061329246) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** (45 s) |
-| SecurityOps 2.0 CI | [`43061329246`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43061329246) | Frontend – npm ci, Vitest, Produktions-Build | **success** (19 s) |
-| SecurityOps 2.0 CI | [`43061329246`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43061329246) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** (1 m 35 s) |
-| SecurityOps 2.0 CD | [`43061602467`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43061602467) | Release-Paket aus CI-Artefakten bauen | **success** |
+| AlfaSecuritySoft CI | [`43061329246`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43061329246) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** (45 s) |
+| AlfaSecuritySoft CI | [`43061329246`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43061329246) | Frontend – npm ci, Vitest, Produktions-Build | **success** (19 s) |
+| AlfaSecuritySoft CI | [`43061329246`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43061329246) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** (1 m 35 s) |
+| AlfaSecuritySoft CD | [`43061602467`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43061602467) | Release-Paket aus CI-Artefakten bauen | **success** |
 
 Der Schritt **„Migrationshistorie & Baseline (Integrationstests)“** wurde im Backend-Job mit **success** abgeschlossen; die vollständige Jest-Suite (107 Tests) lief ebenfalls erfolgreich.
 

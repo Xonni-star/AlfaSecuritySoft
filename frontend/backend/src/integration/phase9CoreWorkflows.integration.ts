@@ -477,7 +477,7 @@ async function main(): Promise<void> {
   let runError: unknown;
   try {
     originalBucketName = env.DMS_S3_BUCKET;
-    bucketName = `securityops-phase9-${suffix}`;
+    bucketName = `alfasecuritysoft-phase9-${suffix}`;
     await waitForClamAv();
     await waitForMinio();
     env.DMS_S3_BUCKET = bucketName;

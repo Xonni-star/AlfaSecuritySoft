@@ -1,16 +1,16 @@
 # Phase 4 Implementation Report
 
-**Status:** Partial implementation; Phase 4 is **not complete** and SecurityOps 2.0 is **not approved for production**.
+**Status:** Partial implementation; Phase 4 is **not complete** and AlfaSecuritySoft is **not approved for production**.
 
 **Reviewed base:** `main` at `ba9ab4ddc5d9ef03a3d147a023f002a0abb0e547` (PR #43).
 
-**PR:** [#44](https://github.com/Xonni-star/SecurityOps-2.0/pull/44), open against `main` from `phase-4-system-integration-hardening`. Latest verified PR head before this report refresh: `7ffe5ca4cd4b93d17e2b4369fdadf2dd494a34e0`.
+**PR:** [#44](https://github.com/Xonni-star/AlfaSecuritySoft/pull/44), open against `main` from `phase-4-system-integration-hardening`. Latest verified PR head before this report refresh: `7ffe5ca4cd4b93d17e2b4369fdadf2dd494a34e0`.
 
-**PR CI:** **PASSED** — all seven jobs on the latest verified head in [run 43701459489](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43701459489). The test/code increment also passed all seven jobs in [run 43700884110](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43700884110). This report refresh is documentation-only.
+**PR CI:** **PASSED** — all seven jobs on the latest verified head in [run 43701459489](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43701459489). The test/code increment also passed all seven jobs in [run 43700884110](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43700884110). This report refresh is documentation-only.
 
 ## Starting state
 
-The latest main CI run [43695784002](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695784002) passed all seven jobs. The subsequent release-artifact run [43695992978](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695992978) failed validation because the downloaded bundle lacked `frontend/deploy/.env.example`. The file was tracked and present in the source archive; the release workflow's `actions/upload-artifact@v4` step omitted dotfiles by default. Downloading the actual failed artifact reproduced the missing file.
+The latest main CI run [43695784002](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43695784002) passed all seven jobs. The subsequent release-artifact run [43695992978](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43695992978) failed validation because the downloaded bundle lacked `frontend/deploy/.env.example`. The file was tracked and present in the source archive; the release workflow's `actions/upload-artifact@v4` step omitted dotfiles by default. Downloading the actual failed artifact reproduced the missing file.
 
 ## Implemented
 
@@ -50,8 +50,8 @@ The latest main CI run [43695784002](https://github.com/Xonni-star/SecurityOps-2
 | PostgreSQL + MinIO restore | **PASSED** — isolated run with the pinned GHCR MinIO image; verified tenant/RLS metadata and object hashes/metadata, including the forced restore-failure recovery case |
 | Root structure, workflow YAML, restore shell syntax, diff whitespace | **PASSED** |
 | Local release bundle | **PASSED** — verifier accepted the assembled bundle and all 36 migration assets |
-| Main CI at base commit | **PASSED** — seven jobs in run [43695784002](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43695784002) |
-| PR CI | **PASSED** — all seven jobs for the test/code head in [run 43700884110](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43700884110), and all seven for the latest verified PR head `7ffe5ca4cd4b93d17e2b4369fdadf2dd494a34e0` in [run 43701459489](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43701459489) |
+| Main CI at base commit | **PASSED** — seven jobs in run [43695784002](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43695784002) |
+| PR CI | **PASSED** — all seven jobs for the test/code head in [run 43700884110](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43700884110), and all seven for the latest verified PR head `7ffe5ca4cd4b93d17e2b4369fdadf2dd494a34e0` in [run 43701459489](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43701459489) |
 | Hosted release verification of this change | **NOT TESTED** — its `workflow_run` trigger only packages CI runs on `main`; merging is explicitly out of scope |
 | Browser/device E2E and real mobile hardware | **NOT TESTED** — no Playwright/Cypress/WebDriver configuration was found; camera/NFC and multi-device offline behavior were not exercised |
 | Representative-scale performance / `EXPLAIN ANALYZE` | **NOT TESTED** — no representative dataset or workload was available; no query or index change was made |

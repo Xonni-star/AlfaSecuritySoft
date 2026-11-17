@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Abschlussbericht Schritt 5R.2.9
+# AlfaSecuritySoft - Abschlussbericht Schritt 5R.2.9
 > **Historischer Snapshot:** Dieser frühere Bericht referenziert ein separates Root-Proxy-Backend. Dieses wurde in Schritt 5R.3.4 vollständig aus dem Repository entfernt.
 
 ## Vitest-Frontend-Testkonfiguration & Verzeichnis-Klarstellung
@@ -13,7 +13,7 @@
    - `tests/store_conflict_contract.test.ts` nutzt echte Vitest-Globals (`describe`, `test`, `expect`, `beforeEach`, `afterEach`, `vi`).
 
 2. **Klarstellung der Verzeichnisstruktur in der Dokumentation**:
-   - Das SecurityOps-TypeScript-Backend liegt unter `frontend/backend/` (bzw. `backend/` in flacher Repository-Struktur).
+   - Das AlfaSecuritySoft-TypeScript-Backend liegt unter `frontend/backend/` (bzw. `backend/` in flacher Repository-Struktur).
    - Das Root-Verzeichnis `backend/` ist ein separates Google-Cloud-Proxy-Backend und wurde ausdrücklich nicht als Anwendungsbackend dokumentiert.
    - Die exakten Befehle vom Repository-Root lauten verbindlich:
      ```bash
@@ -47,7 +47,7 @@
 - **Ergebnis**: **6 von 6 Tests erfolgreich bestanden (100% PASS, 0 Fehler)**.
 - **Build**: `npm run build` führt `tsc && vite build` ohne Fehler aus.
 
-#### B. Backend (SecurityOps TypeScript-Backend unter `frontend/backend/`)
+#### B. Backend (AlfaSecuritySoft TypeScript-Backend unter `frontend/backend/`)
 - **Befehl**: `npm --prefix frontend/backend run build`
   - **Ergebnis**: **TypeScript-Kompilierung erfolgreich (0 Fehler)**.
 - **Befehl**: `npm --prefix frontend/backend test -- --runInBand`

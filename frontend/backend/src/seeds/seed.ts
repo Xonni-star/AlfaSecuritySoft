@@ -1,6 +1,7 @@
 import argon2 from 'argon2';
 import { PoolClient } from 'pg';
 import { pool, withTenantTransaction } from '../config/database';
+import { getDemoUserPassword } from '../config/demoUserPassword';
 
 export const TENANT_FRANKFURT_ID = '11111111-1111-1111-1111-111111111111';
 export const TENANT_BAVARIA_ID = '22222222-2222-2222-2222-222222222222';
@@ -34,9 +35,9 @@ async function seedAlarmTypes(db: PoolClient, tenantId: string): Promise<void> {
 }
 
 export async function seedDatabase(): Promise<void> {
-  const testPassword = process.env.SECOPS_DEMO_USER_PASSWORD;
+  const testPassword = getDemoUserPassword();
   if (!testPassword || testPassword.length < 16) {
-    throw new Error('SECOPS_DEMO_USER_PASSWORD must be supplied and contain at least 16 characters.');
+    throw new Error('ALFASECURITYSOFT_DEMO_USER_PASSWORD must be supplied and contain at least 16 characters.');
   }
 
   console.log('[SEED] Starte Datenbankbefüllung mit Testmandanten und isolierten Daten...');
@@ -47,8 +48,8 @@ export async function seedDatabase(): Promise<void> {
     await client.query(`
       INSERT INTO tenants (id, name, subdomain, tax_number, license_tier, bwr_register_id, din77200_certified)
       VALUES 
-        ($1, 'Securitas & Wache Frankfurt GmbH', 'ffm-sec.securityops.de', 'DE301928374', 'ENTERPRISE', 'BWR-HE-99201', true),
-        ($2, 'Bavaria Schutz & Werkschutz AG', 'bavaria.securityops.de', 'DE819203948', 'PROFESSIONAL', 'BWR-BY-11029', true)
+        ($1, 'Securitas & Wache Frankfurt GmbH', 'ffm-sec.alfasecuritysoft.example', 'DE301928374', 'ENTERPRISE', 'BWR-HE-99201', true),
+        ($2, 'Bavaria Schutz & Werkschutz AG', 'bavaria.alfasecuritysoft.example', 'DE819203948', 'PROFESSIONAL', 'BWR-BY-11029', true)
       ON CONFLICT (id) DO NOTHING;
     `, [TENANT_FRANKFURT_ID, TENANT_BAVARIA_ID]);
 

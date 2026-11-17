@@ -1,4 +1,4 @@
-# SecurityOps 2.0 — Sicherheitsdienstverwaltung
+# AlfaSecuritySoft — Sicherheitsdienstverwaltung
 
 Mandantenfähige Verwaltungssoftware für Sicherheitsunternehmen mit Prozessbezug zu **DIN 77200** und **§ 34a GewO**: Dienstplanung, Objekt- und Mitarbeiterverwaltung, digitales Wachbuch, Übergabe- und Kontrollgangsmanagement, Schlüssel- und Aufgabenverwaltung sowie Offline-Synchronisation für den mobilen Einsatz. Das ist keine Zertifizierungs- oder Rechtskonformitätsaussage.
 
@@ -6,25 +6,26 @@ Mandantenfähige Verwaltungssoftware für Sicherheitsunternehmen mit Prozessbezu
 > Die Backend- und Frontend-Funktionen werden durch lokale Tests und CI geprüft. Das ist kein Nachweis eines Produktions-Rollouts, einer fachlichen Abnahme oder der Rechtskonformität im konkreten Einsatz.
 > Der aktuelle quellcodebasierte Stand und Prüfgrenzen stehen in [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md), der [Modul-Evidenzmatrix](./MODULE_IMPLEMENTATION_STATUS.md) und dem [Projekt-Tracker](./PROJECT_COMPLETION_TRACKER.md). Frühere Umsetzungsberichte einschließlich Phase 1 sind historische Snapshots.
 > Alarmmanagement (#12), Übergaben (#13) und Kontrollgänge (#14) sind in `main` integriert. Details: [Handovers-API](./frontend/HANDOVERS_API.md), [Alarm-API](./frontend/ALARM_EMERGENCY_API.md) und [Kontrollgang-Modul](./frontend/PATROL_MANAGEMENT.md).
-> **Verifizierte Integration (16.11.2026):** PR [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66) ist über den normalen Mergeweg integriert. Geprüfter Main-Commit: `5c6031e21fc8cba3c8256525c9edc52928564f2b`, inhaltlich identisch mit dem geprüften PR-Head `df93a7104365aa8848f46e67aabf6c628ebd37cc`. Main-CI [43974506659](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43974506659) bestand **7/7 Jobs**, Artefaktprüfung [43974980830](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43974980830) **2/2** einschließlich Commit-/CI-Provenienz und sauberer Backend-Produktionsinstallation. Das ist ein revisionsgebundener Nachweis, kein Deployment.
-> Heruntergeladene Main-CI-Logs bestätigen Frontend **378/378**, Backend **553/553**, echte Browserjourneys **10/10**. Der Laufzeit-Fixstand `5ee9f36665616178c331e9c53526b1e35396b7bd` bestand zuvor [CI 43972242288](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43972242288) **7/7** mit denselben Zählern und Containerbereinigung. Frühere Fehlläufe bleiben dokumentiert.
+> **Aktueller Mainline-Stand (16.11.2026):** Das GitHub-Repository heißt [Xonni-star/AlfaSecuritySoft](https://github.com/Xonni-star/AlfaSecuritySoft). PR [#67](https://github.com/Xonni-star/AlfaSecuritySoft/pull/67) ist gemergt; aktueller Main-Commit `80ac44f4bccc0d9c1aef0891239017ff51b5e216`. Exakte Main-CI [43975869437](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43975869437) bestand **7/7 Jobs**; Artefaktprüfung [43976343055](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43976343055) bestand **2/2**. Diese Revision ist nicht als Produktionsfreigabe zu verstehen.
+> **Vorherige Funktionsintegration (16.11.2026):** PR [#66](https://github.com/Xonni-star/AlfaSecuritySoft/pull/66) wurde auf Main-Commit `5c6031e21fc8cba3c8256525c9edc52928564f2b` integriert, identisch mit dem geprüften PR-Head `df93a7104365aa8848f46e67aabf6c628ebd37cc`. Die damalige Main-CI [43974506659](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43974506659) bestand **7/7 Jobs**, Artefaktprüfung [43974980830](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43974980830) **2/2** einschließlich Commit-/CI-Provenienz und sauberer Backend-Produktionsinstallation.
+> Heruntergeladene Main-CI-Logs bestätigen Frontend **378/378**, Backend **553/553**, echte Browserjourneys **10/10**. Der Laufzeit-Fixstand `5ee9f36665616178c331e9c53526b1e35396b7bd` bestand zuvor [CI 43972242288](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43972242288) **7/7** mit denselben Zählern und Containerbereinigung. Frühere Fehlläufe bleiben dokumentiert.
 > FNL-013 ersetzt Scheinnachweise durch echte API-Daten und einen manuellen Prüfplan; Automationen bleiben lokale Entwürfe ohne Engine. FNL-014/015 schützen Stammdaten-/Nachweis-/Abwesenheitsentwürfe und bestätigte Speicherung. FNL-016 ersetzt erfundene Vertrags-/Objektwerte durch sichtbare Eingaben, persistiert Vertragsverlängerung/Kündigungsfrist auch im Offline-Replay und erhält unveränderte SLA-/Objektangaben bei Teiländerungen. Diese Änderungen sind durch obige CI belegt.
 > FNL-017 bestätigt Archivierung/Wiederherstellung erst nach API oder dauerhafter Queue. Verbindungswechsel machen aus API-Fehlern keine Offline-Aufträge; alte Identitäten veröffentlichen keine verspäteten Ergebnisse. Diese Änderungen sind durch obige Hosted-CI belegt.
 > FNL-018 bindet auch späte Anhang-/Snapshot-/Konfliktergebnisse an die ursprüngliche Identität und Dialogöffnung. Speicherfehler liefern einen ausdrücklichen Fehler statt scheinbar erfolgreicher Nullzähler; manueller Sync startet ohne künstliche Wartezeit. Diese Änderungen sind durch obige Hosted-CI belegt.
 > FNL-019 zeigt echte Laufzeitmeldungen im benutzer-/mandantengebundenen In-App-Center einschließlich Glockenzähler, Lesen und Verwerfen. Nicht angebundene E-Mail-/Push-Einstellungen sind keine bedienbaren Scheinpräferenzen mehr. Späte Konfliktfehler und Kontrollgang-Abschlüsse bleiben im ursprünglichen Kontext. Diese Änderungen sind durch obige Hosted-CI belegt; kein serverseitiges Zustellprotokoll oder vollständiger Sicherheitsnachweis.
 > FNL-020 implementiert dauerhafte Wachbuchabschlüsse über die bestehende Outbox, atomare Status-/Erledigt-Konsistenz und tatsächliche Nachträge nach Reload. Die UI zeigt bis zur Serverquittung nur „vorgemerkt“. Die echte Browserjourney verliert die Abschlussquittung und prüft identischen Replay, einen Nachtrag, tatsächlichen Autor und Serverstatus. Die vollständige Hosted-Gesamtprüfung oben ist jetzt erfolgreich; frühere lokale Roster-Timeouts und der unterbrochene lokale Backendlauf bleiben im Projektstatus.
 > FNL-021 bindet lokale Kontrollgangs-/Übergabewiederherstellung an den aktuellen Besitzer und verwirft verspätete alte Speicherergebnisse. Acht neue Komponentenfälle, davon sechs ursprünglich rot, sowie obige Gesamt-CI bestanden; keine vollständige Geräte-/Rollenabnahme oder bestätigte neue Schwachstelle.
-> FNL-022/023/024 korrigieren Übergabe-Render-/Identitätsfehler, Bestätigungsaktionen anhand tatsächlicher Teilnehmer-Kontozuordnung und überholte Antworten desselben Besitzers. CI [43966537946](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43966537946) auf `9b79a03a4bc119e51f8f7933b3a82953715b6742` bestätigt laut gelesenen Logs **367/367 Frontend**, **552/552 Backend** und erstmals die echte zehnte Übergabe-Replay-Journey. Insgesamt dennoch nur **6/7 Jobs / Browser 9/10** mit Cleanup: Der ältere Vorfalltest verlangte fälschlich immer zwei Retry-Quittungen; zusätzlich blieb ein echter HTTP-500 der Übergabe-Dokumentenabfrage unbeanstandet.
+> FNL-022/023/024 korrigieren Übergabe-Render-/Identitätsfehler, Bestätigungsaktionen anhand tatsächlicher Teilnehmer-Kontozuordnung und überholte Antworten desselben Besitzers. CI [43966537946](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43966537946) auf `9b79a03a4bc119e51f8f7933b3a82953715b6742` bestätigt laut gelesenen Logs **367/367 Frontend**, **552/552 Backend** und erstmals die echte zehnte Übergabe-Replay-Journey. Insgesamt dennoch nur **6/7 Jobs / Browser 9/10** mit Cleanup: Der ältere Vorfalltest verlangte fälschlich immer zwei Retry-Quittungen; zusätzlich blieb ein echter HTTP-500 der Übergabe-Dokumentenabfrage unbeanstandet.
 > FNL-025 liest MIME-Typ/Größe aus der aktuellen DMS-Dateiversion statt nicht vorhandener Dokumentspalten und kennzeichnet fehlende Dateimetadaten. Der neue PostgreSQL/API-Fall und die verschärfte echte Browserprüfung bestanden in obiger CI. FNL-026 prüft beim Vorfall-Replay jede ursprüngliche UUID und identische Server-IDs auch bei unabhängig fälligen Wiederholungs-Batches. FNL-022–026 sind damit im beschriebenen Umfang gehostet bestätigt; Docker bleibt lokal nicht erreichbar.
 > FNL-027 korrigiert acht zusätzlich reproduzierte Entwurfsverluste bei verspäteten Schreib-/Speicherabschlüssen, einschließlich erneut geöffneter Erfassung und Rückkehr zum vorherigen Benutzer. Neue Entwürfe bleiben erhalten; normale bestätigte Speicherungen leeren weiter nur den übermittelten Stand. Durch obige Gesamt-CI bestätigt.
 > FNL-028 hält Sync-Sperre und Pending-Status bis zum tatsächlichen Zyklusende, auch während eines Refreshs nach leerer Outbox. Zwei Fälle zunächst rot; obige Gesamt-CI bestätigt die Korrektur. Protokoll, Gerätesicherheitsbeschreibung und alte Szenariomatrix behaupten keinen implementierten Gerätewiderruf oder Delta-Pull mehr; beides bleibt ausdrücklich **OFFEN**.
 > **Projektstatus: TEILWEISE IMPLEMENTIERT / OFFEN; nicht für Produktion freigegeben.** Vollständige Rollen-/Objekt-/Geräteabnahme, realer S3-Provider-Restore und gemessene RPO/RTO bleiben offen. Exakte Revisions-/Prüfgrenzen: [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md), [Phase-11-Bericht](./FINAL_PHASE_11_COMPLETION_REPORT.md) und [Deployment-/Restore-Runbook](./frontend/deploy/PRODUCTION_DEPLOYMENT.md).
-> **Historischer GitHub-Status (15.11.2026, 20:59 CET):** `main` stand auf `879ae951d6cea52fd84d01dc699cf2ed08843300`; PRs #50–#59 waren gemergt und es waren keine PRs offen. Post-Merge-CI [43754217295](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43754217295) bestand 7/7 Jobs; Paketierung und Artefaktvalidierung [43754417115](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43754417115) bestanden 2/2. Diese Ergebnisse belegen keine Produktion. Frühere Phase- und PR-Statusangaben in diesem README sind historische Snapshots, keine Live-Statusquelle.
+> **Historischer GitHub-Status (15.11.2026, 20:59 CET):** `main` stand auf `879ae951d6cea52fd84d01dc699cf2ed08843300`; PRs #50–#59 waren gemergt und es waren keine PRs offen. Post-Merge-CI [43754217295](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43754217295) bestand 7/7 Jobs; Paketierung und Artefaktvalidierung [43754417115](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43754417115) bestanden 2/2. Diese Ergebnisse belegen keine Produktion. Frühere Phase- und PR-Statusangaben in diesem README sind historische Snapshots, keine Live-Statusquelle.
 > **Historischer Status-Snapshot (15.11.2026, 20:30 CET):** Die folgenden Berechtigungs- und Dependency-Audit-Absätze beschreiben den damaligen Stand, als PRs #57 und #58 noch offen waren. Beide PRs wurden inzwischen gemergt; der aktuelle Mainline- und CI-Status steht in [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md). Die damaligen Branch-Tests bleiben historische Evidenz und werden nicht als neue Mainline-Ergebnisse umgedeutet.
 > **Berechtigungsbefund und PR #57 zum Snapshotzeitpunkt:** Site-scoped `documents:read` legte kundenverknüpfte Dokumente über Site-Grenzen hinweg offen. Das separate Worktree reproduzierte den Bypass mit Migration 039; PR #57 (Head `4af714b664ac0ba0d30869a8f76a9170e604b001`) enthielt Migration `frontend/backend/src/migrations/040_customer_document_tenant_scope.sql`. Migration 040 ist inzwischen Teil von `main` über PR #57.
 > **Dependency-Audit PR #58 zum Snapshotzeitpunkt:** PR #58 begrenzte eine Backend-Dev-Abhängigkeit auf `deepmerge@4.1.1`, unterhalb des betroffenen Bereichs der GHSA-gcqx-w48m-w2h4 (`>=4.2.0` bis `4.3.1`). Die Änderung ist inzwischen über PR #58 gemergt. Die damaligen lokalen Audit-/Testresultate sind keine aktuelle Mainline-Audit-Aussage.
-> **Phase 6:** Die Navbar verwendet semantische, tastaturbedienbare Buttons für Dashboard- und Suche-Navigation, zugängliche Namen für Icon-Aktionen und einen beschrifteten Online-/Offline-Schalter. PR [#46](https://github.com/Xonni-star/SecurityOps-2.0/pull/46) ist am 15.11.2026 in `main` gemergt worden. Der frühere Phase-6-Bericht dokumentiert die Ergebnisse und den PR-Status zum damaligen Prüfzeitpunkt; sein PR-Status ist historisch. Details: [Phase-6-Bericht](./PHASE_6_IMPLEMENTATION_REPORT.md).
-> **Phase 7:** PR [#47](https://github.com/Xonni-star/SecurityOps-2.0/pull/47) wurde in `main` integriert. Der [Phase-7-Bericht](./PHASE_7_READINESS_REPORT.md) hält Implementierungsumfang, damalige Tests, Evidenzgrenzen und verbleibende Produktionsgates fest. Der Merge ist keine Produktionsfreigabe.
+> **Phase 6:** Die Navbar verwendet semantische, tastaturbedienbare Buttons für Dashboard- und Suche-Navigation, zugängliche Namen für Icon-Aktionen und einen beschrifteten Online-/Offline-Schalter. PR [#46](https://github.com/Xonni-star/AlfaSecuritySoft/pull/46) ist am 15.11.2026 in `main` gemergt worden. Der frühere Phase-6-Bericht dokumentiert die Ergebnisse und den PR-Status zum damaligen Prüfzeitpunkt; sein PR-Status ist historisch. Details: [Phase-6-Bericht](./PHASE_6_IMPLEMENTATION_REPORT.md).
+> **Phase 7:** PR [#47](https://github.com/Xonni-star/AlfaSecuritySoft/pull/47) wurde in `main` integriert. Der [Phase-7-Bericht](./PHASE_7_READINESS_REPORT.md) hält Implementierungsumfang, damalige Tests, Evidenzgrenzen und verbleibende Produktionsgates fest. Der Merge ist keine Produktionsfreigabe.
 
 ---
 
@@ -34,7 +35,7 @@ Mandantenfähige Verwaltungssoftware für Sicherheitsunternehmen mit Prozessbezu
 |---|---|
 | `frontend/` | React-19-SPA mit Vite, TypeScript, Zustand-Store, IndexedDB-Outbox und Vitest |
 | `frontend/backend/` | Node.js/Express/TypeScript-REST-API (`/api/v1`) mit PostgreSQL 16+ Row-Level-Security, serverseitig widerrufbaren Cookie-Sitzungen und Argon2id |
-Es gibt kein separates Root-Proxy-Backend. Alle SecurityOps-Backend-Befehle (Migrationen, Seed, Tests) laufen unter `frontend/backend/`.
+Es gibt kein separates Root-Proxy-Backend. Alle AlfaSecuritySoft-Backend-Befehle (Migrationen, Seed, Tests) laufen unter `frontend/backend/`.
 
 ---
 
@@ -44,15 +45,15 @@ Es gibt kein separates Root-Proxy-Backend. Alle SecurityOps-Backend-Befehle (Mig
 * **PostgreSQL 16+**
 * Zwei Datenbankrollen:
   * `secops_admin` — ausschließlich für DDL-Migrationen und Schema-Upgrades
-  * `secops_app_user` — operativer Betrieb, **ohne** Superuser- oder `BYPASSRLS`-Rechte
+  * `alfasecuritysoft_app_user` — operatives Login, erbt die eingeschränkten Grants von `secops_app_user`; ohne Superuser- oder `BYPASSRLS`-Rechte
 
 ---
 
 ## Schnellstart
 
 ```bash
-git clone https://github.com/Xonni-star/SecurityOps-2.0.git
-cd SecurityOps-2.0
+git clone https://github.com/Xonni-star/AlfaSecuritySoft.git
+cd AlfaSecuritySoft
 
 # Abhängigkeiten
 npm install
@@ -65,19 +66,21 @@ cp frontend/backend/.env.example frontend/backend/.env
 
 # Datenbank vorbereiten
 npm --prefix frontend/backend run migrate
-read -r -s -p 'Testpasswort für Demo-Seed (mindestens 16 Zeichen): ' SECOPS_DEMO_USER_PASSWORD
+read -r -s -p 'Testpasswort für Demo-Seed (mindestens 16 Zeichen): ' ALFASECURITYSOFT_DEMO_USER_PASSWORD
 printf '\n'
-export SECOPS_DEMO_USER_PASSWORD
+export ALFASECURITYSOFT_DEMO_USER_PASSWORD
 npm --prefix frontend/backend run seed
-unset SECOPS_DEMO_USER_PASSWORD
+unset ALFASECURITYSOFT_DEMO_USER_PASSWORD
 
 # Frontend + Backend parallel starten
 npm run dev
 ```
 
-`npm run dev` startet das Vite-Frontend und das SecurityOps-Backend (Standard-Port `8000`).
-Der optionale Seed verlangt ein eigenes Testpasswort (`SECOPS_DEMO_USER_PASSWORD`,
-mindestens 16 Zeichen); keine Seed-Daten oder Konten in produktive Umgebungen übernehmen.
+`npm run dev` startet das Vite-Frontend und das AlfaSecuritySoft-Backend (Standard-Port `8000`).
+Der optionale Seed verlangt ein eigenes Testpasswort (`ALFASECURITYSOFT_DEMO_USER_PASSWORD`,
+mindestens 16 Zeichen); die frühere Variable `SECOPS_DEMO_USER_PASSWORD` wird vorübergehend
+als Fallback akzeptiert und dabei als veraltet protokolliert. Keine Seed-Daten oder Konten in
+produktive Umgebungen übernehmen.
 
 ---
 
@@ -87,8 +90,9 @@ mindestens 16 Zeichen); keine Seed-Daten oder Konten in produktive Umgebungen ü
 |---|---|---|
 | `PORT` | nein | HTTP-Port des Backends (Standard: `8000`) |
 | `NODE_ENV` | nein | `development` \| `test` \| `production` |
-| `DATABASE_URL` | **ja** | Verbindung als `secops_app_user` (RLS-Operationen) |
+| `DATABASE_URL` | **ja** | Verbindung als `alfasecuritysoft_app_user` für RLS-Operationen |
 | `DATABASE_MIGRATION_URL` | Migrationen/Seed: **ja** | Verbindung als `secops_admin`; nicht für den laufenden API-Prozess |
+| `ALFASECURITYSOFT_DEMO_USER_PASSWORD` | Seed: **ja** | Test-only Seedpasswort; mindestens 16 Zeichen. Legacy-Fallback: `SECOPS_DEMO_USER_PASSWORD` |
 | `JWT_SECRET` | **ja (Legacy-Konfigurationsprüfung)** | Mindestens 32 Zeichen; aktuelle Sitzung verwendet opake Cookies und signiert keine JWTs |
 | `JWT_EXPIRES_IN` | nein | Sitzungsdauer im Format `<Zahl><s\|m\|h\|d>`, z. B. `8h` |
 | `CORS_ORIGIN` | **ja** | Kommagetrennte Whitelist, z. B. `http://localhost:3000` |
@@ -142,7 +146,7 @@ Die Statusangaben unterscheiden Implementierung und Nachweis: **IMPLEMENTIERT** 
 | Generische Automationen | TEILWEISE IMPLEMENTIERT | Lokale, nicht persistierte Entwürfe; keine generische Ausführungsengine, Bedingungsauswertung, dauerhafte Historie oder Providerzustellung. |
 | Sicherheits-/Auditansicht | TEILWEISE IMPLEMENTIERT | Lokale/Beispieldaten markiert; kein vollständiger serverseitiger Auditstream, Fernwiderruf oder Datenschutzauskunftsexport. Eigene Abmeldung ist tatsächlich angebunden. |
 | Technik-/Abnahmeansichten | IMPLEMENTIERT UND GETESTET | Echte schreibgeschützte API-Daten/Fehler und manueller Prüfplan statt simulierter Test-/Produktionsfreigaben. Keine Sicherheitszertifizierung. |
-| Dienstplanung | TEILWEISE IMPLEMENTIERT | Backend/UI und weitergehende Workflows einschließlich konfigurierbarer Arbeitszeitlimits aus gemergten PRs [#33](https://github.com/Xonni-star/SecurityOps-2.0/pull/33) und [#36](https://github.com/Xonni-star/SecurityOps-2.0/pull/36); keine Rechtskonformitäts- oder fachliche Produktionsabnahme. Siehe [Mainline-Integrationsbericht](./MAINLINE_INTEGRATION_STATUS.md). |
+| Dienstplanung | TEILWEISE IMPLEMENTIERT | Backend/UI und weitergehende Workflows einschließlich konfigurierbarer Arbeitszeitlimits aus gemergten PRs [#33](https://github.com/Xonni-star/AlfaSecuritySoft/pull/33) und [#36](https://github.com/Xonni-star/AlfaSecuritySoft/pull/36); keine Rechtskonformitäts- oder fachliche Produktionsabnahme. Siehe [Mainline-Integrationsbericht](./MAINLINE_INTEGRATION_STATUS.md). |
 
 Eine Produktions-Compose-Konfiguration ist vorhanden: [docker-compose.production.yml](./frontend/deploy/docker-compose.production.yml). Ihre Existenz belegt nicht, dass Services tatsächlich in Produktion deployed oder abgenommen wurden; die Statusangaben oben bleiben maßgeblich.
 
@@ -179,7 +183,7 @@ Audit snapshot (2026-11-15): `npm --prefix frontend audit` found 0 vulnerabiliti
 ## Sicherheit
 
 * **Mandantenisolation:** RLS und `FORCE ROW LEVEL SECURITY` sind für ausgewählte tenantgebundene Tabellen konfiguriert; dies gilt nicht pauschal für jede historische Tabelle. Tenant-scoped API-Zugriffe setzen ihren Datenbankkontext aus der authentifizierten Sitzung. Bekannte modulbezogene Grenzen stehen in den jeweiligen API-/Sicherheitsdokumenten.
-* **Least Privilege:** Der operative Benutzer `secops_app_user` besitzt weder Superuser- noch `BYPASSRLS`-Rechte; die Rolle wird beim Serverstart verifiziert.
+* **Least Privilege:** Der operative Login `alfasecuritysoft_app_user` erbt die eingeschränkten Datenbankrechte der bestehenden `secops_app_user`-Rolle; er besitzt weder Superuser- noch `BYPASSRLS`-Rechte und wird beim Serverstart verifiziert. Die Legacy-Rolle und historischen Grants bleiben für Upgrade- und Rollback-Kompatibilität erhalten.
 * **Authentifizierung:** Argon2id-Passworthashes, opake zufällige `HttpOnly`-Sitzungscookies, Datenbank-Widerruf, CSRF-Schutz und kontoabhängiger Lockout nach Fehlversuchen. Ein per-IP-API-Limit kann einen gemeinsamen Redis-Store verwenden; im Produktionsmodus ist Redis erforderlich. Ohne Redis im Entwicklungsmodus bleibt der Zähler pro Prozess.
 * **Offline-Sync:** Idempotente Mutationen über `POST /api/v1/sync/push`; Übergaben verwenden zusätzlich `POST /api/v1/handovers/sync`, Advisory Locks und persistente Quittungen. Lokale Erfassung bleibt bis zur API-Quittung ausstehend; Konflikte überschreiben keine bestätigten Protokolle.
 

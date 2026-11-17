@@ -41,4 +41,4 @@ Der Frontend-Build meldet bestehende Vite-Konfigurations- und Bundlegrößen-War
 - Kontakt-, Benachrichtigungs- und Eskalationsstatus-Endpunkte verwenden weiterhin feste Höchstgrenzen; Alarmvorfälle und Ereignis-/Maßnahmen-/Statusverläufe sind cursor-paginiert.
 - Die lokale Worker-Implementierung verwendet PostgreSQL-Jobs und Leases; Hochverfügbarkeit und Produktionsbetrieb des Workers sind nicht durch einen Produktiv-Deployment-Test belegt.
 - Keine Produktionsdatenbank wurde verwendet und keine Produktion wurde geändert.
-- PR [#12](https://github.com/Xonni-star/SecurityOps-2.0/pull/12) bleibt geöffnet und wird nicht gemergt. Lokale Prüfungen und alle vier CI-Jobs für die dokumentierten Stände sind bestanden.
+- PR [#12](https://github.com/Xonni-star/AlfaSecuritySoft/pull/12) bleibt geöffnet und wird nicht gemergt. Lokale Prüfungen und alle vier CI-Jobs für die dokumentierten Stände sind bestanden.

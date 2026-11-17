@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Abschlussbericht Schritt 5R.2.7
+# AlfaSecuritySoft - Abschlussbericht Schritt 5R.2.7
 ## Idempotenz zwischen Sync-Push und Konfliktauflösung korrigiert
 
 ### 1. Ursache des Idempotenzfehlers

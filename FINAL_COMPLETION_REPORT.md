@@ -2,7 +2,7 @@
 > **Historischer Snapshot:** Dieser Abschlussbericht beschreibt einen früheren Entwicklungsstand. Darin erwähnte KI-/Proxy-Funktionen wurden in Schritt 5R.3.4 vollständig entfernt; verbindliche Aussagen zum aktuellen Umfang müssen aus den danach erstellten Schrittberichten stammen.
 
 
-**Projekt:** SecurityOps 2.0  
+**Projekt:** AlfaSecuritySoft
 **Stand:** 2026-11-11  
 **Bearbeiteter Code-Commit:** `131773608f371c8b6e26d9d10365acb71c67a579`  
 **Dokumentations-Commit:** `ae87d4c`  
@@ -173,7 +173,7 @@ Alle Endpunkte sind authentifiziert, mandantengetrennt und über granulare Berec
 - `1317736` – CRUD-Persistenz für Schichten, Schlüssel und Aufgaben
 - `ae87d4c` – Aktualisierter Audit-/Fortschrittsbericht
 
-GitHub: <https://github.com/Xonni-star/SecurityOps-2.0>
+GitHub: <https://github.com/Xonni-star/AlfaSecuritySoft>
 
 ---
 

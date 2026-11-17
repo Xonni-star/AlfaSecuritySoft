@@ -6,7 +6,7 @@ import { pool, migrationPool, withTenantTransaction, withSystemTransaction } fro
 import { cleanupTestData, authHeaders, insertTenantMembership } from './testUtils';
 import { env } from '../config/env';
 
-describe('SecurityOps 2.0 - Schritt 3 Vollständige Sicherheitsprüfung & RLS Tests', () => {
+describe('AlfaSecuritySoft - Schritt 3 Vollständige Sicherheitsprüfung & RLS Tests', () => {
   let testTenantA: string;
   let testTenantB: string;
   let testUserAId: string;

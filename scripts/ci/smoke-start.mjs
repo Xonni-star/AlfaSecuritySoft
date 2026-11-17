@@ -27,7 +27,7 @@ function scan(text) {
     console.log(`\n[SMOKE] Frontend erkannt: ${frontendUrl}`);
   }
 
-  if (/\[SECURITYOPS 2\.0 BACKEND\] Gestartet auf Port/.test(clean)) {
+  if (/\[AlfaSecuritySoft Backend\] Gestartet auf Port/.test(clean)) {
     backendReady = true;
     console.log('\n[SMOKE] Backend-Startmeldung erkannt.');
   }

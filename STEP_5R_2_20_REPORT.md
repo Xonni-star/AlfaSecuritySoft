@@ -1,4 +1,4 @@
-# SecurityOps 2.0 – Schritt 5R.2.20
+# AlfaSecuritySoft – Schritt 5R.2.20
 > **Historischer Snapshot:** Dieser frühere Bericht referenziert ein separates Root-Proxy-Backend. Dieses wurde in Schritt 5R.3.4 vollständig aus dem Repository entfernt.
 
 ## Root-Projekt in CI integrieren und Gesamtstart absichern
@@ -80,7 +80,7 @@ Ablauf:
 
 1. Startet `npm run dev` (concurrently) mit Test-Umgebungsvariablen und `PORT=8010`.
 2. Erkennt die Frontend-Bereitschaft an der Vite-Ausgabe (`Local: http://localhost:<port>/`).
-3. Erkennt die Backend-Bereitschaft an `[SECURITYOPS 2.0 BACKEND] Gestartet auf Port …`.
+3. Erkennt die Backend-Bereitschaft an `[AlfaSecuritySoft BACKEND] Gestartet auf Port …`.
 4. Erkennt vorzeitige Prozessenden an `npm run dev-frontend|dev-backend exited with code …` und bricht mit Fehler ab.
 5. Ruft `GET /api/v1/health` auf und verlangt `status: "OPERATIONAL"` sowie eine verbundene PostgreSQL-Datenbank.
 6. Ruft die Frontend-URL auf und verlangt HTTP 200 mit `id="root"` im HTML.
@@ -142,10 +142,10 @@ Es werden ausschließlich durch GitHub Actions belegte Ergebnisse dokumentiert. 
 
 | Workflow | Run-ID | Job | Ergebnis | Dauer |
 |---|---|---|---|---|
-| SecurityOps 2.0 CI | [`43043287310`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43043287310) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** | 44 s |
-| SecurityOps 2.0 CI | [`43043287310`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43043287310) | Frontend – npm ci, Vitest, Produktions-Build | **success** | 14 s |
-| SecurityOps 2.0 CI | [`43043287310`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43043287310) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** | 1 m 9 s |
-| SecurityOps 2.0 CD | [`43043488960`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43043488960) | Release-Paket aus CI-Artefakten bauen | **success** | – |
+| AlfaSecuritySoft CI | [`43043287310`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43043287310) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** | 44 s |
+| AlfaSecuritySoft CI | [`43043287310`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43043287310) | Frontend – npm ci, Vitest, Produktions-Build | **success** | 14 s |
+| AlfaSecuritySoft CI | [`43043287310`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43043287310) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** | 1 m 9 s |
+| AlfaSecuritySoft CD | [`43043488960`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43043488960) | Release-Paket aus CI-Artefakten bauen | **success** | – |
 
 Gesamtergebnis CI: **success** (alle drei Jobs).
 
@@ -153,10 +153,10 @@ Gesamtergebnis CI: **success** (alle drei Jobs).
 
 | Workflow | Run-ID | Job | Ergebnis |
 |---|---|---|---|
-| SecurityOps 2.0 CI | [`43043570746`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43043570746) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** |
-| SecurityOps 2.0 CI | [`43043570746`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43043570746) | Frontend – npm ci, Vitest, Produktions-Build | **success** |
-| SecurityOps 2.0 CI | [`43043570746`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43043570746) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** |
-| SecurityOps 2.0 CD | [`43043863088`](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43043863088) | Release-Paket aus CI-Artefakten bauen | **success** |
+| AlfaSecuritySoft CI | [`43043570746`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43043570746) | Root – npm ci, Strukturprüfung, Gesamtstart | **success** |
+| AlfaSecuritySoft CI | [`43043570746`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43043570746) | Frontend – npm ci, Vitest, Produktions-Build | **success** |
+| AlfaSecuritySoft CI | [`43043570746`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43043570746) | Backend – PostgreSQL 16, Migration, Build, Jest | **success** |
+| AlfaSecuritySoft CD | [`43043863088`](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43043863088) | Release-Paket aus CI-Artefakten bauen | **success** |
 
 Gesamtergebnis CI: **success** (alle drei Jobs). CD: **success**.
 

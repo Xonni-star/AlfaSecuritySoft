@@ -1,11 +1,11 @@
-# SecurityOps 2.0 — Project completion assessment
+# AlfaSecuritySoft — Project completion assessment
 
 **Assessment:** **PARTIAL / BLOCKED.** This report records implemented work and evidence; it does not declare the overall project or Phase 9 complete, production-ready, or approved.
 
 **Phase 9 documentation baseline at kickoff:** `879ae951d6cea52fd84d01dc699cf2ed08843300`
-**Current `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
+**Current `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/AlfaSecuritySoft/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
 **Last GitHub check:** 2026-11-15 23:18 CET
-**Open PR:** [#66](https://github.com/Xonni-star/SecurityOps-2.0/pull/66); PRs #50–#65 are merged. [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62) is merged as `9df02aa`; no deployment was performed. Main CI [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed 7/7 and artifacts [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2. PR #66 CI [43768237786](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43768237786) passed 7/7 on `7f9bdfc`; the separate Chromium offline fixture passed locally.
+**Open PR:** [#66](https://github.com/Xonni-star/AlfaSecuritySoft/pull/66); PRs #50–#65 are merged. [#62](https://github.com/Xonni-star/AlfaSecuritySoft/pull/62) is merged as `9df02aa`; no deployment was performed. Main CI [43762052960](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43762052960) passed 7/7 and artifacts [43762359834](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43762359834) passed 2/2. PR #66 CI [43768237786](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43768237786) passed 7/7 on `7f9bdfc`; the separate Chromium offline fixture passed locally.
 
 The historical workstream notes below retain the PR #62-open state from their original snapshot and do not describe the current GitHub state.
 
@@ -55,8 +55,8 @@ This documentation workstream changed Markdown and runbook documentation only; i
 ## In development
 
 - PR #62’s documentation rebase and project/phase reports are merged as `9df02aa`. The older statement that #62 remained open is historical.
-- PR #66 is currently open and contains these report changes plus offline attachment recovery, CSV export safety, and DST regression coverage. Its last hosted run [43764603109](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43764603109) passed 7/7 on earlier head `164e0e6`; newly added changes require a fresh CI run.
-- Mainline post-merge CI for PR #64: run [43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on exact SHA `621874535ee480e56716ae8a7bd992272bc7a51a`.
+- PR #66 is currently open and contains these report changes plus offline attachment recovery, CSV export safety, and DST regression coverage. Its last hosted run [43764603109](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43764603109) passed 7/7 on earlier head `164e0e6`; newly added changes require a fresh CI run.
+- Mainline post-merge CI for PR #64: run [43760703980](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43760703980) passed **7/7 jobs** on exact SHA `621874535ee480e56716ae8a7bd992272bc7a51a`.
 
 ## Open
 
@@ -89,22 +89,22 @@ All rows reflect GitHub state checked on 2026-11-15. Merge SHAs are abbreviated 
 
 | PR | Branch | Scope | State / merge commit |
 |---|---|---|---|
-| [#50](https://github.com/Xonni-star/SecurityOps-2.0/pull/50) | `xonni-star-backup-restore-verification` | Verify full isolated backup restore | Merged `41d6354` |
-| [#51](https://github.com/Xonni-star/SecurityOps-2.0/pull/51) | `xonni-star-improve-mobile-usability` | Improve mobile shift-swap usability | Merged `1ea1c54` |
-| [#52](https://github.com/Xonni-star/SecurityOps-2.0/pull/52) | `xonni-star-offline-field-testing` | Exercise offline GuardBook sync in Chromium | Merged `62f9851` |
-| [#53](https://github.com/Xonni-star/SecurityOps-2.0/pull/53) | `xonni-star-performance-baseline` | Add bounded local performance baseline | Merged `87e56cf` |
-| [#54](https://github.com/Xonni-star/SecurityOps-2.0/pull/54) | `xonni-star-phase-8-api-cors` | Return 403 for disallowed CORS origins | Merged `9774a8a` |
-| [#55](https://github.com/Xonni-star/SecurityOps-2.0/pull/55) | `xonni-star-application-end-to-end` | Add explicit multi-tenant selection to login | Merged `6a5adb4` |
-| [#56](https://github.com/Xonni-star/SecurityOps-2.0/pull/56) | `xonni-star-linux-test-installers` | Add isolated Phase 7 Linux test installer | Merged `2964dc2` |
-| [#57](https://github.com/Xonni-star/SecurityOps-2.0/pull/57) | `xonni-star-tenant-permission-matrix` | Fix customer-linked document RLS scope (migration 040) | Merged `c8ae5ad` |
-| [#58](https://github.com/Xonni-star/SecurityOps-2.0/pull/58) | `xonni-star-patch-deepmerge-advisory` | Fix deepmerge development advisory | Merged `9a621c2` |
-| [#59](https://github.com/Xonni-star/SecurityOps-2.0/pull/59) | `xonni-star-update-readiness-docs-status` | Refresh readiness and GitHub status docs | Merged `879ae95` |
-| [#60](https://github.com/Xonni-star/SecurityOps-2.0/pull/60) | `xonni-star-phase-9-planning-personnel` | Harden planning validation and approvals | Merged `563efd6` |
-| [#61](https://github.com/Xonni-star/SecurityOps-2.0/pull/61) | `xonni-star-phase-9-usability-performance` | Improve global search keyboard accessibility | Merged `084314e` |
-| [#62](https://github.com/Xonni-star/SecurityOps-2.0/pull/62) | `xonni-star-phase-9-ops-docs` | Current status and operations audit; project reports | **Open**, latest recorded head `6c8a52c` passed 7/7; later report-only changes require checking current head |
-| [#63](https://github.com/Xonni-star/SecurityOps-2.0/pull/63) | `xonni-star-phase9-core-workflow-e2e` | Cover Phase 9 core online workflows | Merged `bed939a` |
-| [#64](https://github.com/Xonni-star/SecurityOps-2.0/pull/64) | `xonni-star-phase9-offline-attachment-sync` | Sync GuardBook attachments offline | Merged `6218745` |
-| [#65](https://github.com/Xonni-star/SecurityOps-2.0/pull/65) | `xonni-star-phase-9-tenant-authorization` | Strengthen tenant authorization boundary coverage | Merged `cd01c48` |
+| [#50](https://github.com/Xonni-star/AlfaSecuritySoft/pull/50) | `xonni-star-backup-restore-verification` | Verify full isolated backup restore | Merged `41d6354` |
+| [#51](https://github.com/Xonni-star/AlfaSecuritySoft/pull/51) | `xonni-star-improve-mobile-usability` | Improve mobile shift-swap usability | Merged `1ea1c54` |
+| [#52](https://github.com/Xonni-star/AlfaSecuritySoft/pull/52) | `xonni-star-offline-field-testing` | Exercise offline GuardBook sync in Chromium | Merged `62f9851` |
+| [#53](https://github.com/Xonni-star/AlfaSecuritySoft/pull/53) | `xonni-star-performance-baseline` | Add bounded local performance baseline | Merged `87e56cf` |
+| [#54](https://github.com/Xonni-star/AlfaSecuritySoft/pull/54) | `xonni-star-phase-8-api-cors` | Return 403 for disallowed CORS origins | Merged `9774a8a` |
+| [#55](https://github.com/Xonni-star/AlfaSecuritySoft/pull/55) | `xonni-star-application-end-to-end` | Add explicit multi-tenant selection to login | Merged `6a5adb4` |
+| [#56](https://github.com/Xonni-star/AlfaSecuritySoft/pull/56) | `xonni-star-linux-test-installers` | Add isolated Phase 7 Linux test installer | Merged `2964dc2` |
+| [#57](https://github.com/Xonni-star/AlfaSecuritySoft/pull/57) | `xonni-star-tenant-permission-matrix` | Fix customer-linked document RLS scope (migration 040) | Merged `c8ae5ad` |
+| [#58](https://github.com/Xonni-star/AlfaSecuritySoft/pull/58) | `xonni-star-patch-deepmerge-advisory` | Fix deepmerge development advisory | Merged `9a621c2` |
+| [#59](https://github.com/Xonni-star/AlfaSecuritySoft/pull/59) | `xonni-star-update-readiness-docs-status` | Refresh readiness and GitHub status docs | Merged `879ae95` |
+| [#60](https://github.com/Xonni-star/AlfaSecuritySoft/pull/60) | `xonni-star-phase-9-planning-personnel` | Harden planning validation and approvals | Merged `563efd6` |
+| [#61](https://github.com/Xonni-star/AlfaSecuritySoft/pull/61) | `xonni-star-phase-9-usability-performance` | Improve global search keyboard accessibility | Merged `084314e` |
+| [#62](https://github.com/Xonni-star/AlfaSecuritySoft/pull/62) | `xonni-star-phase-9-ops-docs` | Current status and operations audit; project reports | **Open**, latest recorded head `6c8a52c` passed 7/7; later report-only changes require checking current head |
+| [#63](https://github.com/Xonni-star/AlfaSecuritySoft/pull/63) | `xonni-star-phase9-core-workflow-e2e` | Cover Phase 9 core online workflows | Merged `bed939a` |
+| [#64](https://github.com/Xonni-star/AlfaSecuritySoft/pull/64) | `xonni-star-phase9-offline-attachment-sync` | Sync GuardBook attachments offline | Merged `6218745` |
+| [#65](https://github.com/Xonni-star/AlfaSecuritySoft/pull/65) | `xonni-star-phase-9-tenant-authorization` | Strengthen tenant authorization boundary coverage | Merged `cd01c48` |
 
 Hosted CI showed 7/7 success for PRs #50–#58, #60, #61, and #63–#65. PR #59 had no PR-level check rollup; post-merge results are recorded separately and tied to their exact revisions. For #64 specifically, PR checks passed 7/7 on `b814b65`; mainline CI on squash commit `6218745` remains a separate required check.
 

@@ -1,10 +1,10 @@
-# SecurityOps 2.0 - Core Configuration Settings
+# AlfaSecuritySoft - Core Configuration Settings
 import os
 from typing import List
 from pydantic import BaseModel, Field
 
 class Settings(BaseModel):
-    PROJECT_NAME: str = "SecurityOps 2.0 Enterprise Backend"
+    PROJECT_NAME: str = "AlfaSecuritySoft Enterprise Backend"
     VERSION: str = "2.0.0"
     API_V1_STR: str = "/api/v1"
     

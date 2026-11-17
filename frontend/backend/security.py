@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Cryptographic & Authentication Utilities (Phase 7 Hardened)
+# AlfaSecuritySoft - Cryptographic & Authentication Utilities (Phase 7 Hardened)
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, List
 import uuid

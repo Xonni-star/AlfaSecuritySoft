@@ -1,9 +1,9 @@
-# SecurityOps 2.0 – Produktionsdeployment
+# AlfaSecuritySoft – Produktionsdeployment
 
 > **Nicht für Produktion freigegeben.** Diese Anleitung beschreibt Compose-Konfiguration und Betriebsbefehle; sie ist keine bestätigte Produktionsinstallation. Der Statusabschnitt mit Datum 15.11.2026, 20:30 CET weiter unten ist ein historischer Snapshot. Aktueller Mainline- und Abnahmestatus: [PROJECT_CURRENT_STATUS.md](../../PROJECT_CURRENT_STATUS.md) und [PHASE_9_COMPLETION_REPORT.md](../../PHASE_9_COMPLETION_REPORT.md).
 
 **Architektur:** Caddy (TLS, statisches Frontend) → TypeScript/Express-Backend → PostgreSQL 16 + privater externer S3-kompatibler Objektspeicher + ClamAV
-**Migrationspfad:** `migrate` (secops_admin) → `db-init` (Passwort für `secops_app_user`) → `backend` (ausschließlich App-Rolle)
+**Migrationspfad:** `migrate` (legacy `secops_admin`) → `db-init` (Passwort für `alfasecuritysoft_app_user` und kompatible `secops_app_user`-Rolle) → `backend` (ausschließlich least-privilege App-Rolle)
 
 ---
 
@@ -34,12 +34,12 @@ Werte in `.env` setzen:
 | `DOMAIN` | Öffentliche Domain (Caddy TLS) |
 | `POSTGRES_DB` | Datenbankname (Default `securityops_v2`) |
 | `POSTGRES_PASSWORD` | Passwort der administrativen Rolle `secops_admin` |
-| `POSTGRES_APP_PASSWORD` | Passwort der Least-Privilege-Rolle `secops_app_user` |
+| `POSTGRES_APP_PASSWORD` | Gemeinsames Passwort für `alfasecuritysoft_app_user` und den kompatiblen Legacy-Login `secops_app_user` |
 | `JWT_SECRET` | Signaturgeheimnis, mindestens 32 Zeichen |
 | `JWT_EXPIRES_IN` | Session-Laufzeit, z. B. `8h` |
 | `CORS_ORIGIN` | Exakte öffentliche Origin, z. B. `https://securityops.example` |
-| `SECOPS_INTERNAL_SUBNET` | Privates Docker-Subnetz für Backend/Proxy/DB (Default `172.30.0.0/24`) |
-| `SECOPS_PROXY_IPV4` | Feste interne IPv4-Adresse von Caddy (Default `172.30.0.2`) |
+| `ALFASECURITYSOFT_INTERNAL_SUBNET` | Privates Docker-Subnetz für Backend/Proxy/DB (Default `172.30.0.0/24`; alte `SECOPS_INTERNAL_SUBNET` wird als Fallback akzeptiert) |
+| `ALFASECURITYSOFT_PROXY_IPV4` | Feste interne IPv4-Adresse von Caddy (Default `172.30.0.2`; alte `SECOPS_PROXY_IPV4` wird als Fallback akzeptiert) |
 | `TRUST_PROXY` | Ausschließlich die Caddy-Adresse als CIDR, standardmäßig `172.30.0.2/32` |
 | `BACKUP_ENCRYPTION_KEY` | Schlüssel für verschlüsselte Backups |
 | `DMS_S3_ENDPOINT` | HTTPS-Endpunkt des S3-kompatiblen Objektspeichers |
@@ -55,7 +55,7 @@ Werte in `.env` setzen:
 
 Production Compose runs no ClamAV container; ClamAV must be operated separately and reachable from the backend. Required host/provider settings configure a client but do not verify scanner availability during startup. The first successful scan is the only evidence that a file was scanned; unavailable/error results remain quarantined and blocked. ClamAV's `zINSTREAM` TCP protocol does not authenticate or encrypt connections, so restrict it to a private, isolated network and permit access only from the backend. Local development uses the ClamAV service in `docker-compose.minio.yml`.
 
-Express vertraut nur den in `TRUST_PROXY` ausdrücklich angegebenen Proxy-IP-Adressen/CIDRs; die Voreinstellung vertraut keinem Proxy. Im Production-Compose-Netz ist nur Caddy öffentlich, der Backend-Port wird nicht veröffentlicht, Caddy hat die feste interne Adresse `172.30.0.2`, und die Caddy-Konfiguration überschreibt `X-Forwarded-For` mit der tatsächlichen Verbindungsadresse. Bei geänderten Netzwerkwerten müssen `SECOPS_PROXY_IPV4` und `TRUST_PROXY` übereinstimmen; `TRUST_PROXY` darf nicht pauschal das gesamte Docker-Subnetz oder `*` freigeben. Dadurch basiert die Rate-Limit-IP auf dem Client hinter genau diesem vertrauenswürdigen Proxy, während nicht vertrauenswürdige `X-Forwarded-For`-Header ignoriert werden.
+Express vertraut nur den in `TRUST_PROXY` ausdrücklich angegebenen Proxy-IP-Adressen/CIDRs; die Voreinstellung vertraut keinem Proxy. Im Production-Compose-Netz ist nur Caddy öffentlich, der Backend-Port wird nicht veröffentlicht, Caddy hat die feste interne Adresse `172.30.0.2`, und die Caddy-Konfiguration überschreibt `X-Forwarded-For` mit der tatsächlichen Verbindungsadresse. Bei geänderten Netzwerkwerten müssen `ALFASECURITYSOFT_PROXY_IPV4` und `TRUST_PROXY` übereinstimmen; `TRUST_PROXY` darf nicht pauschal das gesamte Docker-Subnetz oder `*` freigeben. Die bisher verwendeten `SECOPS_*`-Namen funktionieren weiterhin als Compose-Fallback, sollten aber nicht mehr neu gesetzt werden. Dadurch basiert die Rate-Limit-IP auf dem Client hinter genau diesem vertrauenswürdigen Proxy, während nicht vertrauenswürdige `X-Forwarded-For`-Header ignoriert werden.
 
 Secrets erzeugen:
 
@@ -81,8 +81,8 @@ Startreihenfolge (durch Compose-Bedingungen erzwungen):
 
 1. `db` wird healthy (`pg_isready`).
 2. `migrate` führt alle Migrationen mit `secops_admin` aus.
-3. `db-init` setzt das Passwort für `secops_app_user`.
-4. `backend` startet und prüft die App-Rolle (kein Superuser, kein BYPASSRLS).
+3. Migration 043 richtet `alfasecuritysoft_app_user` als Login für die bestehenden eingeschränkten Grants von `secops_app_user` ein; `db-init` setzt für beide Rollen das konfigurierte App-Passwort.
+4. `backend` verbindet sich als `alfasecuritysoft_app_user` und prüft die App-Rolle (kein Superuser, kein BYPASSRLS).
    Fehlende S3- oder Pflichtscanner-Konfiguration stoppt den Produktivstart.
 5. `proxy` startet, sobald das Backend healthy ist.
 
@@ -132,12 +132,12 @@ docker compose -f docker-compose.production.yml exec -T backend \
 Nur für Test-/Demo-Umgebungen, **nicht** für Produktion:
 
 ```bash
-read -r -s -p 'Testpasswort für Demo-Seed (mindestens 16 Zeichen): ' SECOPS_DEMO_USER_PASSWORD
+read -r -s -p 'Testpasswort für Demo-Seed (mindestens 16 Zeichen): ' ALFASECURITYSOFT_DEMO_USER_PASSWORD
 printf '\n'
-export SECOPS_DEMO_USER_PASSWORD
+export ALFASECURITYSOFT_DEMO_USER_PASSWORD
 docker compose -f docker-compose.production.yml run --rm \
   --entrypoint node backend dist/seeds/seed.js
-unset SECOPS_DEMO_USER_PASSWORD
+unset ALFASECURITYSOFT_DEMO_USER_PASSWORD
 ```
 
 Der Seed verlangt ein eigenes Passwort mit mindestens 16 Zeichen. Er legt illustrative
@@ -255,11 +255,11 @@ Die Test-Images können über `RESTORE_TEST_BACKUP_IMAGE`, `RESTORE_TEST_MINIO_I
 
 > Der nachfolgende Statusblock bleibt als datierter Snapshot erhalten. Seit dem Prüfzeitpunkt wurden PRs #50–#59 gemergt; seine damaligen PR-open-/main-SHA-Aussagen sind nicht aktuell. Siehe [PROJECT_CURRENT_STATUS.md](../../PROJECT_CURRENT_STATUS.md) und [PHASE_9_COMPLETION_REPORT.md](../../PHASE_9_COMPLETION_REPORT.md).
 
-`main` steht auf `d06c2d835270b43bd36bb3585fc45d7da7d58a50`; PRs #47–#49 sind gemergt. PRs [#50](https://github.com/Xonni-star/SecurityOps-2.0/pull/50)–[#58](https://github.com/Xonni-star/SecurityOps-2.0/pull/58) sind gegen `main` offen: Restore, mobile Usability, Offline Chromium, Performance-Baseline, CORS-Fehlerbehandlung, Tenant-Login/E2E, Linux-Testinstaller, Dokumentberechtigungen und Development-Dependency-Advisory. Hosted CI bestand 7/7 Jobs für alle PRs #50–#58. PR #56s frühere 429s waren Account-Lockout durch veraltete fest codierte Testzugangsdaten, nicht globales Rate-Limiting. Backend- und DMS-Integrationslogins nutzen nun `SECOPS_DEMO_USER_PASSWORD`; DMS CI setzt ein Testpasswort, Jest behält lokal exportierte Werte. Fokus-PostgreSQL-API-Integration 23/23, DMS PostgreSQL/MinIO/ClamAV-Flow, Backend-Build und Hosted CI bestanden; ein lokaler Full-Jest-Lauf hatte einen unabhängigen Patrol-Timeout nach 5s. Es wurden weder Produktionslimits abgeschwächt noch Tests entfernt. PR #56s Lauf [43752256912](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43752256912), PR #57s RLS-Lauf [43752115003](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43752115003) und PR #58s Dependency-Lauf [43752479801](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43752479801) bestanden jeweils 7/7. PR #57 und #58 bleiben offen/unmerged; PR #58s lokaler Full-Jest-Lauf berichtete 10 failing suites / 171 tests mit lokalen PostgreSQL-/CORS-Problemen, getrennt von den grünen Hosted Checks. Main-CI [43726729355](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43726729355) bestand 7/7 Jobs, die Release-Artefakt-Prüfung [43726964671](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43726964671) 2/2. Der Release-Workflow erzeugt und prüft ein Paket, deployed aber nicht; daraus folgt keine Produktionsfreigabe. Details: [Mainline- und Validierungsstatus](../../MAINLINE_INTEGRATION_STATUS.md) und [Phase-8-Prüfbericht](../../PHASE_8_COMPLETION_REPORT.md).
+`main` steht auf `d06c2d835270b43bd36bb3585fc45d7da7d58a50`; PRs #47–#49 sind gemergt. PRs [#50](https://github.com/Xonni-star/AlfaSecuritySoft/pull/50)–[#58](https://github.com/Xonni-star/AlfaSecuritySoft/pull/58) sind gegen `main` offen: Restore, mobile Usability, Offline Chromium, Performance-Baseline, CORS-Fehlerbehandlung, Tenant-Login/E2E, Linux-Testinstaller, Dokumentberechtigungen und Development-Dependency-Advisory. Hosted CI bestand 7/7 Jobs für alle PRs #50–#58. PR #56s frühere 429s waren Account-Lockout durch veraltete fest codierte Testzugangsdaten, nicht globales Rate-Limiting. Backend- und DMS-Integrationslogins nutzen nun `SECOPS_DEMO_USER_PASSWORD`; DMS CI setzt ein Testpasswort, Jest behält lokal exportierte Werte. Fokus-PostgreSQL-API-Integration 23/23, DMS PostgreSQL/MinIO/ClamAV-Flow, Backend-Build und Hosted CI bestanden; ein lokaler Full-Jest-Lauf hatte einen unabhängigen Patrol-Timeout nach 5s. Es wurden weder Produktionslimits abgeschwächt noch Tests entfernt. PR #56s Lauf [43752256912](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43752256912), PR #57s RLS-Lauf [43752115003](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43752115003) und PR #58s Dependency-Lauf [43752479801](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43752479801) bestanden jeweils 7/7. PR #57 und #58 bleiben offen/unmerged; PR #58s lokaler Full-Jest-Lauf berichtete 10 failing suites / 171 tests mit lokalen PostgreSQL-/CORS-Problemen, getrennt von den grünen Hosted Checks. Main-CI [43726729355](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43726729355) bestand 7/7 Jobs, die Release-Artefakt-Prüfung [43726964671](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43726964671) 2/2. Der Release-Workflow erzeugt und prüft ein Paket, deployed aber nicht; daraus folgt keine Produktionsfreigabe. Details: [Mainline- und Validierungsstatus](../../MAINLINE_INTEGRATION_STATUS.md) und [Phase-8-Prüfbericht](../../PHASE_8_COMPLETION_REPORT.md).
 
 Zusätzliche Ergebnisse aus separaten, **nicht gemergten Worktrees** sind nicht Bestandteil dieses Mainline-Nachweises:
 
-- **Offline-Feldtest:** Ein separates Audit meldet 24 Frontend-Testdateien / 140 Tests sowie Typecheck und Produktions-Build bestanden; dies war IndexedDB/jsdom-Simulation. Das offene PR [#52](https://github.com/Xonni-star/SecurityOps-2.0/pull/52) ergänzt einen Playwright/Chromium-Test für Offline-Wachbuch, Reload, Wiederverbindung und Retry nach verlorener Quittung. Er besteht gegen eine Loopback-Fixture, nicht gegen das authentifizierte Anwendungsbackend oder Produktionsdienste; Hosted CI war bei der letzten Prüfung noch offen. Reale Geräte-/Backend-Abnahme bleibt aus. Fotos bleiben ungesynct: es gibt keinen idempotenten Upload-/Replay-Pfad; der Test prüft nur lokale Foto-Persistenz und zeigt sie nicht als synchronisiert an.
+- **Offline-Feldtest:** Ein separates Audit meldet 24 Frontend-Testdateien / 140 Tests sowie Typecheck und Produktions-Build bestanden; dies war IndexedDB/jsdom-Simulation. Das offene PR [#52](https://github.com/Xonni-star/AlfaSecuritySoft/pull/52) ergänzt einen Playwright/Chromium-Test für Offline-Wachbuch, Reload, Wiederverbindung und Retry nach verlorener Quittung. Er besteht gegen eine Loopback-Fixture, nicht gegen das authentifizierte Anwendungsbackend oder Produktionsdienste; Hosted CI war bei der letzten Prüfung noch offen. Reale Geräte-/Backend-Abnahme bleibt aus. Fotos bleiben ungesynct: es gibt keinen idempotenten Upload-/Replay-Pfad; der Test prüft nur lokale Foto-Persistenz und zeigt sie nicht als synchronisiert an.
 - **Backup-/Restore-Drill:** Ein praktischer PostgreSQL- und DMS-Snapshot-/Restore-Lauf bestand mit SHA-256-Objektprüfungen und anschließendem Health-Smoke-Test. Der Worktree ist separat und ungemergt; ClamAV und ein realer Speicheranbieter wurden nicht geprüft, RPO/RTO wurden nicht gemessen. Das ist keine Produktions-Wiederherstellungsabnahme.
 - **Performance-Baseline:** Bei 5 Warmups und 50 Messungen je Workflow (maximal 4 parallel, 10-Sekunden-Timeout) gab es 0 Fehler. Customer list: p50/p95/p99 210.979/293.646/298.308 ms (17.69 req/s); customer sync create: 102.074/322.707/327.985 ms (34.04 req/s); SOP draft customer assignment: 174.410/185.952/225.092 ms (23.29 req/s). PostgreSQL 16 war auf 1 CPU/1 GiB begrenzt; die API lief auf macOS mit Node 26.7 ohne Prozesslimits. Es wurden keine Ressourcenspitzen gemessen. Das ungemergte Worktree-Ergebnis ist ein begrenzter Baseline-Lauf, kein Produktions-Lasttest oder Kapazitätsnachweis.
 - **Documents-Berechtigung:** Ein separates current-main-basiertes Worktree bestätigte, dass site-scoped `documents:read` kundenverknüpfte Dokumente über Site-Grenzen hinweg offenlegte. Der Bypass wurde mit Migration 039 reproduziert und mit Migration 040 (`frontend/backend/src/migrations/040_customer_document_tenant_scope.sql`) abgewiesen; diese fordert Tenant-Scope für Kundenbeziehungen. Die Migration ist im separaten Worktree gestaged, aber uncommitted und ungemergt. RLS- und Read-/Download-Routentests decken `TENANT` / `SITE` / `OWN` ab. Backend-Build, `auth_site_scope.test.ts` (14/14), gezielte Migration-/RLS-Tests (4/4) und Diff-Checks bestanden dort. Migration und Korrektur sind nicht auf `main`; das Problem bleibt dort bis Merge und Verifikation offen.
@@ -290,7 +290,7 @@ Häufige Ursachen:
 
 ## 10. Sicherheitsmodell
 
-- `secops_app_user`: `LOGIN`, kein `SUPERUSER`, kein `BYPASSRLS`, kein `CREATEROLE`, kein `CREATEDB`.
+- `alfasecuritysoft_app_user`: `LOGIN`, `INHERIT`, kein `SUPERUSER`, kein `BYPASSRLS`, kein `CREATEROLE`, kein `CREATEDB`; erbt ausschließlich von der vorhandenen `secops_app_user`-Rolle.
 - Der API-Server erhält **keine** administrative Datenbank-URL; nur `migrate` und `db-init` nutzen `secops_admin`.
 - PostgreSQL und Backend sind ausschließlich im internen Docker-Netz erreichbar.
 - CORS-Whitelist über `CORS_ORIGIN`; kein Wildcard.

@@ -5,7 +5,7 @@ import { ClamAvDocumentScanner } from '../services/documentScanner';
 
 const readinessTimeoutMs = 5 * 60 * 1000;
 const connectionTimeoutMs = 1500;
-const cleanDocument = Buffer.from('SecurityOps ClamAV INSTREAM integration test document.\n');
+const cleanDocument = Buffer.from('AlfaSecuritySoft ClamAV INSTREAM integration test document.\n');
 const eicarTestSignature = Buffer.from(
   'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
 );

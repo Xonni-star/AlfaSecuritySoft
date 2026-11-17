@@ -1,6 +1,18 @@
-# SecurityOps 2.0 — Project completion tracker
+# AlfaSecuritySoft — Project completion tracker
 
 This tracker is the working source of truth for the current audit. Statuses apply only to the stated scope; completion requires its acceptance criteria and evidence. Historical reports and CI results do not prove current-worktree behavior.
+
+## AlfaSecuritySoft correction audit (2026-11-16)
+
+Starting checkpoint: `3e36ceaccda8462a43a10f9eeb77cf20d5599870`;
+current upstream `main` at audit start: `80ac44f4bccc0d9c1aef0891239017ff51b5e216`.
+GitHub repository and description are now branded `Xonni-star/AlfaSecuritySoft`;
+PR #67 was merged and no other PRs were open at the live check. The correction
+is on the existing feature branch and has not yet been published or integrated.
+
+| ID | Priority | Status | Scope and concrete action | Evidence / remaining prerequisite |
+|---|---|---|---|---|
+| BRAND-001 | P1 | IN ENTWICKLUNG | Complete the second-round AlfaSecuritySoft migration without changing persisted data or feature behavior | 368 old GitHub URL occurrences replaced across 63 tracked text files. App login role migration 043 is additive and grants only the existing restricted `secops_app_user` role; the legacy role and historical migrations stay intact. New demo-password and Compose variables have backward-compatible legacy fallbacks. Frontend 380/380, typecheck/build, backend build, focused demo-password compatibility tests 3/3, branding/login tests 3/3, shell/Node syntax and diff checks pass locally. Local Docker/PostgreSQL are unavailable; hosted migration/Compose/browser CI, PR creation and integration remain required. |
 
 ## Autonomous finalization audit (2026-11-16)
 
@@ -70,54 +82,54 @@ exact-role combobox/textbox/submit matches. The journey is corrected without
 removed assertions or larger budgets; complete ten-case acceptance remains open.
 
 FNL-007/008/009/010 are published in `5ef02b3ab0b9f711025405247e711f21d3ee9811`.
-Exact [CI 43928436875](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43928436875)
+Exact [CI 43928436875](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43928436875)
 passed **7/7** jobs, including real browser/root, frontend, PostgreSQL backend,
 Linux restore, private S3/ClamAV and production Docker. This result does not
 validate subsequent worktree corrections FNL-011 onward. FNL-011/012 are published
 in `3b9836334690e5b5e2da9ffca518b4b9f63c81a5`; exact
-[CI 43929519192](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43929519192)
+[CI 43929519192](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43929519192)
 passed **7/7**, with frontend 206/206, backend 546/546 and real browser 6/6.
 The next local FNL-013 result is 212 frontend tests and seven real browser cases;
 its exact hosted evidence is now verified: published FNL-013
 `3110bbbda1655e804cba35c89ccbda5174e84444` passed
-[CI 43932552825](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43932552825),
+[CI 43932552825](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43932552825),
 7/7. Logs confirm frontend 212, backend 546 and seven real browser cases with
 cleanup. FNL-014 is published in `64c9ee953dfd3241de0678e482eb1fc19f4d0f13`;
-[CI 43934545176](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43934545176)
+[CI 43934545176](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43934545176)
 passed 7/7; downloaded logs confirm frontend 242, backend 546 and seven real
 browser cases with cleanup. FNL-015 is published in
 `fcafebd134d3b1e5530b1e4ae0f46b32b72065d4`;
-[CI 43938567434](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43938567434)
+[CI 43938567434](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43938567434)
 passed 7/7; downloaded logs confirm frontend 262, backend 546 and eight real
 browser cases with cleanup. FNL-016 is published in
 `8f7b71dc6b6ee769094e5a5774f3fbd62653241e`;
-[CI 43942074079](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43942074079)
+[CI 43942074079](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43942074079)
 passed 7/7; downloaded logs confirm frontend 270, backend 546 and nine genuine
 browser cases with cleanup. FNL-017 is subsequent local work with 308 frontend
 tests and extended archive/reload/restore coverage in nine browser cases;
 these newer changes are not attributed to the preceding CI.
 FNL-017 is now published as `c4fbb7a3e9c1d82c89611ba9281dfe627af77449`;
-[CI 43943801543](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43943801543)
+[CI 43943801543](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43943801543)
 passed 7/7. Downloaded logs verify frontend 308, backend 546 and browser 9 with
 cleanup. FNL-018 subsequently passes local frontend 320, typecheck/build and
 browser 9 with cleanup; do not attribute these changes to FNL-017 CI.
 FNL-018 is now published as `0aec6191f30d75d5596c779d246e0b87997c8794`;
-[CI 43945975019](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43945975019)
+[CI 43945975019](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43945975019)
 passed 7/7. Downloaded logs verify 320/546/9 and cleanup. Subsequent FNL-019
 locally passes 331 frontend tests and nine genuine browser cases with cleanup;
 those later changes are not attributed to FNL-018 CI.
 FNL-019 is now published as `ab961c92e45ad4bc4b0bb53dfb19918393c99ff9`;
-[CI 43949055729](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43949055729)
+[CI 43949055729](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43949055729)
 passed 7/7. Downloaded logs verify 331/546/9 and cleanup. New FNL-020
 targeted evidence does not establish a complete current frontend/backend pass;
 its exact hosted follow-up remains FNL-005.
 FNL-020 is now published as `e3d6f9bd914a3840986d96fc676c3f4997fded49`;
-[CI 43958520111](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43958520111)
+[CI 43958520111](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43958520111)
 passed 7/7. Downloaded logs verify 340/549/9 and cleanup; this closes the
 preceding hosted full-suite prerequisite, without rewriting local failures.
 Subsequent FNL-021 targeted results are not attributed to this CI.
 FNL-021 is now published as `a7af0bcc352f9274b02b7be19c9befeb598a0d05`;
-[CI 43960314043](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43960314043)
+[CI 43960314043](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43960314043)
 passed 7/7. Downloaded logs verify 348/549/9 and cleanup. This closes its
 hosted prerequisite, not subsequent FNL-022 or its unverified tenth browser case.
 

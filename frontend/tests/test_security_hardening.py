@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Phase 7 Security Hardening & Penetration Test Suite
+# AlfaSecuritySoft - Phase 7 Security Hardening & Penetration Test Suite
 import pytest
 import uuid
 from backend.security import (
@@ -18,7 +18,7 @@ def test_path_traversal_sanitization():
 
 def test_brute_force_lockout():
     """Verifies that 5 failed logins lock the account temporarily."""
-    test_user = "brute_target@securityops.de"
+    test_user = "brute_target@alfasecuritysoft.example"
     reset_login_attempts(test_user)
 
     for _ in range(4):

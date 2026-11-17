@@ -1,4 +1,4 @@
-# SecurityOps 2.0 - Abschlussbericht Schritt 5R.2.12
+# AlfaSecuritySoft - Abschlussbericht Schritt 5R.2.12
 ## Frontend-Testumgebung verbindlich eingerichtet & verifiziert
 
 ### 1. Ausgeführte Arbeiten & Korrekturen
@@ -36,7 +36,7 @@ npm run build
 | **Frontend Store-Vertragstests** | `vitest run` (`npm test`) | 6 von 6 Tests bestanden | **BESTANDEN (100% PASS, 0 Fehler)** |
 | **Frontend TypeScript & Vite Build** | `tsc && vite build` (`npm run build`) | Kompilierung fehlerfrei | **BESTANDEN (0 Fehler)** |
 
-#### B. Backend (SecurityOps TypeScript-Backend unter `frontend/backend/`):
+#### B. Backend (AlfaSecuritySoft TypeScript-Backend unter `frontend/backend/`):
 ```bash
 npm --prefix frontend/backend ci
 npm --prefix frontend/backend run build

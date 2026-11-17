@@ -2,9 +2,9 @@
 
 **Assessment:** **PARTIAL / BLOCKED.** This is an evidence-based interim report, not a Phase 9 completion declaration or production-readiness approval.
 
-**Verified `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/SecurityOps-2.0/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
+**Verified `main`:** [`9df02aaa5ef01de78e0fe5d53be446b2037db24d`](https://github.com/Xonni-star/AlfaSecuritySoft/commit/9df02aaa5ef01de78e0fe5d53be446b2037db24d)
 
-**Last GitHub check:** 2026-11-15 23:18 CET; PR #66 open; PRs #50–#65 merged. Main CI [43762052960](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762052960) passed 7/7 and artifacts [43762359834](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43762359834) passed 2/2 on `9df02aa`. PR #66 CI [43768237786](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43768237786) passed 7/7 on `7f9bdfc`; the separate Chromium fixture passed locally but is not part of hosted CI. The older PR #62-open statements below are historical snapshot text, superseded by its merge.
+**Last GitHub check:** 2026-11-15 23:18 CET; PR #66 open; PRs #50–#65 merged. Main CI [43762052960](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43762052960) passed 7/7 and artifacts [43762359834](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43762359834) passed 2/2 on `9df02aa`. PR #66 CI [43768237786](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43768237786) passed 7/7 on `7f9bdfc`; the separate Chromium fixture passed locally but is not part of hosted CI. The older PR #62-open statements below are historical snapshot text, superseded by its merge.
 
 **Current status index:** [PROJECT_CURRENT_STATUS.md](./PROJECT_CURRENT_STATUS.md)
 
@@ -25,12 +25,12 @@ GitHub’s `main` resolved to `621874535ee480e56716ae8a7bd992272bc7a51a`, the sq
 
 For the current main SHA:
 
-- Post-merge [SecurityOps 2.0 CI run 43760703980](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43760703980) passed **7/7 jobs** on `621874535ee480e56716ae8a7bd992272bc7a51a`: root checks, frontend typecheck/tests/build, PostgreSQL 16 backend migration/build/Jest, isolated restore, ClamAV adapter, DMS API flow, and production Compose/image validation. This is hosted CI evidence, not production acceptance.
-- The latest post-merge artifact run, [43757089831](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43757089831), passed **2/2 jobs** on the preceding main SHA `bed939a`. An artifact run for `6218745` was not yet observed. Artifact creation is not a release approval, deploy, or proof of customer operation.
+- Post-merge [AlfaSecuritySoft CI run 43760703980](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43760703980) passed **7/7 jobs** on `621874535ee480e56716ae8a7bd992272bc7a51a`: root checks, frontend typecheck/tests/build, PostgreSQL 16 backend migration/build/Jest, isolated restore, ClamAV adapter, DMS API flow, and production Compose/image validation. This is hosted CI evidence, not production acceptance.
+- The latest post-merge artifact run, [43757089831](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43757089831), passed **2/2 jobs** on the preceding main SHA `bed939a`. An artifact run for `6218745` was not yet observed. Artifact creation is not a release approval, deploy, or proof of customer operation.
 - PR checks for #50–#58, #60, #61, and #63 each showed 7/7 success. PR #59 had an empty PR-level check rollup; the successful post-merge run on `879ae95` is historical evidence for that tree. PR-level and post-merge results are not conflated.
 - PR #63 adds synthetic API coverage through employee qualification, planning publication, both handover confirmations, and a MinIO/ClamAV document upload, download, and audit flow. This is CI evidence, not provider or production acceptance.
 - PR #65 adds tenant/site/role authorization-boundary integration tests. Its 7/7 PR checks and the bounded workstream’s “no confirmed high-confidence issue” result do not amount to a comprehensive security review or production acceptance.
-- The documentation PR #62 has been rebased onto the current mainline and updated for the merged offline-sync result. Its new head `6c8a52c51ff3b47a20be9a0579e863861744c891` passed **7/7** hosted checks in [run 43761213396](https://github.com/Xonni-star/SecurityOps-2.0/actions/runs/43761213396). PR #62 remains open and unmerged.
+- The documentation PR #62 has been rebased onto the current mainline and updated for the merged offline-sync result. Its new head `6c8a52c51ff3b47a20be9a0579e863861744c891` passed **7/7** hosted checks in [run 43761213396](https://github.com/Xonni-star/AlfaSecuritySoft/actions/runs/43761213396). PR #62 remains open and unmerged.
 
 ## Operations and documentation audit
 
