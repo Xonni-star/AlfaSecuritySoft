@@ -3,8 +3,8 @@ import { PoolClient } from 'pg';
 import { pool, withTenantTransaction } from '../config/database';
 import { getDemoUserPassword } from '../config/demoUserPassword';
 
-export const TENANT_FRANKFURT_ID = '11111111-1111-1111-1111-111111111111';
-export const TENANT_BAVARIA_ID = '22222222-2222-2222-2222-222222222222';
+export const TENANT_FRANKFURT_ID = '11111111-1111-1111-8111-111111111111';
+export const TENANT_BAVARIA_ID = '22222222-2222-2222-8222-222222222222';
 
 const DEFAULT_ALARM_TYPES = [
   ['brandalarm', 'Brandalarm'],
@@ -361,21 +361,21 @@ export async function seedDatabase(): Promise<void> {
       // Kunde
       await tx.query(`
         INSERT INTO clients (id, tenant_id, client_number, company_name, contact_person, email, phone, address, contract_start, contract_end)
-        VALUES ('c1111111-1111-1111-1111-111111111111', $1, 'KUN-2024-001', 'MainTower Real Estate GmbH', 'Dr. Michael von Berg', 'm.vonberg@maintower-re.de', '+49 69 9820-110', 'Neue Mainzer Str. 52, 60311 Frankfurt', '2022-01-01', '2026-12-31')
+        VALUES ('c1111111-1111-1111-8111-111111111111', $1, 'KUN-2024-001', 'MainTower Real Estate GmbH', 'Dr. Michael von Berg', 'm.vonberg@maintower-re.de', '+49 69 9820-110', 'Neue Mainzer Str. 52, 60311 Frankfurt', '2022-01-01', '2026-12-31')
         ON CONFLICT (id, tenant_id) DO NOTHING;
       `, [TENANT_FRANKFURT_ID]);
 
       // Objekt
       await tx.query(`
         INSERT INTO sites (id, tenant_id, client_id, site_code, name, address, security_level)
-        VALUES ('b1111111-1111-1111-1111-111111111111', $1, 'c1111111-1111-1111-1111-111111111111', 'OBJ-FRA-01', 'Finanzturm Alpha (Hauptverwaltung)', 'Neue Mainzer Straße 52, 60311 Frankfurt', 'Hoch (KRITIS / BSI)')
+        VALUES ('b1111111-1111-1111-8111-111111111111', $1, 'c1111111-1111-1111-8111-111111111111', 'OBJ-FRA-01', 'Finanzturm Alpha (Hauptverwaltung)', 'Neue Mainzer Straße 52, 60311 Frankfurt', 'Hoch (KRITIS / BSI)')
         ON CONFLICT (id, tenant_id) DO NOTHING;
       `, [TENANT_FRANKFURT_ID]);
 
       // Mitarbeiter
       await tx.query(`
         INSERT INTO employees (id, tenant_id, personnel_number, first_name, last_name, email, phone, role, date_of_joining)
-        VALUES ('e1111111-1111-1111-1111-111111111111', $1, 'MA-0104', 'Alexander', 'Schmidt', 'a.schmidt@ffm-sec.de', '+49 171 4455881', 'Einsatzleitung', '2020-03-01')
+        VALUES ('e1111111-1111-1111-8111-111111111111', $1, 'MA-0104', 'Alexander', 'Schmidt', 'a.schmidt@ffm-sec.de', '+49 171 4455881', 'Einsatzleitung', '2020-03-01')
         ON CONFLICT (id, tenant_id) DO NOTHING;
       `, [TENANT_FRANKFURT_ID]);
     });
@@ -385,7 +385,7 @@ export async function seedDatabase(): Promise<void> {
       await seedAlarmTypes(tx, TENANT_BAVARIA_ID);
       await tx.query(`
         INSERT INTO clients (id, tenant_id, client_number, company_name, contact_person, email, phone, address, contract_start, contract_end)
-        VALUES ('c2222222-2222-2222-2222-222222222222', $1, 'KUN-BAV-101', 'BioPharm Innovations AG (KRITIS)', 'Christian Lindner-Sachs', 'security@biopharm.eu', '+49 89 4522-890', 'Am Klopferspitz 19, 82152 Planegg', '2021-08-01', '2027-07-31')
+        VALUES ('c2222222-2222-2222-8222-222222222222', $1, 'KUN-BAV-101', 'BioPharm Innovations AG (KRITIS)', 'Christian Lindner-Sachs', 'security@biopharm.eu', '+49 89 4522-890', 'Am Klopferspitz 19, 82152 Planegg', '2021-08-01', '2027-07-31')
         ON CONFLICT (id, tenant_id) DO NOTHING;
       `, [TENANT_BAVARIA_ID]);
     });
