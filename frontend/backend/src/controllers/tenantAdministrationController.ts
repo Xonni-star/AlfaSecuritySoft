@@ -6,7 +6,7 @@ const uuid = z.string().uuid();
 const tenantFields = z.object({
   name: z.string().trim().min(1).max(200),
   subdomain: z.string().trim().toLowerCase()
-    .regex(/^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$/, 'Ungültiges Subdomain-Format.'),
+    .regex(/^[a-z0-9](?:[a-z0-9.-]{0,250}[a-z0-9])?$/, 'Ungültiges Subdomain-Format.'),
   taxNumber: z.string().trim().min(1).max(50),
   licenseTier: z.enum(['ENTERPRISE', 'PROFESSIONAL', 'STANDARD']),
   bwrRegisterId: z.string().trim().min(1).max(50),
