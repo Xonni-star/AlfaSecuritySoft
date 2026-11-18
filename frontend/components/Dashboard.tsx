@@ -77,7 +77,7 @@ export const Dashboard: React.FC = () => {
             </span>
           </div>
           <p className="text-sm text-slate-400 mt-1">
-            Mandanten-ID: <code className="text-blue-400">{tenant.id}</code> • Bewacherregister: <code className="text-slate-300">{tenant.bwrRegisterId}</code> • Lizenz: {tenant.licenseTier}
+            Bewacherregister: <code className="text-slate-300">{tenant.bwrRegisterId}</code> • Lizenz: {tenant.licenseTier}
           </p>
         </div>
 
