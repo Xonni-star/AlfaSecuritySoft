@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
     return {
       server: {
+        allowedHosts: true,
         proxy: {
           //Target your Node.js backend
           '/api-proxy': 'http://localhost:5000',
