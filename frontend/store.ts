@@ -1451,8 +1451,13 @@ export const useSecurityStore = create<AlfaSecuritySoftStore>((set, get) => ({
     void get().loadTenantData();
   },
   getCurrentTenant: () => {
-    const { tenants, currentTenantId } = get();
-    return tenants.find((t) => t.id === currentTenantId) || tenants[0];
+    const { tenants, currentTenantId, authUser } = get();
+    const tenant = tenants.find((t) => t.id === currentTenantId) || tenants[0];
+    return {
+      ...tenant,
+      id: currentTenantId ?? tenant.id,
+      name: authUser?.tenantName ?? tenant.name,
+    };
   },
 
   currentUserRole: UserRole.EINSATZLEITUNG,
