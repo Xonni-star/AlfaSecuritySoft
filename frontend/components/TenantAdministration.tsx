@@ -1,6 +1,6 @@
 import React, { FormEvent, useCallback, useEffect, useState } from 'react';
 import { Building2, Plus, RefreshCw, Save, X } from 'lucide-react';
-import { AuthUser } from '../store';
+import { AuthUser, useSecurityStore } from '../store';
 import { apiClient } from '../services/apiClient';
 
 type LicenseTier = 'ENTERPRISE' | 'PROFESSIONAL' | 'STANDARD';
@@ -103,6 +103,7 @@ export const TenantAdministration: React.FC<{ authUser: AuthUser }> = ({ authUse
       setEditing(null);
       setForm(emptyForm);
       await loadTenants();
+      await useSecurityStore.getState().restoreSession();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Mandant konnte nicht gespeichert werden.');
     } finally {
