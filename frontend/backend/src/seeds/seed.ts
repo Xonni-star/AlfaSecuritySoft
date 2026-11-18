@@ -4,7 +4,6 @@ import { pool, withTenantTransaction } from '../config/database';
 import { getDemoUserPassword } from '../config/demoUserPassword';
 
 export const TENANT_FRANKFURT_ID = '11111111-1111-1111-8111-111111111111';
-export const TENANT_BAVARIA_ID = '22222222-2222-2222-8222-222222222222';
 
 const DEFAULT_ALARM_TYPES = [
   ['brandalarm', 'Brandalarm'],
@@ -48,10 +47,9 @@ export async function seedDatabase(): Promise<void> {
     await client.query(`
       INSERT INTO tenants (id, name, subdomain, tax_number, license_tier, bwr_register_id, din77200_certified)
       VALUES 
-        ($1, 'Securitas & Wache Frankfurt GmbH', 'ffm-sec.alfasecuritysoft.example', 'DE301928374', 'ENTERPRISE', 'BWR-HE-99201', true),
-        ($2, 'Bavaria Schutz & Werkschutz AG', 'bavaria.alfasecuritysoft.example', 'DE819203948', 'PROFESSIONAL', 'BWR-BY-11029', true)
+        ($1, 'Securitas & Wache Frankfurt GmbH', 'ffm-sec.alfasecuritysoft.example', 'DE301928374', 'ENTERPRISE', 'BWR-HE-99201', true)
       ON CONFLICT (id) DO NOTHING;
-    `, [TENANT_FRANKFURT_ID, TENANT_BAVARIA_ID]);
+    `, [TENANT_FRANKFURT_ID]);
 
     const tenantRoleTemplates = [
       ['Mandantenadministrator','Mandantenbezogene Benutzer- und Rollenverwaltung'],
@@ -64,7 +62,7 @@ export async function seedDatabase(): Promise<void> {
       ['Sicherheitsmitarbeiter','Konfigurierbare Sicherheitsmitarbeitendenrolle'],
       ['Revisor/Auditor','Konfigurierbare revisionsorientierte Leserolle']
     ];
-    for (const tenantId of [TENANT_FRANKFURT_ID,TENANT_BAVARIA_ID]) {
+    for (const tenantId of [TENANT_FRANKFURT_ID]) {
       await withTenantTransaction(tenantId, async (tx) => {
         for (const [name,description] of tenantRoleTemplates) {
           await tx.query(
@@ -380,17 +378,8 @@ export async function seedDatabase(): Promise<void> {
       `, [TENANT_FRANKFURT_ID]);
     });
 
-    // 6. Daten für Mandant Bavaria (Tenant B) innerhalb geschützter RLS-Transaktion anlegen
-    await withTenantTransaction(TENANT_BAVARIA_ID, async (tx) => {
-      await seedAlarmTypes(tx, TENANT_BAVARIA_ID);
-      await tx.query(`
-        INSERT INTO clients (id, tenant_id, client_number, company_name, contact_person, email, phone, address, contract_start, contract_end)
-        VALUES ('c2222222-2222-2222-8222-222222222222', $1, 'KUN-BAV-101', 'BioPharm Innovations AG (KRITIS)', 'Christian Lindner-Sachs', 'security@biopharm.eu', '+49 89 4522-890', 'Am Klopferspitz 19, 82152 Planegg', '2021-08-01', '2027-07-31')
-        ON CONFLICT (id, tenant_id) DO NOTHING;
-      `, [TENANT_BAVARIA_ID]);
-    });
 
-    console.log('[SEED SUCCESS] Mandanten Frankfurt und Bavaria mit isolierten Daten befüllt.');
+    console.log('[SEED SUCCESS] Mandant Frankfurt mit isolierten Daten befüllt.');
   } finally {
     client.release();
   }
