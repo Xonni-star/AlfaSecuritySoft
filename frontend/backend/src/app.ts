@@ -23,6 +23,7 @@ import * as patrolController from './controllers/patrolController';
 import * as planningController from './controllers/planningController';
 import * as userAdministrationController from './controllers/userAdministrationController';
 import * as tenantAdministrationController from './controllers/tenantAdministrationController';
+import * as deviceController from './controllers/deviceController';
 
 export const app = express();
 configureTrustedProxies(app, env.TRUST_PROXY);
@@ -359,5 +360,10 @@ app.post('/api/v1/logbook/:id/attachments', authenticateJwt, requirePermission('
 // Offline-Synchronisations-Endpunkte
 app.post('/api/v1/sync/push', authenticateJwt, syncController.pushSyncMutations);
 app.post('/api/v1/sync/conflicts/resolve', authenticateJwt, syncController.resolveSyncConflict);
+
+// Geräteverwaltung (Registrierung & Widerruf)
+app.post('/api/v1/sync/device/register', authenticateJwt, deviceController.registerDevice);
+app.get('/api/v1/admin/devices', authenticateJwt, requirePermission('users:read'), deviceController.listDevices);
+app.post('/api/v1/admin/devices/revoke', authenticateJwt, requirePermission('users:manage'), deviceController.revokeDevice);
 
 app.use(errorHandler);
